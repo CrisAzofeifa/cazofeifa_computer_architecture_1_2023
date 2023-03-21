@@ -9,6 +9,7 @@ section .data
 
 section .bss
     text       	resq 	2550000				;vector que almacenará la matriz de pixeles de la imagen encriptada
+    final 	   	resq 	2550000				;vector que almacenará la matriz de pixeles de la imagen encriptada en enteros
 section .text
 
 _start:
@@ -101,3 +102,37 @@ _ExpBinariaAux2:
     pop rax
 
     jmp _ExpBinariaLoop         ;Continúa el loop
+
+
+;Convierte un entero a ASCII
+itoa:		
+    push    rbp         										
+	push    rax         									
+	push    rbx	
+	push    rdx
+	mov 	rbx, dword 10   									  
+    push    rbx   
+
+itoa_loop:	
+    cmp 	rax, rbx        									
+	jl  	itoa_unroll     									
+	xor 	rdx, rdx        									
+	div 	rbx             									
+	push    rdx         										
+	jmp 	itoa_loop  	
+
+itoa_unroll:
+    add 	al, 0x30      										
+	mov 	[final +rdi], byte al 
+	inc 	rdi        											
+	pop 	rax         										
+	cmp 	rax, rbx        									
+	jne 	itoa_unroll     									
+	mov 	[final +rdi], byte ' ' 								;Agregar ' ' como ASCII al valor 
+	inc 	rdi
+	inc 	rcx             									
+	pop 	rdx         										
+	pop 	rbx
+	pop 	rax
+	pop 	rbp
+	ret	
