@@ -1,9 +1,71 @@
+cpu x86-64
+bits 64
+%include "sys.inc"
+global   					_start
+section .data
+    filename 	db 		"Encriptada.txt",0  ;nombre del archivo que contiene la matriz de pixeles de la imagen a procesar
+    string   	dw 		"0", 0				;String donde se almacenaran temporalmente los números que se vayan leyendo del txt
+    vec 		times 	2550000 dd 0
+
+section .bss
+    text       	resq 	2550000				;vector que almacenará la matriz de pixeles de la imagen encriptada
+section .text
+
 _start:
-    ; Inicializar los registros
-    mov eax, 5     ; base
-    mov ebx, 1     ; resultado
-    mov ecx, 5     ; exponente
-    call _ExpBinariaLoop
+    ;abre el archivo de Encriptada.txt
+    mov     rbx, 0								
+    mov 	rax, SYS_OPEN										
+	mov 	rdi, filename 										
+	mov 	rsi, O_RDONLY   									
+	mov 	rdx, 0												
+	syscall
+	
+    ;lee el archivo de Encriptada.txt
+	push 	rax													
+	mov 	rdi, rax
+	mov 	rax, SYS_READ 										
+	mov 	rsi, text 												
+	syscall
+	mov 	rax, SYS_CLOSE 										
+	pop 	rdi
+	syscall
+	mov 	rax, 0												;Se reinician los registros rax, rbx y  rcx
+	mov 	rbx, 0				
+	mov 	rdx, 0	
+
+;se itera sobre el archivo matrizPixeles.txt para cargar los pixeles
+while:			
+    mov 	cl, [text+rbx]										;Se lee un byte de la cadena text
+	cmp 	cl, ','												;Se compara con el indicador de final del archivo  ','
+	jne 	continua											
+	jmp 	fin	
+
+continua:		
+    cmp 	cl, byte ' '										
+	je 		divid 												
+	jmp		no	
+
+divid:			
+    push 	rdx												
+	mov 	edi, string 																		
+	call 	atoi 			;llama a atoi para convertir a entero el valor  									
+	pop 	rdx 
+	mov 	rsi,rdx																					
+	mov 	[vec+edx*4],eax		;almacena el valor en la matriz vec  								
+	mov 	dword[string], '0'									
+	mov 	eax, 0												
+	inc 	edx 												
+	jmp 	salto 	
+
+no:				
+    mov 	[string + eax], cl 	;agregar el byte a la cadena string   								
+	inc 	eax		
+
+salto:			
+    inc 	ebx													
+	jmp 	while	
+
+fin:
 
 _ExpBinariaLoop:
     cmp eax, 0                  ;Verifica que el exponente siga siendo mayor que 0
