@@ -136,3 +136,23 @@ itoa_unroll:
 	pop 	rax
 	pop 	rbp
 	ret	
+
+;convierte a ascii
+atoi:			
+    mov 	rax, 0     
+
+convert:		
+    movzx 	rsi, byte [rdi]   									
+	test 	rsi, rsi           									
+	je 		done
+	cmp 	rsi, 48             								
+	jl 		done 												
+    cmp 	rsi, 57             								
+	jg 		done 												
+	sub 	rsi, 48            							 		
+	imul 	rax, 10            									
+	add 	rax, rsi            								
+	inc 	rdi                 							
+	jmp 	convert
+done:			
+    ret
