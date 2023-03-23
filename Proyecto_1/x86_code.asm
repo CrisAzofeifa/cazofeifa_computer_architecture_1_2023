@@ -4,6 +4,7 @@ bits 64
 global   					_start
 section .data
     filename 	db 		"Encriptada.txt",0  ;nombre del archivo que contiene la matriz de pixeles de la imagen a procesar
+	filename2 	dw 		"Desencriptada.txt", 0			;nombre del archivo donde se guardará el resultado 
 	fileLlaves 	db 		"llaves.txt",0  ;nombre del archivo que contiene las llaves
     string   	dw 		"0", 0				;String donde se almacenaran temporalmente los números que se vayan leyendo del txt
     vec 		times 	2550000 dd 0
@@ -20,6 +21,8 @@ section .bss
 	llave_d  	resb 	32
 	llave_n  	resb 	32
 	cantPixeles resb 	10										;Almacenará resolución de la imagen
+	resolucionSalida 	resb 	10	
+	len 	   	resb 	10										;almacena el largo de la subcadena leída del txt
 section .text
 
 _start:
@@ -151,7 +154,7 @@ fin2:
 
 _RSALoop:
 	cmp esi, [cantPixeles]
-	je _finRSA
+	je _finLoop
 	mov rdx, [llave_n]
 	mov [modulo], rdx
 	mov rbx, [modulo]
@@ -188,14 +191,36 @@ _RSALoopAux:
 	
 	jmp _RSALoop
 	
-_finRSA:
-	mov rax, 12
-	mov rax, [IntDencryp+0]
-	mov rax, [IntDencryp+8]
-	mov rax, [IntDencryp+16]
-	call b
-b:
-	ret
+_finLoop:	
+	mov ecx, 307200
+	mov [resolucionSalida], ecx
+	mov ecx, 0
+	mov edi, 0
+
+while3:		
+	cmp 	ecx, [resolucionSalida]								;mueve el valor de la resolucion de la salida al registro ecx
+	jle 	continua3 	
+	jmp 	fin3
+continua3:
+	mov 	eax, dword[IntDencryp+ecx*8]						;Toma el valor  actual de la matriz
+	mov 	[len], rdi											
+	call 	itoa 												;llama a itoa para convertir de entero a ascii
+	jmp 	while3
+
+fin3:						
+	mov 	rax, SYS_OPEN										
+	mov 	rdi, filename2 										;Nombre de archivo a abrir: "Desencriptada.txt"
+	mov 	rsi, O_CREAT+O_WRONLY								
+	mov 	rdx, 0644o 											
+	syscall 													
+	mov 	rdi, rax
+	mov 	rax, SYS_WRITE 										
+	mov 	rsi, final 											;Escribir array final en el archivo
+	mov 	rdx, [len]											;La cantidad de caracteres a escribir es len
+	syscall 
+	mov 	rax, SYS_CLOSE 										
+	syscall
+	jmp _exit
 
 
 ;Convierte un entero a ASCII
@@ -295,3 +320,6 @@ _ExpModAux2:
     pop rax
 
     jmp _ExpModLoop         	;Continúa el loop
+
+_exit:
+	exit
