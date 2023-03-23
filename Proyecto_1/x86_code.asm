@@ -13,20 +13,20 @@ section .bss
     text       	resq 	2550000				;vector que almacenará la matriz de pixeles de la imagen encriptada
     final 	   	resq 	2550000				;vector que almacenará la matriz de pixeles de la imagen encriptada en enteros
 	llaves      resq 	1000				;vector que almacenará las llaves
-	llavesInt      resq 	1000		;vector que almacenará las llaves en enteros
+	llavesInt   resq 	1000				;vector que almacenará las llaves en enteros
 	IntDencryp 	resq 	2550000				;vector que almacenará la matriz de pixeles desencriptada de la imagen encriptada en enteros
-	base  		resb 	32
-	exponente  	resb 	32
-	modulo  	resb 	32
-	llave_d  	resb 	32
-	llave_n  	resb 	32
-	cantPixeles resb 	10										;Almacenará resolución de la imagen
-	resolucionSalida 	resb 	10	
-	len 	   	resb 	10										;almacena el largo de la subcadena leída del txt
+	base  		resb 	32					;Guarda la base del exponencial modular
+	exponente  	resb 	32					;Guarda el exponente del exponencial modular
+	modulo  	resb 	32					;Guarda el modulo del exponencial modular
+	llave_d  	resb 	32					;Guarda llave D del RSA
+	llave_n  	resb 	32					;Guarda la llave N del RSA
+	cantPixeles resb 	10					;Almacenará resolución de la imagen
+	resolucionSalida 	resb 	10			;Almacenará resolución de SALIDA
+	len 	   	resb 	10					;almacena el largo de la subcadena leída del txt
 section .text
 
 _start:
-	mov 	rax, 0												;Se reinician los registros rax, rbx y  rcx
+	mov 	rax, 0							;Se reinician los registros rax, rbx y  rcx
 	mov 	rbx, 0				
 	mov 	rdx, 0	
     ;abre el archivo de Encriptada.txt
@@ -142,23 +142,23 @@ salto2:
 	jmp 	while2
 
 fin2:
-	mov rax, 614400
-	mov [cantPixeles], rax
-	mov ebx, [llavesInt+0]
-	mov [llave_d], ebx
-	mov ebx, [llavesInt+4]
-	mov [llave_n], ebx
+	mov rax, 614400						;Cantidad de pixeles de la imagen encriptada
+	mov [cantPixeles], rax				
+	mov ebx, [llavesInt+0]				;Carga la llave leída en el resistro 
+	mov [llave_d], ebx					;Guarda la llave en el registro correspondiente
+	mov ebx, [llavesInt+4]				;Carga la llave leída en el resistro 
+	mov [llave_n], ebx					;Guarda la llave en el registro correspondiente
 
-	xor esi, esi
-	xor edi, edi
+	xor esi, esi						;reinicia esi para que sea el contador de los pixeles
+	xor edi, edi						;reinicia edi para que sea el contador de donde guardar los pixeles procesados
 
 _RSALoop:
-	cmp esi, [cantPixeles]
-	je _finLoop
-	mov rdx, [llave_n]
-	mov [modulo], rdx
-	mov rbx, [modulo]
-	mov rdx, [llave_d]
+	cmp esi, [cantPixeles]				;Condición de parada cuando se llegue a la cantidad total de pixeles encriptados
+	je _finLoop							
+	mov rdx, [llave_n]					;Prepara los valores necesarios en los registros
+	mov [modulo], rdx					
+	mov rbx, [modulo]					
+	mov rdx, [llave_d]					
 	mov [exponente], rdx
 	mov ebx, esi
 	mov rax, 4
@@ -166,11 +166,13 @@ _RSALoop:
 	jmp _RSALoopAux 
 
 _RSALoopAux:
+	;Carga los primeros dos pixeles y los concatena
 	mov ebx, [vec+rax]
 	mov eax, [vec+rax+4]
 	shl rbx, 8
 	or rax, rbx
 
+	;Actualiza la base con la operacion base = base%modulo
 	xor rdx,rdx
 	mov rbx, [modulo]
 	
@@ -178,13 +180,15 @@ _RSALoopAux:
 	
 	mov [base], rdx
 
+	;Registros a usar por el RSA para cada pixel
 	mov eax, [base]
 	mov ebx, 1 
 	mov ecx, [exponente]
 	
 
 	call _ExpModLoop
-	mov [IntDencryp+(edi*8)], ebx
+	mov [IntDencryp+(edi*8)], ebx			;Guarda el resultado del RSA en el vector IntDencryp
+	;Aumenta 2 esi y 1 edi
 	inc esi
 	inc esi
 	inc edi
@@ -192,6 +196,7 @@ _RSALoopAux:
 	jmp _RSALoop
 	
 _finLoop:	
+	;Carga la resolucion de salida
 	mov ecx, 307200
 	mov [resolucionSalida], ecx
 	mov ecx, 0
@@ -278,7 +283,7 @@ done:
 
 _ExpModLoop:
     cmp ecx, 0                  ;Verifica que el exponente siga siendo mayor que 0
-    jg _ExpModAux           ;Continúa calculando si se cumple la condición
+    jg _ExpModAux           	;Continúa calculando si se cumple la condición
     ret                         ;Se llegó al resultado y se regresa al lugar donde se llamó la función
     
 _ExpModAux:
@@ -300,6 +305,7 @@ _ExpModAux2:
     mov rbx, rax                ;Prepara rbx con el valor de la base
     mul rbx                     ;Realiza la op base = base*base 
 
+	;Saca el modulo de la nueva base 
 	xor rdx, rdx
 	mov rbx, [modulo]
 	div rbx 
@@ -311,7 +317,7 @@ _ExpModAux2:
     
     push rax                    ;Guarda la nueva base en la pila
     push rcx                    ;Guarda el resultado actual en la pila
-	mov rax, [exponente]
+	mov rax, [exponente]		;Desplaza el exponente un bit a la derecha para recorrerlo
 	shr rax, 1 
 	
 	mov [exponente], rax
@@ -322,4 +328,6 @@ _ExpModAux2:
     jmp _ExpModLoop         	;Continúa el loop
 
 _exit:
-	exit
+	mov eax, 1              ;Prepara para salir del sistema
+    xor ebx, ebx            ;salida 0
+    int 80h                 ;llamada al sistema
