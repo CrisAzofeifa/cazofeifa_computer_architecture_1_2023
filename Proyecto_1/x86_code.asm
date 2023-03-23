@@ -4,15 +4,22 @@ bits 64
 global   					_start
 section .data
     filename 	db 		"Encriptada.txt",0  ;nombre del archivo que contiene la matriz de pixeles de la imagen a procesar
+	fileLlaves 	db 		"llaves.txt",0  ;nombre del archivo que contiene las llaves
     string   	dw 		"0", 0				;String donde se almacenaran temporalmente los números que se vayan leyendo del txt
     vec 		times 	2550000 dd 0
 
 section .bss
     text       	resq 	2550000				;vector que almacenará la matriz de pixeles de la imagen encriptada
     final 	   	resq 	2550000				;vector que almacenará la matriz de pixeles de la imagen encriptada en enteros
+	llaves      resq 	1000				;vector que almacenará las llaves
+	llavesInt      resq 	1000		;vector que almacenará las llaves en enteros
+	IntDencryp 	resq 	2550000				;vector que almacenará la matriz de pixeles desencriptada de la imagen encriptada en enteros
 	base  		resb 	32
 	exponente  	resb 	32
 	modulo  	resb 	32
+	llave_d  	resb 	32
+	llave_n  	resb 	32
+	cantPixeles resb 	10										;Almacenará resolución de la imagen
 section .text
 
 _start:
@@ -32,7 +39,7 @@ _start:
 	mov 	rdi, rax
 	mov 	rax, SYS_READ 										
 	mov 	rsi, text 	
-	mov 	rdx, 819200								
+	mov 	rdx, 2457600								
 	syscall
 	mov 	rax, SYS_CLOSE 										
 	pop 	rdi
@@ -46,7 +53,7 @@ while:
     mov 	cl, [text+rbx]										;Se lee un byte de la cadena text
 	cmp 	cl, ','												;Se compara con el indicador de final del archivo  ','
 	jne 	continua											
-	jmp 	fin	
+	jmp 	_startLlaves	
 
 continua:
     cmp 	cl, byte ' '										
@@ -73,28 +80,120 @@ salto:
     inc 	ebx													
 	jmp 	while	
 
-fin:
-	mov rax, 1631
-	mov [exponente], rax
-	mov rax, 5963
-	mov [modulo], rax
-    mov eax, [vec+4]
-	mov ebx, [vec+0]
+_startLlaves:
+	mov 	rax, 0												;Se reinician los registros rax, rbx y  rcx
+	mov 	rbx, 0				
+	mov 	rdx, 0	
+    ;abre el archivo de llaves.txt
+    mov     rbx, 0								
+    mov 	rax, SYS_OPEN										
+	mov 	rdi, fileLlaves 										
+	mov 	rsi, O_RDONLY   									
+	mov 	rdx, 0												
+	syscall
+	
+    ;lee el archivo de llaves.txt
+	push 	rax													
+	mov 	rdi, rax
+	mov 	rax, SYS_READ 										
+	mov 	rsi, llaves 	
+	mov 	rdx, 1000								
+	syscall
+	mov 	rax, SYS_CLOSE 										
+	pop 	rdi
+	syscall
+	mov 	rax, 0												;Se reinician los registros rax, rbx y  rcx
+	mov 	rbx, 0				
+	mov 	rdx, 0	
+
+;se itera sobre el archivo llaves.txt para cargar las llaves
+while2:			
+    mov 	cl, [llaves+rbx]									;Se lee un byte de la cadena llaves
+	cmp 	cl, ','												;Se compara con el indicador de final del archivo  ','
+	jne 	continua2											
+	jmp 	fin2
+
+continua2:
+    cmp 	cl, byte ' '										
+	je 		divid2 												
+	jmp		no2	
+
+divid2:			
+    push 	rdx												
+	mov 	edi, string 																		
+	call 	atoi 			;llama a atoi para convertir a entero el valor  									
+	pop 	rdx 
+	mov 	rsi,rdx																					
+	mov 	[llavesInt+edx*4],eax		;almacena el valor en la matriz llavesInt  	
+	mov 	dword[string], '0'									
+	mov 	eax, 0												
+	inc 	edx 												
+	jmp 	salto2 	
+
+no2:				
+    mov 	[string + eax], cl 	;agregar el byte a la cadena string   								
+	inc 	eax		
+
+salto2:			
+    inc 	ebx													
+	jmp 	while2
+
+fin2:
+	mov rax, 614400
+	mov [cantPixeles], rax
+	mov ebx, [llavesInt+0]
+	mov [llave_d], ebx
+	mov ebx, [llavesInt+4]
+	mov [llave_n], ebx
+
+	xor esi, esi
+	xor edi, edi
+
+_RSALoop:
+	cmp esi, [cantPixeles]
+	je _finRSA
+	mov rdx, [llave_n]
+	mov [modulo], rdx
+	mov rbx, [modulo]
+	mov rdx, [llave_d]
+	mov [exponente], rdx
+	mov ebx, esi
+	mov rax, 4
+	mul rbx
+	jmp _RSALoopAux 
+
+_RSALoopAux:
+	mov ebx, [vec+rax]
+	mov eax, [vec+rax+4]
 	shl rbx, 8
 	or rax, rbx
-	mov rbx, [modulo]
+
 	xor rdx,rdx
+	mov rbx, [modulo]
+	
 	div rbx
+	
 	mov [base], rdx
 
 	mov eax, [base]
 	mov ebx, 1 
 	mov ecx, [exponente]
+	
 
-	call _ExpBinariaLoop	
+	call _ExpModLoop
+	mov [IntDencryp+(edi*8)], ebx
+	inc esi
+	inc esi
+	inc edi
+	
+	jmp _RSALoop
+	
+_finRSA:
+	mov rax, 12
+	mov rax, [IntDencryp+0]
+	mov rax, [IntDencryp+8]
+	mov rax, [IntDencryp+16]
 	call b
-
-
 b:
 	ret
 
