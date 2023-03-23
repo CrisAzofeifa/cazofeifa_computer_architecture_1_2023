@@ -10,6 +10,9 @@ section .data
 section .bss
     text       	resq 	2550000				;vector que almacenará la matriz de pixeles de la imagen encriptada
     final 	   	resq 	2550000				;vector que almacenará la matriz de pixeles de la imagen encriptada en enteros
+	base  		resb 	32
+	exponente  	resb 	32
+	modulo  	resb 	32
 section .text
 
 _start:
@@ -71,10 +74,29 @@ salto:
 	jmp 	while	
 
 fin:
+	mov rax, 1631
+	mov [exponente], rax
+	mov rax, 5963
+	mov [modulo], rax
     mov eax, [vec+4]
+	mov ebx, [vec+0]
+	shl rbx, 8
+	or rax, rbx
+	mov rbx, [modulo]
+	xor rdx,rdx
+	div rbx
+	mov [base], rdx
+
+	mov eax, [base]
+	mov ebx, 1 
+	mov ecx, [exponente]
+
+	call _ExpBinariaLoop	
 	call b
 
+
 b:
+	ret
 
 
 ;Convierte un entero a ASCII
@@ -130,37 +152,47 @@ convert:
 done:			
     ret
 
-_ExpBinariaLoop:
-    cmp eax, 0                  ;Verifica que el exponente siga siendo mayor que 0
-    jg _ExpBinariaAux           ;Continúa calculando si se cumple la condición
+_ExpModLoop:
+    cmp ecx, 0                  ;Verifica que el exponente siga siendo mayor que 0
+    jg _ExpModAux           ;Continúa calculando si se cumple la condición
     ret                         ;Se llegó al resultado y se regresa al lugar donde se llamó la función
     
-_ExpBinariaAux:
+_ExpModAux:
     push rcx                    ;Guarda el exponente actual
     push rax                    ;Guarda la base actual
     and ecx, 1                  ;Obtiene el bit menos significativo del exponente actual
     cmp ecx, 1                  ;Lo compara con uno
-    jne _ExpBinariaAux2         ;En caso de no ser 1 se salta la actualización del resultado
+    jne _ExpModAux2         	;En caso de no ser 1 se salta la actualización del resultado
     mul rbx                     ;Multiplica el resultado actual por la base
-    mov rbx, rax                ;Guarda el resultado en rbx
-    jmp _ExpBinariaAux2         
+	xor rdx, rdx 
+	mov rbx, [modulo]
+	div rbx 
+    mov rbx, rdx                ;Guarda el resultado en rbx
+    jmp _ExpModAux2         
 
-_ExpBinariaAux2:
+_ExpModAux2:
     pop rax                     ;Saca la base de la pila
     push rbx                    ;Guarda el resultado actual en la pila
     mov rbx, rax                ;Prepara rbx con el valor de la base
     mul rbx                     ;Realiza la op base = base*base 
+
+	xor rdx, rdx
+	mov rbx, [modulo]
+	div rbx 
+	mov [base], rdx
+	mov rax, rdx
     pop rcx                     ;Saca el resultado actual de la pila
     pop rbx                     ;Saca el exponente de la pila
+	
     
     push rax                    ;Guarda la nueva base en la pila
     push rcx                    ;Guarda el resultado actual en la pila
-    mov rax, rbx                ;Prepara rax con el valor del exponente
-    mov rbx, 2                  
-    div rbx                     ;Divide el exponente entre 2 dando asi exponente = exponente//2
-
+	mov rax, [exponente]
+	shr rax, 1 
+	
+	mov [exponente], rax
     mov rcx, rax                ;Actualiza los valores de base, resultado y exponente
     pop rbx
     pop rax
 
-    jmp _ExpBinariaLoop         ;Continúa el loop
+    jmp _ExpModLoop         	;Continúa el loop
