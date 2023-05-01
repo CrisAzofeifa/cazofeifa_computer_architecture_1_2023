@@ -26,22 +26,14 @@ def rippling():
                     B[xnew + 1][ynew + 1] = A[x][y]
 
 def taylor(x):
-    res = 0.0
-    for i in range(0, 100):
-        numerator = ((-1) **i) * (x ** ((2 * i) + 1))
-        denominator = factorial((2 * i) + 1)
+    término_actual = x
+    resultado = x
+    signo = -1
+    for i in range(3, 100, 2):
+        término_actual = término_actual * x *  x / (i * (i - 1))
+        resultado = resultado + signo * término_actual 
+        signo = -signo
+    return resultado
 
-        tmp = numerator / denominator
-        res += tmp
-    return  res
-
-def factorial(x):
-    result = 1
-
-    for i in range(1, int(x) + 1):
-        result = result * i
-
-    return result
-
-res = taylor(15)
+res = taylor(2)
 print(res)

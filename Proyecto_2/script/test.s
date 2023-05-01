@@ -35,8 +35,13 @@ taylorNumerator3:
 taylorDenominator1:
 			b 		factorial
 
-division:
-			udiv 	R12, R10, R7
+division:				
+    		cmp 	R10, R7    
+    		blt 	EndDivision    
+    		sub 	R10, R10, R7 
+    		add 	R12, R12, #1 
+    		b 		division         
+EndDivision:
 			add 	R2, R2, R12
 			b 		taylorLoop
 
@@ -92,6 +97,7 @@ factLoop:
 			mul 	R7, R7, R3
 			b 		factLoop
 endFactorial:
+			mov R12, #0
 			b 		division
 
 endTaylor:
