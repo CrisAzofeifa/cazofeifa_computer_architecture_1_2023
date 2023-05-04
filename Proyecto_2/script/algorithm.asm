@@ -5,9 +5,15 @@ global _start
     section .bss
     lup resw 1
 
+    Lx resw 1
+    Ly resw 1
+
     section .text
 
 _start:
+    mov WORD [Lx], 75
+    mov WORD [Ly], 75
+
     mov WORD [lup], 841
 
     mov WORD [lup+4], 909
@@ -60,25 +66,47 @@ _start:
 
     mov WORD [lup+98], 763
 
-    ; x = eax
-    ; y = ecx
-    mov eax, 1
-    mov ecx, 1
+    mov esi, 1   ; x = esi
+    mov edi, 1   ; y = edi
+    mov r8d, 75  ; Lx = Ly
 
 x_loop:
-    mov ecx, 1 ; y = 1 
-    cmp eax, 301 ; fin for anidado
+    mov edi, 1 ; y = 1 
+    cmp esi, 2 ; fin for anidado
     je  end
 
 y_loop:
+    mov  eax, 6
+    imul eax, edi ; 6*y = 2*pi*y
+    ; eax = 2*pi*y  dividendo
+    mov ecx, r8d  ; divisor
+    div ecx
+    ; resultado eax = 2*pi*y / Lx
+    ;TODO: invocar seno con LUT de eax
+    ;TODO: xaux
+
+    mov eax, 0
+    mov edx, 0
+
+    mov  eax, 6
+    imul eax, esi ; 6*x = 2*pi*x
+    ; eax = 2*pi*x  dividendo
+    div ecx
+    ; resultado eax = 2*pi*x / Ly
+    ;TODO: invocar seno con LUT de eax
+    ;TODO: yaux
+
+    ;TODO: pendiente linea 22
+
+division:
     ; codigo
-    add ecx, 1 ; y++
-    cmp ecx, 301
+    add edi, 1 ; y++
+    cmp edi, 2
     je  x_sum
     jmp y_loop
 
 x_sum:
-    add eax, 1 ; x++
+    add esi, 1 ; x++
     jmp x_loop
 
 end:
