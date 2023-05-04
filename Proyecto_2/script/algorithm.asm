@@ -61,63 +61,62 @@ _start:
 
     mov WORD [lup+96], -906
 
-    mov esi, 1   ; x = esi
-    mov edi, 1   ; y = edi
-    mov r8d, 75  ; Lx = Ly
-    mov r9d, 0   ; k = r9d
+    mov esi, 1              ; x = esi
+    mov edi, 1              ; y = edi
+    mov r8d, 75             ; Lx = Ly = r8d
+    mov r9d, 5              ; k = r9d
 
 rippling_loop:
-    mov esi, 1   ; x = esi
-    mov edi, 1   ; y = edi
-    cmp r9d, 201 ; fin for anidado k, x y y
+    mov esi, 1              ; x = esi
+    mov edi, 1              ; y = edi
+    cmp r9d, 15            ; fin for anidado k, x y y
     je end
 
 x_loop:
-    mov edi, 1 ; y = 1 
-    add r9d, 5 ; k += 5
-    cmp esi, 300 ; fin for anidado x y y
-    je  rippling_loop
+    mov edi, 1              ; y = 1 
+    cmp esi, 2            ; fin for anidado x y y
+    je  k_sum
 
 y_loop:
     mov  eax, 6
-    imul eax, edi ; 6*y = 2*pi*y
+    imul eax, edi           ; 6*y = 2*pi*y
     ; eax = 2*pi*y  dividendo
-    mov ecx, r8d  ; divisor
-    div ecx
-    ; resultado eax = 2*pi*y / Lx
-    ;TODO: invocar seno con LUT de eax
-    imul eax, 4
-    mov eax, [lup + eax]    ;sin(2*pi*y/Lx) * 1000
+    mov ecx, r8d            ; divisor
+    div ecx                 ; resultado eax = 2*pi*y / Lx
+    imul eax, 4             ; indice para saber que valor escoger de la LUT
+    mov eax, [lup + eax]    ; sin(2*pi*y/Lx) * 1000
 
     ;TODO: xaux
-
 
     mov eax, 0
     mov edx, 0
 
     mov  eax, 6
-    imul eax, esi ; 6*x = 2*pi*x
+    imul eax, esi           ; 6*x = 2*pi*x
     ; eax = 2*pi*x  dividendo
-    div ecx
-    ; resultado eax = 2*pi*x / Ly
-    ;TODO: invocar seno con LUT de eax
-    imul eax, 4
+    div ecx                 ; resultado eax = 2*pi*x / Ly
+    imul eax, 4             ;indice para saber que valor escoger de la LUT
     mov eax, [lup + eax]    ;sin(2*pi*x/Ly) * 1000
+
     ;TODO: yaux
 
     ;TODO: pendiente linea 22
 
 division:
     ; codigo
-    add edi, 1 ; y++
-    cmp edi, 300 ;fin for y
+    add edi, 1              ; y++
+    cmp edi, 2            ;fin for y
     je  x_sum
     jmp y_loop
 
 x_sum:
-    add esi, 1 ; x++
+    add esi, 1              ; x++
     jmp x_loop
 
+k_sum:
+    add r9d, 5              ; k += 5
+    jmp rippling_loop
+    
 end:
     mov rax, 60 ; system call 60: sys_exit
     mov rdi, 0
