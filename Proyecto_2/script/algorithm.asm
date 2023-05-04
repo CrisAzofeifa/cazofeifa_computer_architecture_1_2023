@@ -86,6 +86,7 @@ y_loop:
     div ecx
     ; resultado eax = 2*pi*y / Lx
     ;TODO: invocar seno con LUT de eax
+    imul eax, 4
     mov eax, [lup + eax]    ;sin(2*pi*y/Lx) * 1000
 
     ;TODO: xaux
@@ -100,6 +101,7 @@ y_loop:
     div ecx
     ; resultado eax = 2*pi*x / Ly
     ;TODO: invocar seno con LUT de eax
+    imul eax, 4
     mov eax, [lup + eax]    ;sin(2*pi*x/Ly) * 1000
     ;TODO: yaux
 
