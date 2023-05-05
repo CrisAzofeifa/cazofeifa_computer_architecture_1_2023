@@ -11,17 +11,24 @@ global _start
     section .text
 
 _start:
-   mov WORD [lup], 478
+
+    mov WORD [lup], 478
 
     mov WORD [lup+4], 958
 
     mov WORD [lup+8], 587
 
-    mov WORD [lup+12], -319
+    mov eax, 319
+    neg eax
+    mov [lup+12], eax
+    
+    mov eax, 930
+    neg eax
+    mov [lup+16], eax
 
-    mov WORD [lup+16], -930
-
-    mov WORD [lup+20], -692
+    mov eax, 692
+    neg eax
+    mov [lup+20], eax
 
     mov WORD [lup+24], 187
 
@@ -29,25 +36,41 @@ _start:
 
     mov WORD [lup+32], 775
 
-    mov WORD [lup+36], -53
+    mov eax, 53
+    neg eax
+    mov [lup+36], eax
 
-    mov WORD [lup+40], -832
+    mov eax, 832
+    neg eax
+    mov [lup+40], eax
 
-    mov WORD [lup+44], -852
+    mov eax, 852
+    neg eax
+    mov [lup+44], eax
 
-    mov WORD [lup+48], -82
+    mov eax, 82
+    neg eax
+    mov [lup+48], eax
 
     mov WORD [lup+52], 762
 
     mov WORD [lup+56], 900
 
-    mov WORD [lup+60], -217
+    mov eax, 217
+    neg eax
+    mov [lup+60], eax
 
-    mov WORD [lup+64], -667
+    mov eax, 667
+    neg eax
+    mov [lup+64], eax
 
-    mov WORD [lup+68], -943
+    mov eax, 943
+    neg eax
+    mov [lup+68], eax
 
-    mov WORD [lup+72], -345
+    mov eax, 345
+    neg eax
+    mov [lup+72], eax
 
     mov WORD [lup+76], 567
 
@@ -55,11 +78,17 @@ _start:
 
     mov WORD [lup+84], 471
 
-    mov WORD [lup+88], -449
+    mov eax, 449
+    neg eax
+    mov [lup+88], eax
 
-    mov WORD [lup+92], -959
+    mov eax, 959
+    neg eax
+    mov [lup+92], eax
 
-    mov WORD [lup+96], -906
+    mov eax, 986
+    neg eax
+    mov [lup+96], eax
 
     mov esi, 1              ; x = esi
     mov edi, 1              ; y = edi
@@ -74,11 +103,12 @@ rippling_loop:
 
 x_loop:
     mov edi, 1              ; y = 1 
-    cmp esi, 2            ; fin for anidado x y y
+    cmp esi, 3            ; fin for anidado x y y
     je  k_sum
 
 y_loop:
     mov  eax, 6
+    mov  edx, 0
     imul eax, edi           ; 6*y = 2*pi*y
     ; eax = 2*pi*y  dividendo
     mov ecx, r8d            ; divisor
@@ -87,6 +117,18 @@ y_loop:
     mov eax, [lup + eax]    ; sin(2*pi*y/Lx) * 1000
 
     ;TODO: xaux
+    mov edx, 0
+    mov ecx, 1000
+    imul eax, r9d
+    div ecx                 ; se elimina el factor x1000
+    add eax, esi            ;x + Ax + xsin
+    
+    mov ecx, 300            ;ecx = 300 = m = n
+    mov edx, 0
+    div ecx
+
+    mov r10d, edx           ;xnew = xaux % m
+    
 
     mov eax, 0
     mov edx, 0
@@ -94,18 +136,31 @@ y_loop:
     mov  eax, 6
     imul eax, esi           ; 6*x = 2*pi*x
     ; eax = 2*pi*x  dividendo
+    mov ecx, r8d            ; divisor
     div ecx                 ; resultado eax = 2*pi*x / Ly
-    imul eax, 4             ;indice para saber que valor escoger de la LUT
-    mov eax, [lup + eax]    ;sin(2*pi*x/Ly) * 1000
+    imul eax, 4             ; indice para saber que valor escoger de la LUT
+    mov eax, [lup + eax]    ; sin(2*pi*x/Ly) * 1000
 
     ;TODO: yaux
+    mov edx, 0
+    mov ecx, 1000
+    imul eax, r9d
+    div ecx                 ; se elimina el factor x1000
+    add eax, edi            ; y + Ay + ysin
+
+    mov ecx, 300            ; ecx = 300 = m = n
+    mov edx, 0
+    div ecx
+
+    mov r11d, edx           ; ynew = yaux % m
+
 
     ;TODO: pendiente linea 22
 
 division:
     ; codigo
     add edi, 1              ; y++
-    cmp edi, 2            ;fin for y
+    cmp edi, 3            ;fin for y
     je  x_sum
     jmp y_loop
 
