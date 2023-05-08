@@ -1,0 +1,20 @@
+module ALU(input logic [31:0] a, input logic [31:0] b, input logic [2:0] op, output logic [31:0] result);
+    logic [31:0] sumRes, resRes, multRes, divRes, modRes;
+    
+    suma sum(.a(a), .b(b), .result(sumRes));
+    resta res(.a(a), .b(b), .result(resRes));
+    multiplicacion mult(.a(a), .b(b), .result(multRes));
+    division div(.a(a), .b(b), .result(divRes));
+    modulo mod(.a(a), .b(b), .result(modRes));
+    
+    always @(*) begin
+        case(op)
+            3'b000: result = sumRes;       // Suma
+            3'b001: result = resRes;       // Resta
+            3'b010: result = multRes;    	 // Multiplicación
+            3'b011: result = divRes;   	 // División
+            3'b100: result = modRes;  		 // Módulo
+            default: result = 0;           // Operación no válida
+        endcase
+    end
+endmodule
