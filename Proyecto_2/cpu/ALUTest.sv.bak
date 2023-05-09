@@ -1,51 +1,69 @@
 module ALUTest;
-    logic [31:0] a, b, result;
-    logic [2:0] op;
+    reg [31:0] a, b;
+    reg [3:0] op;
+    wire [31:0] result;
+    wire zero, overflow, sign;
     
-    ALU alu(.a(a), .b(b), .op(op), .result(result));
+    ALU alu(.a(a), .b(b), .op(op), .result(result), .zero(zero), .overflow(overflow), .sign(sign));
     
     initial begin
-        // Inicializar los valores de entrada
+        // Prueba 1: Suma con resultado positivo y sin desbordamiento
         a = 10;
+        b = 20;
+        op = 3'b000;
+        #10;
+		  $display("SUMA");
+        $display("Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", result, zero, overflow, sign);
+        
+        // Prueba 2: Resta con resultado negativo y desbordamiento
+        a = 10;
+        b = 30;
+        op = 3'b001;
+        #10;
+		  $display("RESTA");
+        $display("Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", result, zero, overflow, sign);
+        
+        // Prueba 3: Multiplicación con resultado cero
+        a = 5;
+        b = 0;
+        op = 3'b010;
+        #10;
+		  $display("MULTIPLICACION");
+        $display("Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", result, zero, overflow, sign);
+        
+        // Prueba 4: División con resultado negativo
+        a = -25;
         b = 5;
-        
-        // Prueba de suma
-        op = 3'b000;  // Suma
+        op = 3'b011;
         #10;
-        $display("Operación: Suma");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
+		  $display("DIVISION");
+        $display("Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", result, zero, overflow, sign);
         
-        // Prueba de resta
-        op = 3'b001;  // Resta
+        // Prueba 5: Módulo con resultado positivo
+        a = 30;
+        b = 7;
+        op = 3'b100;
         #10;
-        $display("Operación: Resta");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
+		  $display("MODULO");
+        $display("Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", result, zero, overflow, sign);
         
-        // Prueba de módulo
-        op = 3'b010;  // Módulo
+        // Prueba 6: Suma con resultado negativo y sin desbordamiento
+        a = -15;
+        b = -20;
+        op = 3'b000;
         #10;
-        $display("Operación: Módulo");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
+		  $display("SUMA");
+        $display("Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", result, zero, overflow, sign);
         
-        // Prueba de multiplicación
-        op = 3'b011;  // Multiplicación
+        // Prueba 7: Resta con resultado positivo y sin desbordamiento
+        a = 50;
+        b = 25;
+        op = 3'b001;
         #10;
-        $display("Operación: Multiplicación");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
+		  $display("RESTA");
+        $display("Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", result, zero, overflow, sign);
         
-        // Prueba de división
-        op = 3'b100;  // División
-        #10;
-        $display("Operación: División");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
-        
-        // Finalizar la simulación
-        #10;
         $finish;
     end
 endmodule
+

@@ -1,45 +1,67 @@
 module ALUTest;
-    logic [31:0] a, b, result;
-    logic [2:0] op;
+    reg [31:0] a, b;
+    reg [3:0] op;
+    wire [31:0] result;
+    wire zero, overflow, sign;
     
-    ALU alu(.a(a), .b(b), .op(op), .result(result));
+    ALU alu(.a(a), .b(b), .op(op), .result(result), .zero(zero), .overflow(overflow), .sign(sign));
     
     initial begin
-        a = 20;
-        b = 3;
+
+        a = 10;
+        b = 20;
+        op = 3'b000;
+        #10;
+		  $display("SUMA");
+        $display("a: %d, b: %d, Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", a, b, result, zero, overflow, sign);
         
-        op = 3'b000;  // Suma
+
+        a = 10;
+        b = 30;
+        op = 3'b001;
         #10;
-        $display("SUMA");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
+		  $display("RESTA");
+        $display("a: %d, b: %d, Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", a, b, result, zero, overflow, sign);
         
-        op = 3'b001;  // Resta
+
+        a = 5;
+        b = 0;
+        op = 3'b010;
         #10;
-        $display("RESTA");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
+		  $display("MULTIPLICACION");
+        $display("a: %d, b: %d, Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", a, b, result, zero, overflow, sign);
+
+        a = 25;
+        b = 5;
+        op = 3'b011;
+        #10;
+		  $display("DIVISION");
+        $display("a: %d, b: %d, Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", a, b, result, zero, overflow, sign);
         
-        op = 3'b010;  // Multiplicación
+
+        a = 30;
+        b = 7;
+        op = 3'b100;
         #10;
-        $display("MULTIPLICACION");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
+		  $display("MODULO");
+        $display("a: %d, b: %d, Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", a, b, result, zero, overflow, sign);
         
-        op = 3'b011;  // División
+  
+        a = -15;
+        b = -20;
+        op = 3'b000;
         #10;
-        $display("DIVISION");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
-		  
-        op = 3'b100;  // Módulo
-        #10;
-        $display("MODULO");
-        $display("a = %d, b = %d", a, b);
-        $display("Resultado: %d", result);
+		  $display("SUMA");
+        $display("a: %d, b: %d, Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", a, b, result, zero, overflow, sign);
         
-        // Finalizar la simulación
+        a = 50;
+        b = 25;
+        op = 3'b001;
         #10;
-        $finish;
+		  $display("RESTA");
+        $display("a: %d, b: %d, Resultado: %d, Zero: %b, Overflow: %b, Sign: %b", a, b, result, zero, overflow, sign);
+        
+        
     end
 endmodule
+
