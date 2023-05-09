@@ -45,17 +45,11 @@ if {[file exists rtl_work]} {
 vlib rtl_work
 vmap work rtl_work
 
-vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/suma.sv}
-vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/resta.sv}
-vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/multiplicacion.sv}
-vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/division.sv}
-vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/modulo.sv}
-vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/ALU.sv}
-vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/multiplexor.sv}
+vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/RegisterFile.sv}
 
-vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/ALUTest.sv}
+vlog -sv -work work +incdir+D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu {D:/GitHub/cazofeifa_computer_architecture_1_2023/Proyecto_2/cpu/RegisterFileTest.sv}
 
-vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cyclonev_ver -L cyclonev_hssi_ver -L cyclonev_pcie_hip_ver -L rtl_work -L work -voptargs="+acc"  ALUTest
+vsim -t 1ps -L altera_ver -L lpm_ver -L sgate_ver -L altera_mf_ver -L altera_lnsim_ver -L cyclonev_ver -L cyclonev_hssi_ver -L cyclonev_pcie_hip_ver -L rtl_work -L work -voptargs="+acc"  RegisterFileTest
 
 add wave *
 view structure
