@@ -2,10 +2,8 @@ module decoder (
     input logic  [1:0]  Op, 
     input logic  [4:0]  Funct,
     input logic  [3:0]  Rd,
-    output logic [1:0]  FlagW,
-    output logic        PCS, RegW, MemW, MemtoReg, ALUSrc,
-    output logic [1:0]  ImmSrc, RegSrc, ALUControl,
-    output logic        NoWrite
+    output logic        PCS, RegW, MemW, MemtoReg, ALUSrc, NoWrite
+    output logic [1:0]  ImmSrc, RegSrc, ALUControl, FlagW
 );
 
     logic [9:0] controls;
@@ -48,14 +46,11 @@ module decoder (
         FlagW[0] = Funct[0] & 
             (ALUControl == 3'b000 | ALUControl == 3'b010 | ALUControl == 3'b011 |
              ALUControl == 3'b100 | ALUControl == 3'b001);
-        
-        NoWrite = (ALUControl == 3'b0001);
 
     end 
     else begin
         ALUControl = 3'b000; // add for non-DP instructions
         FlagW = 3'b000;       // don't update Flags
-        NoWrite = 1'b0;       // don't update NoWrite
     end
 
     // PC Logic

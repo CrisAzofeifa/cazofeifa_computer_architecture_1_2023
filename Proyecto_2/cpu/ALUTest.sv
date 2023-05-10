@@ -1,8 +1,8 @@
 module ALUTest;
     reg [31:0] a, b;
-    reg [3:0] op;
+    reg [2:0] op;
     wire [31:0] result;
-	 reg [3:0] flags;
+	reg [3:0] flags;
     
     ALUTopLevel #(32) alu(.a(a), .b(b), .operacion(op), .resultado(result), .flagsResult(flags));
     

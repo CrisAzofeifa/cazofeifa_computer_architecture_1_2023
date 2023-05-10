@@ -1,6 +1,6 @@
 module multiplexor #(parameter n = 4) (
 	input [n-1:0] a, b, c, d, e, f, 
-	input [3:0] ss, 
+	input [2:0] ss, 
 	output [n-1:0] salida
 );
 	logic [n-1:0] aux;
