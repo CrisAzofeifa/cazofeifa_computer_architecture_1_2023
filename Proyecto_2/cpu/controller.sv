@@ -13,4 +13,8 @@ module controller (
                 FlagW, PCS, RegW, MemW,
                 MemtoReg, ALUSrc, ImmSrc, RegSrc, ALUControl, NoWrite);
 
+    condlogic cl(clk, reset, Instr[25], NoWrite,
+                ALUFlags, FlagW, PCS, RegW, MemW,
+                PCSrc, RegWrite, MemWrite);
+
 endmodule
