@@ -1,6 +1,6 @@
 module RegisterFile (
-    input logic         clk, writeEnable
-    input logic [2:0]   readAddr1, readAddr2, writeAddr,
+    input logic         clk, writeEnable,
+    input logic [3:0]   readAddr1, readAddr2, writeAddr,
     input logic [31:0]  writeData, r9,
     output logic [31:0] readData1, readData2
 );

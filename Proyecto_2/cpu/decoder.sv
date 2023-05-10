@@ -4,7 +4,8 @@ module decoder (
     input logic  [3:0]  Rd,
     output logic [1:0]  FlagW,
     output logic        PCS, RegW, MemW, MemtoReg, ALUSrc,
-    output logic [1:0]  ImmSrc, RegSrc, ALUControl,
+    output logic [1:0]  ImmSrc, RegSrc, 
+    output logic [2:0]  ALUControl,
     output logic        NoWrite
 );
 
