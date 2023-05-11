@@ -1,6 +1,5 @@
 instrucciones = {
     'SUM': '000000',
-    'SUM': '001000',
     'MUL': '000001',
     'DIV': '000010',
     'MOV': '000011',
@@ -21,3 +20,13 @@ instrucciones = {
     'R8': '1000',
     'R9': '1001'
 }
+
+def compiler():
+    file = open("./code.txt", 'r')
+    instrList = file.readlines()
+    
+    for instr in instrList:
+        print(instr)
+
+
+compiler()
