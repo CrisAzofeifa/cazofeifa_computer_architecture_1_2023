@@ -1,3 +1,27 @@
-module multiplexor(input logic [31:0] a, b, c, d, e,  input logic [1:0] sel, output logic [31:0] result);
-    assign result = (sel == 3'b000) ? a : (sel == 3'b001) ? b : (sel == 3'b010) ? c : (sel == 3'b011) ? d : (sel == 3'b100) ? e : 0;
+module multiplexor #(parameter n = 4) (
+	input [n-1:0] a, b, c, d, e, f, 
+	input [2:0] ss, 
+	output [n-1:0] salida
+);
+	logic [n-1:0] aux;
+	
+	always_comb begin
+		case (ss)
+			0:
+				aux = a;
+			1:
+				aux = b;
+			2:
+				aux = c;
+			3:
+				aux = d;
+			4:
+				aux = e;
+			5:
+				aux = f;
+			default:
+				aux = 0;
+		endcase
+	end
+	assign salida = aux;
 endmodule
