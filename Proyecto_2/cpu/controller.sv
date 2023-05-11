@@ -2,7 +2,8 @@ module controller (
     input logic             clk, reset,
     input logic  [25:10]    Instr,
     input logic  [3:0]      ALUFlags,
-    output logic [1:0]      RegSrc, ImmSrc, ALUControl,
+    output logic [1:0]      RegSrc, ImmSrc,
+    output logic [2:0]      ALUControl,
     output logic            RegWrite, ALUSrc, MemWrite, MemtoReg, PCSrc
 );
 
