@@ -1,14 +1,9 @@
-instrucciones = {
-    'SUM': '000000',
-    'MUL': '000001',
-    'DIV': '000010',
-    'MOV': '000011',
-    'MOV': '001011',
-    'EQV': '001100',
-    'SAL': '010000',
-    'SEQ': '011001',
-    'STR': '100000',
-    'GET': '100001',
+#TODO HACER LA LOGICA PARA UNIR LOS ELEMENTOS DE LA INSTRUCCION
+#TODO CONFIGURAR LAS OPERACIONES
+#TODO VER COMO SE HACE CON LOS LABELS
+
+registers = {
+
     'R0': '0000',
     'R1': '0001',
     'R2': '0010',
@@ -20,13 +15,54 @@ instrucciones = {
     'R8': '1000',
     'R9': '1001'
 }
+instruccion = ''
 
 def compiler():
     file = open("./code.txt", 'r')
-    instrList = file.readlines()
+    data = file.read()
+    file.close()
     
-    for instr in instrList:
-        print(instr)
+    instrList = data.split('\n')
 
+    for instr in instrList:
+        lista = instr.split(' ')
+        if lista[0] == 'SUM': #Suma
+            parse(lista)
+        elif lista[0] == 'MUL': #Multiplicacion
+            parse(lista)
+        elif lista[0] == 'DIV': #Division
+            parse(lista)
+        elif lista[0] == 'MOD':  #Modulo
+            parse(lista)
+        elif lista[0] == 'MOV':  #Mov asignacion
+            parse(lista)
+        elif lista[0] == 'EQV':  #Compare
+            print('equal')
+        elif lista[0] == 'GET':  #Load
+            print('guardar')  
+        elif lista[0] == 'STR':  #Store
+            print('pedir') 
+        elif lista[0] == 'SEQ':  #Branch equal
+            print('b equal') 
+        elif lista[0] == 'S': #Branch
+            print('b') 
+        else:               #Label
+            print('label')
+
+def parse(lista):
+    if lista[1] in registers: #Verifica que el registro Rd este en el diccionario
+        registro = registers[lista[1]]
+        print(registro)
+
+    if lista[2] in registers: #Verifica que el registro Rn este en el diccionario
+        registro = registers[lista[2]]
+        print(registro)
+
+    if lista[3] in registers: #Verifica que el registro Rm este en el diccionario
+        registro = registers[lista[3]]
+        print(registro)
+    else: #Si no es un registro, es un immediate
+        numero = str(bin(int(lista[3]))[2:].zfill(10)) #se convierte el numero a binario de 10 bits
+        print(numero)
 
 compiler()
