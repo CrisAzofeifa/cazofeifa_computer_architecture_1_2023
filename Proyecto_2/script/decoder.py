@@ -97,7 +97,7 @@ def compiler():
         
         list_binary.append(hexa[2:])
     
-    f = open ('machine_code.txt','w')
+    f = open ('machine_code.dat','w')
     for instr in list_binary:
         f.write(instr + '\n')
     f.close()
