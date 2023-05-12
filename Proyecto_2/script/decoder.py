@@ -74,8 +74,8 @@ def compiler():
                 if lista[2] in registers:
                     # register-register 
                     binary_instr += dp['register']
-                    Rn = registers[lista[2]]
-                    Src2 = '0000000000'
+                    Rn = '0000'
+                    Src2 = '000000' + registers[lista[2]]
                     
                 else:
                     # register-immediate

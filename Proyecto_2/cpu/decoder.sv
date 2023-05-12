@@ -55,7 +55,7 @@ module decoder (
     end 
     else begin
         ALUControl = 3'b000; // add for non-DP instructions
-        FlagW = 3'b000;       // don't update Flags
+        FlagW = 2'b00;       // don't update Flags
         NoWrite = 1'b0;       // don't update NoWrite
     end
 

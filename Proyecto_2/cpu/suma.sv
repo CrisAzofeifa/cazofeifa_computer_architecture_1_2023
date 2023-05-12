@@ -9,6 +9,6 @@ module suma #(parameter n = 4) (input [n-1:0] a, b, output [n-1:0] c, output [3:
 	assign banderas[1] = result[n]; 			// Acarreo (C) (Unsigned)
 	assign banderas[0] = 0;						// Desbordamiento (V) (Signed)
 	
-	assign c = result;
+	assign c = result[n-1:0];
 
 endmodule
