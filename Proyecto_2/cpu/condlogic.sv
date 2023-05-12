@@ -1,5 +1,6 @@
 module condlogic (
-    input logic clk, reset, Cond, NoWrite,
+    input logic clk, reset
+	 input logic [3:0] Cond,
     input logic [3:0] ALUFlags,
     input logic [1:0] FlagW,
     input logic PCS, RegW, MemW,

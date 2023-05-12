@@ -7,7 +7,7 @@ module top (
 
     // instantiate processor and memories
     ripp processor(clk, reset, PC, Instr, MemWrite, DataAdr,
-    WriteData, ReadData);
+							WriteData, ReadData);
 
     imem instmem(PC, Instr);
     dmem datmem(clk, MemWrite, DataAdr, WriteData, ReadData);

@@ -5,7 +5,7 @@ module RegisterFile (
     output logic [31:0] readData1, readData2
 );
 
-  logic [31:0] registers [8:0];
+  logic [31:0] registers [14:0];
 
   // three ported register file
   // read two ports combinationally
@@ -18,7 +18,7 @@ module RegisterFile (
     end
   end
 
-  assign readData1 = (readAddr1 == 4'b1001) ? r9 : registers[readAddr1];
-  assign readData2 = (readAddr2 == 4'b1001) ? r9 : registers[readAddr2];
+  assign readData1 = (readAddr1 == 4'b1111) ? r9 : registers[readAddr1];
+  assign readData2 = (readAddr2 == 4'b1111) ? r9 : registers[readAddr2];
 
 endmodule
