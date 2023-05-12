@@ -1,9 +1,9 @@
 module RegisterFileTest;
-  reg clk;
-  reg [2:0] readAddr1, readAddr2, writeAddr;
-  reg writeEnable;
-  reg [31:0] writeData;
-  wire [31:0] readData1, readData2;
+  logic clk;
+  logic [3:0] readAddr1, readAddr2, writeAddr;
+  logic writeEnable;
+  logic [31:0] writeData;
+  logic [31:0] readData1, readData2;
   
   RegisterFile dut (
     .clk(clk),
@@ -32,7 +32,7 @@ module RegisterFileTest;
     
     // Test de lectura
     #10;
-    readAddr1 = 3;
+    readAddr1 = 4'b0110;
     readAddr2 = 2;
     #10;
 	 $display("ReadData1 = %0d, ReadData2 = %0d", readData1, readData2);
