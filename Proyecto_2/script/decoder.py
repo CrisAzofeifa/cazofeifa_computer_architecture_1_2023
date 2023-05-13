@@ -20,6 +20,11 @@ mem = {
    'GET': '00011',
 }
 
+control = {
+    'S': '0010',
+    'SEQ': '1010'
+}
+
 registers = {
     'R0': '0000',
     'R1': '0001',
@@ -38,7 +43,7 @@ Rn = ''
 Src2 = ''
 binary_instr = ''
 list_binary = []
-
+etiquetas = []
 
 def compiler():
     file = open("./code.txt", 'r')
@@ -47,6 +52,24 @@ def compiler():
     
     instrList = data.split('\n')
 
+    # mapear etiquetas
+    contador = 0
+    eliminar = []
+    for instr in instrList:
+        lista = ''
+        lista = instr.split(' ')
+
+        if (lista[0] not in dp) and (lista[0] not in mem) and (lista[0] not in control):
+            # etiqueta
+            etiquetas.append((lista[0], contador))
+            eliminar.append(instr)
+        else:
+            contador += 4
+
+    for item in eliminar:
+        instrList.remove(item)
+
+    contador = 0
     for instr in instrList:
         binary_instr = ''
         lista = instr.split(' ')
@@ -118,12 +141,37 @@ def compiler():
             binary_instr += Rn
             binary_instr += Src2
 
+        else:
+            # control instruction
+            binary_instr += control[lista[0]]
+            origen = contador
+            destino = 0
+            direccion = 0
+
+            # encontrar direccion destino de salto
+            for item in etiquetas:
+                tuplalista = list(item)
+                if tuplalista[0] == lista[1]:
+                    destino = tuplalista[1] 
+                    break
+        
+            diferencia = destino - origen - 8 # pc + 8
+            diferencia = diferencia // 4
+            if diferencia >= 0:
+                direccion = str(bin(diferencia)[2:].zfill(22))
+            else:
+                complemento = bin(diferencia % (1<<22))
+                direccion = str(complemento[2:])
+
+            binary_instr += direccion
+
         # complete 32 bits
         binary_instr =  '000000' + binary_instr 
         decimal = int(binary_instr, 2)
         hexa = hex(decimal)
         
         list_binary.append(hexa[2:])
+        contador += 4
     
     f = open ('machine_code.dat','w')
     for instr in list_binary:
