@@ -71,20 +71,29 @@ def compiler():
 
             elif len(lista) == 3:
                 # MOV, EQV
-                if lista[2] in registers:
-                    # register-register 
-                    binary_instr += dp['register']
-                    Rn = '0000'
-                    Src2 = '000000' + registers[lista[2]]
-                    
+                if lista[0] == 'MOV':
+                    if lista[2] in registers:
+                        # register-register 
+                        binary_instr += dp['register']
+                        Rd = registers[lista[1]]
+                        Rn = '0000'
+                        Src2 = '000000' + registers[lista[2]]
+                        
+                    else:
+                        # register-immediate
+                        binary_instr += dp['immediate']
+                        Rd = registers[lista[1]]
+                        Rn = '0000'
+                        Src2 = str(bin(int(lista[2]))[2:].zfill(10))
+
                 else:
-                    # register-immediate
+                    # immediate
                     binary_instr += dp['immediate']
-                    Rn = '0000'
+                    Rd = '0000'
+                    Rn = registers[lista[1]]
                     Src2 = str(bin(int(lista[2]))[2:].zfill(10))
 
                 binary_instr += dp[lista[0]]
-                Rd = registers[lista[1]]
 
                 binary_instr += Rd
                 binary_instr += Rn
