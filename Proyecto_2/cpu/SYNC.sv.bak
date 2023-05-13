@@ -1,0 +1,372 @@
+module SYNC(
+	input logic VGA_CLK_IN,
+	input logic [15:0] paint,
+	output logic o_hsync,
+	output logic o_vsync,
+	output logic VGA_CLK_OUT,
+	output logic [7:0] o_red,
+	output logic [7:0] o_BLACK,
+	output logic [7:0] o_green,
+	input logic [3:0] casilla,
+	input logic jugador
+);
+ 
+	reg [9:0] counter_x = 0;
+	reg [9:0] counter_y = 0;
+	
+	reg [7:0] r_red = 0;
+	reg [7:0] r_BLACK = 0;
+	reg [7:0] r_green = 0;
+	
+	always @(posedge VGA_CLK_IN)
+		begin 
+			if (counter_x < 799)
+				counter_x <= counter_x + 1;
+			else
+				counter_x <= 0;
+		end
+		
+	always @(posedge VGA_CLK_IN)
+		begin 
+			if (counter_x == 799)
+				begin 
+					if (counter_y < 525)
+						counter_y <= counter_y + 1;
+					else
+						counter_y <= 0;
+				end
+		end
+		
+		always @ (posedge VGA_CLK_IN)
+		begin 
+			if ((counter_x <= 264 || 671 <= counter_x) || (counter_y < 75 || 480 < counter_y))
+				begin 
+					{r_red,r_green,r_BLACK} <= `WHITE;
+				end
+			else if ((264 < counter_x && counter_x < 671) && (75 <= counter_y && counter_y < 80))
+				begin 
+					{r_red,r_green,r_BLACK} <= `BLACK;
+				end
+			else if ((264 < counter_x && counter_x < 671) && (175 <= counter_y && counter_y < 180))
+				begin 
+					{r_red,r_green,r_BLACK} <= `BLACK;
+				end
+			else if ((264 < counter_x && counter_x < 671) && (275 <= counter_y && counter_y < 280))
+				begin 
+					{r_red,r_green,r_BLACK} <= `BLACK;
+				end
+			else if ((264 < counter_x && counter_x < 671) && (375 <= counter_y && counter_y < 380))
+				begin 
+					{r_red,r_green,r_BLACK} <= `BLACK;
+				end
+			else if ((264 < counter_x && counter_x < 671) && (475 <= counter_y && counter_y < 480))
+				begin 
+					{r_red,r_green,r_BLACK} <= `BLACK;
+				end
+			else 
+				begin
+					if (264 <= counter_x && counter_x < 269)
+						begin
+							{r_red,r_green,r_BLACK} <= `BLACK;
+						end
+					else if (364 <= counter_x && counter_x < 369) 
+						begin
+							{r_red,r_green,r_BLACK} <= `BLACK;
+						end
+					else if (464 <= counter_x && counter_x < 469) 
+						begin
+							{r_red,r_green,r_BLACK} <= `BLACK;
+						end
+					else if (564 <= counter_x && counter_x < 569) 
+						begin
+							{r_red,r_green,r_BLACK} <= `BLACK;
+						end
+					else if (664 <= counter_x && counter_x < 669) 
+						begin
+							{r_red,r_green,r_BLACK} <= `BLACK;
+						end
+					else
+						begin
+							{r_red,r_green,r_BLACK} <= `WHITE;
+						end
+				end
+
+			case (casilla)
+				4'd0:
+					if ((`ESQ_SUP_X0 <= counter_x && counter_x < `ESQ_SUP_X0+80) && (`ESQ_SUP_Y0 <= counter_y && counter_y < `ESQ_SUP_Y0+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+				4'd1:
+					if ((`ESQ_SUP_X1 <= counter_x && counter_x < `ESQ_SUP_X1+80) && (`ESQ_SUP_Y1 <= counter_y && counter_y < `ESQ_SUP_Y1+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+
+				4'd2:
+					if ((`ESQ_SUP_X2 <= counter_x && counter_x < `ESQ_SUP_X2+80) && (`ESQ_SUP_Y2 <= counter_y && counter_y < `ESQ_SUP_Y2+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+
+				4'd3:
+					if ((`ESQ_SUP_X3 <= counter_x && counter_x < `ESQ_SUP_X3+80) && (`ESQ_SUP_Y3 <= counter_y && counter_y < `ESQ_SUP_Y3+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+
+				4'd4:
+					if ((`ESQ_SUP_X4 <= counter_x && counter_x < `ESQ_SUP_X4+80) && (`ESQ_SUP_Y4 <= counter_y && counter_y < `ESQ_SUP_Y4+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+
+				4'd5:
+					if ((`ESQ_SUP_X5 <= counter_x && counter_x < `ESQ_SUP_X5+80) && (`ESQ_SUP_Y5 <= counter_y && counter_y < `ESQ_SUP_Y5+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+
+				4'd6:
+					if ((`ESQ_SUP_X6 <= counter_x && counter_x < `ESQ_SUP_X6+80) && (`ESQ_SUP_Y6 <= counter_y && counter_y < `ESQ_SUP_Y6+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+
+				4'd7:
+					if ((`ESQ_SUP_X7 <= counter_x && counter_x < `ESQ_SUP_X7+80) && (`ESQ_SUP_Y7 <= counter_y && counter_y < `ESQ_SUP_Y7+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+
+				4'd8:
+					if ((`ESQ_SUP_X8 <= counter_x && counter_x < `ESQ_SUP_X8+80) && (`ESQ_SUP_Y8 <= counter_y && counter_y < `ESQ_SUP_Y8+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+				4'd9:
+					if ((`ESQ_SUP_X9 <= counter_x && counter_x < `ESQ_SUP_X9+80) && (`ESQ_SUP_Y9 <= counter_y && counter_y < `ESQ_SUP_Y9+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+				4'd10:
+					if ((`ESQ_SUP_X10 <= counter_x && counter_x < `ESQ_SUP_X10+80) && (`ESQ_SUP_Y10 <= counter_y && counter_y < `ESQ_SUP_Y10+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+				4'd11:
+					if ((`ESQ_SUP_X11 <= counter_x && counter_x < `ESQ_SUP_X11+80) && (`ESQ_SUP_Y11 <= counter_y && counter_y < `ESQ_SUP_Y11+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+				4'd12:
+					if ((`ESQ_SUP_X12 <= counter_x && counter_x < `ESQ_SUP_X12+80) && (`ESQ_SUP_Y12 <= counter_y && counter_y < `ESQ_SUP_Y12+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+				4'd13:
+					if ((`ESQ_SUP_X13 <= counter_x && counter_x < `ESQ_SUP_X13+80) && (`ESQ_SUP_Y13 <= counter_y && counter_y < `ESQ_SUP_Y13+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+				4'd14:
+					if ((`ESQ_SUP_X14 <= counter_x && counter_x < `ESQ_SUP_X14+80) && (`ESQ_SUP_Y14 <= counter_y && counter_y < `ESQ_SUP_Y14+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+				4'd15:
+					if ((`ESQ_SUP_X15 <= counter_x && counter_x < `ESQ_SUP_X15+80) && (`ESQ_SUP_Y15 <= counter_y && counter_y < `ESQ_SUP_Y15+80))
+						begin
+							{r_red,r_green,r_BLACK} <= jugador ? `ORANGE:`YELLOW;
+						end
+			endcase
+	
+			if(paint[0] == 1)
+				if ((`ESQ_SUP_X0 <= counter_x && counter_x < `ESQ_SUP_X0+59) && (`ESQ_SUP_Y0 <= counter_y && counter_y < `ESQ_SUP_Y0+59))
+					begin
+						pos_y_0 = (counter_y)-(`ESQ_SUP_Y0);
+						pos_x_0 = (counter_x)-(`ESQ_SUP_X0);
+						if (rom_data_circulo1[pos_x_0]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `GREEN;
+							end						
+					end
+			if(paint[1] == 1)
+				if ((`ESQ_SUP_X1 <= counter_x && counter_x < `ESQ_SUP_X1+59) && (`ESQ_SUP_Y1 <= counter_y && counter_y < `ESQ_SUP_Y1+59))
+					begin
+						pos_y_1 = (counter_y)-(`ESQ_SUP_Y1);
+						pos_x_1 = (counter_x)-(`ESQ_SUP_X1);
+						if (rom_data_triangulo1[pos_x_1]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `BROWN;
+							end						
+					end
+			
+			if(paint[2] == 1)
+				if ((`ESQ_SUP_X2 <= counter_x && counter_x < `ESQ_SUP_X2+59) && (`ESQ_SUP_Y2 <= counter_y && counter_y < `ESQ_SUP_Y2+59))
+					begin
+						pos_y_2 = (counter_y)-(`ESQ_SUP_Y2);
+						pos_x_2 = (counter_x)-(`ESQ_SUP_X2);
+						if (rom_data_cuadrado1[pos_x_2]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `YELLOW;
+							end						
+					end
+			if(paint[3] == 1)
+				if ((`ESQ_SUP_X3 <= counter_x && counter_x < `ESQ_SUP_X3+59) && (`ESQ_SUP_Y3 <= counter_y && counter_y < `ESQ_SUP_Y3+59))
+					begin
+						pos_y_3 = (counter_y)-(`ESQ_SUP_Y3);
+						pos_x_3 = (counter_x)-(`ESQ_SUP_X3);
+						if (rom_data_rombo1[pos_x_3]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `BLUE;
+							end						
+					end
+			if(paint[4] == 1)
+				if ((`ESQ_SUP_X4 <= counter_x && counter_x < `ESQ_SUP_X4+59) && (`ESQ_SUP_Y4 <= counter_y && counter_y < `ESQ_SUP_Y4+59))
+					begin
+						pos_y_4 = (counter_y)-(`ESQ_SUP_Y4);
+						pos_x_4 = (counter_x)-(`ESQ_SUP_X4);
+						if (rom_data_corazon1[pos_x_4]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `DARKRED;
+							end						
+					end
+			if(paint[5] == 1)
+					if ((`ESQ_SUP_X5 <= counter_x && counter_x < `ESQ_SUP_X5+59) && (`ESQ_SUP_Y5 <= counter_y && counter_y < `ESQ_SUP_Y5+59))
+						begin
+							pos_y_5 = (counter_y)-(`ESQ_SUP_Y5);
+							pos_x_5 = (counter_x)-(`ESQ_SUP_X5);
+							if (rom_data_circulo2[pos_x_5]==1)
+								begin 
+									{r_red,r_green,r_BLACK} <= `GREEN;
+								end						
+						end
+			if(paint[6] == 1)
+					if ((`ESQ_SUP_X6 <= counter_x && counter_x < `ESQ_SUP_X6+59) && (`ESQ_SUP_Y6 <= counter_y && counter_y < `ESQ_SUP_Y6+59))
+						begin
+							pos_y_6 = (counter_y)-(`ESQ_SUP_Y6);
+							pos_x_6 = (counter_x)-(`ESQ_SUP_X6);
+							if (rom_data_pentagono1[pos_x_6]==1)
+								begin 
+									{r_red,r_green,r_BLACK} <= `GREY;
+								end						
+						end
+			if(paint[7] == 1)
+				if ((`ESQ_SUP_X7 <= counter_x && counter_x < `ESQ_SUP_X7+59) && (`ESQ_SUP_Y7 <= counter_y && counter_y < `ESQ_SUP_Y7+59))
+					begin
+						pos_y_7 = (counter_y)-(`ESQ_SUP_Y7);
+						pos_x_7 = (counter_x)-(`ESQ_SUP_X7);
+						if (rom_data_estrella1[pos_x_7]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `PURPLE;
+							end						
+					end
+			
+			if(paint[8] == 1)
+				if ((`ESQ_SUP_X8 <= counter_x && counter_x < `ESQ_SUP_X8+59) && (`ESQ_SUP_Y8 <= counter_y && counter_y < `ESQ_SUP_Y8+59))
+					begin
+						pos_y_8 = (counter_y)-(`ESQ_SUP_Y8);
+						pos_x_8 = (counter_x)-(`ESQ_SUP_X8);
+						if (rom_data_cuadrado2[pos_x_8]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `YELLOW;
+							end						
+					end
+			if(paint[9] == 1)
+				if ((`ESQ_SUP_X9 <= counter_x && counter_x < `ESQ_SUP_X9+59) && (`ESQ_SUP_Y9 <= counter_y && counter_y < `ESQ_SUP_Y9+59))
+					begin
+						pos_y_9 = (counter_y)-(`ESQ_SUP_Y9);
+						pos_x_9 = (counter_x)-(`ESQ_SUP_X9);
+						if (rom_data_rayo1[pos_x_9]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `CYAN;
+							end						
+					end
+			if(paint[10] == 1)
+				if ((`ESQ_SUP_X10 <= counter_x && counter_x < `ESQ_SUP_X10+59) && (`ESQ_SUP_Y10 <= counter_y && counter_y < `ESQ_SUP_Y10+59))
+					begin
+						pos_y_10 = (counter_y)-(`ESQ_SUP_Y10);
+						pos_x_10 = (counter_x)-(`ESQ_SUP_X10);
+						if (rom_data_rayo2[pos_x_10]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `CYAN;
+							end						
+					end
+			if(paint[11] == 1)
+				if ((`ESQ_SUP_X11 <= counter_x && counter_x < `ESQ_SUP_X11+59) && (`ESQ_SUP_Y11 <= counter_y && counter_y < `ESQ_SUP_Y11+59))
+					begin
+						pos_y_11 = (counter_y)-(`ESQ_SUP_Y11);
+						pos_x_11 = (counter_x)-(`ESQ_SUP_X11);
+						if (rom_data_triangulo2[pos_x_11]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `BROWN;
+							end						
+					end
+			
+			if(paint[12] == 1)
+					if ((`ESQ_SUP_X12 <= counter_x && counter_x < `ESQ_SUP_X12+59) && (`ESQ_SUP_Y12 <= counter_y && counter_y < `ESQ_SUP_Y12+59))
+						begin
+							pos_y_12 = (counter_y)-(`ESQ_SUP_Y12);
+							pos_x_12 = (counter_x)-(`ESQ_SUP_X12);
+							if (rom_data_pentagono2[pos_x_12]==1)
+								begin 
+									{r_red,r_green,r_BLACK} <= `GREY;
+								end						
+						end
+			
+			if(paint[13] == 1)
+				if ((`ESQ_SUP_X13 <= counter_x && counter_x < `ESQ_SUP_X13+59) && (`ESQ_SUP_Y13 <= counter_y && counter_y < `ESQ_SUP_Y13+59))
+					begin
+						pos_y_13 = (counter_y)-(`ESQ_SUP_Y13);
+						pos_x_13 = (counter_x)-(`ESQ_SUP_X13);
+						if (rom_data_corazon2[pos_x_13]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `DARKRED;
+							end						
+					end
+			
+			if(paint[14] == 1)
+				if ((`ESQ_SUP_X14 <= counter_x && counter_x < `ESQ_SUP_X14+59) && (`ESQ_SUP_Y14 <= counter_y && counter_y < `ESQ_SUP_Y14+59))
+					begin
+						pos_y_14 = (counter_y)-(`ESQ_SUP_Y14);
+						pos_x_14 = (counter_x)-(`ESQ_SUP_X14);
+						if (rom_data_estrella2[pos_x_14]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `PURPLE;
+							end						
+					end
+			
+			if(paint[15] == 1)
+				if ((`ESQ_SUP_X15 <= counter_x && counter_x < `ESQ_SUP_X15+59) && (`ESQ_SUP_Y15 <= counter_y && counter_y < `ESQ_SUP_Y15+59))
+					begin
+						pos_y_15 = (counter_y)-(`ESQ_SUP_Y15);
+						pos_x_15 = (counter_x)-(`ESQ_SUP_X15);
+						if (rom_data_rombo2[pos_x_15]==1)
+							begin 
+								{r_red,r_green,r_BLACK} <= `BLUE;
+							end						
+					end
+			
+		end 
+	
+	assign o_hsync = (0 <= counter_x && counter_x < 96) ? 1:0;
+	assign o_vsync = (0 <= counter_y && counter_y < 2) ? 1:0;	
+
+	assign VGA_CLK_OUT = VGA_CLK_IN;
+
+	assign o_red = (counter_x > 144 && counter_x <= 783 && counter_y > 35 && counter_y <= 514) ? r_red : 8'h00;
+	assign o_BLACK = (counter_x > 144 && counter_x <= 783 && counter_y > 35 && counter_y <= 514) ? r_BLACK : 8'h00;
+	assign o_green = (counter_x > 144 && counter_x <= 783 && counter_y > 35 && counter_y <= 514) ? r_green : 8'h00;
+
+endmodule
+
+					
+
+		
+	
+	
+	
+	
+	
+	
