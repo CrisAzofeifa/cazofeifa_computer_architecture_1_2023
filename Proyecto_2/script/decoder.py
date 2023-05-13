@@ -14,6 +14,12 @@ dp = {
     'EQV': '1011'
 }
 
+mem = {
+   'cond+op': '010', 
+   'PUT': '00000',
+   'GET': '00011',
+}
+
 registers = {
     'R0': '0000',
     'R1': '0001',
@@ -42,6 +48,7 @@ def compiler():
     instrList = data.split('\n')
 
     for instr in instrList:
+        binary_instr = ''
         lista = instr.split(' ')
 
         if lista[0] in dp: 
@@ -98,6 +105,18 @@ def compiler():
                 binary_instr += Rd
                 binary_instr += Rn
                 binary_instr += Src2
+        
+        elif lista[0] in mem: 
+            # memory instruction
+            binary_instr += mem['cond+op']
+            binary_instr += mem[lista[0]]
+            Rd = registers[lista[1]]
+            Rn = registers[lista[2]]
+            Src2 = '0000000000'
+
+            binary_instr += Rd
+            binary_instr += Rn
+            binary_instr += Src2
 
         # complete 32 bits
         binary_instr =  '000000' + binary_instr 
