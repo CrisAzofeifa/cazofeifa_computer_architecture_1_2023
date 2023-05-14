@@ -1,15 +1,15 @@
 module top (
     input logic clk, reset,
-    output logic [31:0] WriteData, DataAdr,
-    output logic MemWrite);
+    output logic [31:0] WriteDataM, DataAdrM,
+    output logic MemWriteM);
 
-    logic [31:0] PC, Instr, ReadData;
+    logic [31:0] PCF, InstrF, ReadDataM;
 
     // instantiate processor and memories
-    ripp processor(clk, reset, PC, Instr, MemWrite, DataAdr,
-    WriteData, ReadData);
+    ripp processor(clk, reset, PCF, InstrF, MemWriteM, DataAdrM,
+    WriteDataM, ReadDataM);
 
-    imem instmem(PC, Instr);
-    dmem datmem(clk, MemWrite, DataAdr, WriteData, ReadData);
+    imem instmem(PCF, InstrF);
+    dmem datmem(clk, MemWriteM, DataAdrM, WriteDataM, ReadDataM);
 
 endmodule 
