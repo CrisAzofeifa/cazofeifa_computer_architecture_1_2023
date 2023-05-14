@@ -67,7 +67,7 @@ module controller (
                 ALUControlD == 3'b011 | ALUControlD == 3'b100 | ALUControlD == 3'b001);
 
             //TODO: NoWrite
-            NoWrite = (ALUControlD == 3'b0001);
+            NoWrite = (ALUControlE == 3'b001);
 
         end else begin 
             ALUControlD = 3'b00; // perform addition for non-dp instr 
@@ -85,7 +85,7 @@ module controller (
     flopr #(4) regsE(clk, reset, {ALUSrcD, ALUControlD}, {ALUSrcE, ALUControlE});
     flopr #(1) condregE(clk, reset, InstrD[25], CondE); 
     flopr #(4) flagsreg(clk, reset, FlagsNextE, FlagsE); 
-
+	 
     // Write and Branch controls are conditional 
     conditional Cond(CondE, FlagsE, ALUFlagsE, FlagWriteE, CondExE, FlagsNextE); 
     assign BranchTakenE = BranchE & CondExE; 
