@@ -12,7 +12,7 @@ module RegisterFile (
   // write third port on rising edge of clock
   // register 9 reads PC + 8 instead
 
-  always_ff @(posedge clk) begin
+  always_ff @(negedge clk) begin
     if (writeEnable) begin
       registers[writeAddr] <= writeData;
     end

@@ -21,7 +21,7 @@ module controller (
     logic BranchD, BranchE; 
     logic [1:0] FlagWriteD, FlagWriteE; 
     logic PCSrcD, PCSrcE, PCSrcM; 
-    logic [3:0] FlagsE, FlagsNextE, 
+    logic [3:0] FlagsE, FlagsNextE; 
     logic       CondE;
     logic       NoWrite;
 
@@ -51,23 +51,23 @@ module controller (
     always_comb 
         if (ALUOpD) begin // which Data-processing Instr? 
             case(InstrD[21:19]) 
-                3'b000:     ALUControl = 3'b000;    // ADD
-                3'b001:     ALUControl = 3'b010;    // MUL
-                3'b010:     ALUControl = 3'b011;    // DIV
-                3'b011:     ALUControl = 3'b100;    // MOD
-                3'b100:     ALUControl = 3'b101;    // MOV
-                3'b101:     ALUControl = 3'b001;    // EQV (SUB)
-                default:    ALUControl = 3'bx;      // Unimplemented
+                3'b000:     ALUControlD = 3'b000;    // ADD
+                3'b001:     ALUControlD = 3'b010;    // MUL
+                3'b010:     ALUControlD = 3'b011;    // DIV
+                3'b011:     ALUControlD = 3'b100;    // MOD
+                3'b100:     ALUControlD = 3'b101;    // MOV
+                3'b101:     ALUControlD = 3'b001;    // EQV (SUB)
+                default:    ALUControlD = 3'bx;      // Unimplemented
             endcase 
 
             // update flags if S bit is set (C & V only for arithmetic)
             FlagWriteD[1] = InstrD[18];  
             FlagWriteD[0] = InstrD[18] & 
-                (ALUControl == 3'b000 | ALUControl == 3'b010 |
-                ALUControl == 3'b011 | ALUControl == 3'b100 | ALUControl == 3'b001);
+                (ALUControlD == 3'b000 | ALUControlD == 3'b010 |
+                ALUControlD == 3'b011 | ALUControlD == 3'b100 | ALUControlD == 3'b001);
 
             //TODO: NoWrite
-            NoWrite = (ALUControl == 3'b0001);
+            NoWrite = (ALUControlD == 3'b0001);
 
         end else begin 
             ALUControlD = 3'b00; // perform addition for non-dp instr 

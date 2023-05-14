@@ -34,7 +34,7 @@ module datapath (
     mux2 #(4) ra1mux(InstrD[13:10], 4'b1001, RegSrcD[0], RA1D); 
     mux2 #(4) ra2mux(InstrD[3:0], InstrD[17:14], RegSrcD[1], RA2D); 
 
-    regfile rf(clk, RegWriteW, RA1D, RA2D, WA3W, ResultW, PCPlus8D, rd1D, rd2D); 
+    RegisterFile rf(clk, RegWriteW, RA1D, RA2D, WA3W, ResultW, PCPlus8D, rd1D, rd2D); 
     extend ext(InstrD[21:0], ImmSrcD, ExtImmD); 
 
     // Execute Stage 
