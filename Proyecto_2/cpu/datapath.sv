@@ -1,41 +1,71 @@
 module datapath (
     input logic         clk, reset,
-    input logic  [1:0]  RegSrc,
-    input logic         RegWrite,
-    input logic  [1:0]  ImmSrc,
-    input logic         ALUSrc,
-    input logic  [2:0]  ALUControl,
-    input logic         MemtoReg,
-    input logic         PCSrc,
-    output logic [3:0]  ALUFlags,
-    output logic [31:0] PC,
-    input logic  [31:0] Instr,
-    output logic [31:0] ALUResult, WriteData,
-    input logic  [31:0] ReadData);
+    input logic  [1:0]  RegSrcD, ImmSrcD,
+    input logic         ALUSrcE, BranchTakenE,
+    input logic  [2:0]  ALUControlE,
+    input logic         MemtoRegW, PCSrcW, RegWriteW,
+    output logic [31:0] PCF,
+    input logic  [31:0] InstrF,
+    output logic [31:0] InstrD,
+    output logic [31:0] ALUOutM, WriteDataM,
+    input logic  [31:0] ReadDataM,
+    output logic [3:0]  ALUFlagsE,
+    // hazard logic
+    output logic        Match_1E_M, Match_1E_W, Match_2E_M, Match_2E_W, Match_12D_E, 
+    input logic  [1:0]  ForwardAE, ForwardBE, 
+    input logic         StallF, StallD, FlushD);
 
-    logic [31:0] PCNext, PCPlus4, PCPlus8;
-    logic [31:0] ExtImm, SrcA, SrcB, Result;
-    logic [3:0]  RA1, RA2;
+    logic [31:0] PCPlus4F, PCnext1F, PCnextF; 
+    logic [31:0] ExtImmD, rd1D, rd2D, PCPlus8D; 
+    logic [31:0] rd1E, rd2E, ExtImmE, SrcAE, SrcBE, WriteDataE, ALUResultE; 
+    logic [31:0] ReadDataW, ALUOutW, ResultW; 
+    logic [3:0] RA1D, RA2D, RA1E, RA2E, WA3E, WA3M, WA3W; 
+    logic Match_1D_E, Match_2D_E; 
 
-    // next PC logic
-    mux2 #(32)  pcmux(PCPlus4, Result, PCSrc, PCNext);
-    flopr #(32) pcreg(clk, reset, PCNext, PC);
-    adder #(32) pcadd1(PC, 32'b100, PCPlus4);
-    adder #(32) pcadd2(PCPlus4, 32'b100, PCPlus8);
+    // Fetch stage 
+    mux2 #(32) pcnextmux(PCPlus4F, ResultW, PCSrcW, PCnext1F); 
+    mux2 #(32) branchmux(PCnext1F, ALUResultE, BranchTakenE, PCnextF); 
+    flopenr #(32) pcreg(clk, reset, ~StallF, PCnextF, PCF); 
+    adder #(32) pcadd(PCF, 32'h4, PCPlus4F);
 
-    // register file logic
-    mux2 #(4) ra1mux(Instr[13:10], 4'b1001, RegSrc[0], RA1);
-    mux2 #(4) ra2mux(Instr[3:0], Instr[17:14], RegSrc[1], RA2);
+     // Decode Stage 
+    assign PCPlus8D = PCPlus4F; // skip register 
+    flopenrc #(32) instrreg(clk, reset, ~StallD, FlushD, InstrF, InstrD); 
+    mux2 #(4) ra1mux(InstrD[13:10], 4'b1001, RegSrcD[0], RA1D); 
+    mux2 #(4) ra2mux(InstrD[3:0], InstrD[17:14], RegSrcD[1], RA2D); 
 
-    RegisterFile rf(clk, RegWrite, RA1, RA2,
-                Instr[17:14], Result, PCPlus8,
-                SrcA, WriteData);
+    RegisterFile rf(clk, RegWriteW, RA1D, RA2D, WA3W, ResultW, PCPlus8D, rd1D, rd2D); 
+    extend ext(InstrD[21:0], ImmSrcD, ExtImmD); 
 
-    mux2 #(32) resmux(ALUResult, ReadData, MemtoReg, Result);
-    extend ext(Instr[21:0], ImmSrc, ExtImm);
+    // Execute Stage 
+    flopr #(32) rd1reg(clk, reset, rd1D, rd1E); 
+    flopr #(32) rd2reg(clk, reset, rd2D, rd2E); 
+    flopr #(32) immreg(clk, reset, ExtImmD, ExtImmE);
+    flopr #(4) wa3ereg(clk, reset, InstrD[17:14], WA3E); 
+    flopr #(4) ra1reg(clk, reset, RA1D, RA1E); 
+    flopr #(4) ra2reg(clk, reset, RA2D, RA2E); 
+    mux3 #(32) byp1mux(rd1E, ResultW, ALUOutM, ForwardAE, SrcAE); 
+    mux3 #(32) byp2mux(rd2E, ResultW, ALUOutM, ForwardBE, WriteDataE); 
+    mux2 #(32) srcbmux(WriteDataE, ExtImmE, ALUSrcE, SrcBE); 
+    ALUTopLevel #(32) alu(SrcAE, SrcBE, ALUControlE, ALUResultE, ALUFlagsE);
 
-    // ALU logic
-    mux2 #(32) srcbmux(WriteData, ExtImm, ALUSrc, SrcB);
-    ALUTopLevel #(32) alu(SrcA, SrcB, ALUControl, ALUResult, ALUFlags);
+    // Memory Stage 
+    flopr #(32) aluresreg(clk, reset, ALUResultE, ALUOutM); 
+    flopr #(32) wdreg(clk, reset, WriteDataE, WriteDataM); 
+    flopr #(4) wa3mreg(clk, reset, WA3E, WA3M);
 
+    // Writeback Stage 
+    flopr #(32) aluoutreg(clk, reset, ALUOutM, ALUOutW); 
+    flopr #(32) rdreg(clk, reset, ReadDataM, ReadDataW); 
+    flopr #(4) wa3wreg(clk, reset, WA3M, WA3W); 
+    mux2 #(32) resmux(ALUOutW, ReadDataW, MemtoRegW, ResultW); 
+    
+    // hazard comparison 
+    eqcmp #(4) m0(WA3M, RA1E, Match_1E_M); 
+    eqcmp #(4) m1(WA3W, RA1E, Match_1E_W); 
+    eqcmp #(4) m2(WA3M, RA2E, Match_2E_M); 
+    eqcmp #(4) m3(WA3W, RA2E, Match_2E_W); 
+    eqcmp #(4) m4a(WA3E, RA1D, Match_1D_E); 
+    eqcmp #(4) m4b(WA3E, RA2D, Match_2D_E); 
+    assign Match_12D_E = Match_1D_E | Match_2D_E; 
 endmodule

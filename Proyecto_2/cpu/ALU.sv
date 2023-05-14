@@ -2,7 +2,7 @@ module ALU #(parameter n = 32)(input [n-1:0] a, b, output [n-1:0] rs, rr, rm, rd
 										output [3:0] fs, fr, fd, fm, fmod, fmov);
 
 	logic [n-1:0] rauxs, rauxr, rauxm, rauxd, rauxmod, rauxmov;
-	logic [3:0] auxfs, auxfr, auxfd, auxfm, auxfmod, auxfmov;
+	logic [3:0] auxfs = 0, auxfr = 0, auxfd = 0, auxfm = 0, auxfmod = 0, auxfmov = 0;
 	
 	suma #(32) sum (a, b, rauxs, auxfs);
 	resta #(32) rest (a, b, rauxr, auxfr);

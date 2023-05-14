@@ -7,15 +7,17 @@ module TopTest;
     // instantiate device to be tested
     top dut(clk, reset, WriteData, DataAdr, MemWrite);
 
-	 
-	always #25 clk = ~clk;
+	
         
     // initialize test
-    initial begin
-			clk = 0;
-        reset <= 1; # 22; reset <= 0;
-		  
-    end
+   initial begin
+        reset <= 1; # 5; reset <= 0;  
+   end
+	 
+	  
+	always begin
+		 clk <= 1; #5; clk <= 0; #5;
+	end
 
     // generate clock to sequence tests
     
