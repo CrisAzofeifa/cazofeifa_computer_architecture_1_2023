@@ -8,7 +8,8 @@ module top (
 	output logic [7:0] vga_blue);
 
     logic        MemWriteM;
-    logic [31:0] PCF, InstrF, ReadDataM, WriteDataM, DataAdrM;
+    logic [31:0] PCF, InstrF, ReadDataM, WriteDataM, DataAdrM, px_data, address2;
+	 
 
     // instantiate processor and memories
     ripp processor(clk, ~reset, PCF, InstrF, MemWriteM, DataAdrM,
@@ -16,9 +17,9 @@ module top (
 
     imem instmem(PCF, InstrF);
 	 
-	dmem datmem(clk, MemWriteM, DataAdrM, WriteDataM, ReadDataM);
+	dmem datmem(clk, MemWriteM, DataAdrM, address2, WriteDataM, ReadDataM, px_data);
 	 
-    vga_top vga(clk, clk25MHz, vga_hsync, vga_vsync, 
-                vga_red, vga_green, vga_blue);
+   vga_top vga(px_data[7:0], clk, clk25MHz, vga_hsync, vga_vsync, 
+                vga_red, vga_green, vga_blue, address2);
 
 endmodule 
