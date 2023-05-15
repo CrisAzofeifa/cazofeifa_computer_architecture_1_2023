@@ -10,6 +10,9 @@ module top (
     WriteDataM, ReadDataM);
 
     imem instmem(PCF, InstrF);
-    dmem datmem(clk, MemWriteM, DataAdrM, WriteDataM, ReadDataM);
+	 
+	 dmem datmem(clk, MemWriteM, DataAdrM, WriteDataM, ReadDataM);
+	 
+    //LUTMemory datmem(DataAdrM[5:0], clk, WriteDataM, MemWriteM, ReadDataM);
 
 endmodule 
