@@ -9,6 +9,6 @@ module multiplicacion #(parameter n = 4) ( input [n-1:0] a, b, output [n-1:0] c,
 	assign banderas[1] = 0; 					// Acarreo (C) (Unsigned)
 	assign banderas[0] = result[n];				// Desbordamiento (V) (Signed)
 	
-	assign c = result;
+	assign c = result[n-1:0];
 
 endmodule

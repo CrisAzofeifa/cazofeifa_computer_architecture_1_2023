@@ -3,11 +3,15 @@ module dmem (
     input logic [31:0] a, wd,
     output logic [31:0] rd);
 
-    logic [31:0] RAM[63:0];
+    logic [31:0] RAM[90025:0];
 
-    assign rd = RAM[a[31:2]]; // word aligned
+    assign rd = RAM[a[31:0]]; // word aligned
+	 
+	 initial begin
+		$readmemh("DataMemInit.mif", RAM);
+	 end
 
     always_ff @(posedge clk)
-        if (we) RAM[a[31:2]] <= wd;
+        if (we) RAM[a[31:0]] <= wd;
     
 endmodule
