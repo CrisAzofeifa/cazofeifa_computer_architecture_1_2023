@@ -4,7 +4,7 @@ module ALUTest;
     wire [31:0] result;
 	reg [3:0] flags;
     
-    ALUTopLevel #(32) alu(.a(a), .b(b), .operacion(op), .resultado(result), .flagsResult(flags));
+    ALUTopLevel #(32) alu(.a(a), .b(b), .ALUControl(op), .resultado(result), .flagsResult(flags));
     
     initial begin
 

@@ -46,7 +46,7 @@ list_binary = []
 etiquetas = []
 
 def compiler():
-    file = open("./code.txt", 'r')
+    file = open("./RIPP_code.txt", 'r')
     data = file.read()
     file.close()
     
@@ -59,7 +59,9 @@ def compiler():
         lista = ''
         lista = instr.split(' ')
 
-        if (lista[0] not in dp) and (lista[0] not in mem) and (lista[0] not in control):
+        if (lista[0] == ''):
+            eliminar.append(instr)
+        elif(lista[0] not in dp) and (lista[0] not in mem) and (lista[0] not in control):
             # etiqueta
             etiquetas.append((lista[0], contador))
             eliminar.append(instr)
@@ -117,11 +119,18 @@ def compiler():
                         Src2 = str(bin(int(lista[2]))[2:].zfill(10))
 
                 else:
-                    # immediate
-                    binary_instr += dp['immediate']
-                    Rd = '0000'
-                    Rn = registers[lista[1]]
-                    Src2 = str(bin(int(lista[2]))[2:].zfill(10))
+                    if lista[2] in registers:
+                        # immediate
+                        binary_instr += dp['register']
+                        Rd = '1111'
+                        Rn = registers[lista[1]]
+                        Src2 = '000000' + registers[lista[2]]
+                    else:
+                        # immediate
+                        binary_instr += dp['immediate']
+                        Rd = '1111'
+                        Rn = registers[lista[1]]
+                        Src2 = str(bin(int(lista[2]))[2:].zfill(10))
 
                 binary_instr += dp[lista[0]]
 
@@ -177,6 +186,5 @@ def compiler():
     for instr in list_binary:
         f.write(instr + '\n')
     f.close()
-    print(list_binary)
 
 compiler()
