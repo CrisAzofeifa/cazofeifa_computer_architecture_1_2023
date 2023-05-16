@@ -122,13 +122,13 @@ def compiler():
                     if lista[2] in registers:
                         # immediate
                         binary_instr += dp['register']
-                        Rd = '0000'
+                        Rd = '1111'
                         Rn = registers[lista[1]]
                         Src2 = '000000' + registers[lista[2]]
                     else:
                         # immediate
                         binary_instr += dp['immediate']
-                        Rd = '0000'
+                        Rd = '1111'
                         Rn = registers[lista[1]]
                         Src2 = str(bin(int(lista[2]))[2:].zfill(10))
 
@@ -186,6 +186,5 @@ def compiler():
     for instr in list_binary:
         f.write(instr + '\n')
     f.close()
-    print(list_binary)
 
 compiler()

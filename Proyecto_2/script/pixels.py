@@ -1,7 +1,7 @@
 from PIL import Image
 
 # Abrir la imagen
-imagen = Image.open("bobesponja.png")
+imagen = Image.open("psychedelic.jpg")
 
 # Convertir la imagen a escala de grises
 imagen_gris = imagen.convert("RGB")

@@ -52,9 +52,9 @@ module SYNC (
         // ------- Pattern -------
 		always @ (posedge VGA_CLK_IN)
 		begin 
-			if ((counter_x > 395 && counter_x < 545) && (counter_y > 195 && counter_y < 345))
+			if ((counter_x > 320 && counter_x < 520) && (counter_y > 120 && counter_y < 320))
 				begin 
-						if (pixel_pos < 22525)
+						if (pixel_pos < 40025)
 						  pixel_pos <= pixel_pos + 1;
 						else				
 							pixel_pos <= 24;
