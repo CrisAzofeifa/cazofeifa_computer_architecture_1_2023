@@ -1,6 +1,6 @@
 module vga_top
 	(
-		input logic [7:0] memPx,
+		input logic [23:0] memPx,
 		input logic clk50MHz,
 		output logic clk25MHz, 
 		output logic vga_hsync,
@@ -14,9 +14,15 @@ module vga_top
 	
 	logic vga_clk;
 	
+	logic [23:0] px;
+
+   always @(posedge clk50MHz) begin
+		px <= memPx;
+   end
+	
 	clockDivider clock_convertor(clk50MHz, vga_clk);
 	
-	SYNC sync(memPX, vga_clk, vga_hsync, vga_vsync, clk25MHz,
+	SYNC sync(px, vga_clk, vga_hsync, vga_vsync, clk25MHz,
                 vga_red, vga_green, vga_blue, px_addr);
 	
 endmodule

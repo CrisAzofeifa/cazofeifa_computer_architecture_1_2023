@@ -6,7 +6,7 @@ module dmem (
     logic [31:0] RAM[90024:0];
 
     assign rd = RAM[a[31:0]]; // word aligned
-	 assign rd2 = RAM[a1[31:0]]; // word aligned
+	assign rd2 = RAM[a1[31:0]]; // word aligned
 	 
 	 initial begin
 		$readmemh("DataMemInit.mif", RAM);

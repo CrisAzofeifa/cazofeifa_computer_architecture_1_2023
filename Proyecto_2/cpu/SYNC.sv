@@ -3,18 +3,18 @@
 `define LIGHTBLUE 24'h10A6ED
 
 module SYNC (
-	input logic [7:0] memPx,
+	input logic  [23:0] px,
 	input logic         VGA_CLK_IN,
 	output logic        o_hsync,
 	output logic        o_vsync,
 	output logic        VGA_CLK_OUT,
 	output logic [7:0]  o_red,
-   output logic [7:0]  o_green,
+   	output logic [7:0]  o_green,
 	output logic [7:0]  o_blue,
 	output logic [31:0] px_addr
 	);
 
-   localparam h_border_left = 145;	
+   	localparam h_border_left = 145;	
 	localparam h_border_right = 783;
 	localparam v_border_up = 36;
 	localparam v_border_down= 515;
@@ -24,10 +24,10 @@ module SYNC (
 	reg [9:0] counter_y = 0; // vertical counter
 
 	reg [7:0] r_red = 0;
-   reg [7:0] r_green = 0;
+   	reg [7:0] r_green = 0;
 	reg [7:0] r_blue = 0;
 	
-	reg [31:0] pixel_pos = 24;
+	logic [31:0] pixel_pos = 24;
 
     // ------- Counters --------
 	always @(posedge VGA_CLK_IN) // horizontal counter
@@ -52,15 +52,15 @@ module SYNC (
         // ------- Pattern -------
 		always @ (posedge VGA_CLK_IN)
 		begin 
-			if ((counter_x > 200 && counter_x < 500) && (counter_y > 100 && counter_y < 400))
+			if ((counter_x > 320 && counter_x < 620) && (counter_y > 120 && counter_y < 420))
 				begin 
-						if(pixel_pos < 90025) begin
+						if (pixel_pos < 90025)
 						  pixel_pos <= pixel_pos + 1;
-						end
-						else begin
-							pixel_pos <= 25;
-						end
-						{r_red, r_green, r_blue} <= memPx;
+						else				
+							pixel_pos <= 24;
+							
+						{r_red, r_green, r_blue} <= px;
+
 				end
 			else 
 				{r_red, r_green, r_blue} <= `LIGHTBLUE;
