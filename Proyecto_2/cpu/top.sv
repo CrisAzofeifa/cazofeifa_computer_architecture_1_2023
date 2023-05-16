@@ -19,7 +19,7 @@ module top (
 	 
 	dmem datmem(clk, MemWriteM, DataAdrM, address2, WriteDataM, ReadDataM, px_data);
     
-    vga_top vga(px_data[23:0], clk, clk25MHz, vga_hsync, vga_vsync, 
+    vga_top vga(reset, px_data[23:0], clk, clk25MHz, vga_hsync, vga_vsync, 
                 vga_red, vga_green, vga_blue, address2);
 
 endmodule 

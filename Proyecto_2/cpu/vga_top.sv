@@ -1,5 +1,6 @@
 module vga_top
 	(
+		input logic rst,
 		input logic [23:0] memPx,
 		input logic clk50MHz,
 		output logic clk25MHz, 
@@ -17,7 +18,10 @@ module vga_top
 	logic [23:0] px;
 
    always @(posedge clk50MHz) begin
-		px <= memPx;
+        case(rst)
+            1'b0: px <= memPx;
+        endcase
+            //1'bx: px <= 1'bx;
    end
 	
 	clockDivider clock_convertor(clk50MHz, vga_clk);
