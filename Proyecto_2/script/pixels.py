@@ -1,7 +1,7 @@
 from PIL import Image
 
 # Abrir la imagen
-imagen = Image.open("oso-polar.jpg")
+imagen = Image.open("bobesponja.png")
 
 # Convertir la imagen a escala de grises
 imagen_gris = imagen.convert("RGB")
@@ -17,9 +17,6 @@ for tupla in pixeles:
     b = str(hex(tupla[2]))[2:]
     rgb = r + g + b
     rgb_pixels.append(rgb)
-
-x = 25 // 3
-print(x)
 
 f = open ('pixeles.txt','w')
 for pixel in rgb_pixels:
