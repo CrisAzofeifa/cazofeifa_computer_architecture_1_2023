@@ -1,0 +1,109 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>cpu_instruction_decoder</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_cpu_exception_query.html">cpu_exception_query</a>
+<a href="__rm_interface_cpu_instruction_query.html">cpu_instruction_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_cpu_instruction_decoder">cpu_instruction_decoder</a></h1>
+<p>
+
+<a name="cpu_instruction_decoder"></a><a name="cpu_instruction_decoder_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is used to replace an existing instruction with a user
+   defined one or add new instructions to the simulation. The interface can
+   only be used from a <b><i>cpu_instruction_decoder_cb_t</i></b> callback
+   registered by the <b><i>register_instruction_decoder_cb</i></b> method in the
+   <code>cpu_instrumentation_subscribe</code> interface.
+<p>
+   The interface consist of just one method and looks like this:
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(cpu_instruction_decoder) {
+        void (*register_emulation_cb)(conf_object_t *cpu,
+                                      cpu_emulation_cb_t cb,
+                                      decoder_handle_t *handle,
+                                      lang_void *user_data,
+                                      cpu_callback_free_user_data_cb_t free_cb);
+};
+
+#define CPU_INSTRUCTION_DECODER_INTERFACE "cpu_instruction_decoder"
+</pre><p>
+</p><p>
+
+   <b><i>register_emulation_cb</i></b> is used to set a callback function that
+   implements the semantics of the new or changed instruction.  Every time the
+   instructions is executed on the <i>cpu</i> this function will be called
+   instead of the build-in implementation. The <i>handle</i> is the
+   <code>decoder_handle_t</code> handle passed to the
+   <b><i>cpu_instruction_decoder_cb_t</i></b> callback. The <i>user_data</i>
+   argument is user data for the callback. The <i>free_cb</i> is a clean-up
+   callback function that Simics calls when the instruction is overwritten or
+   if Simics wants to flush decoding caches. This function should deallocate
+   any the user data if present. Can be NULL if not used.
+</p><p>
+   The signature of the emulation callback looks like this:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef cpu_emulation_t (*cpu_emulation_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   <i>obj</i> is the connection object, the same object as passed to the
+   cpu_instruction_decoder_cb_t callback. <i>cpu</i> is the processor
+   executing the replaced instruction. <i>user_data</i> is user data for
+   the emulation callback. This is a useful place for storing immediate or
+   register values for the new instruction. In the emulation function the whole
+   Cell Context API is available for use.
+</p><p>
+   <code>CPU_Emulation_Fall_Through</code> should be returned from the emulation
+   callback if replaced one is a fall through instruction.  The program counter
+   does not need to be updated. If the replaced instruction is doing any
+   control flow then <code>CPU_Emulation_Control_Flow</code> should be returned and
+   the program counter should be set to the destination address. This can be
+   done for fall through instruction as well but is less efficient.
+</p><p>
+   <code>CPU_Emulation_Default_Semantics</code> can also be returned to indicate that
+   the default semantics should be used instead of the user defined. This can
+   be useful if the instruction only should be replaced under certain
+   circumstances.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Threaded Context for all methods, but must be called from a callback
+   registered by the <b><i>register_instruction_decoder_cb</i></b> method in the
+   <code>cpu_instrumentation_subscribe</code> interface.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_cpu_exception_query.html">cpu_exception_query</a>
+<a href="__rm_interface_cpu_instruction_query.html">cpu_instruction_query</a>
+</div>

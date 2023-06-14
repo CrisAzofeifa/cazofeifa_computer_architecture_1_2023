@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pci_multi_function_device</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pci_interrupt.html">pci_interrupt</a>
+<a href="__rm_interface_pci_upstream.html">pci_upstream</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pci_multi_function_device">pci_multi_function_device</a></h1>
+<p>
+
+<a name="pci_multi_function_device"></a><a name="pci_multi_function_device_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is intended for PCI devices that want to have multiple
+   functions implemented within the same device instance, as compared to the
+   scheme of having each PCI function defined in a separate instance.
+<p>
+   <b><i>supported_functions</i></b> is called from the pci-bus to find out how
+   many functions are supported by this device. The expected return value is a
+   list of tuples, where each tuple contains the PCI function number followed
+   by one or two elements controlling what to map into the bus'
+   config-space. The list can consist of any number of tuples using any and all
+   of the supported formats:
+</p><p>
+   </p><ul>
+
+   <li>(fun, str); maps the named port-interface on the object implementing the
+   current interface. For example, the name of the bank that provides the
+   configuration registers for this function.</li>
+
+   <li>(fun, obj); maps the object expecting configuration access is handled by
+   io_memory implemented directly on the object.</li>
+
+   <li>(fun, obj, str); maps the named port-interface on the provided
+   object.</li>
+
+   </ul>
+<p>
+   The list can contain a mix of formats, each entry corresponds to a unique
+   mapping of a function.
+</p><p>
+   For ARI enabled PCIe devices, the device number is assumed to be zero thus
+   it is an error to try to claim a function number greater than seven while
+   connecting with a device number greater than zero.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(pci_multi_function_device) {
+        attr_value_t (*supported_functions)(conf_object_t *obj);
+};
+#define PCI_MULTI_FUNCTION_DEVICE_INTERFACE "pci_multi_function_device"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pci_interrupt.html">pci_interrupt</a>
+<a href="__rm_interface_pci_upstream.html">pci_upstream</a>
+</div>

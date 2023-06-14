@@ -1,0 +1,86 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_node_path</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_micro_checkpoint.html">osa_micro_checkpoint</a>
+<a href="__rm_interface_osa_node_tree_admin.html">osa_node_tree_admin</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_node_path">osa_node_path</a></h1>
+<p>
+
+<a name="osa_node_path"></a><a name="osa_node_path_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_node_path_interface_t2"></a>
+<p>
+   <a name="matching_nodesosa_node_path-interface-method"></a>
+   <b><i>matching_nodes</i></b> function returns a list of all nodes rooted at
+   <i>root_id</i> that matches the given <i>node_path_pattern</i>. The
+   node_path_pattern should be either an integer representing a node id or a
+   string, see <em>Analyzer User's Guide</em> for more details.
+</p><p>
+   Upon success, the return value is a list where the first entry is true and
+   the second entry is a list containing all the matching node ids.
+</p><p>
+   Upon failure, the return value is a list where the first entry is false and
+   the second entry is a string describing the error.
+</p><p>
+   <a name="node_pathosa_node_path-interface-method"></a> <b><i>node_path</i></b>
+   function translates a node id into a fully qualified node path string. See
+   <em>Analyzer User's Guide</em> for more details.
+</p><p>
+   Upon success, the return value is a list where the first entry is true and
+   the second entry is the node path string.
+</p><p>
+   Upon failure, the return value is a list where the first entry is false and
+   the second entry is a string describing the error.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(osa_node_path) {
+        attr_value_t (*matching_nodes)(conf_object_t *NOTNULL obj,
+                                       node_id_t root_id,
+                                       attr_value_t node_path_pattern);
+        attr_value_t (*node_path)(conf_object_t *NOTNULL obj,
+                                  node_id_t node_id);
+};
+
+#define OSA_NODE_PATH_INTERFACE "osa_node_path"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_micro_checkpoint.html">osa_micro_checkpoint</a>
+<a href="__rm_interface_osa_node_tree_admin.html">osa_node_tree_admin</a>
+</div>

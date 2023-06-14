@@ -1,0 +1,152 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i2c_bus</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_i2c_bridge.html">i2c_bridge</a>
+<a href="__rm_interface_i2c_device.html">i2c_device</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_i2c_bus">i2c_bus</a></h1>
+<p>
+
+<a name="i2c_bus"></a><a name="i2c_bus_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(i2c_bus) {
+        int (*start)(conf_object_t *i2c_bus, uint8 address);
+        int (*stop)(conf_object_t *i2c_bus);
+        uint8 (*read_data)(conf_object_t *i2c_bus);
+        void (*write_data)(conf_object_t *i2c_bus, uint8 value);
+        int (*register_device)(conf_object_t *i2c_bus,
+                               conf_object_t *device,
+                               uint8 address, uint8 mask,
+                               i2c_device_flag_t flags);
+        void (*unregister_device)(conf_object_t *i2c_bus,
+                                  conf_object_t *device,
+                                  uint8 address, uint8 mask);
+};
+
+#define I2C_BUS_INTERFACE "i2c_bus"
+</pre><p>
+</p><p>
+
+   The <code>i2c_bus</code> interface is implemented by the I2C
+   bus. The interface is used by I2C devices to communicate with the
+   I2C bus.
+</p><p>
+   To connect an I2C device to an I2C bus, first you call
+   <b><i>register_device</i></b> with a 7-bit <i>address</i> and
+   <i>mask</i>. The address is actually an address pattern. When
+   there is traffic on the I2C bus (as initiated by a call to the bus
+   interface <b><i>start</i></b> function), the target address is matched
+   against each registered device by checking if <code>(target_address ^
+   device_address) &amp; device_mask == 0</code>.  The
+   <i>flags</i> attribute sets the type of connection. The
+   alternatives are <code>exclusive</code> or
+   <code>shared</code>. An I2C device connected
+   <code>exclusive</code> can not share a transfer with another I2C
+   device. An I2C device connected <code>shared</code> supports that
+   other I2C devices connected <code>shared</code> to the I2C bus
+   handles the same transfer. The <b><i>register_device</i></b> function
+   returns <code>0</code> on success and <code>-1</code> on failure.
+</p><p>
+   Use <b><i>unregister_device</i></b> to disconnect an I2C device from
+   the I2C bus. To completely remove a device use the same
+   <i>address</i> and <i>mask</i> attributes as when the
+   device was registered. An I2C device can also remove some part of
+   the address match by unregister itself with a different mask.
+</p><p>
+   An I2C transfer is initiated by a master I2C device. The I2C device
+   responding to the transfer is called slave. The master starts a
+   transfer by calling the <b><i>start</i></b> function with
+   <i>address</i> as argument. The <i>address</i> is the
+   7-bit address plus a read/write bit (read/write = 0 →
+   slave-receive, read/write = 1 → slave-transmit). The read/write
+   bit is the least significant bit. This means that
+   all odd values sent to <b><i>start</i></b> function initiates a
+   transfer where the master is requesting data from the slave.
+   The <b><i>start</i></b> function returns <code>0</code> on success and <code>-1</code>
+   on failure.
+</p><p>
+   An I2C transfer should be terminated by a master I2C device when the bus is
+   no longer needed. This is done by calling the <b><i>stop</i></b> function. This
+   function always returns <code>0</code>.
+</p><p>
+   I2C devices implement the <code>i2c_device</code> interface. Both
+   the <code>i2c_device</code> interface and the
+   <code>i2c_bus</code> interface has identical <b><i>read_data</i></b>
+   and <b><i>write_data</i></b> functions to transfer data over the
+   bus. The <code>i2c_device</code> also has <b><i>set_state</i></b>
+   function, which is used by the I2C bus to set the I2C device
+   state. The states are <code>I2C_idle</code>,
+   <code>I2C_slave_transmit</code>, and
+   <code>I2C_slave_receive</code>. The default state is
+   <code>I2C_idle</code>.
+</p><p>
+   Here are the steps for a transfer:
+</p><p>
+   <code>1.</code> The I2C master device calls <b><i>start</i></b> in the
+    I2C bus with 7-bit address and 1-bit read/write flag.
+</p><p>
+   <code>2.</code> The I2C bus calls the <b><i>set_state</i></b> in the I2C
+   slave device with <code>I2C_slave_transmit</code> or
+   <code>I2C_slave_receive</code> as argument depending on the 1-bit
+   read/write flag. The I2C slave accepts the state change by
+   returning 0.
+</p><p>
+   <code>3.</code> I2C bus returns <code>0</code> to the I2C master if the
+   start command in <code>1</code> was successful. The I2C bus can report
+   failure for several reasons, there are another ongoing transfer,
+   can not find any device with the address provided, I2C slave did
+   not except state change etc.
+</p><p>
+   <code>4.</code> The I2C master calls the I2C buses
+   <b><i>read_data</i></b> or <b><i>write_data</i></b> depending if it
+   wants to read from or write to the I2C slave. The I2C bus relays the
+   call to the I2C slave <b><i>read_data</i></b> or
+   <b><i>write_data</i></b> function. The I2C slave have no way to report
+   errors, the I2C master expects the I2C slave to be able to handle
+   all calls without any problem. The I2C bus can do step <code>4</code>
+   several times before terminating the transfer.
+</p><p>
+   <code>5.</code> The I2C master calls the <b><i>stop</i></b> function
+   when it wants to terminate the transfer. This causes the I2C bus to
+   call the <b><i>set_state</i></b> function in the I2C slave with
+   <code>I2C_idle</code> as argument. The transfer is now completed.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_i2c_bridge.html">i2c_bridge</a>
+<a href="__rm_interface_i2c_device.html">i2c_device</a>
+</div>

@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>save-intel-hex</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-save-image-diff.html">save-image-diff</a>
+<a href="rm-cmd-save-intel-obj.html">save-intel-obj</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="save-intel-hex"></a>
+<a name="image.save-intel-hex"></a>
+<a name="memory_space.save-intel-hex"></a>
+<h1 id="save-intel-hex"><a href="#save-intel-hex">save-intel-hex</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>save-intel-hex</b> <i>filename</i> <i>start</i> <i>length</i> [-skip-zeros] [-dirty-only] [-overwrite] <br><b>&lt;image&gt;.save-intel-hex</b> <i>filename</i> [<i>start</i>] [<i>length</i>] [-skip-zeros] [-dirty-only] [-overwrite] <br><b>&lt;memory_space&gt;.save-intel-hex</b> <i>filename</i> <i>start</i> <i>length</i> [-skip-zeros] [-dirty-only] [-overwrite] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Saves the contents of a memory region, defined by <i>start</i> address and <i>length</i> to the file <i>filename</i> in the Intel HEX file format.
+<p>
+The <tt>-skip-zeros</tt> argument makes the command skip regions of zeros, 16 bytes or more, in the output file.
+</p><p>
+The command will fail if the destination file already exists, unless <tt>-overwrite</tt> is specified.
+</p><p>
+Due to the flexible mapping support in memory-spaces, it can take a long time to save large memory areas. The <tt>image</tt> variant of the command is much faster, assuming it is used with <tt>-skip-zeros</tt>.
+</p><p>
+When used on an image object, the <tt>-dirty-only</tt> argument can be used to save dirty pages only, i.e. pages which have not been written to one of the image backing files.
+</p><p>
+The non-namespace version of the command uses the current frontend processor's physical memory space.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-load-intel-hex.html">load-intel-hex</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-save-image-diff.html">save-image-diff</a>
+<a href="rm-cmd-save-intel-obj.html">save-intel-obj</a>
+</div>

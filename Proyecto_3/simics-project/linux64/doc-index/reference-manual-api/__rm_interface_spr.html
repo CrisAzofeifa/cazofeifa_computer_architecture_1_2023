@@ -1,0 +1,203 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>spr</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_sparc_v8_ecc_fault_injection.html">sparc_v8_ecc_fault_injection</a>
+<a href="__rm_interface_telemetry.html">telemetry</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_spr">spr</a></h1>
+<p>
+
+<a name="spr"></a><a name="spr_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(spr) {
+        void (*register_user_handlers)(
+                conf_object_t *cpu,
+                int64 spr_number,
+                gen_spr_user_getter_func_t getter,
+                lang_void *user_getter_data,
+                gen_spr_user_setter_func_t setter,
+                lang_void *user_setter_data,
+                int privilege_checks);
+        void (*unregister_user_handlers)(
+                conf_object_t *cpu,
+                int64 spr_number);
+
+        void (*set_target_value)(
+                conf_object_t *cpu,
+                uint64 value);
+
+        void (*stash_value)(
+                conf_object_t *cpu,
+                int64 spr_number,
+                uint64 value);
+        uint64 (*fetch_value)(
+                conf_object_t *cpu,
+                int64 spr_number);
+
+        gen_spr_ret_t (*default_getter)(
+                conf_object_t *cpu,
+                int64 spr_number,
+                gen_spr_access_type_t type);
+        gen_spr_ret_t (*default_setter)(
+                conf_object_t *cpu,
+                int64 spr_number,
+                uint64 value,
+                gen_spr_access_type_t type);
+
+        const char *(*get_name)(
+                conf_object_t *cpu,
+                int64 spr_number);
+        int64 (*get_number)(
+                conf_object_t *cpu,
+                const char *spr_name);
+
+};
+#define SPR_INTERFACE "spr"
+</pre><p>
+</p><p>
+
+   The <b><i>register_spr_user_handlers</i></b> function will register user
+   implemented get and set functions that will be called every time a
+   read or write access is made to the SPR with number <i>spr</i>.
+   The <i>getter</i> and <i>setter</i> function is of the
+   following type:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef gen_spr_ret_t (*gen_spr_user_getter_func_t)(
+        conf_object_t *cpu,
+        int64 spr_number,
+        gen_spr_access_type_t type,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The <i>type</i> parameter in the get and set functions is one of
+   the following, depending on where from the access originated:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef enum {
+        /* Access from a mfspr/mtspr instruction */
+        Sim_Gen_Spr_Instruction_Access,
+
+        /* Access through attribute */
+        Sim_Gen_Spr_Attribute_Access,
+
+        /* Access through int_register interface */
+        Sim_Gen_Spr_Int_Register_Access,
+
+        /* For compatibility with former PPC-only implementation */
+        Sim_PPC_Spr_Instruction_Access  = Sim_Gen_Spr_Instruction_Access,
+        Sim_PPC_Spr_Attribute_Access    = Sim_Gen_Spr_Attribute_Access,
+        Sim_PPC_Spr_Int_Register_Access = Sim_Gen_Spr_Int_Register_Access
+} gen_spr_access_type_t;</pre><p>
+
+</p><p>
+   Both the get and the set functions must return one of these enum values:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef enum {
+        Sim_Gen_Spr_Ok,        /* SPR access was OK */
+        Sim_Gen_Spr_Illegal,   /* SPR access should trigger illegal insn exc */
+        Sim_Gen_Spr_Privilege, /* SPR access should trigger privilege exc */
+
+        Sim_Gen_Spr_Processor_Sleeps, /* SPR access suspends the processor */
+
+        /* For compatibility with former PPC-only implementation */
+        Sim_PPC_Spr_Ok        = Sim_Gen_Spr_Ok,
+        Sim_PPC_Spr_Illegal   = Sim_Gen_Spr_Illegal,
+        Sim_PPC_Spr_Privilege = Sim_Gen_Spr_Privilege
+} gen_spr_ret_t;</pre><p>
+
+</p><p>
+   If <i>privilege_checks</i> is not zero, Simics will do privilege
+   checks when a mfspr/mtspr instruction is executed. If this does not produce
+   the desired results, you can register the SPR handlers with
+   <i>privilege_checks</i> set to zero, and do you own checks in your
+   handlers.
+</p><p>
+   The function <b><i>unregister_spr_user_handlers</i></b> will remove any
+   registered user handlers for a particular SPR.
+</p><p>
+   The function <b><i>spr_set_target_value</i></b> should be called from the get
+   function. The <i>value</i> will be written to the target register
+   for instruction accesses, and returned for attribute and int register
+   interface accesses. If this function is not called, the target register is
+   not changed for instruction accesses (and the mfspr thus acts as a nop).
+</p><p>
+   The functions <b><i>spr_stash_value</i></b> and <b><i>spr_fetch_value</i></b> can
+   be used to store a SPR value in the processor. This is useful if only the
+   getter (or only the setter) has been overridden with a user handler.
+</p><p>
+   Sometimes it may be desirable to let the processor take care of the access.
+   The functions <b><i>spr_default_getter</i></b> and
+   <b><i>spr_default_setter</i></b> exist for this purpose.
+</p><p>
+   The function <b><i>spr_get_name</i></b> takes <i>spr_number</i>
+   as parameter and returns the name of the SPR.
+</p><p>
+   The function <b><i>spr_get_number</i></b> takes the <i>spr_name</i>
+   and returns the SPR number, or -1 if the register does not exist.
+</p><p>
+   Note that the following registers cannot be overridden with user handlers:
+   <em>xer</em>, <em>lr</em> and <em>ctr</em>.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><code>register_user_handlers</code></td>
+       <td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>unregister_user_handlers</code></td>
+       <td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>set_target_value</code></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>stash_value</code></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>fetch_value</code></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>default_getter</code></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>default_setter</code></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>get_name</code></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>get_number</code></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_sparc_v8_ecc_fault_injection.html">sparc_v8_ecc_fault_injection</a>
+<a href="__rm_interface_telemetry.html">telemetry</a>
+</div>

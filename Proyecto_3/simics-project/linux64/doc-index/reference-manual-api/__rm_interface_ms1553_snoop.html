@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ms1553_snoop</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ms1553_link.html">ms1553_link</a>
+<a href="__rm_interface_ms1553_terminal.html">ms1553_terminal</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ms1553_snoop">ms1553_snoop</a></h1>
+<p>
+
+<a name="ms1553_snoop"></a><a name="ms1553_snoop_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">typedef void (*ms1553_link_snoop_t)(lang_void *user_data,
+                                    conf_object_t *clock,
+                                    ms1553_phase_t phase,
+                                    int length,
+                                    attr_value_t *data);</pre><p>
+
+   </p><pre class="jdocu_small">SIM_INTERFACE(ms1553_snoop) {
+        conf_object_t *(*attach)(conf_object_t *NOTNULL link,
+                                 conf_object_t *clock,
+                                 ms1553_link_snoop_t snoop_fun,
+                                 lang_void *user_data);
+};
+#define MS1553_SNOOP_INTERFACE "ms1553_snoop"
+</pre><p>
+</p><p>
+
+   This interface is implemented by MIL-STD-1553 link objects.
+   It is used to attach snoop functions to the link.
+   The snoop function will receive all traffic going over the link.
+</p><p>
+   The interface should only be used for inspection, and never as
+   part of the actual simulation. The snoop functions must not affect
+   the simulation in any way.
+</p><p>
+   The <i>clock</i> parameter tells the link on which clock
+   to post the events that call the snoop function.
+</p><p>
+   The <i>user_data</i> parameter is passed to the snoop
+   function every time it is called.
+</p><p>
+   The <b><i>attach()</i></b> function returns an already created
+   snoop endpoint object or NULL on failure.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ms1553_link.html">ms1553_link</a>
+<a href="__rm_interface_ms1553_terminal.html">ms1553_terminal</a>
+</div>

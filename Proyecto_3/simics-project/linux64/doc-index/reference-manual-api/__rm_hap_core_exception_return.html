@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Core_Exception_Return</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_hap_core_exception.html">Core_Exception</a>
+<a href="__rm_hap_core_external_interrupt.html">Core_External_Interrupt</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="haps-chapter.html">12 Haps</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_hap_Core_Exception_Return">Core_Exception_Return</a></h1>
+<p>
+
+<a name="Core_Exception_Return"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Triggered when an exception/trap handler finishes execution. The hap is triggered before any processor state has changed.
+<p>
+The following instructions trigger this hap (by processor class):
+</p><p>
+MIPS: <code>eret</code> and <code>deret</code>
+</p><p>
+PowerPC (32): <code>rfi</code> and <code>rfci</code>
+</p><p>
+PowerPC (64): <code>rfi</code>, <code>rfid</code> and <code>hrfid</code>
+</p><p>
+SH: <code>rte</code>
+</p><p>
+SPARC: <code>done</code> and <code>retry</code>
+</p><p>
+x86/x86-64: The <code>iret</code> family.
+</p><p>
+The <i>exception_number</i> parameter is only valid for SPARC processors.</p></dd>
+<dt class="jdocu_descitem"><b>Callback Type</b></dt><dd class="jdocu_descitem"><pre class="jdocu_small">void (*)(lang_void *callback_data, 
+         conf_object_t *trigger_obj, 
+         int64 exception_number);</pre><p>
+</p></dd>
+<dt class="jdocu_descitem"><b>Index</b></dt><dd class="jdocu_descitem">exception_number</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_hap_core_exception.html">Core_Exception</a>
+<a href="__rm_hap_core_external_interrupt.html">Core_External_Interrupt</a>
+</div>

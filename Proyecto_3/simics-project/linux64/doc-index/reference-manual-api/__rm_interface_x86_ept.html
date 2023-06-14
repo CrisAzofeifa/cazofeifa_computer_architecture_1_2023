@@ -1,0 +1,89 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_ept</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_cstate_notification.html">x86_cstate_notification</a>
+<a href="__rm_interface_x86_exception.html">x86_exception</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_ept">x86_ept</a></h1>
+<p>
+
+<a name="x86_ept"></a><a name="x86_ept_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The interface provides insight into the Extended Page Table (EPT) address
+   translation performed by target processors for virtual machine operations.
+   It takes a result of the first level translation (the classical paging),
+   called a guest physical address, and returns matching host physical address.
+<p>
+   The <b><i>guest_physical_to_physical</i></b> function translates a guest
+   physical <i>address</i> to a host physical address. The
+   <i>cpu_mode</i> argument sets the processor mode for the lookup.
+   Access type is defined by <i>access</i>. The function returns a
+   <em>physical_block_t</em> struct with <i>valid</i> bit and the
+   <i>address</i>. The host physical address is valid when the valid
+   flag is not 0. The function also returns <i>block_start</i> and
+   <i>block_end</i>. The start and end of a block has the same linear
+   mapping as the translated address. The range is inclusive, so block_end
+   should be the address of the last byte of the block. This information can
+   be used to figure out how often the function needs to be called for
+   traversing larger address ranges.
+</p><p>
+   If the chosen processor's current mode does not use EPT translation,
+   the function should use the identity mapping between guest and host physical
+   addresses. An example of such situation would be an x86 processor outside
+   of VMX non-root mode or with EPT controls disabled.
+</p><p>
+   To check if the processor's current VMCS state has EPT enabled,
+   <b><i>is_ept_active</i></b> function should be used.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(x86_ept) {
+        physical_block_t (*guest_physical_to_physical)(
+                conf_object_t *obj,
+                generic_address_t address,
+                x86_processor_mode_t cpu_mode,
+                access_t access);
+        bool (*is_ept_active)(conf_object_t* obj);
+};
+
+#define X86_EPT_INTERFACE "x86_ept"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_cstate_notification.html">x86_cstate_notification</a>
+<a href="__rm_interface_x86_exception.html">x86_exception</a>
+</div>

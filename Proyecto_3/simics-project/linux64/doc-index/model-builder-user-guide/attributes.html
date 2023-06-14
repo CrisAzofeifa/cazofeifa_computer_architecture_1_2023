@@ -1,0 +1,114 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>32 Attributes</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="part-simics-programming.html">VI Simics API</a>
+<a href="object-hierarchy.html">33 Object Hierarchy</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-simics-programming.html">VI Simics API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Attributes">32 Attributes</a></h1>
+<p>
+
+</p><p>
+A Simics class can register <i>attributes</i> <a name="attribute"></a> that will
+act as data members for all objects instantiated from this class. For Simics,
+an attribute is an abstraction, defined by its type and a pair of
+<b><i>get()/set()</i></b> functions. When an attribute is read (i.e., when the
+<b><i>SIM_get_attribute()</i></b> function is used on the object), the
+corresponding <b><i>get()</i></b> function is called. Likewise, when an attribute
+is written to, the <b><i>set()</i></b> function is executed. These functions can
+perform any kind of operation provided they return a value (for
+<b><i>get()</i></b>) or accept a value to be written (for <b><i>set()</i></b>).
+</p><p>
+Attributes have different types and properties.
+Let us here have a closer look at their definition.
+</p><p>
+</p><h2 class="jdocu"><a class="not-numbered" name="Definition">Definition</a></h2>
+<p>
+
+</p><p>
+In C and DML attribute values are represented by <code>attr_value_t</code>
+values. In Python, attributes are automatically converted to or from the
+corresponding Python type, so manipulating attributes is completely
+transparent:
+</p><p>
+<table>
+
+<tbody><tr><td class="jdocu_border">Attribute Type</td>  <td class="jdocu_border">Python Equivalent</td></tr>
+
+<tr><td class="jdocu_border">Invalid</td>         <td class="jdocu_border">Raise a <code>SimExc_Attribute</code> exception.</td></tr>
+
+<tr><td class="jdocu_border">String</td>          <td class="jdocu_border"><code>str</code> (a Python string)</td></tr>
+
+<tr><td class="jdocu_border">Integer</td>         <td class="jdocu_border"><code>int</code></td></tr>
+
+<tr><td class="jdocu_border">Floating</td>        <td class="jdocu_border"><code>float</code></td></tr>
+
+<tr><td class="jdocu_border">List</td>            <td class="jdocu_border"><code>list</code></td></tr>
+
+<tr><td class="jdocu_border">Data</td>            <td class="jdocu_border"><code>tuple</code> of integers 0-255</td></tr>
+
+<tr><td class="jdocu_border">Nil</td>             <td class="jdocu_border"><code>None</code></td></tr>
+
+<tr><td class="jdocu_border">Object</td>          <td class="jdocu_border">Simics <code>conf_object_t</code> reference.</td></tr>
+
+<tr><td class="jdocu_border">Dict</td>            <td class="jdocu_border"><code>dict</code></td></tr>
+
+<tr><td class="jdocu_border">Boolean</td>         <td class="jdocu_border"><code>bool</code></td></tr>
+
+</tbody></table>
+</p><p>
+The <code>attr_value_t</code> values are manipulated with a set of accessor
+functions from C and DML, rather than by accessing its fields directly. For
+example:
+</p><p>
+</p><pre class="jdocu_small"><b>// create an integer attribute</b>
+attr_value_t a = SIM_make_attr_uint64(4711);
+
+<b>// create a list attribute</b>
+attr_value_t l = SIM_alloc_attr_list(2);
+
+<b>// writing to the first element of l</b>
+SIM_attr_list_set_item(l, 0, SIM_make_attr_uint64(1));
+
+<b>// reading the second element of the list</b>
+int64 other = SIM_attr_integer(SIM_attr_list_item(l, 1));
+</pre><p>
+</p><p>
+A complete documentation of attributes related functions is provided in the
+<em>API Reference Manual</em>.
+</p><p>
+
+</p>
+<div class="chain">
+<a href="part-simics-programming.html">VI Simics API</a>
+<a href="object-hierarchy.html">33 Object Hierarchy</a>
+</div>

@@ -1,0 +1,76 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>opcode_info</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_mouse.html">mouse</a>
+<a href="__rm_interface_pool_protect.html">pool_protect</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_opcode_info">opcode_info</a></h1>
+<p>
+
+<a name="opcode_info"></a><a name="opcode_info_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>opcode_info</code> interface is implemented by
+   processors that need to communicate information about the encoding
+   of instructions to the GUI.
+<p>
+   The <b><i>get_opcode_length</i></b> function returns information about
+   instruction encoding in the current operating mode of the
+   processor. The <b><i>min_alignment</i></b> field indicates the
+   smallest allowed alignment of instructions, typically 4 for regular
+   RISC architectures. The <b><i>max_length</i></b> field specifies the
+   maximum instruction length in bytes. The <b><i>avg_length</i></b> is
+   an approximation of the average instruction size.
+</p><p>
+   </p><pre class="jdocu_small">
+typedef struct {
+        int min_alignment;
+        int max_length;
+        int avg_length;
+} opcode_length_info_t;
+
+SIM_INTERFACE(opcode_info) {
+        opcode_length_info_t (*get_opcode_length_info)(conf_object_t *obj);
+};
+
+#define OPCODE_INFO_INTERFACE "opcode_info"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_mouse.html">mouse</a>
+<a href="__rm_interface_pool_protect.html">pool_protect</a>
+</div>

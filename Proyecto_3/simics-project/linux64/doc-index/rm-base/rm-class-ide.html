@@ -1,0 +1,215 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ide</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-id-splitter.html">id-splitter</a>
+<a href="rm-class-ide-cdrom.html">ide-cdrom</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="ide"><a href="#ide">ide</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The IDE class implements the functionality of an IDE controller and its interaction with the DMA controller. Transfer timing (command start -&gt; interrupt) for DMA is properly modelled.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, io_memory, ide_dma, ide_dma_v2
+<h3 id="port-objects">
+<a href="#port-objects">Port Objects</a>
+</h3>
+<dl>
+<dt id="dt:port-dma_dack">port.DMA_DACK</dt>
+<dd>
+<a href="rm-class-ide.html#DMA_DACK">ide.DMA_DACK</a>
+</dd>
+<dt id="dt:port-dma_ddone">port.DMA_DDONE</dt>
+<dd>
+<a href="rm-class-ide.html#DMA_DDONE">ide.DMA_DDONE</a>
+</dd>
+</dl>
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-ide.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-ide.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:irq_dev">
+<i>irq_dev</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|[os]|n</code>
+<br>Interrupt target implementing the signal interface. It also supports simple_interrupt interface, this will be deprecated in the future.</dd>
+<dt id="dt:irq_level">
+<i>irq_level</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt level. If the <tt>irq_dev</tt> attribute is set with an object that implements the simple_interrupt interface, this attribute controls the interrupt level.</dd>
+<dt id="dt:control">
+<i>control</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Control register (shared between master/slave).</dd>
+<dt id="dt:selected_drive">
+<i>selected_drive</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Currently selected drive (bit 4 in the drive/head register).</dd>
+<dt id="dt:lba_mode">
+<i>lba_mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Currently selected addressing mode (bit 6 in the drive/head register).</dd>
+<dt id="dt:interrupt_pin">
+<i>interrupt_pin</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt request status.</dd>
+<dt id="dt:interrupt_delay">
+<i>interrupt_delay</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>Time in seconds between state changes.</dd>
+<dt id="dt:primary">
+<i>primary</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set to one if this is a primary IDE controller.</dd>
+<dt id="dt:model_dma_delay">
+<i>model_dma_delay</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If set, the controller will accurately model DMA transfer bandwidth (infinite bandwidth otherwise).</dd>
+<dt id="dt:master">
+<i>master</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Master device. Must implement the ide-device interface.</dd>
+<dt id="dt:slave">
+<i>slave</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Slave device. Must implement the ide-device interface.</dd>
+<dt id="dt:bus_master_dma">
+<i>bus_master_dma</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>DMA controller implementing bus-master-ide.</dd>
+<dt id="dt:dma_ready">
+<i>dma_ready</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Non-zero if the DMA controller is ready for transfer.</dd>
+<dt id="dt:dma_dreq_target">
+<i>dma_dreq_target</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|[os]|n</code>
+<br>DMA controller implementing signal interface. Upon a DMA request, the DREQ signal will be held high.</dd>
+<dt id="dt:dma_dack_level">
+<i>dma_dack_level</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>DMA controller implementing signal interface. Upon a DMA request, the DREQ signal will be held high.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.ide.html">ide</a>
+</section>
+<h2 id="DMA_DACK"><a href="#DMA_DACK">ide.DMA_DACK</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="interfaces-implemented-2">
+<a href="#interfaces-implemented-2">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<h2 id="DMA_DDONE"><a href="#DMA_DDONE">ide.DMA_DDONE</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="interfaces-implemented-3">
+<a href="#interfaces-implemented-3">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<div class="chain">
+<a href="rm-class-id-splitter.html">id-splitter</a>
+<a href="rm-class-ide-cdrom.html">ide-cdrom</a>
+</div>

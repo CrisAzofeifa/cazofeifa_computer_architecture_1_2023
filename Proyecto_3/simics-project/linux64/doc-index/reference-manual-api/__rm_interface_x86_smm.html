@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_smm</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_reg_access.html">x86_reg_access</a>
+<a href="__rm_interface_x86_smm_state.html">x86_smm_state</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_smm">x86_smm</a></h1>
+<p>
+
+<a name="x86_smm"></a><a name="x86_smm_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The smm interface is used to implement a custom SMRAM
+   state save map.
+<p>
+   The <b>save_state</b> method is invoked when SMM mode
+   is entered before any cpu state has been modified.
+   The method should save the current cpu state
+   to the SMRAM state save map.
+</p><p>
+   The <b>restore_state</b> method is invoked during execution
+   of the <b>rsm</b> instruction. The method should
+   restore the cpu state from the SMRAM state save map.
+</p><p>
+   The <code>x86_smm_state</code> interface implemented by
+   the cpu can be used to facilitate cpu state changes and
+   SMRAM access.
+</p><p>
+   This interface is internal and may change without notice.
+   </p><pre class="jdocu_small">SIM_INTERFACE(x86_smm) {
+        void (*save_state)(conf_object_t *obj, conf_object_t *cpu);
+        void (*restore_state)(conf_object_t *obj, conf_object_t *cpu);
+};
+#define X86_SMM_INTERFACE "x86_smm"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_reg_access.html">x86_reg_access</a>
+<a href="__rm_interface_x86_smm_state.html">x86_smm_state</a>
+</div>

@@ -1,0 +1,1084 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>9.1 Interfaces</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="processor-api.html">9 Processor API</a>
+<a href="simics-api-functions.html">9.2 Simics API Functions</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="processor-api.html">9 Processor API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Interfaces">9.1 Interfaces</a></h1>
+<p>
+
+</p><p>
+This section lists the interfaces that can be implemented by the
+processor model to enable certain Simics features. They are not required,
+but implementing them will allow user defined processor models to
+support the same generic feature set as Simics standard processor
+models. If you intend to plug your model into an existing
+Simics-provided platform, then many of these interfaces are actually
+required for such a platform to function.
+</p><p>
+</p><h2 class="jdocu"><a class="not-numbered" name="Processor-Info-Interface">Processor Info Interface</a></h2>
+<p>
+
+<a name="processor_info"></a>
+<a name="processor_info_v2"></a>
+The <code>processor_info_v2</code> interface is implemented by
+   processors models. The interface has processor generic functions
+   that are architecture independent.
+</p><p>
+   The <b><i>disassemble</i></b> function returns the disassemble string for an
+   instruction at <i>address</i> with opcode according to
+   <i>instruction_data</i>. The <i>instruction_data</i> is an
+   <em>attr_value_t</em> value of <em>data</em> type with the bytes of the
+   opcode. The bytes are in the same order as they are stored in memory. For
+   VLIW architectures, <i>sub_operation</i> is used to select which
+   sub-operation to disassemble. The sub-operations start at zero, and a
+   request for the entire unit including all sub-operations is encoded with
+   sub-operation -1. A request for a sub-operation that is not present (for
+   example when <i>sub-operation</i> is neither 0 nor -1 for non-VLIW
+   architectures) results in the integer part of the return tuple being set to
+   zero. If successful, the function should return a tuple with the size of the
+   instruction in bytes and the disassembly string. The disassembly string
+   should be allocated with MM_MALLOC or similar and is to be freed by the
+   caller. If more bytes are needed, then the function should indicate that by
+   returning a negative number in the tuple where the absolute value of the
+   number is the required number of bytes. The string should be NULL if more
+   bytes are needed. The implementor of <code>processor_info_v2</code> is
+   allowed to request one additional byte at a time until enough bytes are
+   passed to determine what the instruction is. Illegal instructions should
+   still result in a valid returned tuple, where the integer part will be used
+   by the disassemble command to skip that many bytes before disassembling the
+   next instruction. The <i>address</i> can be used to display absolute
+   destinations of program counter relative branches.
+</p><p>
+   The <b><i>set_program_counter</i></b> function sets the program
+   counter in the processor. The <b><i>get_program_counter</i></b>
+   function returns the current program counter.
+</p><p>
+   The <b><i>logical_to_physical</i></b> function translates a logical
+   <i>address</i> to a physical address of the type defined by
+   <i>access_type</i>. The function returns a <em>physical_block_t</em>
+   struct with <i>valid</i> bit and the <i>address</i>. The
+   address is valid when the valid bit is not <code>0</code>. The
+   <b><i>logical_to_physical</i></b> function also returns
+   <i>block_start</i> and <i>block_end</i>. The start and end
+   of a block has the same logical to physical transformation as the translated
+   address. The range is inclusive, so block_end should be the
+   address of the last byte of the block.
+   This information can be used to figure out how often the
+   logical_to_physical function needs to be called. An implementation would
+   typically return the page start and end here, but it is free to return any
+   power of 2 sized block as long as it includes the translated address.
+</p><p>
+   The current operating mode of the processor is returned with
+   <b><i>get_processor_mode</i></b>.
+</p><p>
+   The processor can be enabled or disabled with the
+   <b><i>enable_processor</i></b> or <b><i>disable_processor</i></b>
+   functions. The functions should return <code>0</code> if the processor
+   changed from enabled to disabled or from disabled to enabled, and
+   <code>1</code> if the processor did not change state. The current state
+   is returned by the <b><i>get_enabled</i></b> function. Enabled or
+   disabled here refers to the state that the user of the model has
+   put the processor into. In particular, it is independent of the
+   power mode of the processor. A processor that has powered down does
+   not count as disabled in this sense, nor does the
+   <b><i>enable_processor</i></b> wake up a processor that is in
+   a power-saving sleep state.
+</p><p>
+   The endianness of the processor is returned by the
+   <b><i>get_endian</i></b> function.
+</p><p>
+   The physical memory object is returned by the
+   <b><i>get_physical_memory</i></b> function. The object returned by
+   <b><i>get_physical_memory</i></b> is used to set breakpoints by the
+   global <b>break</b> command, and to read and write physical
+   memory through <b>set</b>, <b>get</b>,
+   <b>load-binary</b>, <b>load-file</b>, and the default
+   implementation of <b>disassemble</b>. The object returned
+   implements the <code>memory_space</code> and
+   <code>breakpoint</code> interfaces. The
+   <code>memory_space</code> interface for the returned object is
+   only be used in inquiry mode corresponding to actions by the
+   simulator itself rather than by the simulated software. An
+   implementation may return NULL from this method, which will lead to
+   the command listed above not being supported when such a processor
+   is selected.
+</p><p>
+   The <b><i>get_logical_address_width</i></b> function returns the
+   number of logical/virtual address bits and the
+   <b><i>get_physical_address_width</i></b> function returns the number
+   of physical address bits.
+</p><p>
+   The processor architecture is returned by calling the
+   <b><i>architecture</i></b> function. The architecture should be one of
+   <code>arm</code>, <code>mips32</code>,
+   <code>mips64</code>, <code>ppc32</code>, <code>ppc64</code>, <code>sparc-v8</code>,
+   <code>sparc-v9</code>, <code>x86</code>, <code>x86-64</code>, or something else
+   if none of the listed is a good match.
+</p><p>
+   All functions in the interface are optional. Each function can be
+   set to NULL if it is not supported.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(processor_info_v2) {
+        tuple_int_string_t (*disassemble)(conf_object_t *obj,
+                                          generic_address_t address,
+                                          attr_value_t instruction_data,
+                                          int sub_operation);
+        void (*set_program_counter)(conf_object_t *obj,
+                                    logical_address_t pc);
+        logical_address_t (*get_program_counter)(conf_object_t *obj);
+        physical_block_t (*logical_to_physical)(conf_object_t *obj,
+                                                logical_address_t address,
+                                                access_t access_type);
+        processor_mode_t (*get_processor_mode)(conf_object_t *obj);
+        int (*enable_processor)(conf_object_t *obj);
+        int (*disable_processor)(conf_object_t *obj);
+        int (*get_enabled)(conf_object_t *obj);
+
+        cpu_endian_t (*get_endian)(conf_object_t *obj);
+        conf_object_t *(*get_physical_memory)(conf_object_t *obj);
+
+        int (*get_logical_address_width)(conf_object_t *obj);
+        int (*get_physical_address_width)(conf_object_t *obj);
+
+        const char *(*architecture)(conf_object_t *obj);
+};
+
+#define PROCESSOR_INFO_V2_INTERFACE "processor_info_v2"
+</pre><p>
+</p><p>
+
+   Note that the original version of this interface
+   (<code>processor_info</code>) must also be implemented. The only
+   difference between the two interfaces is that the original version lacks the
+   <b><i>get_processor_mode</i></b> function.
+</p><p>
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Processor-CLI-Interface">Processor CLI Interface</a></h2>
+<p>
+
+<a name="processor_cli"></a>
+Some commands and features in the CLI use the
+   <code>processor_cli</code> interface. Those commands will have
+   limited functionality if the interface is not fully implemented.
+</p><p>
+   The first argument to each function is the object to act on. This object
+   should implement both the <code>processor_info</code> interface and the
+   <code>processor_cli</code> interface.
+</p><p>
+   The <b><i>get_disassembly</i></b> function is used for the
+   <b>disassemble</b> command as well as to disassemble the next
+   instruction to be executed, when control is returned to the CLI prompt. For
+   most architectures, <b><i>get_disassembly</i></b> can be set to NULL, in which
+   case the command will use other interfaces to provide a generic
+   disassembly. The <b><i>get_disassembly</i></b> function should return a tuple
+   with the length of the instruction in bytes and the disassembly string. The
+   <i>addr_prefix</i> parameter selects the address type of the address
+   parameter, whether it is a physical address ("p"), a linear address ("l") or
+   a virtual address ("v"), just as returned from
+   <b><i>get_address_prefix</i></b>. The <i>address</i> parameter is the
+   program counter for the instruction to disassemble. If
+   <i>print_cpu</i> is non-zero, then the name of the processor should
+   be included first in the disassembly line. If <i>mnemonic</i> is not
+   NULL, then it should be output instead of the instruction disassemble. The
+   mnemonic is used to print exception or interrupt information as returned by
+   the <b><i>get_pending_exception_string</i></b> function.
+</p><p>
+   <b><i>get_pregs</i></b> returns the string to output in the CLI for the
+   <b>print-processor-registers</b> command. The <i>all</i>
+   parameter is a boolean corresponding to the <i>-all</i> switch to the
+   <b>print-processor-registers</b> command.
+</p><p>
+   The <b><i>diff_regs</i></b> function is used by the <b>stepi</b>
+   command when the <i>-r</i> flag is used. The
+   <b><i>diff_regs</i></b> function returns a list of register names,
+   where each register in that list will be read through the
+   <code>int_register</code> interface before and after an
+   instruction.
+</p><p>
+   When returning to the CLI prompt, information about the next
+   instruction or step to execute is printed. Normally, that is the
+   disassemble of the instruction at the current program counter. The
+   <b><i>get_pending_exception_string</i></b> function is called before
+   the disassembly to find out if the next step will not be an
+   instruction, but rather a taken exception or interrupt. The
+   function should inspect the given <i>cpu</i> (an object
+   implementing <code>processor_info</code> and
+   <code>processor_cli</code>) and return NULL if the next step will
+   be the execution of the instruction at the current program
+   counter. If the next step will instead be the handling of an
+   exception or interrupt, then a string saying that should be
+   returned.
+</p><p>
+   The <b><i>get_address_prefix</i></b> function returns a string with
+   the default address prefix for memory related commands. Simics
+   defines the generic prefixes "v" for virtual addresses, "l" for
+   linear addresses, and "p" for physical addresses. The default if
+   <b><i>get_address_prefix</i></b> is NULL is "v" for virtual addresses.
+</p><p>
+   <b><i>translate_to_physical</i></b> translates an address to a
+   physical address. If <b><i>translate_to_physical</i></b> is NULL, then
+   the only allowed address prefixes are "v" (virtual) and "p"
+   (physical), and the <b><i>logical_to_physical</i></b> function in the
+   <code>processor_info</code> interface will be used to translate
+   virtual addresses.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(processor_cli) {
+	tuple_int_string_t (*get_disassembly)(conf_object_t *obj,
+                                              const char *addr_prefix,
+                                              generic_address_t address,
+                                              bool print_cpu,
+                                              const char *mnemonic);
+	char *(*get_pregs)(conf_object_t *cpu,
+                           bool all);
+	attr_value_t (*get_diff_regs)(conf_object_t *obj);
+	char *(*get_pending_exception_string)(conf_object_t *obj);
+	char *(*get_address_prefix)(conf_object_t *obj);
+	physical_block_t (*translate_to_physical)(conf_object_t *obj,
+                                                  const char *prefix,
+                                                  generic_address_t address);
+};
+
+#define PROCESSOR_CLI_INTERFACE "processor_cli"
+</pre><p>
+</p><p>
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Processor-GUI-Interface">Processor GUI Interface</a></h2>
+<p>
+
+<a name="processor_gui"></a>
+The <code>processor_gui</code> interface is implemented by
+   processors that support displays in the Simics native GUI. It is
+   only registered to indicate support for the displays, and does not
+   contain any actual functionality.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(processor_gui) {
+        void (*dummy)(conf_object_t *obj);
+};
+
+#define PROCESSOR_GUI_INTERFACE "processor_gui"
+</pre><p>
+</p><p>
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Step-Interface">Step Interface</a></h2>
+<p>
+
+<a name="step"></a>
+The <code>step</code> interface is typically implemented by
+  processors, but can be implemented by other objects as well. Its
+  purpose is to handle step events using a queue.
+</p><p>
+  The current number of steps for the <i>queue</i> is returned
+  when calling <b><i>get_step_count</i></b>.
+</p><p>
+  The <b><i>post_step</i></b> function will schedule an event that will
+  occur after <i>steps</i> (which must be nonnegative)
+  counted from local current step at
+  <i>queue</i>. An event previously posted can be removed by
+  calling <b><i>cancel_step</i></b>. The <b><i>cancel_step</i></b> function takes a
+  function <i>pred</i> as argument which is called when a matching
+  event is found. The event is only removed if <i>pred</i> returns
+  <code>1</code>. The <b><i>find_next_step</i></b> takes the same arguments
+  as <b><i>cancel_step</i></b> but only returns the number of cycles before
+  the event will occur. The <i>evclass</i> is the event class,
+  <i>obj</i> is the object posting the event, and
+  <i>user_data</i> is pointer to data used as a parameter when
+  calling the callback function defined in the <i>evclass</i>.
+  If no matching event was found, <b><i>find_next_step</i></b> returns
+  −1.
+</p><p>
+  The <b><i>events</i></b> method returns a list of all pending events in
+  expiration order. Each element is a four-element list containing the event
+  object, the event class name, the expiration time counted in steps as an
+  integer and the event description as given by the event class
+  <b><i>describe</i></b> method, or <em>nil</em> for events whose event class do
+  not define that method.
+</p><p>
+  The <b><i>advance</i></b> function will increment the number of steps
+  for the queue, decrementing the number of steps to the first event
+  to the value defined by <i>steps</i>. The number of steps remaining
+  to the next event is returned. It is an error to advance beyond the
+  next pending event, so the return value is never negative.
+</p><p>
+  The implementor of the <code>step</code> interface can use any
+  checkpoint representation. The <i>name</i> field in the
+  event class data structure is unique, and the attribute setter
+  function for checkpoint restore can use
+  <b><i>VT_get_event_class</i></b> to get the event class structure
+  corresponding to an event class name.
+</p><p>
+  </p><pre class="jdocu_small">
+SIM_INTERFACE(step) {
+        pc_step_t (*get_step_count)(conf_object_t *NOTNULL queue);
+        void (*post_step)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                pc_step_t steps,
+                lang_void *user_data);
+        void (*cancel_step)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+        pc_step_t (*find_next_step)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+
+        attr_value_t (*events)(conf_object_t *NOTNULL obj);
+
+        pc_step_t (*advance)(conf_object_t *queue, pc_step_t steps);
+};
+
+#define STEP_INTERFACE "step"
+</pre><p>
+</p><p>
+  
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Step-Cycle-Ratio-Interface">Step-Cycle-Ratio Interface</a></h2>
+<p>
+
+<a name="step_cycle_ratio"></a>
+The <code>step_cycle_ratio</code> interface is implemented by
+  processors that support a changeable ratio between steps and
+  cycles. The <b>set-step-rate</b> command uses this interface to
+  set the ratio between steps and cycles.
+</p><p>
+  The <b><i>set_ratio</i></b> sets the ratio between <i>steps</i> and
+  <i>cycles</i>. Note that the introduction of stall cycles can
+  skew the ratio. The <b><i>get_ratio</i></b> simply returns the current
+  ratio.
+</p><p>
+  The <i>cycles</i> and <i>step</i> arguments must be in the range
+  [1..128] and <i>cycles</i> must be a power of two. Implementers of this
+  interface may choose to ignore other values of <i>cycles</i> and
+  <i>step</i> and may log an error.
+</p><p>
+  </p><pre class="jdocu_small">
+typedef struct {
+        uint32 steps;
+        uint32 cycles;
+} step_cycle_ratio_t;
+
+SIM_INTERFACE(step_cycle_ratio) {
+        step_cycle_ratio_t (*get_ratio)(conf_object_t *obj);
+        void (*set_ratio)(conf_object_t *obj, uint32 steps, uint32 cycles);
+};
+
+#define STEP_CYCLE_RATIO_INTERFACE "step_cycle_ratio"
+</pre><p>
+</p><p>
+  
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Stall-Interface">Stall Interface</a></h2>
+<p>
+
+<a name="stall"></a>
+The <code>stall</code> interface can be implemented by objects that also
+  implement the <code>cycle</code> and <code>step</code> interfaces. The
+  <code>stall</code> interface controls the addition of extra cycles between
+  steps.
+</p><p>
+  The <b><i>get_stall_cycles</i></b> function returns the remaining number of
+  stall cycles. The object will advance that number of cycles before starting
+  with the next step.
+</p><p>
+  The <b><i>set_stall_cycles</i></b> function is used to change the number of
+  stall cycles before the next step. It is legal to first call this function
+  with a large value for <i>cycles</i> and then at a later point reduce the
+  cycle count is resume execution earlier than indicated by the first call.
+</p><p>
+  The <b><i>get_total_stall_cycles</i></b> returns the total accumulated number of
+  stall cycles.
+</p><p>
+  </p><pre class="jdocu_small">SIM_INTERFACE(stall) {
+        cycles_t (*get_stall_cycles)(conf_object_t *obj);
+        void (*set_stall_cycles)(conf_object_t *obj, cycles_t cycles);
+        cycles_t (*get_total_stall_cycles)(conf_object_t *obj);
+};
+#define STALL_INTERFACE "stall"
+</pre><p>
+</p><p>
+  
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Register-Interface">Register Interface</a></h2>
+<p>
+
+<a name="int_register"></a>
+<a name="Sim_RegInfo_Catchable"></a>
+The <code>int_register</code>
+   interface is used for access to registers in a processor.  It
+   can be used to access any kind of integer register, not only the
+   "normal" registers.  This includes all kinds of control registers,
+   hidden registers and anything else that might be useful to access as
+   a register.  The only limitation is that the register value should
+   be representable as a 64-bit unsigned integer.
+</p><p>
+   This interface can be implemented by other classes than processors,
+   but it is likely to be found mostly in processors.
+ </p><p>
+   Registers are identified by a number, and there are two functions
+   to translate from register names to register numbers and back.  The
+   translation need not be one-to-one, which means that one register
+   can have several names.  A register name can, however, only
+   translate to a single register number.
+</p><p>
+   Often, registers are grouped in <i>register banks</i>, where
+   registers in the bank are numbered from 0 up. Registers in a bank
+   should have consecutive numbers (unless their numbering is very sparse).
+   This allows a user to deduce register numbers by calling
+   <b><i>get_number</i></b> for the first register only.
+   The first register numbers should be used for the general-purpose integer 
+   registers, if possible (so that integer register <b>r</b>N has number N).
+</p><p>
+   Using this interface to read or write registers does not cause any
+   side effects, such as triggering interrupts or signalling haps.
+</p><p>
+   <b>get_number</b> translates a register name to its number. Returns -1 if
+   the register does not exist.
+</p><p>
+   <b>get_name</b> translates a register number to its canonical name.
+</p><p>
+   <b>read</b> reads a register value.
+</p><p>
+   <b>write</b> writes a new register value.
+</p><p>
+   <b>all_registers</b> returns a list of all register numbers that can
+   be used for this object.
+</p><p>
+   <b>register_info</b> returns information about a single register.
+   The information return depends on the <i>info</i> parameter.
+</p><p>
+   </p><dl><dt id="dt:sim_reginfo_catchable"><b>Sim_RegInfo_Catchable</b></dt><dd>Return 1 if
+   <code>Core_Control_Register_Write</code> and
+   <code>Core_Control_Register_Read</code> are triggered when this
+   register is written or read.</dd>Return 0 otherwise.
+
+   </dl><p><span class="jdocu_small">
+   <a name="ireg_info_t"></a></span></p><pre class="jdocu_small">typedef enum {
+        Sim_RegInfo_Catchable
+} ireg_info_t;</pre><p>
+
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(int_register) {
+        int (*get_number)(conf_object_t *NOTNULL obj,
+                          const char *NOTNULL name);
+        const char *(*get_name)(conf_object_t *NOTNULL obj, int reg);
+        uint64 (*read)(conf_object_t *NOTNULL obj, int reg);
+        void (*write)(conf_object_t *NOTNULL obj, int reg, uint64 val);
+        attr_value_t (*all_registers)(conf_object_t *NOTNULL obj);
+        int (*register_info)(conf_object_t *NOTNULL obj, int reg,
+                             ireg_info_t info);
+};
+
+#define INT_REGISTER_INTERFACE "int_register"
+</pre><p>
+</p><p>
+   
+</p><p>
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Decoder-Interface">Decoder Interface</a></h2>
+<p>
+
+
+   <a name="decoder_interface_t"></a>
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(decoder) {
+        void (*register_decoder)(conf_object_t *obj, 
+                                 decoder_t *NOTNULL decoder);
+        void (*unregister_decoder)(conf_object_t *obj, 
+                                   decoder_t *NOTNULL decoder);
+};</pre><p>
+</p><p>
+
+   The <code>decoder</code> interface is implemented by processors
+   that allows connecting user decoders. This allows a user to
+   implement the semantics of instructions that are not available in
+   the standard Simics model or change the semantics of instructions
+   implemented by Simics. This interface replaces
+   <b><i>SIM_register_arch_decoder</i></b> and
+   <b><i>SIM_unregister_arch_decoder</i></b> functions.
+</p><p>
+   The <b><i>register_decoder</i></b> function adds a decoder and
+   <b><i>unregister_decoder</i></b> removes a decoder.
+</p><p>
+   The decoder is installed/removed for every object of the same class as the
+   <i>obj</i> argument which must be the same object from
+   which the interface was fetched.
+</p><p>
+   When Simics decodes an instruction, it will first see if any
+   instruction decoders are registered for the current CPU class.
+   For any decoders it finds, Simics will let it try to decode the
+   instruction.  The decoders are called in order, starting with the
+   last registered decoder, and if one decoder accepts the instruction,
+   the rest of the decoders will not be called.
+</p><p>
+   The decoder is specified by the <code>decoder_t</code> data structure that the 
+   user supplies:
+</p><p>
+   
+   </p><pre class="jdocu_small">typedef struct {
+        void *user_data;
+        int (*NOTNULL decode)(uint8 *code,
+                              int valid_bytes,
+                              conf_object_t *cpu,
+                              instruction_info_t *ii,
+                              void *user_data);
+        tuple_int_string_t (*NOTNULL disassemble)(uint8 *code,
+                                                  int valid_bytes,
+                                                  conf_object_t *cpu,
+                                                  void *user_data);
+        int (*NOTNULL flush)(instruction_info_t *ii,
+                             void *user_data);
+} decoder_t;</pre><p>
+</p><p>
+   <a name="decoder_t"></a>
+</p><p>
+   The <b><i>decode</i></b> function is called to decode an instruction
+   pointed to by <i>code</i>.  The first byte corresponds to
+   the lowest address of the instruction in the simulated
+   memory. <i>valid_bytes</i> tells how many bytes can be
+   read. The CPU is given in the <i>cpu</i> parameter.  When
+   the decoder has successfully decoded an instruction, it should set
+   the <i>ii_ServiceRoutine</i>, the <i>ii_Arg</i>, and the
+   <i>ii_Type</i> members of the <i>ii</i> structure (see
+   below), and returns the number of bytes used in the decoding.  If
+   it does not apply to the given instruction, it should return zero.
+   If the decoder needs more data than <i>valid_bytes</i> it
+   should return a negative number corresponding to the total number
+   of bytes it will need to continue the decoding. The underlying
+   architecture limits the number of bytes that can be requested,
+   e.g. no more than 4 bytes can be requested on most RISC
+   architectures. Simics will call the decoder again when more bytes
+   are available. This process is repeated until the decoder accepts
+   or rejects the instruction.  A decoder should never request more
+   data than it needs. For example, if an instructions can be rejected
+   by looking at the first byte, the decoder should never ask for more
+   bytes.
+</p><p>
+   The <code>instruction_info_t</code> is defined as follows:
+</p><p>
+   
+   </p><pre class="jdocu_small">typedef struct instruction_info {
+        service_routine_t  ii_ServiceRoutine;
+        uint64             ii_Arg;
+        unsigned int       ii_Type;
+        lang_void         *ii_UserData;
+        logical_address_t  ii_LogicalAddress;
+        physical_address_t ii_PhysicalAddress;
+} instruction_info_t;</pre><p>
+</p><p>
+   <a name="instruction_info_t"></a>
+</p><p>
+   <i>ii_ServiceRoutine</i> is a pointer to a function that will
+   be called by Simics every time the instruction is executed. It has
+   the following prototype:
+   </p><p>
+   
+   </p><pre class="jdocu_small">typedef exception_type_t (*service_routine_t)(conf_object_t *cpu, 
+                                              uint64 arg,
+                                              lang_void *user_data);</pre><p>
+<a name="service_routine_t"></a>
+    
+</p><p>
+   The service routine function should return an exception when it is
+   finished to signal its status. If no exception occurs
+   <code>Sim_PE_No_Exception</code> should be returned.
+</p><p>
+   See <code>exception_type_t</code> in
+   <code>src/include/simics/base/memory.h</code> for the different
+   exceptions available.
+</p><p>
+   A special return value, <code>Sim_PE_Default_Semantics</code>, can be
+   returned; this signals Simics to run the default semantics for the
+   instruction. This is useful if the semantics of an instruction
+   should be changed but the user routine does not want to handle it all
+   the time.
+</p><p>
+   Note that in a shared memory multiprocessor, the CPU
+   used in decoding may differ from the CPU that executes the
+   instruction, since the decoded instructions may be cached.
+</p><p>
+   <i>ii_Arg</i> is the argument <i>arg</i> that will be
+   passed on to the service routine function. Op code bit-fields for
+   the instruction such as register numbers or intermediate values can
+   be stored here. The <i>ii_UserData</i> field can also be used
+   to pass information to the service routine if more data is needed.
+</p><p>
+   <i>ii_Type</i> is either <code>UD_IT_SEQUENTIAL</code> or
+   <code>UD_IT_CONTROL_FLOW</code>.  A sequential type means that the
+   instruction does not perform any branches and the update of the
+   program counter(s) is handled by Simics. In a control flow
+   instruction on the other hand it is up to the user to set the
+   program counter(s).
+</p><p>
+   <i>ii_LogicalAddress</i> and <i>ii_PhysicalAddress</i>
+   holds the logical and physical addresses of the instruction to be
+   decoded.
+</p><p>
+   
+</p><p>
+   The <b><i>disassemble</i></b> function is called to disassemble an
+   instruction.  It uses the same <i>code</i>,
+   <i>valid_bytes</i>, and <i>cpu</i> parameters as
+   the <b><i>decode</i></b> function. If the disassembly is valid, then
+   the string part of the returned <code>tuple_int_string_t</code> struct
+   should be a MALLOCed string with the disassembly and the integer
+   part should be its length in bytes.  The caller is responsible for
+   freeing the disassembly string. The string member should be NULL
+   and the integer part should be zero if the disassembly is not
+   valid.  If the disassemble function needs more data than
+   <i>valid_bytes</i> it should return a negative number in
+   the integer part in the same way as the <b><i>decode</i></b> function,
+   and set the string part to NULL.
+</p><p>
+   The <b><i>flush</i></b> function is called to free any memory
+   allocated when decoding an instruction and any user data associated
+   with the instruction.  It should return zero if it does not
+   recognize the instruction, and non-zero if it has accepted it.
+   Usually, the way to recognize if a decoded instruction is the right
+   one to flush is to compare <code>ii-&gt;ii_ServiceRoutine</code> with the
+   function that was set in the <i>decode</i> function. Note
+   that the <i>cpu</i> parameter is the processor that caused
+   the flush. It is more or less an arbitrary processor and should be
+   ignored.
+</p><p>
+   In addition to the function pointers, the
+   <code>decoder_t</code> structure contains a
+   <i>user_data</i> pointer that is passed to all the
+   functions.  This can be used for passing any data to the decoder
+   functions.
+</p><p>
+   
+</p><p>
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Exception-Interface">Exception Interface</a></h2>
+<p>
+
+<a name="exception"></a>
+<a name="hapCore_Exception"></a>
+</p><p>
+The <code>exception</code> interface is used together with the
+Core_Exception hap to enable inspection abilities for triggered
+exceptions.
+</p><p>
+The <code>exception</code> interface is used to translate
+   exception numbers, as received by the Core_Exception hap, to names,
+   and vice versa.
+</p><p>
+   The <b><i>get_number</i></b> function returns the number associated
+   with an exception name, or -1 if the no exception with the given
+   name exist. The <b><i>get_name</i></b> returns the name
+   associated with an exception number. The <b><i>get_source</i></b>
+   function is only used on X86 targets and returns the source for an
+   exception, as an exception number can be raised from different
+   sources. The <b><i>all_exceptions</i></b> function returns a list of
+   all exceptions numbers.
+</p><p>
+   The exception numbers are architecturally defined, while their
+   names are defined by the model.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(exception) {
+        int (*get_number)(conf_object_t *NOTNULL obj,
+                          const char *NOTNULL name);
+        const char *(*get_name)(conf_object_t *NOTNULL obj, int exc);
+        int (*get_source)(conf_object_t *NOTNULL obj, int exc);
+        attr_value_t (*all_exceptions)(conf_object_t *NOTNULL obj);
+};
+
+#define EXCEPTION_INTERFACE "exception"
+</pre><p>
+</p><p>
+   
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Context-Handler-Interface">Context Handler Interface</a></h2>
+<p>
+
+<a name="context_handler"></a>
+
+   </p><div class="note">
+<b>Note:</b>
+This interface is not supported, and may change in the future.</div>Get and set current context. The <b><i>set_current_context</i></b> function
+   returns zero if the passed object is not of the context class, otherwise
+   one is returned.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(context_handler) {
+        conf_object_t *(*get_current_context)(conf_object_t *obj);
+        int (*set_current_context)(conf_object_t *obj, conf_object_t *ctx);
+};
+
+#define CONTEXT_HANDLER_INTERFACE "context_handler"
+</pre><p>
+</p><p>
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Exec-Trace-Interface">Exec Trace Interface</a></h2>
+<p>
+
+<a name="exec_trace"></a>
+The <code>exec_trace</code> interface is implemented by processor models
+  that support tracing. A trace listener registers itself with the
+  <b><i>register_tracer</i></b> call. The <i>tracer</i> callback will be
+  called by the processor model
+  when each instruction is just about to be executed, passing the
+  <i>tracer_data</i> as passed to the <b><i>register_tracer</i></b> function
+  in addition to information about the instruction that is executed.
+  Invoke <b><i>unregister_tracer</i></b> with the same two pointers to deregister
+  the listener.
+</p><p>
+  
+</p><pre class="jdocu_small">typedef void (*instruction_trace_callback_t)(lang_void *tracer_data,
+                                             conf_object_t *cpu,
+                                             linear_address_t la,
+                                             logical_address_t va,
+                                             physical_address_t pa,
+                                             byte_string_t opcode);</pre><p>
+
+</p><p>
+  The <i>pa</i> parameter to the callback will always be valid, but some
+  CPU architectures may not support <i>la</i> or <i>va</i>. The
+  <i>la</i> argument is typically only valid for x86 CPUs. Lastly, the
+  opcode of the instruction is passed in <i>opcode</i>. The
+  <i>opcode</i> is passed without endian conversion, meaning that byte X in
+  <i>opcode</i> corresponds to the byte at <i>pa</i> + X.
+</p><p>
+  </p><pre class="jdocu_small">SIM_INTERFACE(exec_trace) {
+        void (*register_tracer)(conf_object_t *NOTNULL cpu_obj,
+                                instruction_trace_callback_t tracer,
+                                lang_void *tracer_data);
+        void (*unregister_tracer)(conf_object_t *NOTNULL cpu_obj,
+                                  instruction_trace_callback_t tracer,
+                                  lang_void *tracer_data);
+};
+
+#define EXEC_TRACE_INTERFACE "exec_trace"
+</pre><p>
+</p><p>
+  
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Opcode-Info-Interface">Opcode Info Interface</a></h2>
+<p>
+
+<a name="opcode_info"></a>
+The <code>opcode_info</code> interface is implemented by
+   processors that need to communicate information about the encoding
+   of instructions to the GUI.
+</p><p>
+   The <b><i>get_opcode_length</i></b> function returns information about
+   instruction encoding in the current operating mode of the
+   processor. The <b><i>min_alignment</i></b> field indicates the
+   smallest allowed alignment of instructions, typically 4 for regular
+   RISC architectures. The <b><i>max_length</i></b> field specifies the
+   maximum instruction length in bytes. The <b><i>avg_length</i></b> is
+   an approximation of the average instruction size.
+</p><p>
+   </p><pre class="jdocu_small">
+typedef struct {
+        int min_alignment;
+        int max_length;
+        int avg_length;
+} opcode_length_info_t;
+
+SIM_INTERFACE(opcode_info) {
+        opcode_length_info_t (*get_opcode_length_info)(conf_object_t *obj);
+};
+
+#define OPCODE_INFO_INTERFACE "opcode_info"
+</pre><p>
+</p><p>
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Virtual-Data-Breakpoint-Interface">Virtual Data Breakpoint Interface</a></h2>
+<p>
+
+<a name="virtual_data_breakpoint"></a>
+Add and remove virtual-address (and, on x86, linear-address) read and
+     write breakpoints. On every read access that intersects a read
+     breakpoint's interval, the registered callback function is called with the
+     object that initiated the read, and the address and size of the read. (The
+     interval includes both endpoints; <i>first</i> must be less than
+     or equal to <i>last</i>.) Write breakpoints work exactly the same,
+     except that the callback is given the actual value being written, not just
+     its size.
+</p><p>
+     The callback is called before the read or write has taken place, but may
+     not intervene. If one or more breakpoint callbacks stop the simulation,
+     the current instruction is completed before the stop takes effect. If more
+     than one breakpoint is triggered by the same read or write, the
+     implementation may call their callbacks in any order.
+</p><p>
+     On x86, the <code>Virtual_Breakpoint_Flag_Linear</code> flag causes the
+     breakpoint to use linear rather than virtual addresses. (Adding a
+     breakpoint with unsupported flags is illegal.)
+</p><p>
+     </p><div class="note">
+<b>Note:</b>
+This interface is preliminary and may change without prior notice.
+     </div><a name="virtual_breakpoint_flags_t"></a>
+<pre class="jdocu_small">typedef enum {
+        Virtual_Breakpoint_Flag_Linear = 1
+} virtual_breakpoint_flags_t;</pre><p>
+
+</p><p>
+     </p><pre class="jdocu_small">SIM_INTERFACE(virtual_data_breakpoint) {
+        virtual_data_bp_handle_t *NOTNULL (*add_read)(
+                conf_object_t *NOTNULL obj,
+                generic_address_t first, generic_address_t last,
+                void (*NOTNULL callback)(
+                        cbdata_call_t data, conf_object_t *NOTNULL initiator,
+                        generic_address_t address, unsigned size),
+                cbdata_register_t data, uint32 flags);
+        virtual_data_bp_handle_t *NOTNULL (*add_write)(
+                conf_object_t *NOTNULL obj,
+                generic_address_t first, generic_address_t last,
+                void (*NOTNULL callback)(
+                        cbdata_call_t data, conf_object_t *NOTNULL initiator,
+                        generic_address_t address, bytes_t value),
+                cbdata_register_t data, uint32 flags);
+        void (*remove)(conf_object_t *NOTNULL obj,
+                       virtual_data_bp_handle_t *NOTNULL bp_handle);
+};
+#define VIRTUAL_DATA_BREAKPOINT_INTERFACE "virtual_data_breakpoint"
+</pre><p>
+</p><p>
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Virtual-Instruction-Breakpoint-Interface">Virtual Instruction Breakpoint Interface</a></h2>
+<p>
+
+<a name="virtual_instruction_breakpoint"></a>
+Add and remove virtual-address (and, on x86, linear-address) instruction
+     breakpoints. Every time the processor executes an instruction that
+     intersects the breakpoint's interval, the callback function is called with
+     the processor, and the address and size of the instruction. (The interval
+     includes both endpoints; <i>first</i> must be less than or equal
+     to <i>last</i>.)
+</p><p>
+     The callback is called before the instruction is executed. If one or more
+     breakpoint callbacks stop the simulation, the stop takes effect before
+     the instruction is run. (This means that once the simulation starts
+     again, the same breakpoints will trigger immediately again. The callback
+     can use <b><i>VT_step_stamp</i></b> to detect re-triggering.) If more than
+     one breakpoint is triggered by the same instruction, the implementation
+     may call their callbacks in any order.
+</p><p>
+     If the filter function is non-null and returns false, the callback is not
+     called. The filter function is supplied with the instruction opcode (the
+     raw bytes of the instruction) and a processor (which may not be the same
+     processor that the breakpoint is set on, but is guaranteed to be of the
+     same class). The filter may base its decision only on the opcode bytes and
+     the string obtained by asking the processor to disassemble the
+     instruction; this allows the implementation to cache the result and omit
+     future calls to the filter function where the opcode and disassembly
+     string would be the same.
+</p><p>
+     On x86, the <code>Virtual_Breakpoint_Flag_Linear</code> flag causes the
+     breakpoint to use linear rather than virtual addresses. Calling with
+     unsupported flags is illegal.
+</p><p>
+     </p><div class="note">
+<b>Note:</b>
+This interface is preliminary and may change without prior notice.
+     </div><a name="virtual_breakpoint_flags_t2"></a>
+<pre class="jdocu_small">typedef enum {
+        Virtual_Breakpoint_Flag_Linear = 1
+} virtual_breakpoint_flags_t;</pre><p>
+
+</p><p>
+     </p><pre class="jdocu_small">SIM_INTERFACE(virtual_instruction_breakpoint) {
+        virtual_instr_bp_handle_t *NOTNULL (*add)(
+                conf_object_t *NOTNULL obj,
+                generic_address_t first, generic_address_t last,
+                bool (*filter)(cbdata_call_t filter_data,
+                               conf_object_t *NOTNULL cpu, bytes_t opcode),
+                cbdata_register_t filter_data,
+                void (*NOTNULL callback)(
+                        cbdata_call_t callback_data, conf_object_t *NOTNULL cpu,
+                        generic_address_t address, unsigned size),
+                cbdata_register_t callback_data, uint32 flags);
+        void (*remove)(conf_object_t *NOTNULL obj,
+                       virtual_instr_bp_handle_t *NOTNULL bp_handle);
+};
+#define VIRTUAL_INSTRUCTION_BREAKPOINT_INTERFACE \
+        "virtual_instruction_breakpoint"
+</pre><p>
+</p><p>
+   
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Describe-Registers-Interface">Describe Registers Interface</a></h2>
+<p>
+
+<a name="describe_registers"></a>
+This interface is used by the Simics debugger to get certain information from
+  a processor.
+</p><p>
+  The <b><i>first_child</i></b> function returns the first description in the
+  sequence of child descriptions of parent or NULL if parent has no
+  children. Groups can have both registers and groups as children, registers
+  can only have fields as children and fields cannot have any children. If
+  parent is NULL, return the first description in the sequence of top-level
+  descriptions.
+</p><p>
+  Use <b><i>next_description</i></b> to deallocate the previous description and
+  return the next description in the sequence or NULL if there are no more
+  descriptions in the current sequence.
+</p><p>
+  The <b><i>free_description</i></b> function is used to free the description
+  without returning the next one in the sequence.
+</p><p>
+  The <b><i>first_named_value</i></b> function returns the first named value in
+  the sequence of named values for parent or NULL if there are no named values
+  for parent. Only fields and registers can have named values.
+</p><p>
+  Use <b><i>next_named_value</i></b> to deallocate the previous named value and
+  return the next named value or NULL if there are no more named values in this
+  sequence.
+</p><p>
+  Use <b><i>free_named_value</i></b> to free the named value without returning the
+  next one in the sequence.
+</p><p>
+  The <b><i>get</i></b> and <b><i>set</i></b> functions are used to get and set the
+  value of the register. To set the value pass in a bytes_t for the value. The
+  value passed in must be long enough to contain the full value of the
+  register. If the bytes_t is too long it will be truncated. To get the value
+  pass in a buffer_t which is long enough to contain the register's value. The
+  value is encoded in little endian byte order.
+</p><p>
+  <a name="description_type_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Description_Type_Group,
+
+        Description_Type_Int_Reg,
+        Description_Type_Float_Reg,
+        Description_Type_Fields_Reg,
+
+        Description_Type_Int_Field,
+        Description_Type_Float_Field,
+} description_type_t;</pre><p>
+
+  <a name="reg_role_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Reg_Role_None, /* No special role for the register. */
+        Reg_Role_Program_Counter /* The register is the program counter. */
+} reg_role_t;</pre><p>
+
+  <a name="reg_bitorder_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Reg_Bitorder_Little_Endian,
+        Reg_Bitorder_Big_Endian
+} reg_bitorder_t;</pre><p>
+
+  <a name="named_value_t"></a>
+</p><pre class="jdocu_small">typedef struct {
+        const char *name;
+        const char *description;
+        const bytes_t value; /* Little endian byte order */
+} named_value_t;</pre><p>
+
+  <a name="description_t"></a>
+</p><pre class="jdocu_small">typedef struct {
+        /* Common fields */
+        description_type_t type;
+        const char *name;
+        const char *description;
+
+        /* Register and field fields */
+        int16 dwarf_id;            /* id used by dwarf for this register
+                                      or -1 if no such id is defined. This
+                                      is ABI specific, but the CPU will
+                                      give the ids for the most common ABI
+                                      for that architecture. */
+        reg_bitorder_t bitorder;   /* Bitorder convention used in the
+                                      documentation for this register or
+                                      field. */
+        reg_role_t role;           /* Role of this register in the ABI/HW. */
+        bool memory_mapped;        /* True if the register is memory mapped. */
+        uint64 offset;             /* Offset into the bank for memory mapped
+                                      registers. */
+        bool catchable;            /* True if Core_Control_Register_Write and
+                                      Core_Control_Register_Read are triggered
+                                      when this register is written or read. */
+        int msb, lsb;              /* Most and least significant bit of the
+                                      register or field. Always given in le
+                                      bitorder. For groups msb == -1 and
+                                      lsb == 0. */
+        int regsize;               /* Number of bits in the register, or the
+                                      register this field is a part of. */
+        int reg_id;                /* For registers and fields the id to pass
+                                      to the get and set methods to access the
+                                      register's value. Fields have the same
+                                      reg_id as the register they are a part
+                                      of. Not valid for groups.*/
+} description_t;</pre><p>
+
+  </p><pre class="jdocu_small">
+SIM_INTERFACE(describe_registers) {
+        const description_t *(*first_child)(
+                conf_object_t *NOTNULL obj, const description_t *parent);
+        const description_t *(*next_description)(
+                conf_object_t *NOTNULL obj, const description_t *prev);
+        void (*free_description)(conf_object_t *NOTNULL obj,
+                                 const description_t *desc);
+        const named_value_t *(*first_named_value)(
+                conf_object_t *NOTNULL obj, const description_t *parent);
+        const named_value_t *(*next_named_value)(
+                conf_object_t *NOTNULL obj, const named_value_t *prev);
+        void (*free_named_value)(conf_object_t *NOTNULL obj,
+                                 const named_value_t *nv);
+        void (*get)(conf_object_t *NOTNULL obj, int reg_id, buffer_t dest);
+        void (*set)(conf_object_t *NOTNULL obj, int reg_id, bytes_t value);
+};
+
+#define DESCRIBE_REGISTERS_INTERFACE "describe_registers"
+</pre><p>
+</p><p>
+  
+
+</p><p>
+</p>
+<div class="chain">
+<a href="processor-api.html">9 Processor API</a>
+<a href="simics-api-functions.html">9.2 Simics API Functions</a>
+</div>

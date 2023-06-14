@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>bits</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-bin.html">bin</a>
+<a href="rm-cmd-break-hap.html">break-hap – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="bits"></a>
+<h1 id="bits"><a href="#bits">bits</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>bits</b> [<i>action</i>] <i>value</i> <i>first</i> <i>last</i> [-size] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Perform bit manipulation on <i>value</i> and return the result.
+<p>
+The manipulation done depends on <i>action</i>. In all cases, a bit range is specified using 0-based (little endian) bit numbers <i>first</i> and <i>last</i>. If the <tt>-size</tt> flag is given, <i>last</i> is instead interpreted as the number of bits in the range.
+</p><p>
+</p><ul> <li><em>extract</em> (default) - mask out and shift down the range.</li>
+<p>
+</p><li><em>keep</em> - mask out the range (like <em>extract</em> bit without shift).</li>
+<p>
+</p><li><em>clear</em> - set the range to 0.</li>
+<p>
+</p><li><em>set</em> - set the range to 1.</li>
+<p>
+</p><li><em>remove</em> - remove the range (and shift down the bits above it).</li> </ul>
+<p>
+Some examples: </p><ul> <li>Extract bits 1 to 2<br>
+ <tt>bits 0b11101 1 2</tt><br>
+ The bit numbers can in fact be given in opposite order as well:<br>
+ <tt>bits 0b11101 2 1</tt> </li>
+<p>
+</p><li>Mask out bits 1 to 2<br>
+ <tt>bits "keep" 0b11101 1 2</tt></li>
+<p>
+</p><li>Remove 2 bits from bit 2<br>
+ <tt>bits "remove" 0b10111 2 2 -size</tt></li>
+<p>
+</p></ul> 
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-bin.html">bin</a>
+<a href="rm-cmd-break-hap.html">break-hap – deprecated</a>
+</div>

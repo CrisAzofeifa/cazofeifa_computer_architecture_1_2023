@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>con_input</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_checkpoint.html">checkpoint</a>
+<a href="__rm_interface_con_input_code.html">con_input_code</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_con_input">con_input</a></h1>
+<p>
+
+<a name="con_input"></a><a name="con_input_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>con_input</code> interface facilitates sending simulated input
+   to the target system. It is implemented by the text console.
+<p>
+   Simulated input is passed through the associated <b>recorder</b>
+   object and then sent to the serial device connected to the console. The
+   console will not perform VT100 input handling or BS/DEL conversion.
+</p><p>
+   The <b><i>input_str</i></b> method allows input of a NUL-terminated string. The
+   <b><i>input_data</i></b> allows sending a buffer, which can include NUL
+   characters.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(con_input) {
+        void (*input_str)(conf_object_t *NOTNULL obj, const char *str);
+        void (*input_data)(conf_object_t *NOTNULL obj, bytes_t data);
+};
+#define CON_INPUT_INTERFACE "con_input"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_checkpoint.html">checkpoint</a>
+<a href="__rm_interface_con_input_code.html">con_input_code</a>
+</div>

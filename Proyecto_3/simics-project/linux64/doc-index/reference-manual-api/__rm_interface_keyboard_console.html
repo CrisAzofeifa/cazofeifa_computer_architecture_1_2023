@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>keyboard_console</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_keyboard.html">keyboard</a>
+<a href="__rm_interface_linear_image.html">linear_image</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_keyboard_console">keyboard_console</a></h1>
+<p>
+
+<a name="keyboard_console"></a><a name="keyboard_console_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Interface implemented by consoles, to receive notifications from keyboard
+   controllers.
+<p>
+   The function <b><i>keyboard_ready()</i></b>, which takes the console as its
+   first argument <i>obj</i>, must be called by the keyboard controller
+   when it is ready to receive keyboard events again after having rejected a
+   keyboard event. Note that this function may be called even though no
+   keyboard event has been rejected, and that the console must not assume that
+   keyboard controller will accept an event just because the
+   <b><i>keyboard_ready()</i></b> function has been called.
+</p><p>
+   <b><i>keyboard_ready</i></b> must not be called while the keyboard controller
+   is handling a <b><i>keyboard_event()</i></b> call.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(keyboard_console) {
+        void (*keyboard_ready)(conf_object_t *obj);
+};
+
+#define KEYBOARD_CONSOLE_INTERFACE "keyboard_console"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_keyboard.html">keyboard</a>
+<a href="__rm_interface_linear_image.html">linear_image</a>
+</div>

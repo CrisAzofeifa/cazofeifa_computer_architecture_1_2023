@@ -1,0 +1,166 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>6.5 Object Name</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="configuration-components.html">6.4 Components</a>
+<a href="conf-start-scripts.html">6.6 Ready-to-run Configurations</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="configuration.html">6 Configuration and Checkpointing</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="conf-object-name">6.5 Object Name</a></h1>
+<p>
+
+</p><p>
+An object can be identified using more than one name. This section
+describes the different ways of identifying an object.
+</p><p>
+All objects have a name that is used when printing log messages,
+writing checkpoints, in CLI commands, etc. The
+<b><i>SIM_object_name</i></b> function returns this object name. This
+name will be referred to as the <em>object name</em> in this section,
+even though an object can have several names for identification.
+</p><p>
+The object name is the name the object is given when created, or the
+objects location in the hierarchy. 
+</p><p>
+An object can be given a name when created. The
+<b><i>SIM_create_object</i></b>, <b><i>SIM_add_configuration</i></b>, or
+<b><i>SIM_set_configuration</i></b> functions takes the object name as
+argument. The given name can be a string without dots "foo", a string
+with dots "cmp0.foo", an empty string "", or None. This section will
+describe how the given name affects the object name.
+</p><p>
+An object's <em>hierarchical location</em> is defined by its
+<i>component</i> and <i>component_slot</i> attributes. The
+hierarchical location for an object is the name of the 
+<i>component</i> that the object's <i>component</i> 
+attribute points at, and the component's <i>component_slot</i> 
+attribute string, concatenated with a dot. 
+For example, an object
+that belongs to a component named "cmp0" with the slot name "bar" has
+the hierarchical location "cmp0.bar". 
+</p><p>
+All objects that reside in a slot
+in a component have valid <i>component</i> and
+<i>component_slot</i> attributes. It is the component's
+responsibility that the attributes are valid. The attributes are set
+when an object is added to a slot. A name that contains dots is a 
+hierarchical location.
+</p><p>
+All objects also have an ID. The <b><i>SIM_object_id</i></b> function
+returns the object ID as a string. The object ID is unique, never
+changes, and will be saved in checkpoints. The object ID will not
+change even if the object is moved around in the hierarchy or is given a new
+name.
+</p><p>
+The object name and object ID are always unique. Creating an object
+and giving it a name that already exist will generate an error.
+</p><p>
+If the given name is a hierarchical location, an object will be 
+added to that hierarchical location even if the
+<i>component</i> and <i>component_slot</i> attributes are
+not set. Simics will extract the component name and slot name from the
+given name. This information is then used when looking up the component
+and adding the object to the slot via the <code>component</code>
+interface. An object given the name "cmp0.cmp1.foo" belongs to the
+component "cmp0.cmp1" and has the slot name "foo". Note that the
+component "cmp1" in this example belongs to the component "cmp0".
+</p><p>
+An object given a name without dots, e.g., "foo", will get a name that is the
+hierarchical location of the object if the <i>component</i> and
+<i>component_slot</i> attributes are valid. Otherwise it will
+get the name "foo", which means that the object does not reside in any
+slot in a component. The object will also get an automatically assigned
+unique object ID, unless <i>legacy_object_id</i> is set. In that
+case the object name is used as object ID.
+</p><p>
+An object given a name with dots "cmp0.foo" gets the name "cmp0.foo"
+or, if it is put in the slot "bar", the name "cmp0.bar", its 
+hierarchical location, and an object ID of the form "obj_XYZ".
+</p><p>
+An object given an empty name "", or None, will get a hierarchical
+location as name, if the <i>component</i>
+and <i>component_slot</i> attributes are valid, otherwise a name
+of the form "obj_XYZ".  The object ID will always be of the form
+"obj_XYZ", identical to the object name if <i>component</i> and
+<i>component_slot</i> attributes are invalid.
+</p><p>
+<table>
+
+  <tbody><tr>
+    <td class="jdocu_border"><b>Given Name</b></td>
+    <td class="jdocu_border"><b>Name (Slot = None)</b></td>
+    <td class="jdocu_border"><b>Name (Slot = bar)</b></td>
+    <td class="jdocu_border"><b>ID</b></td>
+    <td class="jdocu_border"><b>Name After Move</b></td>
+  </tr>
+
+  <tr> 
+    <td class="jdocu_border">foo</td>
+    <td class="jdocu_border">foo</td>
+    <td class="jdocu_border">cmp0.bar</td>
+    <td class="jdocu_border">obj_XYZ</td>
+    <td class="jdocu_border">cmp1.smurf</td> 
+  </tr>
+
+  <tr> 
+    <td class="jdocu_border">cmp0.foo</td>
+    <td class="jdocu_border">cmp0.foo</td>
+    <td class="jdocu_border">cmp0.bar</td>
+    <td class="jdocu_border">obj_XYZ</td>
+    <td class="jdocu_border">cmp1.smurf</td>
+  </tr>
+
+  <tr>
+    <td class="jdocu_border">None</td>
+    <td class="jdocu_border">obj_XYZ</td>
+    <td class="jdocu_border">cmp0.bar</td>
+    <td class="jdocu_border">obj_XYZ</td>
+    <td class="jdocu_border">cmp1.smurf</td>
+  </tr>
+
+</tbody></table>
+</p><p>
+The <em>given name</em> is the name that the user has
+provided. <em>Name</em> is the name the object gets when created,
+depending on if <i>component</i> and <i>component_slot</i>
+are set: <em>Slot = None</em> when they are not set; <em>Slot =
+bar</em> when they are set and <i>component_slot</i> is
+<em>bar</em>. <em>ID</em> is the unique object ID. <em>Name After Move</em>
+is the name the object gets after being moved to <em>cmp1</em> to a
+slot named <em>smurf</em>.
+</p><p>
+</p>
+<div class="chain">
+<a href="configuration-components.html">6.4 Components</a>
+<a href="conf-start-scripts.html">6.6 Ready-to-run Configurations</a>
+</div>

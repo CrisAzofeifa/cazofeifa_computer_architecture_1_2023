@@ -1,0 +1,95 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.4 Node path patterns</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="osa-commands.html">2.3 Commands</a>
+<a href="software-tracker-scripting.html">2.5 Scripting</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="node-path-patterns">2.4 <a href="#node-path-patterns">Node path patterns</a></h1>
+<p>A node in the node tree may be identified with its node ID. This is often not good enough, since it is hard to know the given node ID in advance; this makes scripting hard to accomplish in a satisfying way. Using <strong>node path patterns</strong> makes it possible to find nodes based on their properties instead of their node ID. A node path pattern is a matching rule that selects nodes based on one or more property values, and optionally the property values of their ancestors.</p>
+<h2 id="introduction">2.4.1 <a href="#introduction">Introduction</a></h2>
+<p>This section will assume that the node tree looks like the one in figure <a class="reference" href="#np-fake-tree">1</a>.</p>
+<figure id="np-fake-tree">
+<p><img alt="" src="np-fake-tree.png"></p><figcaption>Figure 1. Example node tree</figcaption><p></p>
+</figure>
+<p>The simplest node path pattern is a single integer. This is treated as a node ID. Thus, "2" can be used to find the Userspace node:</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.find 2</strong>
+</code></pre>
+<p>The name property will be used for matching if the given node specification only contains letters, digits, and underscore, and does not start with a digit. This gives an alternative way of locating the Userspace node in <a class="reference" href="#np-fake-tree">1</a>:</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.find Userspace</strong>
+</code></pre>
+<p>However, if the name contain any non-alphanumeric characters, such as space or punctuation, the name needs to be enclosed in single quotes, and the <code>name</code> property needs to be named explicitly:</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.find "name='Linux'"</strong>
+</code></pre>
+<p>A node path pattern can specify properties other than just the name of a node. For example, this one will find all nodes that belong to the <code>simics</code> process (the process node and all thread nodes) by specifying the matching pid:</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.find "pid=20"</strong>
+</code></pre>
+<p>If a match is to be made based on multiple properties, they should be comma-separated. Given the node tree in figure <a class="reference" href="#np-fake-tree">1</a>, the following pattern would match just one node, the thread node with <code>tid=20</code>:</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.find "pid=20,tid=20"</strong>
+</code></pre>
+<p>A slash (<code>/</code>) is used to separate rules for nodes at adjacent levels in the tree. For example, this pattern matches any node named <code>init</code> that lies directly under a node named <code>Userspace</code>:</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.find "Userspace/init"</strong>
+</code></pre>
+<p>A slash at the beginning of the pattern anchors it to the root of the tree, so that the part after the first slash must match the root node, the part after the second slash must match any of its children, etc.</p>
+<p>Node path patterns can contain three kinds of wildcards:</p>
+<ul>
+<li>One asterisk (<code>*</code>) will match any <em>single</em> node. For example, <code>/*/*/simics</code> will match any node named <code>simics</code> that is a grandchild of the root node.</li>
+<li>Two asterisks (<code>**</code>) will match a path of zero or more nodes in the tree. For example, <code>/name=Linux/**/pid=20</code> matches nodes 13, 14, and 15 in the example tree.</li>
+<li>An asterisk in the expected value of a property matches zero or more characters. For example, <code>*s*</code> will match the ls, sh, and Userspace nodes; and <code>pid=*</code> will match all nodes with a <code>pid</code> property.</li>
+</ul>
+<div class="note">
+<p>Quoted wildcards will be treated literally. That means, <code>name="'ho*er'"</code> will only match a node named "ho*er", while <code>name="'ho'*'er'"</code> will match any nodes named "hover", "hoover", "hotter", etc.</p>
+</div>
+<h2 id="summary">2.4.2 <a href="#summary">Summary</a></h2>
+<p>This is a short summary of the available operators when creating a node path pattern.</p>
+<ul>
+<li>Integer value: this is treated as a node id</li>
+<li>String: if the string contains only alphanumeric characters or the _ sign and does not begin with a digit, <code>str</code> will be the same as <code>name='str'</code>.</li>
+<li>Slash (<code>/</code>): separates rules for nodes at different levels. At the beginning of a pattern, it means that the root has to match the following rule.</li>
+<li>Asterisk (<code>*</code>): matches exactly one node, ignoring all node properties on that level.</li>
+<li>Double asterisk (<code>**</code>): Matches a path of zero or more nodes in the node tree.</li>
+<li>Equals sign (<code>=</code>): Specifies the required value of a node property.</li>
+<li>Comma (<code>,</code>): Separator when a rule restricts more than one node property.</li>
+</ul>
+<h2 id="limitations">2.4.3 <a href="#limitations">Limitations</a></h2>
+<p>Node path patterns have some known limitations:</p>
+<ul>
+<li>Asterisk (<code>*</code>) is the only wildcard available for property matching. More advanced wildcards, such as <code>name=cat??</code> or <code>pid=5[0-1]</code>, are not supported.</li>
+<li>A rule may not end with <code>/**/</code> or <code>/**</code>.</li>
+<li>It is not possible to start a pattern with <code>**/</code>; use <code>/**/</code> instead. (However, note that all patterns that do not already start with a slash are implicitly prefixed with <code>/**/</code>.)</li>
+<li>Just <code>**</code> is not a valid pattern. Use <code>*</code> in order to match all nodes.</li>
+</ul>
+
+<div class="chain">
+<a href="osa-commands.html">2.3 Commands</a>
+<a href="software-tracker-scripting.html">2.5 Scripting</a>
+</div>

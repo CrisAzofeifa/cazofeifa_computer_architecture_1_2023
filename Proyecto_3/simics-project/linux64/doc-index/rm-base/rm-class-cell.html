@@ -1,0 +1,178 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>cell</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-cdrom_image.html">cdrom_image</a>
+<a href="rm-class-cli.html">cli</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="cell"><a href="#cell">cell</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+A simulation cell, representing an autonomous partition of the configuration and able to be simulated in parallel with other cells. See the "Multithreading" section in the Introduction chapter of the <cite>API Reference Manual</cite>.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, temporal_state, link_route, dist_control_node, concurrency_group, breakpoint_trigger, cell_inspection, sync_node
+<h3 id="port-objects">
+<a href="#port-objects">Port Objects</a>
+</h3>
+<dl>
+<dt id="dt:ps">ps</dt>
+<dd>
+<a href="rm-class-ps-clock.html#ps-clock">ps-clock</a>
+ – ps clock</dd>
+</dl>
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-cell.cpu-switch-time.html">cpu-switch-time</a>
+ – get/set the time quantum for a given cell</li>
+<li>
+<a href="rm-cmd-cell.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-cell.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:schedule_list">
+<i>schedule_list</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[o*]</code>
+<br>Execute objects that belong to the cell, in scheduling order</dd>
+<dt id="dt:clocks">
+<i>clocks</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[o*]</code>
+<br>Clock objects that belong to the cell. </dd>
+<dt id="dt:scheduled_object">
+<i>scheduled_object</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o</code>
+<br>Currently scheduled object for this cell</dd>
+<dt id="dt:current_processor">
+<i>current_processor</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o</code>
+<br>Current processor in this cell</dd>
+<dt id="dt:current_step_obj">
+<i>current_step_obj</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o</code>
+<br>Current step queue in this cell</dd>
+<dt id="dt:current_cycle_obj">
+<i>current_cycle_obj</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o</code>
+<br>Current cycle queue in this cell</dd>
+<dt id="dt:time_quantum">
+<i>time_quantum</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>Length of the time quantum in seconds, or 0 if not specified.</dd>
+<dt id="dt:time_quantum_ps">
+<i>time_quantum_ps</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Length of the time quantum in picoseconds, or 0 if not specified.</dd>
+<dt id="dt:machine_sync_events">
+<i>machine_sync_events</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[osaai]*]</code>
+<br>((<i>object</i>, <i>evclass</i>, <i>value</i>, <i>obsolete</i> <i>when</i>)*). Pending machine sync events.</dd>
+<dt id="dt:sync_domain">
+<i>sync_domain</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Synchronization domain for this cell</dd>
+<dt id="dt:leader">
+<i>leader</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Leader object</dd>
+<dt id="dt:max_time_span_ps">
+<i>max_time_span_ps</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Upper limit of the allowed global time difference for CPUs simulated simultaneously using multiple host threads, or 0 if no limit is desired.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-class-cdrom_image.html">cdrom_image</a>
+<a href="rm-class-cli.html">cli</a>
+</div>

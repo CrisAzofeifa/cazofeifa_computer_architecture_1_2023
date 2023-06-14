@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7.4 USB disks</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="cd-roms-and-floppies.html">7.3 CD-ROMs and Floppies</a>
+<a href="simicsfs.html">7.5 Using SimicsFS with FUSE</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="USB-disks">7.4 USB disks</a></h1>
+<p>
+
+</p><p>
+Virtual USB disks can be used to transfer files to and from virtual
+machines.
+</p><p>
+A virtual USB disk is created with the
+<b>new-usb-disk-comp</b> command. The command accepts a file with
+disk image and creates a USB disk component:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module usb-comp</b>
+simics&gt; <b>$usb_disk=(new-usb-disk-comp file = /tmp/stick.img name = usb_disk)</b>
+</pre><p>
+</p><p>
+Next, you can insert the virtual USB disk into the machine. Exactly
+how that is done depends on the system that is being simulated. A virtual
+USB disk should be connected to an empty USB-port connector:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>$usb_disk.connect-to $system</b>
+Connecting usb_disk.usb_host to board.mb.sb.usb_port[10]
+</pre><p>
+</p><p>
+Writes to a virtual USB disk are normally not written directly to
+an image file, but cached in memory.
+The <b>&lt;image&gt;.save</b> command can be
+used to save changes to a new image file. One can find the objects
+that support the command with the help of the <b>list-objects</b>
+command:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>list-objects -all iface = image</b>
++-------+----------------------------+
+| Class |           Object           |
++-------+----------------------------+
+...
+|&lt;image&gt;|<b>usb_disk.usb_scsi_disk_image</b>|
+...
+simics&gt; <b>usb_disk.usb_scsi_disk_image.save new_image</b>
+</pre><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="cd-roms-and-floppies.html">7.3 CD-ROMs and Floppies</a>
+<a href="simicsfs.html">7.5 Using SimicsFS with FUSE</a>
+</div>

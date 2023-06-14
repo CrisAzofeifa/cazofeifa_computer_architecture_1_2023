@@ -1,0 +1,1515 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4 Connecting SystemC and Simics Models</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="running-a-systemc-model-in-simics.html">3 Running a SystemC Model in Simics</a>
+<a href="overview_of_systemc_features.html">5 Overview of SystemC Features</a>
+</div>
+<div class="path">
+<a href="index.html">SystemC* Library</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="connecting-systemc-and-simics-models">4 Connecting SystemC and Simics Models</a></h1>
+<p>
+
+<a name="adapter"></a>
+</p><p>
+Simics can be used as a framework for testing and developing SystemC models in
+isolation, or it can be used to integrate SystemC models with other Simics
+models. The integration spans from just a single model to a full virtual
+platform. Simics models can be written in any language as long as they use the
+Simics API and Simics interfaces to communicate. A Simics model consists of a
+Simics configuration class, instantiated as a Simics object. In Simics SystemC
+Library this object is called <em>adapter</em>.
+</p><p>
+SystemC Library makes it possible to run multiple SystemC models in the
+same Simics configuration at the same time, possibly instantiated at different
+points in time (i.e. dynamically) and optionally connected directly or
+indirectly to one another. It is important to understand that each adapter
+instance will get its own context and that communication via the SystemC
+scheduler between instances will not be possible; all communication between
+adapters must go via Simics interfaces.
+</p><p>
+Also note that time and ordering when communicating between multiple SystemC
+kernels is not defined by the IEEE SystemC specification. That is, no ordering
+assumptions can be made when two SystemC models communicate with each other via
+Simics interfaces.
+</p><p>
+The project-setup tool can be used to generate a new Simics module with
+a skeleton of a SystemC device connected to Simics via a SystemC adapter:
+<code><b>./bin/project-setup --sc-device <i>name</i></b></code>,
+where <i>name</i> is the name of the new Simics module.
+</p><p>
+<a name="gasket"></a>
+Simics contains well defined and stable interfaces for various hardware
+specific protocols such as Ethernet, USB, PCIe, etc. There is no SystemC
+standard that covers such protocols yet. Instead, each set of modules must
+agree on a custom protocol on top of the TLM2 base protocol and any deviations
+must be handled by an interconnect module. Simics contains a set of interface
+converters, called <em>gaskets</em>, for a number of common Simics interfaces
+like memory mapped I/O (MMIO), signal, PCI Express, Ethernet, I2C, etc. These
+gaskets convert the Simics interface into (or from) a TLM2 payload extension
+transmitted using the standard TLM2 interface and protocol. Simics provides
+utility functions to make it easy to pack or unpack the protocol-specific
+payload extensions.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+SystemC Library only supports Simics -&gt; SystemC and SystemC -&gt; Simics
+interface calls via gaskets. Direct invocation of Simics interfaces are not
+officially supported.</div>There is also a non-TLM2 based gasket, converting the
+Simics <code>signal</code> interface to/from the
+SystemC <b>sc_signal&lt;bool&gt;</b>.
+<p>
+</p><div class="note">
+<b>Note:</b>
+Signals work a bit differently when routed through Simics. There is no
+support for <b>sc_signal&lt;T&gt;</b> of arbitrary type T, as there is no
+corresponding interface in Simics that supports this. In addition, when
+connecting SystemC configurations via Simics interfaces it is important to
+understand that each adapter will have its own separate kernel context, and
+thus cannot rely on delta cycle communication via the scheduler; which is very
+common when using SystemC signals. Simics does not maintain a global order of
+SystemC events. There are two ways to address this problem:
+  <ul>
+    <li>Integrate everything that needs to communicate via the SystemC
+  scheduler/delta cycles with the same adapter.</li>
+    <li>Re-construct the model</li></ul>
+</div>The complete list of supported gaskets can be found in the <em>SystemC
+Library API Reference Manual</em>. Users can also create their own gaskets to
+support additional or custom interfaces. See
+<a class="reference" href="#creating-new-gaskets">4.5</a> for more details.
+<p>
+</p><h2 class="jdocu"><a name="dma-device-example">4.1 DMA example</a></h2>
+<p>
+
+This section demonstrates how to expose a simple DMA device
+written in SystemC to Simics and how to test it using Simics Python
+tests. The DMA device example source code is available in the
+<em>Simics Base</em> package and can be added to the project by
+issuing the command:
+<code><b>./bin/project-setup --copy-module sample-tlm2-dma-device</b></code>
+in the Simics project directory. This DMA device has no dependency on
+Simics and can be built as a standalone application. By default, it is built
+with Intel SystemC kernel by issuing the following command:
+<code><b>make -f modules/sample-tlm2-dma-device/Makefile.standalone</b></code>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+No binary is included for Intel SystemC kernel. It needs built in the
+  Simics project first before building the DMA standalone application. See
+  <a class="reference" href="building-required-libraries.html">8</a> for more details about building
+  Intel SystemC kernel.</div>User can also build the standalone application using their own SystemC
+kernel by configuring the <code>SYSTEMC_CORE_CFLAGS</code> and
+<code>SYSTEMC_CORE_LDFLAGS</code> flags.
+<p>
+The device's code will not be described in detail in this guide,
+but basically, the
+device implements a simple DMA device with source and destination
+address registers as well as a control register to start a DMA
+transaction and control some features such as interrupt on
+completion. The DMA device can work in "polling" mode, where the
+software checks the status bit in the control register for DMA
+completion, or it can work in interrupt mode where an interrupt is
+issued when the transfer is completed. In addition the DMA device
+supports reset. The interrupt and reset are modeled as SystemC
+signals and inbound and outbound memory accesses are modeled as
+SystemC TLM2 transactions. The focus of this section is on showing how
+these signals and transactions are translated to Simics interface
+calls.
+</p><p>
+In order to connect the SystemC DMA device to Simics an
+<b>Adapter</b> class is defined as shown below:
+
+ </p><pre class="jdocu_small">namespace scl = simics::systemc;
+
+class Adapter : public scl::Adapter,
+                public scl::simics2tlm::IoMemoryGasketAdapter,
+                public scl::simics2tlm::DirectMemoryUpdateGasketAdapter {
+  public:
+    explicit Adapter(simics::ConfObjectRef o)
+        : scl::Adapter(o),
+          IoMemoryGasketAdapter(&amp;systemc_io_memory_, this),
+          DirectMemoryUpdateGasketAdapter(&amp;systemc_direct_memory_update_, this),
+          dma_(this, "DMADevice") {
+        systemc_io_memory_.set_gasket(scl::simics2tlm::createGasket(
+                &amp;dma_-&gt;mmio_socket_, o));
+
+        simics_interrupt_-&gt;set_pin(&amp;dma_-&gt;interrupt_);
+
+        simics_memory_space_-&gt;set_gasket(scl::tlm2simics::createGasket(
+                &amp;dma_-&gt;phys_mem_socket_, o));
+
+        systemc_direct_memory_update_.set_gasket(
+                simics_memory_space_-&gt;gasket());
+        systemc_reset_.set_pin(&amp;dma_-&gt;reset_, false, o);
+    }
+
+    static void init_class(simics::ConfClass *cls);
+
+    // Outgoing from DMA device to Simics
+    scl::Connector&lt;scl::tlm2simics::MemorySpace&gt; simics_memory_space_;
+    scl::Connector&lt;scl::systemc2simics::Signal&gt; simics_interrupt_;
+
+    class Port : public simics::Port&lt;Adapter&gt;,
+                 public scl::simics2systemc::SignalGasketAdapter {
+      public:
+        explicit Port(simics::ConfObjectRef o)
+            : simics::Port&lt;Adapter&gt;(o),
+              SignalGasketAdapter(&amp;parent()-&gt;systemc_reset_, parent()) {
+        }
+    };
+
+  private:
+    // Incoming from Simics to DMA device
+    scl::simics2systemc::Signal systemc_reset_;
+    scl::simics2tlm::IoMemory systemc_io_memory_;
+    scl::simics2tlm::DirectMemoryUpdate systemc_direct_memory_update_;
+
+    // DMA device implementation by SystemC/TLM
+    scl::Device&lt;DMADevice&gt; dma_;
+};  </pre><p>
+
+</p><p>
+In the code example, the <b>Adapter</b> class:
+</p><ul>
+  <li>defines the Simics configuration class to be instantiated by Simics, and</li>
+  <li>implements all Simics interfaces needed, and</li>
+  <li>provides connectors for all outbound calls of Simics interfaces
+    implemented by other Simics objects.</li>
+</ul>
+<p>
+<a name="simics-interface-adapter"></a>
+A Simics interface is defined by a set of function pointers. To expose such
+an interface from a SystemC model to Simics the set of function pointers should
+be mapped to the functions of an object which implements the corresponding
+C++ version of the interface. A <em>simics-interface-adapter</em>
+is used for this purpose. It provides the necessary static functions
+and forwards Simics interface function calls to the object.
+The simics-interface-adapter must be registered with Simics, along with the
+<b>Adapter</b> class, as shown in the <b><i>init_local</i></b>
+function later in the chapter.
+</p><p>
+<a name="gasket-adapter"></a>
+The implementation of the C++ version of the Simics interface is provided
+by a <em>gasket-adapter</em>. In the code example, the <b>Adapter</b>
+class derives from several gasket-adapter classes and thus
+exposes the corresponding interfaces. To expose the same type of interface
+multiple times, gasket-adapters on port are needed. See
+<a class="reference" href="#gasket-adapter-ports">4.6</a> for more details. Additionally,
+gasket-adapters are responsible for managing simulation context.
+</p><p>
+The gasket-adapter forwards the C++ interface call to the
+corresponding <em>gasket</em> which then translates the call to
+the corresponding SystemC semantics. In the DMA example there is a gasket,
+called <b>simics::systemc::simics2systemc::Signal</b>, which converts a
+call to the Simics <code>signal</code> interface into a SystemC signal; and
+there is another gasket, called <b>simics::systemc::simics2tlm::IoMemory</b>,
+which converts a call to the Simics <code>io_memory</code> interface
+into a call to TLM2 <b><i>b_transport</i></b>. Each gasket must be bound to
+the SystemC target and corresponding gasket-adapter in the constructor
+of the <b>Adapter</b> class.
+</p><p>
+<a name="gasket-owner"></a>
+<a name="tlm-gasket"></a>
+The gasket which translates Simics interface call to a TLM2 transaction
+is special and needs additional explanation. In fact, this gasket is a
+<em>gasket-owner</em> or a container for several <em>gasket-owner</em>s with
+specific IDs, where each gasket-owner owns one generic <em>tlm-gasket</em>
+object. The multiple gasket-owners and corresponding tlm-gaskets are needed for
+protocols where a single Simics interface is demultiplexed into multiple
+TLM target sockets. The gasket-owner creates a TLM generic payload
+with protocol specific extension which is then transmitted
+to the SystemC target using the tlm-gasket. Each tlm-gasket
+must be created and bound to the SystemC target with the help of
+<b><i>createGasket</i></b> factory function. Then, the tlm-gasket must
+be assigned to a gasket-owner which in turn must be connected to the
+corresponding gasket-adapter, as shown in the constructor of the
+<b>Adapter</b> class.
+</p><p>
+To connect a SystemC device to a Simics model via a Simics interface
+it is necessary to:
+</p><ul>
+<li>Register a simics-interface-adapter on the configuration class</li>
+<li>Derive the <b>Adapter</b> class from the corresponding
+gasket-adapter class, and initialize it with the corresponding gasket</li>
+<li>Bind the SystemC target to the gasket using the gasket's member
+function</li>
+<ul>
+<li>For TLM2 sockets, create an instance of the tlm-gasket and bind it
+to the SystemC target socket using <b><i>simics2tlm::createGasket</i></b>
+factory function. Then, assign the tlm-gasket to the gasket with
+the help of <b><i>set_gasket</i></b> method of the gasket class</li>
+</ul>
+<li>Add the gasket as a member to the <b>Adapter</b> class</li>
+</ul>
+<p>
+In the example the <b>Adapter</b> uses the following gaskets and
+gasket-adapters:
+</p><ul><li><b>IoMemory</b> and <b>IoMemoryGasketAdapter</b> - for
+inbound MMIO, corresponding to Simics <code>io_memory</code> interface</li>
+<li><b>Signal</b> and <b>SignalGasketAdapter</b> - for reset,
+corresponding to the Simics <code>signal</code> interface</li>
+<li><b>DirectMemoryUpdate</b> and
+<b>DirectMemoryUpdateGasketAdapter</b> - to support SystemC
+direct memory interface (DMI) optimization.</li></ul>
+<p>
+<a name="systemc-modelentry-point"></a>
+A gasket can be used to access the SystemC model from Simics. But it is not
+the only supported entry point to do this. These are the supported entry
+points:
+</p><ul>
+  <li>Gasket. Can be used for bridging from a Simics interface to a
+    TLM/SystemC interface. For example, raising/lowering a Simics
+    <code>signal</code> interface which connects to SystemC model via
+    gasket will raise/lower the SystemC input signal. </li>
+  <li>Device utility class. Whenever the SystemC model is accessed from the
+    adapter directly, this utility class must be used. See code example below.
+    
+ <pre class="jdocu_small">uint32 getRegister1() const {
+        return simple_device_-&gt;register1();
+    }
+
+    void setRegister1(const uint32 &amp;val) {
+        register1_ = val;
+        if (SIM_object_is_configured(obj())) {
+            simple_device_-&gt;set_register1(val);
+        }
+    }  </pre><p>
+
+    </p><p>
+    <b><i>register1</i></b> and <b><i>set_register1</i></b> are functions
+    defined in SystemC model, but called from the device utility class.
+    In this way, it ensures that the correct simulation context is set in
+    the SC kernel.
+  </p></li>
+  <li>Scheduler. The adapter has a helper object, <code>adapter.engine</code>, that
+    allows for the adapter to be scheduled by Simics. When scheduled, it runs
+    SystemC time forward via the SystemC scheduler. Simics events can be posted
+    on the adapter and are interleaved with the SystemC events and
+    processes. Please note that Simics events would still need to communicate
+    with SystemC via the adapter using Simics interfaces. The helper object
+    always runs in picoseconds so running the adapter 1 ps forward will also
+    run the SystemC scheduler 1 ps forward.
+  </li>
+</ul>
+<p>
+<a name="connector"></a>
+<a name="connector-attribute"></a>
+To access a Simics interface, implemented by a Simics object,
+from a SystemC model the Simics object must be
+assigned to a Simics attribute first. The attribute is created and
+registered with Simics using <b>ConnectorAttribute</b> helper class
+in the <b><i>init_local</i></b> function, and is called
+<em>connector-attribute</em> hereafter. The connector-attribute
+is needed to link the Simics attribute to the <em>connector</em>, which is
+a member of the <b>Adapter</b> class. The connector is a
+<b>Connector</b> class that wraps the gasket which is responsible for
+translation of the SystemC semantics to a call of the corresponding Simics
+interface. Also, the connector makes sure that the Simics interface that the
+gasket is intended to work with is implemented by the Simics object given to
+the connector-attribute. In the DMA example the adapter contains two
+connectors and hence two corresponding gaskets: one for converting a DMA
+SystemC TLM2 transaction to a Simics <code>memory_space</code> interface call;
+and the other for converting an interrupt signal issued on a DMA completion
+to a Simics <code>signal</code> interface call.
+</p><p>
+Similarly to the Simics-to-TLM case, the gasket which translates
+a TLM2 transaction to a Simics interface call is actually the gasket-owner
+which owns another <em>tlm-gasket</em>. Each tlm-gasket
+must be created and bound to the SystemC source, as well as assigned to a
+connector, as shown in the constructor of the <b>Adapter</b> class.
+</p><p>
+In summary, to access a Simics interface from SystemC model it is
+necessary to:
+</p><ul>
+<li>Register a connector-attribute on the configuration class</li>
+<li>Add corresponding connector, which wraps a gasket, as a member
+of the <b>Adapter</b> class</li>
+<li>Bind the SystemC source to the connector</li>
+<ul>
+<li>For TLM2 sockets, create an instance of the tlm-gasket
+and bind it to the SystemC source using <b><i>tlm2simics::createGasket</i></b>
+factory function. Then, assign the tlm-gasket to the connector with
+the help of arrow operator and the <b><i>set_gasket</i></b> function</li>
+</ul>
+</ul>
+<p>
+</p><div class="note">
+<b>Note:</b>
+Calling a Simics interface-specific extension's method will result in an
+invocation of <b><i>b_transport</i></b> and thus <b>must</b> be done from an
+SC_THREAD process according to the SystemC IEEE specification.</div>To register the adapter with Simics an instance of the template class
+<b>ClassDef</b> is created the same way as if
+the C++ Device API is used. The <b><i>init_local</i></b>
+function from the DMA example is shown below:
+
+ <pre class="jdocu_small">extern "C" void init_local(void) {
+    auto cls = simics::make_class&lt;Adapter&gt;(
+        DEVICE_CLASS, "sample SystemC TLM2 DMA device",
+        "The &lt;class&gt;" DEVICE_CLASS "&lt;/class&gt; is a Simics module"
+        " encapsulating a SystemC TLM2-based dma device to demonstrate"
+        " the use of the Simics SystemC Library.");
+}  </pre><p>
+
+</p><p>
+The code also demonstrates how the connector-attributes and
+the simics-interface-adapters are registered with Simics along with
+the <b>Adapter</b> class.
+
+</p><h2 class="jdocu"><a name="Test-the-Device-in-Simics">4.2 Test the Device in Simics</a></h2>
+<p>
+
+Once the adapter has been implemented the model can be instantiated
+and connected in Simics like any other Simics model.
+</p><p>
+The vacuum target is good for simple testing, and using it the DMA
+device can be instantiated as follows:
+
+
+</p><pre class="jdocu_small">simics&gt; <b>@SIM_create_object('sample_tlm2_dma_device', 'dma',<img alt="Line break" src="nextline.png">
+    phys_mem=conf.phys_mem)</b>
+&lt;the sample_tlm2_dma_device 'dma'&gt;
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+You can start the vacuum target from the GUI or command line, or
+by issuing the following command at the Simics
+prompt: <b>run-command-file "%simics%/targets/vacuum/vacuum.simics"</b></div>Since the DMA device requires a memory-space where DMA operations are
+supposed to occur it is provided in the initial set of attributes. To
+access the registers in the DMA device it is necessary to map it in
+the IO space:
+<pre class="jdocu_small">simics&gt; <b>phys_mem.add-map device = dma base = 0x1000 length = 0x100</b>
+Mapped 'dma' in 'phys_mem' at address 0x1000.
+simics&gt;</pre><p>
+</p><p>
+To configure and test the DMA device a pattern will be written to RAM and
+copied using the device:
+</p><pre class="jdocu_small">simics&gt; <b>phys_mem.write 0x10000000 0xdeadbeef 8 -l # pattern</b>
+simics&gt; <b>phys_mem.write 0x1004 0x10000000 4 -l # src</b>
+simics&gt; <b>phys_mem.write 0x1008 0x10001000 4 -l # dest</b>
+simics&gt; <b>phys_mem.write 0x1000 0xc0000008 4 -l # control (start transfer)</b>
+simics&gt; <b>phys_mem.x 0x10001000</b>
+p:0x10001000  efbe adde 0000 0000 0000 0000 0000 0000  ................
+simics&gt;</pre><p>
+</p><p>
+Of course, more commonly the model will be instantiated from a module
+test or a component. Look in the test directory of the sample-tlm2-dma-device
+module's source code for more examples.
+</p><p>
+
+</p><h2 class="jdocu"><a name="SystemC-Device-Configuration">4.3 SystemC Device Configuration</a></h2>
+<p>
+
+</p><p>
+Sometimes it is necessary to pass configuration parameters to the
+constructor of the SystemC device. Such configuration parameters are
+typically passed to the adapter via Simics attributes.
+Since the attributes are not available in the constructor of
+the corresponding <b>Adapter</b> class the creation of the SystemC
+device has to be deferred to the <em>finalize</em>
+phase. The <b>Adapter</b> class has two convenient methods that are
+called in the beginning of the finalize phase, right after the SystemC
+context has been set up. These methods are <b><i>elaborate</i></b>
+and <b><i>bindGaskets</i></b>. The <b><i>elaborate</i></b> method is intended
+for SystemC elaboration where Simics configuration attributes are
+required. Otherwise the elaboration could be done entirely in the
+<b>Adapter</b> constructor. The <b><i>bindGaskets</i></b> method
+is used to bind gaskets and other ports created in the elaborate method.
+An example of the methods is shown in the
+<b>sample-tlm2-simple-device</b> device model:
+</p><p>
+</p><pre class="jdocu_small">class Adapter : public scl::Adapter
+[...]
+
+ <pre class="jdocu_small">    void elaborate() {
+        // Because we create the Device in elaborate, any attribute setters that
+        // use it must be guarded against early access (e.g. during checkpoint
+        // restore)
+        SimpleDevice *top = new SimpleDevice("simple_device", delay_ns_);
+        scl::Device&lt;SimpleDevice&gt; d(this, top);
+        simple_device_ = d;
+
+        // Handle attribute side-effects here
+        simple_device_-&gt;set_register1(register1_);
+        simple_device_-&gt;set_register2(register2_);
+    }
+
+    void bindGaskets() {
+        systemc_io_memory_.set_gasket(
+            scl::simics2tlm::createGasket(&amp;simple_device_-&gt;target_socket, 
+                                          obj()));
+    }
+
+    int delay_ns_;  // Configured by attribute
+
+  private:
+    // The SystemC TLM device wrapped by the Simics object.
+    // NOTE: Must use the Device utility class to make sure any access to the
+    // SystemC device is handled correctly.
+    scl::Device&lt;SimpleDevice&gt; simple_device_;    </pre><p>
+
+[...]
+</p></pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Special care has to be taken if the adapter or SystemC model has
+dependencies on other Simics objects. It may be tempting to rely on
+the dependencies during the attribute setting phase, but this is <b>not</b>
+allowed. Simics objects, referenced by attributes, and interfaces
+they implement are not allowed to be accessed before the finalize phase.
+In the finalize phase <b><i>SIM_require_object</i></b> must be called on
+a Simics object first to ensure that the object is configured.
+See <em>Model Builder User's Guide</em> for more details on attribute
+initialization order.</div>
+<p>
+</p><h2 class="jdocu"><a name="Guidelines-for-Configuring-SystemC-Model-in-Simics">4.4 Guidelines for Configuring SystemC Model in Simics</a></h2>
+<p>
+
+</p><p>
+Simics and the provided SystemC Library are both very flexible and can be
+configured in many different ways. For example, a virtual platform project may
+choose to use one or multiple adapters to map SystemC devices into Simics. It
+is important to understand these different configuration options since the
+selected solution will impact the overall performance of the virtual platform.
+</p><p>
+Each SystemC Library based Simics module is statically linked with Intel
+SystemC Kernel (ISK). Each adapter instance from each such module, when created
+in Simics, will be assigned its own kernel context (i.e. the sc_simcontext).
+</p><p>
+The kernel contexts are isolated from one another, making it impossible to
+communicate during delta cycles between adapters using the SystemC
+scheduler. Hence, if really tight integration is required between two different
+SystemC modules, it is suggested to wrap them using a single adapter.
+</p><p>
+Even though Simics SystemC Library supports multiple instances of each adapter,
+the kernel itself is not thread-safe. This means that extra care must be taken
+when creating multi-cell configurations. There are two rules:
+</p><ul>
+  <li>The adapter must be put in the same cell as the objects it communicates
+with. Please run <b>check-cell-partitioning</b> to verify that
+the cells have been setup correctly.</li>
+  <li>Multiple instances of the adapter(s) in same Simics module cannot span
+    multiple cells. To be able to run the SystemC model in multiple cells
+    (i.e. in parallel) it must be wrapped by two separate Simics modules.</li>
+</ul>
+For the same reason, multiple instances of adapters from the same Simics module
+does not work in the multicore accelerator mode either.
+<p>
+It is also encouraged to read up on the <b>set-time-quantum</b>
+command. This command can be used to change the fidelity of the
+interaction/scheduling between different Simics clocks. That is, one
+can specify the number of cycles that should be executed on each
+Simics clock before the next Simics clock is being scheduled. A large
+time quantum makes it possible to leverage decoupling and ISS
+optimizations and a small time quantum is good for tight integration
+between models.
+</p><p>
+It should also be noted that it is possible to change the number of
+instructions that are executed per cycle in Simics. This can also be
+used to tweak how much time is spent and work is done in the different
+models. Hence, it can be used to change tightness of interaction
+versus performance in the virtual platform. Please refer to the
+<em>Simics Users Guide</em> and the <em>API Reference Manual</em>
+for more information.
+</p><p>
+It is suggested that these parameters are considered for each virtual
+platform project and use case.
+</p><p>
+
+</p><h2 class="jdocu"><a name="creating-new-gaskets">4.5 Creating New Gaskets</a></h2>
+<p>
+
+</p><p>
+As already explained, there is a chain of objects that interact in order to
+translate a Simics interface invocation into a SystemC signal or TLM2
+transaction and vice versa. SystemC Library already provides
+simics-interface-adapters for the most common of Simics interfaces,
+gasket-adapters and gaskets needed. But for other interfaces, or custom
+interfaces, these classes must be provided by the model developer.
+</p><p>
+The best way to implement a new set of classes for an unsupported
+Simics interface is to base it on an existing set.
+The <b>SerialDevice</b> gasket and accompanied set of classes can
+be used as an example as it maps the Simics <code>serial_device</code>
+interface for both Simics → TLM and TLM → Simics directions.
+We will follow this example in this chapter to describe the
+typical set of classes to be added by the model developer. The details
+for each type of class can be found in the
+<em>SystemC Library API Reference Manual</em>. The new set should
+be added to a separate module referenced by EXTRA_MODULE_VPATH until
+it has eventually been merged into SystemC Library.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Any gasket written for a standard Simics interface should be sent to the
+Simics team for inclusion into the library.</div><h3 class="jdocu"><a name="Simics-to-SystemC">4.5.1 Simics to SystemC</a></h3>
+<p>The Simics to TLM invocation chain, which translates Simics interface call
+to TLM2 transaction, looks like this: Simics interface →
+simics-interface-adapter → gasket-adapter → gasket-owner →
+tlm-gasket → SystemC TLM2 target socket.
+</p><p>
+The <code>io_memory</code> and <code>serial_device</code> are two
+good examples of Simics interfaces translated into
+TLM2. The <code>io_memory</code> interface translates to a generic
+payload, but the <code>serial_device</code> interface translates to a
+protocol specific extension using built-in Simics interface
+to TLM payload extension marshal/unmarshal capabilities.
+See the <b>SerialDeviceExtension</b> class for details.
+</p><p>
+It is highly recommended to use the built-in marshal/unmarshal
+capabilities to cut down on the number of
+Simics specific details exposed to the SystemC model.
+</p><p>
+Though it is possible to use the Simics C++ API to implement a Simics
+interface on the <b>Adapter</b> class and forward the interface call to
+the SystemC model, this is highly discurraged. It is important that
+the SystemC simulation context is properly set on enter and reset on
+exit. Failure to set SystemC simulation context will lead to a crash.
+</p><p>
+This is provided by a utility classes in the SystemC Library.
+More specifically, <b>Context</b> class used by the
+gasket-adapters. Also the tlm-gasket itself, defined by the
+<b>Gasket</b> class, provides the necessary
+wrappings for running the transaction in an SC_THREAD since
+<b><i>b_transport</i></b> method might call <b><i>wait</i></b> function.
+</p><p>
+For describing how custom gaskets are created we will use
+the <b>simics2tlm::SerialDevice</b> class as an example.
+The Simics header file <code>simics/devs/serial-device.h</code>
+specifies the Simics interface as:
+</p><p>
+</p><pre class="jdocu_small">SIM_INTERFACE(serial_device) {
+        int (*write)(conf_object_t *obj, int value);
+        void (*receive_ready)(conf_object_t *obj);
+};
+</pre><p>
+</p><p>
+Using the simics-interface-adapter, defined by
+<b>SerialDeviceSimicsAdapter</b> class, the Simics interface is
+translated to the corresponding C++ interface. See the file
+<code>simics/systemc/iface/serial_device_simics_adapter.h</code>
+for reference. The Simics C++ interface is defined in the file
+<code>simics/systemc/iface/serial_device_interface.h</code>:
+
+   </p><pre class="jdocu_small">class SerialDeviceInterface {
+  public:
+    virtual int write(int value) = 0;
+    virtual void receive_ready() = 0;
+    virtual ~SerialDeviceInterface() {}
+};
+</pre><p>
+</p><p>
+   
+</p><p>
+As one may notice, the same functions are provided but without
+the <code>conf_object_t</code> pointer as parameter. The <i>obj</i>
+parameter is replaced with the <code>this</code> pointer in C++.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Though it is possible to use different function names in the two
+interfaces, it is recommended to keep the same names for clarity.</div>The Simics C++ interface function call is further translated to
+the call of corresponding function in the gasket. The translation is
+required to adjust simulation context before the SystemC code is entered
+and is performed in the <b>SerialDeviceGasketAdapter</b> class:
+
+   <pre class="jdocu_small">class SerialDeviceGasketAdapter
+    : public iface::SerialDeviceInterface,
+      public GasketAdapter&lt;iface::SerialDeviceInterface&gt; {
+  public:
+    SerialDeviceGasketAdapter(SerialDeviceInterface *serial_device,
+                              iface::SimulationInterface *simulation)
+        : serial_device_(serial_device), simulation_(simulation) {
+    }
+    int write(int value) override {
+        Context context(simulation_);
+        return serial_device_-&gt;write(value);
+    }
+    void receive_ready() override {
+        Context context(simulation_);
+        serial_device_-&gt;receive_ready();
+    }
+    simics2tlm::GasketOwner *gasket_owner() const override {
+        return dynamic_cast&lt;simics2tlm::GasketOwner *&gt;(serial_device_);
+    }
+
+  private:
+    SerialDeviceInterface *serial_device_;
+    iface::SimulationInterface *simulation_;
+};
+</pre><p>
+</p><p>
+   
+</p><p>
+The <code>serial_device_</code> member is a helper object which
+combines the adjustment of the simulation context, provided by
+<code>simulation_</code> member, with the call of the Simics C++ interface
+function implemented by the gasket. The gasket is defined by the
+<b>SerialDevice</b> class in the
+<code>simics/systemc/simics2tlm/serial_device.h</code>:
+
+   </p><pre class="jdocu_small">class SerialDevice : public simics::systemc::iface::SerialDeviceInterface,
+                     public GasketOwner {
+  public:
+    virtual void gasketUpdated();
+    // SerialDeviceInterface
+    int write(int value);
+    void receive_ready();
+  private:
+    ExtensionSender sender_;
+    iface::SerialDeviceExtension extension_;
+};
+</pre><p>
+</p><p>
+   
+</p><p>
+The <code>extension_</code> member, defined by <b>SerialDeviceExtension</b>
+class, provides utility functions to perform marshalling
+of the interface data to a protocol specific TLM extension. The TLM extension
+along with payload is then sent to the SystemC target with the help of the
+<code>sender_</code>. The protocol specific extensions are described in the
+<a class="reference" href="#protocol-specific-extensions">4.5.3</a>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="SystemC-to-Simics">4.5.2 SystemC to Simics</a></h3>
+<p>
+
+The TLM to Simics invocation chain looks like this:
+SystemC TLM2 initiator socket → tlm-gasket → gasket-owner →
+Simics interface.
+</p><p>
+The <code>memory_space</code> and <code>serial_device</code> are two
+good examples of Simics interfaces translated from TLM2.
+The <code>memory_space</code> interface translates from a generic payload,
+but the <code>serial_device</code> interface translates from a protocol
+specific extension using built-in Simics interface to TLM payload
+extension marshal/unmarshal capabilities. See
+the <b>SerialDeviceExtension</b> class for details.
+</p><p>
+It is highly recommended to use the built-in marshal/unmarshal
+capabilities to cut down on the number of Simics
+specific details exposed to the SystemC model.
+</p><p>
+It is also highly recommended to use the <b>ConnectorAttribute</b>
+and <b>Connector</b> utility classes when implementing the
+connector-attribute in the adapter. See the source code for
+the <b>sample-tlm2-dma-device</b> module for an example of
+how to do this.
+</p><p>
+For describing how custom gaskets are created we will use the
+<b>tlm2simics::SerialDevice</b> class as an example.
+The definition of this gasket can be found in the file:
+<code>simics/systemc/tlm2simics/serial_device.h</code>.
+Being derived from the <b>TransactionHandler</b> class,
+the <b>SerialDevice</b> gasket class owns the tlm-gasket and
+performs the translation of the TLM payload to the call of
+the Simics interface. The translation is
+initiated by the tlm-gasket via the invocation of the
+<b><i>simics_transaction</i></b> method defined in the
+<b>SerialDevice</b> class:
+
+   </p><pre class="jdocu_small">class SerialDevice : public InterfaceProvider,
+                     public TransactionHandler,
+                     public iface::SerialDeviceInterface {
+  public:
+    SerialDevice() : InterfaceProvider("serial_device"),
+                     TransactionHandler(this,
+                         iface::SerialDeviceExtension::createIgnoreReceiver()),
+                     receiver_(
+                         iface::SerialDeviceExtension::createReceiver(this)) {}
+
+    // SerialDeviceInterface
+    int write(int value) override;
+    void receive_ready() override;
+    // TransactionHandler
+    iface::ReceiverInterface *receiver() override;
+
+    virtual ~SerialDevice();
+
+  private:
+    tlm::tlm_response_status simics_transaction(
+            ConfObjectRef &amp;simics_obj,
+            tlm::tlm_generic_payload *trans) override;
+    iface::ReceiverInterface *receiver_;
+};
+</pre><p>
+</p><p>
+   
+</p><p>
+The payload is then forwarded to the <code>receiver_</code> member which
+utilizes the utility functions, defined in the
+<b>SerialDeviceExtension</b> class, to perform unmarshalling of the
+interface data from the protocol specific TLM payload extension and
+invoke the corresponding Simics C++ interface function.
+The protocol specific extensions are described in the
+<a class="reference" href="#protocol-specific-extensions">4.5.3</a>.
+</p><p>
+Being derived from the <b>InterfaceProvider</b> class, the gasket
+gets the Simics interface, provided by the associated Simics target object,
+using <b><i>get_interface</i></b> template function and performs
+the interface call.
+</p><p>
+
+</p><h3 class="jdocu"><a name="protocol-specific-extensions">4.5.3 Protocol Specific Extensions</a></h3>
+<p>
+
+<a name="protocol-specific-extension"></a>
+Simics SystemC Library provides the gaskets which convert Simics interfaces
+into/from TLM2 generic payloads using SystemC extension mechanism. The
+extension mechanism allows extending the generic payload, aimed at modeling
+memory-mapped buses only, with a protocol specific set of attributes, or
+simply <em>extension</em>, and thus allows transporting any Simics
+interface specific data.
+</p><p>
+In SystemC Library each extension is defined by a separate class
+in the corresponding <code>simics/systemc/iface/*_extension.h</code>
+header file. As an example in this chapter we refer to the
+<b>SerialDeviceExtension</b> extension class for the
+<code>serial_device</code> Simics interface, which is defined in the
+<code>simics/systemc/iface/serial_device_extension.h</code> file:
+
+   </p><pre class="jdocu_small">class SerialDeviceExtension : public Extension&lt;SerialDeviceExtension,
+                                               SerialDeviceInterface&gt; {
+  public:
+    virtual void call(SerialDeviceInterface *device) {
+        switch (method_.value&lt;Method&gt;()) {
+        case WRITE:
+            method_return_ = device-&gt;write(method_input_[0].value&lt;int&gt;());
+            break;
+        case RECEIVE_READY:
+            device-&gt;receive_ready();
+            break;
+        }
+    }
+
+    virtual int write(int value) {
+        method_input_.push_back(value);
+        method_ = WRITE;
+        send();
+        return method_return_.value&lt;int&gt;();
+    }
+    virtual void receive_ready() {
+        method_ = RECEIVE_READY;
+        send();
+    }
+
+  private:
+    enum Method {
+        WRITE,
+        RECEIVE_READY
+    };
+};
+</pre><p>
+</p><p>
+   
+</p><p>
+To reduce the number of Simics specific details exposed to the SystemC
+model the extension provides utility functions which marshal and unmarshal
+Simics C++ interface specific data. In general, an extension with such
+utility functions can be implemented for any C++ interface. To send the
+C++ interface data in a TLM transaction the <b>SerialDeviceExtension</b>
+class overrides <b><i>write</i></b> and <b><i>receive_ready</i></b> functions
+of the <code>SerialDeviceInterface</code> interface class. Each function
+packs the interface function type along with function arguments
+into general storage, described later, and calls the <b><i>send</i></b>
+function in order to attach the extension to the payload and initiate
+the TLM transaction. On the receiving end, there is a registered receiver,
+which unpacks the interface function type and its arguments from
+the storage and calls the corresponding C++ interface function. The
+unpacking is performed in the extension's <b><i>call</i></b> method.
+</p><p>
+The general storage is provided by the <code>method_</code>,
+<code>method_input_</code> and <code>method_return_</code> members of the
+<b>Extension</b> base class defined in the
+<code>simics/systemc/iface/extension.h</code> file.
+The <code>method_</code> member keeps the interface function type, typically
+declared as <code>Method</code> enumeration type in the extension class.
+The <code>method_input_</code> keeps the function's arguments in a STL vector,
+while the <code>method_return_</code> provides the function return value
+written in the <b><i>call</i></b> function of the extension upon successful
+completion of the TLM transaction.
+</p><p>
+There are <em>extension-sender</em> and <em>extension-receiver</em> in
+the SystemC Library which simplify sending and receiving the extensions.
+</p><p>
+<a name="extension-sender"></a>
+The extension-sender, intended for sending the extension from
+Simics-to-TLM gasket to SystemC target socket, is defined by the
+<b>simics2tlm::ExtensionSender</b> class in the
+<code>simics/systemc/simics2tlm/extension_sender.h</code> file:
+
+   </p><pre class="jdocu_small">class ExtensionSender : public iface::ExtensionSenderInterface {
+  public:
+    void init(simics2tlm::GasketInterface::Ptr gasket) {
+        gasket_ = gasket;  // coverity[copy_instead_of_move]
+    }
+    virtual iface::Transaction transaction() {
+        return pool_.acquire();
+    }
+    virtual void send_extension(iface::Transaction *transaction) {
+        gasket_-&gt;trigger(transaction);
+    }
+    virtual void send_failed(iface::Transaction *transaction) {
+        SIM_LOG_ERROR(gasket_-&gt;simics_obj(), Log_TLM,
+                      "Extension not processed correctly.");
+    }
+
+  private:
+    simics2tlm::GasketInterface::Ptr gasket_;
+    iface::TransactionPool pool_;
+};
+</pre><p>
+</p><p>
+   
+</p><p>
+This extension-sender is typically added as a member to the corresponding
+Simics-to-TLM gasket class and is initialized with the
+<em>tlm-gasket</em> in the <b><i>init</i></b> function.  The sender has a pool
+of <b>Transaction</b> objects to support multiple re-entry over the
+same gasket. The <b>Transaction</b> class is a thin wrapper
+around <b>tlm_generic_payload</b> class which supports a custom
+extension used by SystemC Library to track the transactions. A
+new <b>Transaction</b> is acquired in the
+above-mentioned <b><i>send</i></b> function of the <b>Extension</b> base
+class which also sets the corresponding extension. The function then
+calls <b><i>send_extension</i></b> method of the extension-sender which forwards
+the <b>Transaction</b> to the tlm-gasket to perform the TLM
+transaction. If the transaction failed, the <b><i>send_failed</i></b> method will
+produce Simics error message.
+</p><p>
+There is also a generic extension-sender, intended for sending the extension
+from a SystemC module to a SystemC module or to the TLM-to-Simics gasket.
+It is defined in the <code>simics/systemc/iface/extension_sender.h</code> file
+and initialized with the initiator socket. The extension-sender sends the
+payload along with the extension using the <b><i>b_transport</i></b> method
+of the socket.
+</p><p>
+<a name="extension-receiver"></a>
+The extension-receiver is defined by the <b>ExtensionReceiver</b>
+class in the <code>simics/systemc/iface/extension_receiver.h</code> file:
+
+   </p><pre class="jdocu_small">template&lt;class TExtension, class TInterface&gt;
+class ExtensionReceiver : public ReceiverInterface {
+  public:
+    explicit ExtensionReceiver(TInterface *device)
+        : device_(device) {}
+    bool handle(tlm::tlm_generic_payload *payload) override {
+        TExtension *extension = payload-&gt;get_extension&lt;TExtension&gt;();
+        if (extension &amp;&amp; extension-&gt;valid()) {
+            payload-&gt;set_response_status(tlm::TLM_OK_RESPONSE);
+            extension-&gt;method_call(device_);
+            return true;
+        }
+
+        return false;
+    }
+    bool probe(tlm::tlm_generic_payload *payload) override {
+        TExtension *extension = payload-&gt;get_extension&lt;TExtension&gt;();
+        return extension &amp;&amp; extension-&gt;valid();
+    }
+
+  private:
+    TInterface *device_;
+};
+</pre><p>
+</p><p>
+   
+</p><p>
+The extension-receiver is generic: it is intended for receiving
+the extension in any SystemC module, including the TLM-to-Simics gasket.
+It is specialized with the extension
+type and the C++ interface type, implemented by a target object. The
+TLM-to-Simics gasket is just one example of the target object. If the extension
+of the provided type is received, the extension-receiver invokes the
+<b>Extension</b>'s <b><i>method_call</i></b> method
+which in turn invokes the <b><i>call</i></b> function of the extension to perform
+unmarshalling of the C++ interface specific data. The extension-receiver
+should be created with the help of <b><i>createReceiver</i></b> factory method
+of the <b>Extension</b> class, which takes the <code>device</code>
+pointer to the target object. There is also a <b><i>createIgnoreReceiver</i></b>
+factory method useful for testing the protocol specific extensions. It
+creates a receiver which does not require the target object, and hence does
+not perform C++ interface call, but terminates the transaction correctly.
+</p><p>
+<a name="extension-dispatcher"></a>
+The target object may need to receive several extensions of different
+types, for example, if it implements several C++ interfaces. To support
+this, the <em>extension-dispatcher</em>, defined in the
+the <code>simics/systemc/iface/extension_dispatcher.h</code> file, should
+be used. The extension-receivers of the expected extension types subscribe
+to the extension-dispatcher using <b><i>subscribe</i></b> method. When a
+transaction with a matching extension is received, the extension-dispatcher
+forwards the extension to the corresponding receiver for unmarshalling of
+the C++ interface specific data.
+
+
+</p><h2 class="jdocu"><a name="gasket-adapter-ports">4.6 Gasket Adapter Ports</a></h2>
+<p>
+
+<a name="gasket-adapter-port"></a>
+As explained in the chapter <a class="reference" href="connecting-systemc-and-simics-models.html">4</a>,
+Simics interfaces can be exposed directly on the conf-object by using the
+<em>simics-adapter</em> and <em>gasket-adapter</em> classes. To expose the same
+type of interface multiple times, for example an interrupt controller with many
+interrupt sources, each interface must be registered on individual ports. This
+is done by creating a port class and registering it with a dedicated port
+object. See the chapter <code>Port registration</code> of
+<em>Simics C++ Device API v2</em> documentation for details. An
+example of this is shown in the <b>sample-tlm2-i2c-devices</b> device
+model.
+</p><p>
+</p><pre class="jdocu_small">
+ This adapter wraps two SystemC I2C slave devices using Simics port object.
+ <pre class="jdocu_small">namespace scl = simics::systemc;
+
+class SlaveAdapter : public scl::Adapter {
+  public:
+    explicit SlaveAdapter(simics::ConfObjectRef o)
+        : scl::Adapter(o) {
+        for (unsigned i = 0; i &lt; 2; ++i) {
+            systemc_io[i].set_gasket(scl::simics2tlm::createGasket(
+                &amp;i2c_slave_devs[i]-&gt;io_target_socket, o));
+            systemc_i2c[i].set_gasket(scl::simics2tlm::createGasket(
+                &amp;i2c_slave_devs[i]-&gt;i2c_target_socket, o));
+            simics_i2c[i].set_gasket(scl::tlm2simics::createGasket(
+                &amp;i2c_slave_devs[i]-&gt;i2c_master_initiator_socket, o));
+        }
+    }
+
+    static void init_class(simics::ConfClass *cls);
+
+    template &lt;int id&gt; int get_register() const;
+    template &lt;int id&gt; void set_register(const int &amp;val);
+
+    template &lt;int id&gt; int get_i2c_address() const;
+    template &lt;int id&gt; void set_i2c_address(const int &amp;val);
+
+    template &lt;int id&gt; simics::ConfObjectRef get_i2c_link() const;
+    template &lt;int id&gt; void set_i2c_link(const simics::ConfObjectRef &amp;obj_ref);
+
+    class Port : public simics::Port&lt;SlaveAdapter&gt;,
+                 public scl::simics2tlm::IoMemoryGasketAdapter,
+                 public scl::simics2tlm::I2cSlaveV2GasketAdapter {
+      public:
+        explicit Port(simics::ConfObjectRef o)
+            : simics::Port&lt;SlaveAdapter&gt;(o),
+              IoMemoryGasketAdapter(&amp;parent()-&gt;systemc_io[index()], parent()),
+              I2cSlaveV2GasketAdapter(&amp;parent()-&gt;systemc_i2c[index()], parent()) {
+        }
+    };
+
+  private:
+    scl::simics2tlm::IoMemory     systemc_io[2];
+    scl::simics2tlm::I2cSlaveV2   systemc_i2c[2];
+    scl::tlm2simics::I2cMasterV2  simics_i2c[2];
+    std::array&lt;scl::Device&lt;I2cSlave&gt;, 2&gt; i2c_slave_devs {{
+                    {this, "i2c_dev0"},
+                    {this, "i2c_dev1"}}};
+};  </pre><p>
+
+[...]
+
+ </p><pre class="jdocu_small">auto port = simics::make_class&lt;SlaveAdapter::Port&gt;(
+            "sample_tlm2_i2c_slave.port", "i2C port", "I2C port");
+    port-&gt;add(scl::iface::createAdapter&lt;
+              scl::iface::IoMemorySimicsAdapter&lt;SlaveAdapter::Port&gt;&gt;());
+    port-&gt;add(scl::iface::createAdapter&lt;
+              scl::iface::I2cSlaveV2SimicsAdapter&lt;SlaveAdapter::Port&gt;&gt;());
+    cls-&gt;add(port, "port.I2C[2]");
+    </pre><p>
+
+[...]
+
+ </p><pre class="jdocu_small">extern "C" void init_local_slave(void) {
+    simics::make_class&lt;SlaveAdapter&gt;(
+        DEVICE_CLASS,
+        "sample OSCI TLM2 I2C slave",
+        "The &lt;class&gt;" DEVICE_CLASS "&lt;/class&gt; is a Simics module"
+        " encapsulating a SystemC TLM2-based I2C slave to demonstrate"
+        " the use of Simics SystemC Library.");
+}  </pre><p>
+
+</p></pre><p>
+</p><p>
+A new <b>Port</b> class is defined and derived from
+<b>simics::Port&lt;SlaveAdapter&gt;</b> and two <em>gasket-adapter</em>
+classes. These two <em>gasket-adapter</em>classes expose
+<code>io_memory</code> and <code>i2c_slave_v2</code> interfaces on the port
+object instance. They are initialized like the other <em>gasket-adapter</em>
+class except the first constructor parameter is bind to the gasket defined in
+the parent class. The <b><i>index</i></b> function returns the array index of the
+port object if it is given an array-like name. It is used to bind to the right
+gasket.
+</p><p>
+The new <b>Port</b> class is registered like the normal Simics class.
+Also the same for the Simics adapter registration. When registering the port
+class to the device class, a name for the port is provided as a function
+parameter. If an array-like name is provided, a port array is registered. In
+the above example, the two port objects are named like <code>port.I2C[0]</code> and
+<code>port.I2C[1]</code>.
+</p><p>
+Sometimes there are many gaskets with the same type, but for some reason cannot
+use the port array. An example of this is shown here.
+</p><p>
+</p><pre class="jdocu_small">
+ <pre class="jdocu_small">class Port : public simics::Port&lt;test_sc_gasket_port_adapter&gt;,
+                 public simics::systemc::simics2systemc::SignalGasketAdapter {
+      public:
+        explicit Port(simics::ConfObjectRef o)
+            : simics::Port&lt;test_sc_gasket_port_adapter&gt;(o),
+              SignalGasketAdapter(&amp;(parent()-&gt;*port_gasket[name()]), parent()) {
+        }
+
+        static std::map&lt;std::string,
+                        simics::systemc::simics2systemc::Signal
+                        test_sc_gasket_port_adapter::*&gt; port_gasket;
+    };
+
+  private:
+    simics::systemc::simics2systemc::Signal systemc_first_in_;
+    simics::systemc::simics2systemc::Signal systemc_second_in_;
+    simics::systemc::simics2systemc::Signal systemc_third_in_;
+    simics::systemc::Device&lt;test_sc_gasket_port_module&gt; dut_;
+};
+
+std::map&lt;std::string,
+         simics::systemc::simics2systemc::Signal
+         test_sc_gasket_port_adapter::*&gt;
+test_sc_gasket_port_adapter::Port::port_gasket {
+    {"port.first", &amp;test_sc_gasket_port_adapter::systemc_first_in_},
+    {"port.second", &amp;test_sc_gasket_port_adapter::systemc_second_in_},
+    {"port.third", &amp;test_sc_gasket_port_adapter::systemc_third_in_},
+};
+</pre><p>
+
+</p></pre><p>
+</p><p>
+The port class here acts like a trampoline by defining a map between the port
+name and the bind gasket. Thus no need to create a port class to bind to each
+individual gasket.
+</p><p>
+
+</p><h2 class="jdocu"><a name="gasket-objects">4.7 Gasket Objects</a></h2>
+<p>
+
+<a name="gasket-objects2"></a>
+</p><p>
+Section <a class="reference" href="#dma-device-example">4.1</a> shows how gaskets are added to the
+configuration as part of the adapter's source code. The current section shows a
+different approach, where the gaskets are created and configured as pre-conf
+objects before they are added to the configuration by invoking
+<b><i>SIM_add_configuration()</i></b>. In such a configuration the adapter only
+need to setup the SystemC model but not any gaskets. The gaskets are connected
+as part of finalizing the Simics configuration.
+</p><p>
+Therefore, when gasket objects are used, one can use the same adapter template
+class for all kinds of SystemC models:
+</p><p>
+</p><pre class="jdocu_small"> <pre class="jdocu_small">template&lt;class TModel&gt;
+class Adapter : public simics::systemc::Adapter {
+ public:
+    explicit Adapter(simics::ConfObjectRef o)
+        : simics::systemc::Adapter(o)
+        , top_("top") {}
+
+ private:
+    TModel top_;
+};
+</pre><p>
+</p></pre><p>
+</p><p>
+In the following example, <b>Top</b> is used as SystemC model and
+template parameter for the <b>Adapter</b> class. The model is just a
+dummy that creates two sockets to show how they are connected to the gasket
+objects further below.
+</p><p>
+</p><pre class="jdocu_small"> <pre class="jdocu_small">class Top : public sc_core::sc_module {
+  public:
+    SC_CTOR(Top)
+        : target_socket_("target_socket")
+        , initiator_socket_("initiator_socket") {
+        target_socket_.register_b_transport(this, &amp;Top::b_transport);
+    }
+
+  private:
+    tlm_utils::simple_target_socket&lt;Top&gt; target_socket_;
+    tlm_utils::simple_initiator_socket&lt;Top&gt; initiator_socket_;
+
+    void b_transport(tlm::tlm_generic_payload &amp;trans,  // NOLINT: SystemC API
+                     sc_core::sc_time &amp;local_time) {
+        initiator_socket_-&gt;b_transport(trans, local_time);
+    }
+};
+</pre><p>
+</p></pre><p>
+</p><p>
+The binding between the gaskets and the TLM2 sockets is based on the
+hierarchical names of the sockets.  The following example shows how this can be
+done from CLI, but typically this is done in a component or from a python test.
+</p><p>
+
+
+</p><pre class="jdocu_small">simics&gt; <b>@adapter = pre_conf_object('adapter',<img alt="Line break" src="nextline.png">
+    'sample_tlm2_gasket_device_doc_example')</b>
+
+simics&gt; <b>@io_gasket = pre_conf_object('io_gasket',<img alt="Line break" src="nextline.png">
+    'sample_tlm2_gasket_device_gasket_simics2tlm_IoMemory')</b>
+simics&gt; <b>@io_gasket.target = 'top.target_socket'</b>
+simics&gt; <b>@io_gasket.simulation = adapter</b>
+
+simics&gt; <b>@ms = pre_conf_object('ms', 'memory-space')</b>
+simics&gt; <b>@ms_gasket = pre_conf_object('ms_gasket',<img alt="Line break" src="nextline.png">
+    'sample_tlm2_gasket_device_gasket_tlm2simics_MemorySpace')</b>
+simics&gt; <b>@ms_gasket.initiator = 'top.initiator_socket'</b>
+simics&gt; <b>@ms_gasket.simulation = adapter</b>
+simics&gt; <b>@ms_gasket.object = ms</b>
+
+simics&gt; <b>@adapter.gasket_list = [io_gasket, ms_gasket]</b>
+
+simics&gt; <b>@SIM_add_configuration([adapter, io_gasket, ms_gasket, ms], None)</b>
+</pre><p>
+</p><p>
+All gasket objects must be listed in the adapter's <i>gasket_list</i>
+attribute. The order in which the gasket objects are finalized is controlled in
+such a way that the adapter first creates the SystemC world and then each
+gasket object binds the sockets according to their attributes.
+</p><p>
+There are different types of gasket objects and they require different
+attributes to be set at configuration. All gaskets require the
+attribute <i>simulation</i> to be set. The
+<i>simulation</i> attribute couples the gasket to the adapter.  In addition, gaskets
+translating Simics interface calls to TLM2 transactions, i.e. simics2tlm
+gaskets, require that the <i>target</i> attribute is set. The
+<i>target</i> attribute binds the initiator socket within the gasket to
+the target socket in the SystemC model. Gaskets translating TLM2 transactions
+to Simics interface calls, i.e. tlm2simics gaskets, require that
+the <i>initiator</i> attribute is set. The <i>initiator</i>
+attribute binds the target socket within the gasket to the initiator socket in
+the SystemC model. The tlm2simics gaskets has one additional attribute
+named <i>object</i>. This should point to a Simics object implementing
+the corresponding interface of the gasket, and can be left unset.
+</p><p>
+The third type of gasket objects is the composite PCI gasket. Required
+attributes are <i>device</i>, <i>pci_bus</i>
+and <i>simulation</i>. For more details see the sample-tlm2-pci-device
+source code.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+To prevent problems caused by incompatible toolchains it is not possible
+to set the <i>simulation</i> attribute of the gasket object to an adapter
+built from a different module than the gasket.</div>Each module builds its own set of gasket objects. Therefore the conf-class
+names used for these gasket objects are prefixed with the module's name. The
+following gasket objects are currently supported:
+<ul>
+  <li>&lt;module prefix&gt;_gasket_simics2tlm_[EthernetCommon, Packet,
+  I2cSlaveV2, IoMemory, PciDevice, PciExpress, SerialDevice]</li>
+  <li>&lt;module prefix&gt;_gasket_tlm2simics_[EthernetCommon, Packet,
+    I2cMasterV2, MemorySpace, PciBus, SerialDevice]</li>
+  <li>&lt;module prefix&gt;_gasket_simics2systemc_Signal</li>
+  <li>&lt;module prefix&gt;_gasket_systemc2simics_Signal</li>
+  <li>&lt;module prefix&gt;_gasket_composite_Pci</li>
+</ul>
+<p>
+Besides the flexibility of binding, gasket objects can be used to reduce the code
+size and increase the code readability. For example, if a SystemC module exposes
+hundreds of signals, the traditional way of adding gaskets to the Adapter quickly
+explodes as each new interface of the same type requires four lines of code. Using
+gasket objects could replace these four hundred lines of code with just a few lines.
+</p><p>
+In the following example, <b>TopVector</b> is used as SystemC model and
+template parameter for the <b>Adapter</b> class. The model has 100 signal
+input and 100 signal output. The example shows how easy the signals can be connected
+to the gasket object further below.
+</p><p>
+</p><pre class="jdocu_small"> <pre class="jdocu_small">class TopVector : public sc_core::sc_module {
+  public:
+    SC_CTOR(TopVector)
+        : sc_in_vec_("sc_in_vec", VECTOR_SIZE)
+        , sc_out_vec_("sc_out_vec", VECTOR_SIZE) {}
+
+    static const int VECTOR_SIZE = 100;
+
+  private:
+    sc_core::sc_vector&lt;sc_core::sc_in&lt;bool&gt;&gt; sc_in_vec_;
+    sc_core::sc_vector&lt;sc_core::sc_out&lt;bool&gt;&gt; sc_out_vec_;
+};
+</pre><p>
+</p></pre><p>
+</p><p>
+The following example shows how this can be done from a python script.
+</p><p>
+</p><pre class="jdocu_small"> <pre class="jdocu_small">import dev_util as du
+import simics
+
+adapter = simics.pre_conf_object('adapter', 'sample_tlm2_gasket_device_doc_vector_example')
+
+VECTOR_SIZE = 100
+vector_in = [None] * VECTOR_SIZE
+for idx in range(VECTOR_SIZE):
+    vector_in[idx] = simics.pre_conf_object('vector_in_%d' % idx,
+                                            'sample_tlm2_gasket_device_gasket_simics2systemc_Signal')
+    vector_in[idx].signal = 'top.sc_in_vec_%d' % idx
+    vector_in[idx].simulation = adapter
+
+signal_object_vect = [du.Dev([du.Signal]) for _ in range(VECTOR_SIZE)]
+vector_out = [None] * VECTOR_SIZE
+for idx in range(VECTOR_SIZE):
+    vector_out[idx] = simics.pre_conf_object('vector_out_%d_' % idx,
+                                             'sample_tlm2_gasket_device_gasket_systemc2simics_Signal')
+    vector_out[idx].signal = 'top.sc_out_vec_%d' % idx
+    vector_out[idx].object = signal_object_vect[idx].obj
+    vector_out[idx].simulation = adapter
+
+adapter.gasket_list = vector_in + vector_out
+
+simics.SIM_add_configuration([adapter] + vector_in + vector_out, None)
+
+</pre><p>
+</p></pre><p>
+</p><p>
+
+</p><h2 class="jdocu"><a name="Gaskets">4.8 Gaskets</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="IO-Memory-Gasket">4.8.1 IO Memory Gasket</a></h3>
+<p>
+
+</p><p>
+To perform memory/IO transactions from Simics to the SystemC model
+SystemC Library provides the Simics-to-TLM <b>IoMemory</b> gasket
+which converts the <code>io_memory</code> interface calls to SystemC TLM
+transactions:
+</p><pre class="jdocu_small">class IoMemory : public simics::systemc::iface::IoMemoryInterface,
+                 public MultiGasketOwner {
+  public:
+    IoMemory() {
+        set_type();
+    }
+    int DEPRECATED_FUNC(map)(addr_space_t memory_or_io, map_info_t info) {
+        return 0;  // short circuit deprecated functionality
+    }
+    exception_type_t operation(generic_transaction_t *mem_op,
+                               const types::map_info_t &amp;info);
+
+  private:
+    iface::TransactionPool pool_;
+};
+</pre><p>
+</p><p>
+   
+</p><p>
+The <b>IoMemory</b> gasket is implemented as a container for multiple
+tlm-gaskets and is capable of routing interface calls to different target
+sockets of the SystemC model. This routing is based on the <code>function</code>
+field of the <code>map_info_t</code> struct which is passed as a parameter to
+the <b><i>operation</i></b> function of the <code>io_memory</code> interface.
+In Simics, a device can be mapped multiple times into the same or different
+memory spaces. The value of the <code>function</code> field, or <em>mapping ID</em>,
+is used by Simics to identify which mapping the access is coming from.
+</p><p>
+If the same mapping ID value is re-used, and hence all the transactions
+are forwarded to the same target socket, then the SystemC model needs
+to route the transaction based on the transaction address.
+</p><p>
+The payload address is the offset into the mapping.
+If the physical address of the access made to the Simics memory space is
+needed, it can be calculated as shown below:
+</p><pre class="jdocu_small">physical_address = payload.get_address() - info.start + info.base,
+</pre><p>
+
+</p><h3 class="jdocu"><a name="PCIe-Gasket">4.8.2 PCIe Gasket</a></h3>
+<p>
+
+</p><p>
+Simics contains a model of the widely used PCI bus. SystemC Library
+provides the <em>PCIe gasket</em> enabling users to connect a PCI device
+written in SystemC to the Simics PCI bus. The gasket is implemented by
+<b>composite::PciGasket</b> class which is defined in
+<code>simics/systemc/composite/pci_gasket.h</code> file.
+</p><p>
+To use the gasket the <b>Adapter</b> class must be derived from
+the <b>composite::PciGasket</b> class, and the gasket must be
+initialized with a pointer to the <b>Adapter</b> instance.
+</p><p>
+The main <b><i>connect</i></b> function of the <b>composite::PciGasket</b>
+class, which takes the device as a parameter, binds device sockets to
+a set of helper gaskets used by the PCIe gasket internally. Refer to
+<b>sample-tlm2-pci-device</b> module which demonstrates how
+the PCIe gasket is used.
+</p><p>
+Inside the gasket the connection is performed with the help of
+<b>PciMappingInterconnect</b> class. The class is intended for snooping
+write accesses to configuration registers and updating Simics specific mapping
+of the device in Simics memory/IO address space. The class also removes
+the corresponding mapping upon receiving a bus reset.
+</p><p>
+</p><h4 class="jdocu"><a name="SystemC-PCIe-Device-Interfaces">4.8.2.1 SystemC PCIe Device Interfaces</a></h4>
+<p>
+
+</p><p>
+A SystemC PCI device, connected to the PCI bus via the PCIe gasket,
+must implement the following interfaces:
+</p><ul>
+  <li><code>PciDeviceQueryInterface</code></li>
+  <li><code>BaseAddressRegisterQueryInterface</code></li>
+  <li><code>PciDeviceInterface</code></li>
+</ul>
+<p>
+The <code>PciDeviceQueryInterface</code> interface exposes a set of
+sockets and is shown below:
+
+   </p><pre class="jdocu_small">class PciDeviceQueryInterface {
+  public:
+    // config space, pci_bus interface and pci_device interface are required
+    virtual sc_core::sc_object *getConfigTargetSocket() = 0;
+    virtual sc_core::sc_object *getPciBusInitiatorSocket() = 0;
+    virtual sc_core::sc_object *getPciDeviceTargetSocket() = 0;
+
+    virtual ~PciDeviceQueryInterface() {}
+};
+</pre><p>
+
+</p><p>
+The <b><i>getConfigTargetSocket</i></b> function must return a target socket
+intended to receive downstream transactions to the PCI configuration space.
+The transactions are forwarded from Simics to SystemC via Simics-to-TLM
+<b>IoMemory</b> gasket used by the PCIe gasket. In case of
+multi-function PCI device the function must return the multi-passthrough
+target socket. This socket, bound to the initiator socket(s) of
+the <b>IoMemory</b> gasket, will get transactions for all functions.
+Sequential IDs of the initiator sockets correspond to ordered numbers of
+the valid device functions. For example, functions 0, 3 and 5 of
+a multi-function device will get the transactions from
+initiator sockets 0, 1 and 2 correspondingly.
+</p><p>
+The <b><i>getPciBusInitiatorSocket</i></b> function must return an initiator
+socket intended to send upstream transactions to the bus. In the PCIe gasket
+the transactions are translated to the <code>pci_bus</code> and
+<code>pci_upstream_operation</code> interface calls using the TLM-to-Simics
+<b>PciBus</b> gasket. The device is supposed to use the
+<b>PciBusExtension</b> and <b>PciUpstreamOperationExtension</b>
+extensions attached to the TLM payload correspondingly.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+A TLM payload sent without the <b>PciBusExtension</b> or the
+  <b>PciUpstreamOperationExtension</b> will be dropped by
+  the PCIe gasket.</div>Upon SW writing to configuration registers that control access to device
+IO/memory space (BARs and Command register) or upon a bus reset, the PCIe gasket
+automatically updates or removes device mappings in Simics.
+This is performed via invocation of the
+<b><i>add_map</i></b> or <b><i>remove_map</i></b> functions of
+the <code>pci_bus</code> interface.
+<p>
+
+The gasket snoops accesses to standard BARs (BAR0-5) as defined by
+Type 0/1 PCI Headers. Accesses to device specific BARs, and hence the updating
+or removing of the corresponding mappings in Simics, must be handled by
+the device. This also includes handling the PCI bus reset correctly for
+the device specific BARs.
+</p><p>
+To perform reads from or writes to the Simics PCI bus the device should
+use the <b><i>read</i></b> and <b><i>write</i></b> functions of the
+<code>pci_upstream_operation</code> interface. Note that access type
+(i.e. read or write), transaction address, data and size must be encoded in
+the TLM payload as the <b>PciUpstreamExtension</b> extension does
+not transfer them. Refer to <b>sample-tlm2-pci-device</b> module for
+an example.
+</p><p>
+The <b><i>getPciDeviceTargetSocket</i></b> function must return the target socket
+which receives downstream transactions converted from <code>pci_device</code>
+interface calls by the helper Simics-to-TLM <b>PciDevice</b> gasket of
+the PCIe gasket. The device is supposed to handle the TLM payload along with the
+<b>PciDeviceExtension</b> extension using an extension-receiver. This
+also means that the device must implement <code>PciDeviceInterface</code>
+interface in order to create the extension-receiver. Please refer to
+chapter <a class="reference" href="#protocol-specific-extensions">4.5.3</a> for details. Note that
+prior to forwarding the <b><i>bus_reset</i></b> function call of the
+<code>pci_device</code> interface to the device, the PCIe gasket
+will remove the device mappings which correspond to regions controlled
+by the supported standard BARs.
+</p><p>
+If the PCI device supports PCIe, the same target socket can be used to receive
+the PCI express messages converted from <code>pci_express</code> interface
+calls by the helper Simics-to-TLM <b>PciExpress</b> gasket of the PCIe
+gasket. The device will handle another TLM payload along with the
+<b>PciExpressExtension</b> extension. Same <em>extension-dispatcher</em>
+can be used for both extensions. Please refer to chapter
+<a class="reference" href="#protocol-specific-extensions">4.5.3</a> for details.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+In Simics, a PCIe device must implement the <code>pci_express</code>
+interface to get a full 4K mapping in configuration space when connected to the
+pcie-bus. </div>The device exposes the memory/IO target sockets as well as the BARs data
+with the help of <code>BaseAddressRegisterQueryInterface</code> interface
+shown below:
+
+   <pre class="jdocu_small">class BaseAddressRegisterQueryInterface {
+  public:  </pre><p>
+
+
+       </p><pre class="jdocu_small">    struct BaseAddressRegister {
+        int function;  ///&lt; PCI function that this BAR belongs to
+        int offset;  ///&lt; BAR offset (0x10-0x24)
+        bool is_memory;  ///&lt; Memory or IO BAR?
+        bool is_64bit;  ///&lt; 64-bit or 32-bit (memory) BAR?
+        int size_bits;  ///&lt; Size of BAR, in number of bits
+        int mapping_id;  ///&lt; Mapping ID, used to identify incoming transactions
+    };  </pre><p>
+
+
+       </p><pre class="jdocu_small">    typedef std::vector&lt;BaseAddressRegister&gt; BarInfo;
+    virtual BarInfo getBarInfo() = 0;
+    </pre><p>
+
+
+       </p><pre class="jdocu_small">    typedef std::vector&lt;std::pair&lt;BaseAddressRegister,
+                                  sc_core::sc_object *&gt; &gt; BarSockets;
+    virtual BarSockets getBarTargetSockets() = 0;
+
+    virtual ~BaseAddressRegisterQueryInterface() {}
+};
+</pre><p>
+
+</p><p>
+The <b><i>getBarInfo</i></b> function must return the
+<b>BaseAddressRegister</b> configuration which includes the associated
+target socket for each implemented BAR.
+</p><p>
+
+
+
+</p>
+<div class="chain">
+<a href="running-a-systemc-model-in-simics.html">3 Running a SystemC Model in Simics</a>
+<a href="overview_of_systemc_features.html">5 Overview of SystemC Features</a>
+</div>

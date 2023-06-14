@@ -1,0 +1,125 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>simple_timing_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ram_access_subscribe.html">ram_access_subscribe</a>
+<a href="__rm_interface_simulator_cache.html">simulator_cache</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_simple_timing_v2">simple_timing_v2</a></h1>
+<p>
+
+<a name="simple_timing_v2"></a><a name="simple_timing_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">=============================================
+<p>
+                TECH-PREVIEW
+</p><p>
+    This interface may change without notice.
+</p><p>
+  =============================================
+</p><p>
+  The <code>simple_timing_v2</code> interface is used to send information
+  about timing, instructions executed and activity factor from timing models
+  to power and temperature models. It should be implemented by the consumer
+  of the data.
+</p><p>
+  The period that is covered by a call is called a heartbeat. The length of
+  that period may vary between calls.
+</p><p>
+  When a core has completed a heartbeat <b><i>new_active_data</i></b> is called
+  and when a period of idleness has passed <b><i>new_idle_data</i></b> is called.
+</p><p>
+  The <i>core</i> argument is the core the performance data comes from.
+</p><p>
+  The <i>time</i> argument is the virtual time of the core at the end of
+  the heartbeat.
+</p><p>
+  The <i>frequency</i> argument is what the core frequency was set to at
+  the time of the call.
+</p><p>
+  The <i>cycles</i> argument is the number of cycles in the heartbeat.
+</p><p>
+  The <i>ipc</i> argument is average ipc during this heartbeat.
+</p><p>
+  The <i>cdyn</i> argument is average activity factor during the heartbeat.
+</p><p>
+  The <i>version_data</i> argument can be a <code>NULL</code> or a pointer to
+  simple json-string that can contain information about the performance model.
+</p><p>
+  </p><div class="note">
+<b>Note:</b>
+Temporal decoupling may cause calls regarding different cores to come
+  out of order with regards to virtual time.
+<p>
+  Time during heartbeat may not add up with time passed since last call on a
+  particular core, especially when cores goes in and out of idle-mode.</p></div>To use the <code>simple_timing_v2</code> add the following
+  EXTRA_MODULE_VPATH := simple-timing-interface
+  to the modules Makefile.
+<p>
+  </p><pre class="jdocu_small">
+#define SIMPLE_TIMING_V2_MAX_NR_EVENTS  120
+
+SIM_INTERFACE(simple_timing_v2) {
+        bool (*new_active_data)
+                (conf_object_t *obj,
+                 double time,
+                 conf_object_t *core,
+                 uint64 frequency,
+
+                 cycles_t cycles,
+                 double ipc,
+                 double cdyn,
+
+                 char const *version_data);
+
+        bool (*new_idle_data)
+                (conf_object_t *obj,
+                 double time,
+                 conf_object_t *core,
+                 uint64 frequency,
+                 cycles_t cycles);
+};
+
+#define SIMPLE_TIMING_V2_INTERFACE "simple_timing_v2"
+
+</pre><p>
+</p><p>
+
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Called from performance models.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ram_access_subscribe.html">ram_access_subscribe</a>
+<a href="__rm_interface_simulator_cache.html">simulator_cache</a>
+</div>

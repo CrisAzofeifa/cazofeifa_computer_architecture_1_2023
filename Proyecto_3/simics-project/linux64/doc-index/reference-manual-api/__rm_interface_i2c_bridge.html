@@ -1,0 +1,85 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i2c_bridge</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_hpi.html">hpi</a>
+<a href="__rm_interface_i2c_bus.html">i2c_bus</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_i2c_bridge">i2c_bridge</a></h1>
+<p>
+
+<a name="i2c_bridge"></a><a name="i2c_bridge_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(i2c_bridge) {
+        void (*address_added)(conf_object_t *device,
+                              uint32 addr, uint32 mask);
+        void (*address_removed)(conf_object_t *device,
+                                uint32 addr, uint32 mask);
+};
+#define I2C_BRIDGE_INTERFACE "i2c_bridge"
+</pre><p>
+</p><p>
+
+   This interface is implemented by any device that is registered in
+   an I2C link with the <b><i>register_bridge</i></b>
+   function. <b><i>register_bridge</i></b> will call
+   <b><i>address_added</i></b>, possibly multiple times, to tell the
+   bridge which slave addresses that are currently registered in the
+   link. Until the bridge device disconnects from the link (using
+   <b><i>disconnect_device</i></b>), the link will continuously call the
+   functions <b><i>address_added</i></b> and <b><i>address_removed</i></b>
+   whenever a slave device registers or unregisters from the link.
+   In addition, when an i2c bridge is disconnected from a link, the
+   <b><i>address_removed</i></b> function is called for all currently registered
+   slave addresses.
+</p><p>
+   The <i>addr</i> and <i>mask</i> parameters are
+   interpreted in the same way as in the function
+   <b><i>register_slave_address</i></b> in the <code>i2c_link</code>
+   interface.
+</p><p>
+   The <code>i2c_bridge</code> interface is mainly useful when
+   implementing bridges between I2C links: When a bridge forwards
+   traffic from one link to another, it needs the information provided
+   via this interface to correctly forward all relevant traffic
+   between the links, while avoiding to register twice to the same
+   address.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_hpi.html">hpi</a>
+<a href="__rm_interface_i2c_bus.html">i2c_bus</a>
+</div>

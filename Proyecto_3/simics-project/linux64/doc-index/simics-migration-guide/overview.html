@@ -1,0 +1,137 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3 Migrating to a New Simics Version</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="compatibility.html">2 Compatibility</a>
+<a href="5.html">4 Migrating from Simics 5</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Migration Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="overview">3 Migrating to a New Simics Version</a></h1>
+<p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="Introduction">3.1 Introduction</a></h2>
+<p>
+
+</p><p>
+This chapter gives a short overview of the process of updating code and scripts
+from any older Simics version to the most recent one. The following chapters,
+on the other hand, contain version specific descriptions.
+</p><p>
+It is assumed that the migration is from Simics 5 or Simics 4.8, the two
+supported Simics versions at the time of the Simics 6 release.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Step-by-step-Guide">3.2 Step-by-step Guide</a></h2>
+<p>
+
+</p><p>
+</p><ol>
+  <li>
+    First make sure that any C/C++, DML and Python modules compile with the most
+    recent API in the version of Simics that you are migrating from. In Simics
+    5, set <code>SIMICS_API</code> to <code>5</code> in the module
+    <code>Makefile</code> and correspondingly for Simics 4.8. If the code does not
+    compile cleanly, consult the <em>Migration Guide</em> for that Simics
+    version. When moving to Simics 5, you should always start with modules
+    that are updated to use the most recent API in the Simics version you
+    migrate from.
+  </li>
+
+  <li>
+    Update Python modules to the most recent API in the version of Simics
+    that you are migrating from. This can be done by importing the Simics API
+    using a specified version:
+    <pre class="jdocu_small">import simics_5_api as simics</pre><p>
+    This will simplify the migration of code to a newer version of Simics later.
+  </p></li>
+
+  <li>
+    Run all scripts in Simics with the <code>-wdeprecated</code> command
+    line flag to the Simics binary. This will catch uses of some
+    deprecated features that can only be detected in run time. An
+    alternative is to set the
+    <i>sim→deprecation_level</i> attribute to 2.
+  </li>
+
+  <li>
+    When all modules and scripts run fine using the most recent API in
+    the old version of Simics, it is time to migrate to Simics
+    6. Update the existing project to point to a Simics 6
+    installation or, even better, create a new project for Simics 6
+    development, since the old project may be needed for comparison
+    purposes.
+  </li>
+
+  <li>
+    Build all modules using the API version corresponding to the
+    Simics version that you are migrating from. This should simply be
+    a recompilation, since the old API version is already selected in
+    the Makefiles and Python source files.
+  </li>
+
+  <li>
+    In a few cases there are API changes that the pre-processor cannot
+    hide.  They may cause the build to fail even when an old API is
+    selected. Use the table in chapter <a class="reference" href="deprecation-table.html">8</a>
+    and the version specific migration chapters
+    <a class="reference" href="5.html">4</a> and <a class="reference" href="4.8.html">5</a> to figure out what changes
+    are necessary.
+  </li>
+
+  <li>
+    Run all your tests and scripts to ensure that everything works in
+    Simics 6 when using the old API. Make sure to pass
+    <code>-no-wdeprecated</code> to suppress deprecation warnings in the
+    process. Once everything works, you can start using the new
+    version of Simics for actual work. The following steps are
+    optional at this point, but still strongly recommended.
+  </li>
+
+  <li>
+    Change the API used for modules and scripts to the most recent version,
+    one module or script at a time. Update the code according to the following
+    chapters.
+  </li>
+
+  <li>
+    Turn off the <code>-no-wdeprecated</code> flag when running tests and scripts.
+    Update any code that yields deprecation warnings according to the
+    following chapters.
+  </li>
+
+</ol>
+<p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="compatibility.html">2 Compatibility</a>
+<a href="5.html">4 Migrating from Simics 5</a>
+</div>

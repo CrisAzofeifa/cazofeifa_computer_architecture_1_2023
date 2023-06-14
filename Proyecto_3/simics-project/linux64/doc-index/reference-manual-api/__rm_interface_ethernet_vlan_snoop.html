@@ -1,0 +1,97 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ethernet_vlan_snoop</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ethernet_snoop.html">ethernet_snoop</a>
+<a href="__rm_interface_extended_serial.html">extended_serial</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ethernet_vlan_snoop">ethernet_vlan_snoop</a></h1>
+<p>
+
+<a name="ethernet_vlan_snoop"></a><a name="ethernet_vlan_snoop_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">typedef void (*ethernet_link_snoop_t)(lang_void *user_data,
+                                      conf_object_t *clock,
+                                      const frags_t *packet,
+                                      eth_frame_crc_status_t crc_status);</pre><p>
+
+   </p><pre class="jdocu_small">SIM_INTERFACE(ethernet_vlan_snoop) {
+        conf_object_t *(*attach)(
+                conf_object_t *NOTNULL link, conf_object_t *clock,
+                ethernet_link_snoop_t snoop_fun, lang_void *user_data,
+                uint16 vlan_id, bool is_vlan_trunk);
+};
+#define ETHERNET_VLAN_SNOOP_INTERFACE "ethernet_vlan_snoop"
+</pre><p>
+</p><p>
+
+   This interface is implemented by Ethernet VLAN switch link objects. It is
+   used to attach snoop functions to the link. The snoop function will receive
+   all traffic going over the link, either on a single VLAN, or on all of them.
+</p><p>
+   This interface should only be used for inspection, and never as part of the
+   actual simulation. The snoop functions must not affect the simulation in any
+   way.
+</p><p>
+   The <i>clock</i> parameter tells the link on which clock to post the
+   events that call the snoop function. The snoop function will be called at
+   the delivery time of the network packet, which means that it will be called
+   at the same time as any Ethernet devices attached to the same clock that
+   receives packets from the same link.
+</p><p>
+   Snooped frames with a matching CRC will contain the correct frame check
+   sequence.
+</p><p>
+   The <i>user_data</i> parameter is passed to the snoop function every
+   time it is called.
+   
+</p><p>
+   The <i>vlan_id</i> indicates on which VLAN the snoop function should
+   be attached (as its native VLAN).
+</p><p>
+   The <i>is_vlan_trunk</i> flag indicates whether the snoop function
+   should also receive the traffic on all other VLANs, tagged with an 802.1Q
+   tag.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>attach</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ethernet_snoop.html">ethernet_snoop</a>
+<a href="__rm_interface_extended_serial.html">extended_serial</a>
+</div>

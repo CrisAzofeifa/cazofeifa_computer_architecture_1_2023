@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>breakpoint_change</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_breakpoint.html">breakpoint</a>
+<a href="__rm_interface_breakpoint_query.html">breakpoint_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_breakpoint_change">breakpoint_change</a></h1>
+<p>
+
+<a name="breakpoint_change"></a><a name="breakpoint_change_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>breakpoint_change</code> interface is implemented by
+   objects that wish to get notified when breakpoints are added,
+   removed, or changed in some way.
+<p>
+   The object that wants to get notified of changes to breakpoints in
+   a another object would use the <code>simple_dispatcher</code> in
+   the breakpoint_change port of that other object. The other object
+   will then lookup the <code>breakpoint_change</code> interface in
+   the object to notify and use that when breakpoint updates occur.
+</p><p>
+   The breakpoint_change port is implemented by objects of the
+   <b>cell</b> class, and a listener that registers on a cell with get
+   notified on any breakpoint changes in that cell.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(breakpoint_change) {
+        void (*breakpoint_added)(conf_object_t *obj,
+                                 conf_object_t *bp_obj,
+                                 breakpoint_handle_t handle);
+        void (*breakpoint_removed)(conf_object_t *obj,
+                                   conf_object_t *bp_obj,
+                                   breakpoint_handle_t handle);
+};
+
+#define BREAKPOINT_CHANGE_INTERFACE "breakpoint_change"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_breakpoint.html">breakpoint</a>
+<a href="__rm_interface_breakpoint_query.html">breakpoint_query</a>
+</div>

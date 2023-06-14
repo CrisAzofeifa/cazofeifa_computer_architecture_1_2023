@@ -1,0 +1,206 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i8237x2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-i82077.html">i82077</a>
+<a href="rm-class-i8254.html">i8254</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="i8237x2"><a href="#i8237x2">i8237x2</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The 8237x2 device implements the functionality of two cascaded 8237 DMA controllers. The 8237x2 supplies 7 dma channels that other devices can use for direct transfers to and from physical memory. The channel to use should be set in the device requesting DMA transfers. The 8237x2 exports two functions for reading and writing data. Limitation: Most registers in the 8237x2 device change hardware specific parameters. These do nothing in the 8237x2. Memory-to-Memory DMA transfers are not supported. The <i>verify</i> transfer type is not supported. Transfer delays are not modelled correctly, all transfers are completed in the same cycle as they are initiated by the device. Software initiated DMA requests are not supported.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, io_memory, legacy_dma
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-i8237x2.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-i8237x2.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:memory">
+<i>memory</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>The physical memory to connect the DMA device to.</dd>
+<dt id="dt:current_addr">
+<i>current_addr</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>((<i>a1</i>, <i>a2</i>, <i>a3</i>, <i>a4</i>), (<i>b1</i>, <i>b2</i>, <i>b3</i>, <i>b4</i>))</tt> The current address register. a1 - a4 are addresses of the first chip's 4 DMA channels' and b1 - b4 are for the second chip.</dd>
+<dt id="dt:base_addr">
+<i>base_addr</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>((<i>a1</i>, <i>a2</i>, <i>a3</i>, <i>a4</i>), (<i>b1</i>, <i>b2</i>, <i>b3</i>, <i>b4</i>))</tt> The base address register for both chips' 4 DMA channels.</dd>
+<dt id="dt:current_count">
+<i>current_count</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>((<i>a1</i>, <i>a2</i>, <i>a3</i>, <i>a4</i>), (<i>b1</i>, <i>b2</i>, <i>b3</i>, <i>b4</i>))</tt> The current count register.</dd>
+<dt id="dt:base_count">
+<i>base_count</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>((<i>a1</i>, <i>a2</i>, <i>a3</i>, <i>a4</i>), (<i>b1</i>, <i>b2</i>, <i>b3</i>, <i>b4</i>))</tt> The base count register.</dd>
+<dt id="dt:disabled">
+<i>disabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[ii]</code>
+<br>(<tt>0|1</tt>,<tt>0|1</tt>) If the chips are disabled or enabled.</dd>
+<dt id="dt:mask">
+<i>mask</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>(0|1, 0|1, 0|1, 0|1), (0|1, 0|1, 0|1, 0|1)</tt> Which channels are disables/enabled.</dd>
+<dt id="dt:flip_flop">
+<i>flip_flop</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[ii]</code>
+<br><tt>(<i>hi</i>, <i>lo</i>)</tt> <i>hi</i>/<i>lo</i> byte access selector.</dd>
+<dt id="dt:dec_address">
+<i>dec_address</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>(0|1, 0|1, 0|1, 0|1), (0|1, 0|1, 0|1, 0|1)</tt> If set decrement addresses on transfers instead of increment. Per channel.</dd>
+<dt id="dt:auto_init">
+<i>auto_init</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>(0|1, 0|1, 0|1, 0|1), (0|1, 0|1, 0|1, 0|1)</tt> If set re-initialize registers at terminal count.</dd>
+<dt id="dt:dma_type">
+<i>dma_type</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>((<i>a1</i>, <i>a2</i>, <i>a3</i>, <i>a4</i>), (<i>b1</i>, <i>b2</i>, <i>b3</i>, <i>b4</i>))</tt> DMA type 0 (verify), 1 (write), 2 (read), 3 (illegal) for all channels.</dd>
+<dt id="dt:dma_mode">
+<i>dma_mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>((<i>a1</i>, <i>a2</i>, <i>a3</i>, <i>a4</i>), (<i>b1</i>, <i>b2</i>, <i>b3</i>, <i>b4</i>))</tt> DMA mode 0 (demand), 1 (single), 2 (block), 3 (cascade) for all channels.</dd>
+<dt id="dt:request">
+<i>request</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>((<i>a1</i>, <i>a2</i>, <i>a3</i>, <i>a4</i>), (<i>b1</i>, <i>b2</i>, <i>b3</i>, <i>b4</i>))</tt> The request register.</dd>
+<dt id="dt:tc">
+<i>tc</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>(0|1, 0|1, 0|1, 0|1), (0|1, 0|1, 0|1, 0|1)</tt> Bit set on terminal count (TC) for a DMA channel.</dd>
+<dt id="dt:page_addr">
+<i>page_addr</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>((<i>a1</i>, <i>a2</i>, <i>a3</i>, <i>a4</i>), (<i>b1</i>, <i>b2</i>, <i>b3</i>, <i>b4</i>))</tt> The 64k/128k page that DMA is relative.</dd>
+<dt id="dt:page_size">
+<i>page_size</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[ii]</code>
+<br><tt>(<i>page-size1</i>, <i>page-size2</i>)</tt> Page size for the controllers. 64k or 128k.</dd>
+<dt id="dt:extra_page_addr">
+<i>extra_page_addr</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]{2}]</code>
+<br><tt>((<i>a1</i>, <i>a2</i>, <i>a3</i>, <i>a4</i>), (<i>b1</i>, <i>b2</i>, <i>b3</i>, <i>b4</i>))</tt> Extra page address registers. These registers have no function in the device.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.8237x2.html">8237x2</a>
+</section>
+<div class="chain">
+<a href="rm-class-i82077.html">i82077</a>
+<a href="rm-class-i8254.html">i8254</a>
+</div>

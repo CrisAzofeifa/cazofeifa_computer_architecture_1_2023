@@ -1,0 +1,69 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>bridge</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_arm_trustzone.html">arm_trustzone</a>
+<a href="__rm_interface_can_device.html">can_device</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_bridge">bridge</a></h1>
+<p>
+
+<a name="bridge"></a><a name="bridge_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>bridge</code> interface is implemented by objects
+   that bridge between memory spaces. The <b><i>not_taken</i></b> function
+   is called if the access is not claimed by any device in the
+   destination memory-space. If a memory transaction reaches a mapping
+   that has the same bridge object as the previous mapping, the access
+   is considered as not taken, and the <b><i>not_taken</i></b> function
+   for the first bridge mapping is called.
+   <pre class="jdocu_small">SIM_INTERFACE(bridge) {
+        exception_type_t (*not_taken)(conf_object_t *NOTNULL obj,
+                                      conf_object_t *NOTNULL src_space,
+                                      conf_object_t *NOTNULL dst_space,
+                                      exception_type_t ex,
+                                      generic_transaction_t *NOTNULL mem_op,
+                                      map_info_t mapinfo);
+};
+
+#define BRIDGE_INTERFACE "bridge"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_arm_trustzone.html">arm_trustzone</a>
+<a href="__rm_interface_can_device.html">can_device</a>
+</div>

@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>save-persistent-state</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-save-intel-obj.html">save-intel-obj</a>
+<a href="rm-cmd-save-preferences.html">save-preferences</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="save-persistent-state"></a>
+<h1 id="save-persistent-state"><a href="#save-persistent-state">save-persistent-state</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>save-persistent-state</b> <i>file</i> [-z|-u] [-save-raw|-save-craff] [-independent-state] [<i>"comment"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Save the persistent simulator state to <i>file</i>. Persistent data typically includes disk images, NVRAM and flash memory contents and clock settings, i.e. data that survive reboots. The persistent state is saved as a standard Simics configuration.
+<p>
+Unless the <tt>-independent-state</tt> flag is specified, the state is saved incrementally. This allows to save time and disk space but, as result, the saved state usually depends on the files which were saved earlier as well as on the files (e.g., disk images) which were used when simulation objects were created. This means that care should be taken when deleting files created previously.
+</p><p>
+Use the <tt>-independent-state</tt> flag for saving the complete image data independent of states which were saved earlier, instead of just the modified data (which is the default).
+</p><p>
+To add a description to the saved state, use the <i>comment</i> argument. The comment is saved in the <tt>info</tt> file in the persistent state bundle.
+</p><p>
+More information about saving persistent state can be found in the Configuration and Checkpointing chapter of the <cite>Simics User's Guide</cite> manual.
+</p><p>
+The command flags described below allow to control some subtle aspects related to the format used for the saved state and are rarely needed.
+</p><p>
+The <tt>-save-raw</tt> flag tells Simics to store images in raw format. The <tt>-save-craff</tt> flag (default) tells Simics to store images in the craff format.
+</p><p>
+The <tt>-u</tt> flag tells Simics to store images in the uncompressed craff format.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-load-persistent-state.html">load-persistent-state</a>, 
+<a href="rm-cmd-write-configuration.html">write-configuration</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-save-intel-obj.html">save-intel-obj</a>
+<a href="rm-cmd-save-preferences.html">save-preferences</a>
+</div>

@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>18.4 Types</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="running-scripts.html">18.3 Running Scripts</a>
+<a href="documentation.html">18.5 Documentation</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="appendix.html">V Appendix</a>
+&nbsp;/&nbsp;
+<a href="script-decls.html">18 Old Script Parameters</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Types">18.4 Types</a></h1>
+<p>
+  
+  <a name="target-script-parametersparameter-types"></a>
+</p><p>
+  The following type specifications are allowed in the declarations of
+  parameters and results. Each item in the list below describes the
+  values permitted by the type.
+  </p><dl><dt id="dt:int"><b>int</b></dt><dd>An integer. Integers can be written in decimal, hex
+      (<code>0x1e3</code>) or binary (<code>0b1011</code>).
+    </dd><dt id="dt:float"><b>float</b></dt><dd>A floating-point number or integer.
+    </dd><dt id="dt:string"><b>string</b></dt><dd>Any string, like "Miss Piggy". Quotes can be omitted for
+      word-like strings, like <code>x86_64</code>.
+    </dd><dt id="dt:bool"><b>bool</b></dt><dd>Either <code>TRUE</code> or <code>FALSE</code>.
+    </dd><dt id="dt:file-pattern"><b>file(PATTERN)</b></dt><dd>A string that names an existing file. PATTERN is a (double-quoted)
+      string with a pattern that suggests what file names are acceptable,
+      such as <code>"*.exe"</code>. The pattern is just a hint for the user
+      interface; any existing file will be accepted. Use <code>file("*")</code>
+      to indicate no particular file name preference.
+<p>
+      File names may start with <code>%simics%</code> to force a look-up
+      relative the current project and Simics package path, or
+      with <code>%script%</code> representing the script directory itself.
+      (<code>%script%</code> is only allowed in default values.)
+    </p></dd><dt id="dt:value1-value2"><b>{VALUE1, VALUE2, ...}</b></dt><dd>One of the enumerated values (which each can be of any type).
+<p>
+      Example: <code>{1, "apple pie", 8.25}</code>
+    </p></dd><dt id="dt:type-or-nil"><b>TYPE or nil</b></dt><dd>A value that matches TYPE or is the value NIL.
+<p>
+      Example: <code>string or nil</code> will match <code>"abc"</code> or NIL,
+      but not <code>1.3</code>.
+    </p></dd></dl><p>Complex or compound data types can often be packed into a string and
+  unpacked and verified by the receiver in Simics. See documentation of
+  the <b>split-string</b> command.
+</p>
+<div class="chain">
+<a href="running-scripts.html">18.3 Running Scripts</a>
+<a href="documentation.html">18.5 Documentation</a>
+</div>

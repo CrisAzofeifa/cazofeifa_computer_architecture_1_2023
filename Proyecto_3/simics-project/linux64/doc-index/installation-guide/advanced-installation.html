@@ -1,0 +1,551 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5 Advanced Installation Options</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="upgrading-simics.html">4 Upgrading Simics</a>
+<a href="open-source-software.html">6 Open Source Software</a>
+</div>
+<div class="path">
+<a href="index.html">Installation Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="advanced-installation">5 Advanced Installation Options</a></h1>
+<p>
+
+This section is additional information for users that want to do 
+a customized installation or get deeper information in some issues.
+</p><p>
+</p><h2 class="jdocu"><a name="Add-on-Packages-Management">5.1 Add-on Packages Management</a></h2>
+<p>
+
+</p><h3 class="jdocu"><a name="Linux">5.1.1 Linux</a></h3>
+<p>
+
+</p><p>
+All Simics packages are installed separately, in
+different directories. This makes it easy to upgrade or remove a
+package without touching the rest of the installation. Each Simics
+installation keeps its own list of paths to add-on packages, called
+the add-on package list. It makes them available to the Simics engine
+at run-time. This list can be printed and configured using
+the <code>addon-manager</code> program.
+</p><p>
+Here are a few examples of what the <code>addon-manager</code> can do:
+</p><p>
+
+</p><h4 class="jdocu"><a name="Listing-the-add-on-packages-configured">5.1.1.1 Listing the add-on packages configured</a></h4>
+<p>
+
+</p><p>
+To print out the add-on packages configured in a given installation of
+Simics, do the following:
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b><em>[simics]</em>/bin/addon-manager</b>
+
+Simics 6 Add-on Package Manager
+=================================
+
+This script will configure this Simics installation to use optional
+Simics add-on packages.
+Default alternatives are enclosed in square brackets ([ ]).
+
+=== Using the package list in Simics installation <img alt="Line break" src="nextline.png">
+(/opt/simics/simics-6/simics-6.0.0) ===
+
+Configured add-on packages:
+   QSP-x86  6.0.0  (linux64)  ../simics-QSP-x86-6.0.0
+</pre><p>
+</p><p>
+If there are any add-on packages that are invalid (the directory does not exist
+anymore, or the necessary information files are invalid),
+<code>addon-manager</code> will ask you if they can be removed. Refer to the
+paragraph below describing how to remove add-on packages that have been
+uninstalled.
+</p><p>
+
+</p><h4 class="jdocu"><a name="Add-an-add-on-package-to-the-list">5.1.1.2 Add an add-on package to the list</a></h4>
+<p>
+
+</p><p>
+To add an installed add-on package to the list, do the following:
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b><em>[simics]</em>/bin/addon-manager -s /opt/[...]/simics-x86-440bx-6.0.0</b>
+
+[...]
+Configured add-on packages:
+   QSP-x86  6.0.0  (linux64)  ../simics-QSP-x86-6.0.0  
+
+The following operations will be performed:
+   -&gt; Add  X86-440BX  6.0.0  (linux64)  ../simics-x86-440bx-6.0.0      
+
+New package list:
+   QSP-x86  6.0.0  (linux64)  ../simics-QSP-x86-6.0.0  
+   X86-440BX   6.0.0  (linux64)  ../simics-x86-440bx-6.0.0   
+
+Do you want to update the package list? (y/n) [y] <b>&lt;ENTER&gt;</b>
+</pre><p>
+</p><p>
+Whenever you install a new add-on package, the installer will suggest to
+register it to the most likely Simics installation found, so this step will
+often be unnecessary.
+</p><p>
+
+</p><h4 class="jdocu"><a name="Remove-an-add-on-package-from-the-list">5.1.1.3 Remove an add-on package from the list</a></h4>
+<p>
+
+</p><p>
+To remove an add-on package from the list, do the following:
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b><em>[simics]</em>/bin/addon-manager -d /opt/[...]/simics-x86-440bx-6.0.0/</b>
+
+[...]
+
+Configured add-on packages:
+   QSP-x86  6.0.0  (linux64)  ../simics-QSP-x86-6.0.0  
+   X86-440BX   6.0.0  (linux64)  ../simics-x86-440bx-6.0.0   
+
+The following operations will be performed:
+   -&gt; Remove  X86-440BX  6.0.0  (linux64)  ../simics-x86-440bx-6.0.0  
+
+New package list:
+   QSP-x86  6.0.0  (linux64)  ../simics-QSP-x86-6.0.0  
+
+Do you want to update the package list? (y/n) [y] <b>&lt;ENTER&gt;</b></pre><p>
+</p><p>
+
+</p><h4 class="jdocu"><a name="Remove-an-uninstalled-add-on-package-from-the-list">5.1.1.4 Remove an uninstalled add-on package from the list</a></h4>
+<p>
+
+</p><p>
+<code>addon-manager</code> will automatically propose to remove add-on packages
+that are not valid (the path does not exist, or the necessary information files
+are not present). In that case, you just need to accept to update the
+configuration.
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b><em>[simics]</em>/bin/addon-manager</b>
+
+[...]
+
+Configured add-on packages:
+   QSP-x86    6.0.0  (linux64)  ../simics-QSP-x86-6.0.0  
+   (invalid: missing)                  ../simics-x86-440bx-6.0.0
+
+The following operations will be performed:
+   -&gt; Remove  (invalid: missing)       ../simics-x86-440bx-6.0.0
+
+New package list:
+   QSP-x86  6.0.0  (linux64)  ../simics-QSP-x86-6.0.0  
+
+Do you want to update the package list? (y/n) [y] <b>&lt;ENTER&gt;</b></pre><p>
+</p><p>
+
+</p><h4 class="jdocu"><a name="Re-use-the-add-on-packages-configuration-from-another-Simics">5.1.1.5 Re-use the add-on packages configuration from another Simics</a></h4>
+<p>
+
+</p><p>
+When installing a newer version of Simics, you may want to re-use the same
+add-on packages you used to have in the previous version. This is done by
+<em>upgrading</em> from the previous installation:
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b>/opt/[...]/simics-6.1/bin/addon-manager<img alt="Line break" src="nextline.png">
+ -u /opt/[...]/simics-6.0.0/</b>
+
+[...]
+
+Package list successfully updated from '/opt/[...]/simics-6.0.0/'.
+The previous package list has been saved as <img alt="Line break" src="nextline.png">
+'/opt/[...]/simics-6.1/.package-list.backup'.
+
+Configured add-on packages:
+   X86-440BX  6.0.0  linux64  ../simics-x86-440bx-6.0.0
+
+joe@computer$
+</pre><p>
+</p><p>
+If the installer finds that a previous Simics version is installed, it
+will suggest an automatic upgrade to the newer version.
+</p><p>
+
+
+</p><h3 class="jdocu"><a name="Windows">5.1.2 Windows</a></h3>
+<p>
+
+</p><p>
+All Simics packages are installed separately, in different
+directories. This makes it easy to upgrade or remove a package without touching
+the rest of the installation. Each Simics installation keeps its own list of
+paths to add-on packages, called the add-on package list. It
+makes them available to the Simics engine at run-time. This list can be printed
+and configured using the <code>addon-manager</code> program. Unfortunately, this
+program is currently only available from the command line, so you
+have to run it from a <code>cmd.exe</code> window.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+When running <code>addon-manager.bat</code> in a Cygwin terminal, you may
+have problems with paths including spaces, even when quoting them
+properly. This is a Cygwin-specific problem. You can work-around the problem by
+using <code>cmd.exe</code> for that specific command, or by installing Simics
+in a directory that does not contain spaces.</div>Here are a few examples of what the <code>addon-manager</code> can do:
+<p>
+</p><h4 class="jdocu"><a name="Listing-the-add-on-packages-configured2">5.1.2.1 Listing the add-on packages configured</a></h4>
+<p>
+
+</p><p>
+To print out the add-on packages configured in a given installation of
+Simics, do the following:
+</p><p>
+</p><pre class="jdocu_small">C:\&gt;<b>cd "C:\Program Files\Simics\Simics 6\Simics 6.0.0"</b>
+C:\... 6.0.0&gt;<b>bin\addon-manager.bat</b>
+
+Simics 6 Add-on Package Manager
+===============================
+
+This script will configure this Simics installation to use optional
+Simics add-on packages.
+
+Default alternatives are enclosed in square brackets ([ ]).
+
+=== Using the package list in Simics installation (C:\Program Files\Simics\Simics 6\Simics 6.0.0) ===
+
+Configured add-on packages:
+   QSP-x86  6.0.0  (win64)  ..\model library quick start platform for x86 6.0.0
+</pre><p>
+</p><p>
+If there are any add-on packages that are invalid (the directory does not exist
+anymore, or the necessary information files are invalid),
+<code>addon-manager</code> will ask if they can be removed. Refer to the paragraph
+below describing how to remove add-on packages that have been uninstalled.
+</p><p>
+
+</p><h4 class="jdocu"><a name="Add-an-add-on-package-to-the-list2">5.1.2.2 Add an add-on package to the list</a></h4>
+<p>
+
+</p><p>
+To add an installed add-on package to the list, do the following:
+</p><p>
+</p><pre class="jdocu_small">C:\&gt;<b>cd "C:\Program Files\Simics\Simics 6\Simics 6.0.0"</b>
+C:\... 6.0.0&gt;<b>bin\addon-manager.bat -s "..\Platform Intel 440BX-based x86 PC 6.0.0"</b>
+
+[...]
+
+Configured add-on packages:
+   QSP-x86  6.0.0  (win64)  ..\model library quick start platform for x86 6.0.0
+
+The following operations will be performed:
+   -&gt; Add  x86-440BX  6.0.0  (win64)  ..\model library intel 440bx-based x86 pc 6.0.0
+
+New package list:
+   QSP-x86     6.0.0  (win64)  ..\model library quick start platform for x86 6.0.0
+   X86-440BX   6.0.0  (win64)  ..\model library intel 440bx-based x86 pc 6.0.0
+
+Do you want to update the configuration? (y, n) [y]: <b>&lt;ENTER&gt;</b>
+Package list updated
+</pre><p>
+</p><p>
+Whenever you install a new add-on package, the installer will propose to
+register it to the most likely Simics installation found, so this step will
+often be unnecessary.
+</p><p>
+
+</p><h4 class="jdocu"><a name="Remove-an-add-on-package-from-the-list2">5.1.2.3 Remove an add-on package from the list</a></h4>
+<p>
+
+</p><p>
+To remove an add-on package from the list, do the following:
+</p><p>
+</p><pre class="jdocu_small">C:\&gt;<b>cd "C:\Program Files\Simics\Simics 6\Simics 6.0.0"</b>
+C:\... 6.0.0&gt;<b>bin\addon-manager.bat -d "..\model library intel 440bx-based x86 pc 6.0.0"</b>
+
+[...]
+
+Configured add-on packages:
+   QSP-x86     6.0.0  (win64)  ..\model library quick start platform for x86 6.0.0
+   X86-440BX   6.0.0  (win64)  ..\model library intel 440bx-based x86 pc 6.0.0
+
+The following operations will be performed:
+   -&gt; Remove  x86-440BX  6.0.0  (win64)  ..\model library intel 440bx-based x86 pc 6.0.0
+
+New package list:
+   QSP-x86     6.0.0  (win64)  ..\model library quick start platform for x86 6.0.0
+
+Do you want to update the configuration? (y, n) [y]: <b>&lt;ENTER&gt;</b></pre><p>
+Package list updated
+
+</p><h4 class="jdocu"><a name="Remove-an-uninstalled-add-on-package-from-the-list2">5.1.2.4 Remove an uninstalled add-on package from the list</a></h4>
+<p>
+
+</p><p>
+The <code>addon-manager</code> will automatically propose to remove add-on packages
+that are not valid (the path does not exist, or the necessary information files
+are not present). In that case, you just need to accept to update the
+configuration.
+</p><p>
+</p><pre class="jdocu_small">C:\&gt;<b>cd "C:\Program Files\Simics\Simics 6\Simics 6.0.0"</b>
+C:\... 6.0.0&gt;<b>bin\addon-manager.bat</b>
+
+[...]
+
+Configured add-on packages:
+   QSP-x86  6.0.0  (win64)  ..\model library quick start platform for x86 6.0.0
+   (invalid: missing)                     ..\model library intel 440bx-based x86 pc 6.0.0
+
+The following operations will be performed:
+   -&gt; Remove  (invalid: missing)         ..\model library intel 440bx-based x86 pc 6.0.0
+
+New package list:
+   QSP-x86     6.0.0  (win64)  ..\model library quick start platform for x86 6.0.0
+
+Do you want to update the configuration? (y, n) [y]: <b>&lt;ENTER&gt;</b></pre><p>
+Package list updated
+
+</p><h4 class="jdocu"><a name="Re-use-the-add-on-packages-configuration-from-another-Simics2">5.1.2.5 Re-use the add-on packages configuration from another Simics</a></h4>
+<p>
+
+</p><p>
+When installing a newer version of Simics, the installer will find any
+previous Simics version installed and it will propose you to re-use an
+existing package list. Otherwise you may want to re-use the same
+add-on packages you used to have in the previous version. This is done by
+<em>upgrading</em> from the previous installation:
+</p><p>
+</p><pre class="jdocu_small">C:\&gt;<b>cd "C:\Program Files\Simics\Simics 6\Simics 6.0.1"</b>
+C:\... 6.0.1&gt;<b>bin\addon-manager.bat -u "..\Simics 6.0.0"</b>
+
+[...]
+
+Package list successfully updated from 'C:\Program Files\[...]6.0.0'.
+The previous package list has been saved as 'C:\Program Files\[...]6.0.1\.package-list.backup'.
+
+=== Using the package list in Simics installation (C:\Program Files\Simics\Simics 6\Simics 6.0.1) ===
+
+Configured add-on packages:
+   QSP-x86     6.0.0  (win64)  ..\model library quick start platform for x86 6.0.0
+</pre><p>
+</p><p>
+
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Add-on-Packages-Module-Lookup">5.2 Add-on Packages: Module Lookup</a></h2>
+<p>
+
+</p><p>
+Simics automatically recognizes modules that are located in the current
+project, in any of the configured add-on packages, and in the base
+installation. When confronted with several versions of the same modules, it
+applies the following selection rules:
+</p><p>
+</p><dl><dt id="dt:user-modules"><b>User Modules</b></dt><dd>This includes the modules compiled in the current
+project as well as the modules found in paths specified by the <i>-L</i>
+command-line option, the <code>SIMICS_EXTRA_LIB</code> environment variable, or
+the <b>add-module-directory</b> command.</dd><dt id="dt:packaged-modules"><b>Packaged Modules</b></dt><dd>This include all modules provided by
+Simics itself or its add-on packages.</dd></dl><p>When the same module is found in several locations, user modules are always
+chosen in preference to packaged modules: if you recompile a module provided as
+source code in your project, the project version will always be chosen
+first, as long as it is possible to load it into Simics.
+</p><p>
+Within the same group of modules, priority is given to the newest module,
+according to the build date that is compiled in the module at link time. For
+example, when two add-on packages provide the same module, Simics will always
+load the newest one.
+</p><p>
+
+</p><h2 class="jdocu"><a name="win-3rdparty">5.3 Third-Party Products and Other Add-ons</a></h2>
+<p>
+
+</p><p>
+Some functionality in Simics requires third-party products. These are:
+OpenVPN TAP driver, MinGW and any software that can set up virtual COM
+ports.
+</p><p>
+Simics requires the OpenVPN TAP driver to access a real network using
+bridges or host connections. The port-forwarding kind of real network
+connection, included in Simics, does not require any third
+party software. To learn more about the different real network
+connection types available, read the <em>Ethernet Networking</em>
+technology guide.
+</p><p>
+If you plan to create new models in Simics, you will need the MinGW tools to
+compile your models.
+</p><p>
+</p><dl><dt id="dt:openvpn-tap-installation"><b>OpenVPN TAP Installation</b></dt><dd>The OpenVPN TAP driver must be installed separately from Simics.
+    It can be downloaded from  <a class="jdocu" href="https://openvpn.net/index.php/download/community-downloads.html" rel="noopener noreferrer" target="_top">https://openvpn.net/index.php/download/community-downloads.html</a>.
+  </dd><dt id="dt:mingw-installation"><b>MinGW Installation</b></dt><dd>MinGW-w64 provides the GCC compiler and the make program that is needed to
+    compile Simics modules on Windows. The MinGW project is hosted at
+    <a class="jdocu" href="https://sourceforge.net/projects/mingw-w64" rel="noopener noreferrer" target="_top">https://sourceforge.net/projects/mingw-w64</a>.
+    Prebuilt versions of MinGW are provided by several web sites, for
+    example <a class="jdocu" href="https://www.msys2.org" rel="noopener noreferrer" target="_top">https://www.msys2.org</a>.
+<p>
+    The <code>project-setup</code> script will search in <code>C:\</code> and
+    in the parent folder of the Simics Base installation for a directory
+    named <code>mingw64</code>, which must contain the prebuilt MinGW. However,
+    MinGW can be put anywhere if <code>project-setup</code> is used with
+    the <i>--mingw-dir</i> option.
+ </p></dd><dt id="dt:virtual-serial-ports"><b>Virtual Serial Ports</b></dt><dd>To connect <b>host-serial-console</b> to a virtual
+    serial (COM) port, that port must have been created in
+    advance. Simics cannot set up such ports, so some other software
+    must be used for this.
+  </dd></dl><p>
+</p><h2 class="jdocu"><a name="Multi-user-Installations">5.4 Multi-user Installations</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="Shared-Installations">5.4.1 Shared Installations</a></h3>
+<p>
+
+</p><p>
+By default, Simics is organized so that the installed packages can be left
+read-only; users work in a project, as described in our manuals, or in an
+appropriate work area. This makes it easy to share a Simics installation since
+the packages can be simply installed in a common location accessible to all
+users. In this case, all of them will share the same combination of
+add-on packages, essentially the exact same Simics installation.
+
+</p><h3 class="jdocu"><a name="Per-user-Configuration">5.4.2 Per-user Configuration</a></h3>
+<p>
+
+</p><p>
+Simics can be installed so that add-on package configuration is done
+on a per-user basis. Each user will configure the specific add-on
+packages it wishes to use. This configuration can be stored in a
+project (the easiest alternative) or in a separate file. Per-user
+configuration lets you install Simics in a read-only location while
+giving users full freedom to configure and run with the add-on
+packages of their choice.
+</p><p>
+By default a project inherits the package associations of the main
+installation: When a package is installed in the main installation,
+this affects Simics when invoked from the project. When per-user
+configuration is used, a project instead manages add-on packages
+independently of the main installation, via
+the <code>addon-manager</code> script located in the project. The
+project will not be affected by the package associations of the main
+installation.  In order to enable per-user configuration in a
+project, run the <code>addon-manager</code> script located in that
+project, with the <i>-c</i> or <i>-C</i> option.
+With <i>-c</i>, the initial project-local configuration will
+have no package associations; with <i>-C</i>, it will be based on
+the set of packages currently configured in the main installation.
+Local configuration is done with further invocations of
+the <code>addon-manager</code> script in the project.
+</p><p>
+The add-on package configuration can also be stored in a specific file, by
+using the <i>-f</i> option of the <code>addon-manager</code>
+script. Configuration is identical to the other cases, but Simics must be
+informed explicitly of the existence of the file via its own command line
+argument <i>-package-file</i>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Installation-under-Configuration-Management-Systems">5.4.3 Installation under Configuration Management Systems</a></h3>
+<p>
+
+</p><p>
+If the Simics packages are imported in a configuration management system such as
+ClearCase or CVS, different options are available:
+</p><p>
+</p><ul>
+
+<li>If each user can check-out and modify its own copy of the package
+installation, they can choose to use a common configuration or to
+create their own customized one. Use relative paths in the add-on
+configuration in order to let users customize the location of the
+Simics installation.</li>
+
+<li>If the installation must be kept read-only, configurations can be performed
+either globally, when importing the Simics packages, or on a per-user basis, as
+described in the previous section.</li>
+
+</ul>
+<p>
+
+</p><h3 class="jdocu"><a name="Multi-user-Installation-on-Windows">5.4.4 Multi-user Installation on Windows</a></h3>
+<p>
+
+</p><p>
+Currently, Simics packages are meant to be installed per machine. User
+installation is not supported. Simics packages can be installed side by side
+without risks, as each release of a given package is independent from all
+others.
+</p><p>
+Packages are installed read-only, and all the instructions above can be
+followed to create global or per-user configurations.
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Installer-Options">5.5 Installer Options</a></h2>
+<p>
+
+</p><p>
+The Simics installer script provides command line options to directly specify
+the packages to install and the way it should be done. When command line
+options are provided, the corresponding questions in the interactive
+installation are skipped automatically.
+</p><p>
+It is possible to run the installer in batch mode, by passing the
+<i>-b</i> switch.
+</p><p>
+The installation script creates a log file called <code>install.log</code> in
+the current directory. If something goes wrong during the installation,
+the log file can be used to examine the situation.
+</p><p>
+See <em>Simics Reference Manual</em> for the full list of command line
+arguments for <code>install-simics.pl</code>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Add-on-Manager-Options">5.6 Add-on Manager Options</a></h2>
+<p>
+
+</p><p>
+The Simics Add-on Manager is provided with your Simics
+installation. You will find it at
+<code></code><em>[simics]</em><code>/bin/addon-manager</code>, or at
+<code></code><em>[project]</em><code>/bin/addon-manager</code>. The addon-manager script
+found in the project will associate packages with the project,
+while the script in the base package will associate packages with the
+main Simics installation.
+</p><p>
+By default, a project inherits the package associations of the main
+installation. If you want to make package associations locally in a project,
+you must first run addon-manager once with the <i>-C</i> or <i>-c</i>
+switch, in order to override this default.
+</p><p>
+In all cases, the <code>addon-manager</code> script creates a log file called
+<code>addon-manager.log</code> in the current directory. This log file can, if
+necessary, be used to debug and understand any errors that occurred.
+</p><p>
+It is possible to run the addon-manager in batch mode, by passing
+the <i>-b</i> switch.
+</p><p>
+See <em>Simics Reference Manual</em> for the full list of command line
+arguments that can be given to <code>addon-manager</code>. 
+</p><p>
+
+</p>
+<div class="chain">
+<a href="upgrading-simics.html">4 Upgrading Simics</a>
+<a href="open-source-software.html">6 Open Source Software</a>
+</div>

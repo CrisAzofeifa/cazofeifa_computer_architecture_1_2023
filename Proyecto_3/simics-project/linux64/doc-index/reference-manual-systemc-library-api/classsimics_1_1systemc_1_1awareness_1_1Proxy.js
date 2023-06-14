@@ -1,0 +1,25 @@
+var classsimics_1_1systemc_1_1awareness_1_1Proxy =
+[
+    [ "Proxy", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#ab2525c5c15b99cff0b5a20fd1c708aea", null ],
+    [ "~Proxy", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#ac8735d5964b99c969f66032d5c102d49", null ],
+    [ "addFeature", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#adab433614da4b801fe549e50ec0d9217", null ],
+    [ "allProxiesInitialized", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#af79e0ac76017bd82375010421778b8f4", null ],
+    [ "breakSimulation", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a464df5ee598316ccb999e2fdd67b5bfd", null ],
+    [ "buildEventObjects", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a3b90934ba7f3517ae16437d55f89a60f", null ],
+    [ "feature", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#ae72d61cf604210a79b833fddf0b67403", null ],
+    [ "feature", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#ab065294705bea8ba6aa0e7ed963ef88e", null ],
+    [ "init", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a2aa5ad4631b716caf5d664c291cb9c76", null ],
+    [ "resizeExtensions", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a4aef7b5db22943d3fa4521dac6b9cb1d", null ],
+    [ "sc_dump", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a37601932bc7d33673be83bdeef0bc12f", null ],
+    [ "sc_kind", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a9fb094af65844053de06c704b4a7f55c", null ],
+    [ "sc_name", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#ae68c5d80d1b513a297a7cd358a22d632", null ],
+    [ "sc_print", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a5d1b6f18a36eeac93c697d92dd33525b", null ],
+    [ "set_attributes", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a08500eaf8e25712c91014e5c32c6e352", null ],
+    [ "simics_obj", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#acd9177cf3e4b5bd07c0540d9ca53d6a3", null ],
+    [ "simulation", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a40a55b6da7ffe4f942e3f60538a82c55", null ],
+    [ "simulationEnded", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a6d38c06f21177b08d6fcb0fbc2a84c78", null ],
+    [ "simulationStarted", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a93f9a7a9f2f87a9792eb498deda01aee", null ],
+    [ "systemc_obj", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a2d4613d73a1d3734d38cd0e160e0020b", null ],
+    [ "iface_", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a2457fce3d069058fa83d19e161d7535c", null ],
+    [ "object_", "classsimics_1_1systemc_1_1awareness_1_1Proxy.html#a7c6f0283d79b8b25561fcb902d557e99", null ]
+];

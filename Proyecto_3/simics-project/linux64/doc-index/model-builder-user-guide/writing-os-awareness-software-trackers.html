@@ -1,0 +1,934 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>48 Writing OS Awareness Software Trackers</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="writing-hypersim-patterns.html">47 Writing Hypersim Patterns</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="extension-builder.html">VII Extending Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Writing-OS-Awareness-Software-Trackers">48 Writing OS Awareness Software Trackers</a></h1>
+<p>
+  
+</p><p>
+  </p><h2 class="jdocu"><a name="Basic-concepts-of-the-software-tracker">48.1 Basic concepts of the software tracker</a></h2>
+<p>
+  
+  Writing a software tracker consists of creating two objects, a
+  tracker and a mapper, plus adding a composition class.
+</p><p>
+  The idea is that the tracker keeps track of the machine state,
+  passes that data on to the tracker state in the OS Awareness
+  framework, which then passes this on to the mapper that maps the
+  tracker data into a node tree. The framework provides interfaces for
+  users to read and get updates for the node tree. More about using OS
+  Awareness can be found in <em>Analyzer User's Guide</em>. For a
+  tracker writer the framework provides interfaces for reading and
+  getting updates to the system, the machine state.
+</p><p>
+  The directions of communication between different parts of OS
+  Awareness is shown in figure
+  <a class="reference" href="#tracker-mapper-framework">29</a>.
+</p><p>
+  </p><div class="figure" id="tracker-mapper-framework">
+
+    <div style="text-align: center">
+      <img alt="" src="tracker-mapper-framework.png">
+      <div class="caption">Figure 29. 
+	Communications between tracker, mapper and framework. Boxes
+	are part of the framework.
+      </div>
+    </div>
+  </div>
+
+  <h3 class="jdocu"><a name="osa_tracker_state">48.1.1 Framework benefits</a></h3>
+<p>
+  
+</p><p>
+  The tracker state in the framework is used as a step in the
+  communication between the tracker and the mapper. The concept of
+  having both a tracker and a mapper that communicates via the
+  framework gives some advantages:
+</p><p>
+  </p><ol>
+    <li>
+      The framework will combine different updates from the tracker
+      into as few updates as possible for the mapper:
+      <ul>
+	<li>
+	  Several updates to one property will only give the latest
+	  property to the mapper.
+	</li>
+	<li>
+	  Adding an entity which is deleted in the same transaction
+	  will not show up for the mapper.
+	</li>
+	<li>
+	  Adding an entity that is updated in the same transaction
+	  will send this update as an add with the latest properties
+	  to the mapper.
+	</li>
+	<li>
+	  If an update to an entity is followed by a removal of that
+	  entity the mapper will get both the update and the remove. This
+	  is so that a user reading out the information about the node (in
+	  the node tree) that is being deleted can get the proper
+	  information about that node.
+	</li>
+      </ul>
+    </li>
+    <li>
+      The framework will take care of storing and checkpointing the
+      tracker state data.
+    </li>
+    <li>
+      The output of one tracker could be represented in different
+      ways using different mappers.
+    </li>
+    <li>
+      The framework will help to provide error checks and logging.
+    </li>
+  </ol>
+<p>
+  See section <a class="reference" href="#osa_tracker_state_admin">48.2.1.1</a> for information about the
+  interface the tracker uses to add tracker state to the framework and section
+  <a class="reference" href="#retrieving-tracker-state">48.3.2</a> for interfaces the mapper can use to
+  retrieve tracker state.
+</p><p>
+  </p><div class="note">
+<b>Note:</b>
+A tracker could create a node tree directly, without using the
+    tracker state or having a mapper. But this documentation will show
+    the recommended way, which is having both a tracker and a mapper.
+  </div>
+  <h3 class="jdocu"><a name="osa_node_tree">48.1.2 Node tree</a></h3>
+<p>
+  
+</p><p>
+  The node tree is how the software tracker represents the tracked target
+  software (or hardware) state. The mapper will start by creating one root node
+  to which it can then add nodes to. The tree can have any width or depth of
+  nodes. It is up to the mapper to represent the tracked data in a good way.
+</p><p>
+  See section <a class="reference" href="#osa_node_tree_admin">48.3.3.1</a> for the interface used to
+  create a node tree.
+</p><p>
+  The <b>node-tree</b> command of the software object can be
+  used to print the node tree.
+</p><p>
+  See <em>Analyzer User's Guide</em> for more information about how a node
+  tree looks and how the user can script against it.
+
+  </p><h3 class="jdocu"><a name="Empty-skeleton-from-a-tracker">48.1.3 Empty skeleton from a tracker</a></h3>
+<p>
+  
+</p><p>
+  The easiest way to get started with writing a software tracker in C
+  is to use the <b>project-setup</b> command with
+  the <i>--osa-tracker</i> option in a project. This will add
+  skeleton code for a tracker, a mapper and a composition class which can be
+  used as a base to implement the new tracker from.
+
+  </p><h3 class="jdocu"><a name="Linux-tracker-example">48.1.4 Linux tracker example</a></h3>
+<p>
+  
+</p><p>
+  The source code includes an example of how to implement a tracker
+  and mapper, <b>sample-linux-tracker</b>. The goal is to
+  introduce the reader to important OS Awareness concepts and
+  interfaces required to create a new tracker and mapper.
+</p><p>
+  The example is a Linux tracker with limited functionality. The
+  sample Linux tracker will work for single threaded programs running
+  a single core version of <i>qsp-x86</i> using
+  the <code>qsp-linux-common.simics</code> target script.
+</p><p>
+  To get this sample into a project run the following command:
+  </p><pre class="jdocu_small">project-setup --copy-module sample-linux-tracker
+  </pre><p>
+</p><p>
+  The sample Linux tracker will introduce the following concepts:
+  </p><ul>
+    <li>
+      Enable and disable the tracker and mapper.
+    </li>
+    <li>
+      Read memory in order to find Linux task structures and active
+      task.
+    </li>
+    <li>
+      Read and track the current processor mode.
+    </li>
+    <li>
+      Plant breakpoints on memory in order to track updates to task structures
+      and active task.
+    </li>
+    <li>
+      Send data from a tracker to a mapper.
+    </li>
+    <li>
+      Create a node tree and keep it up-to-date with the tracked data.
+    </li>
+    <li>
+      Support checkpointing.
+    </li>
+    <li>
+      Support reverse execution.
+    </li>
+    <li>
+      Add a composition object that can be used by the framework to add tracker
+      and mapper objects.
+    </li>
+    <li>
+      Allow parameters to be created, loaded and saved.
+    </li>
+  </ul>
+  <div class="note">
+<b>Note:</b>
+The Linux tracker example is not meant to explain how the Linux
+    kernel stores it task structures and other data. For information
+    about that, turn to the Linux kernel source code or some
+    documentation about the kernel.
+  </div>
+
+  <h2 class="jdocu"><a name="Writing-a-Tracker">48.2 Writing a Tracker</a></h2>
+<p>
+  
+</p><p>
+  The tracker is the object that tracks software or hardware by
+  monitoring parts of the machine state (memory, registers, etc) and
+  collecting data it is interested in. The tracker will provide the
+  data it has collected to the framework for it to be mapped into a
+  node tree by a mapper object.
+</p><p>
+  </p><h3 class="jdocu"><a name="Tracker-and-mapper-communication">48.2.1 Tracker and mapper communication</a></h3>
+<p>
+  
+</p><p>
+  The tracker will pass on its state to the framework using
+  the <code>osa_tracker_state</code> interface. See
+  <a class="reference" href="#osa_tracker_state">48.1.1</a> for information about the tracker
+  state in the framework.
+</p><p>
+  The tracker and mapper will communicate with entities, which are a
+  unique number that the tracker decides, this can for example be the
+  address of a task struct (as for the Linux tracker) or something
+  else that can be represented as a unique number. Associated with the
+  entity there will be a dictionary of properties for that entity.
+  The keys of the dictionary must be of string type. The mapper will
+  then interpret each entity and represent their properties as nodes
+  in the node tree.
+</p><p>
+  </p><h4 class="jdocu"><a name="osa_tracker_state_admin">48.2.1.1 osa_tracker_state_admin interface</a></h4>
+<p>
+  
+</p><p>
+  This section will specify how to use this interface while writing a
+  tracker, for details about each function and its arguments see the
+  API reference manual.
+</p><p>
+  </p><dl><dt id="dt:begin"><b>begin</b></dt><dd>Begins a transaction. This must be done before modifying any entity. The
+      transaction will be ended with the <b><i>end</i></b> function call. When all
+      transactions have ended the updates will be sent to any mapper
+      subscribing to updates from this tracker.
+<p>
+      Several stacked calls to <b><i>begin</i></b> is allowed
+      as long as the last started transaction is ended before any
+      previously started transaction is ended. For stacked
+      transactions the initiator of the first transaction will be
+      passed as the initiator to the mapper.
+    </p></dd><dt id="dt:end"><b>end</b></dt><dd>This ends a transaction started by a call to <b><i>begin</i></b>.
+    </dd><dt id="dt:add"><b>add</b></dt><dd>Add a new entity with some specified properties. This entity id
+      must not exist in the framework since before.
+<p>
+      This should be called when the tracker finds a new entity, for
+      example a new task if that is what the tracker is tracking.
+      The <i>properties</i> argument will contain the data, in
+      form of a string-indexed dictionary, for that entity.
+    </p></dd><dt id="dt:remove"><b>remove</b></dt><dd>Remove an existing entity. The entity id must exist in the
+      framework.
+<p>
+      Will, for example, be called when a task is found to be removed, if that
+      is what the tracker is tracking.
+    </p></dd><dt id="dt:remove_all"><b>remove_all</b></dt><dd>Remove all entities for the tracker that started the
+      transaction.
+    </dd><dt id="dt:update"><b>update</b></dt><dd>Updates the properties of an entity that has been added earlier.  This
+      can update one or more properties for the entity. If the key of the
+      property does not exist since before this property will be added. To
+      remove a property set the value of that property to nil.
+    </dd><dt id="dt:set_attribute"><b>set_attribute</b></dt><dd>Similar to <b><i>update</i></b>, but this can just update one
+      property for the entity. When using this function there is no
+      need to build up a dictionary for the updated property, instead
+      the key and value are passed to the function.
+    </dd><dt id="dt:event"><b>event</b></dt><dd>Events are used for passing data that is not persistent, so this
+      will not be stored in the framework or checkpointed. The event
+      will just be passed on to the mapper when the transaction is
+      ended. As an example, this is how the Linux tracker handles
+      system calls.
+    </dd></dl><p>
+
+  </p><h3 class="jdocu"><a name="Retrieving-and-monitoring-the-machine-state">48.2.2 Retrieving and monitoring the machine state</a></h3>
+<p>
+  
+</p><p>
+  In order for a tracker to be able to read out the current state of
+  the system and get notifications for changes of the target system
+  state the OS Awareness framework provides two different interfaces.
+</p><p>
+  </p><h4 class="jdocu"><a name="osa_machine_query-interface">48.2.2.1 osa_machine_query interface</a></h4>
+<p>
+  
+</p><p>
+  This interface provides functions to get the current state for
+  system. This includes reading the registers of a processor, reading
+  memory and getting processor mode.
+</p><p>
+  See the API documentation for details about what exact functions this
+  interface provides and how to use them.
+
+  </p><h4 class="jdocu"><a name="osa_machine_notification-interface">48.2.2.2 osa_machine_notification interface</a></h4>
+<p>
+  
+</p><p>
+  This interface provides functions for getting callbacks when the
+  state of the system changes. This can provide notification for when
+  memory is accessed, a register is written, processor mode changes or
+  an exception occurs.
+</p><p>
+  Notifications are provided as callbacks, meaning that the tracker
+  should provide a function that the parent will call once the state
+  changes.
+</p><p>
+  Every function in this interface will return an id which can be used
+  to cancel the notification by providing this id to
+  the <b><i>cancel</i></b> function. Remember to cancel all notifications
+  once a a processor is removed or when the tracker is disabled.
+</p><p>
+  See the API documentation for details about what functions this
+  interface provides and how the callback functions should be
+  implemented.
+
+
+  </p><h3 class="jdocu"><a name="Interfaces-that-the-tracker-is-required-to-implement">48.2.3 Interfaces that the tracker is required to implement</a></h3>
+<p>
+  
+</p><p>
+  </p><h4 class="jdocu"><a name="osa_tracker_control-interface">48.2.3.1 osa_tracker_control interface</a></h4>
+<p>
+  
+</p><p>
+  This interface is called from the trackers parent to do such things
+  as enabling or disabling the tracker and adding or removing
+  processors to the tracker. The tracker needs to implement this
+  interface and all its functions in order to work. How to use the
+  functions is described below, more information about the functions
+  and their arguments can be found in the API reference manual.
+  </p><dl><dt id="dt:enable"><b>enable</b></dt><dd>This function is called when the parent wants to enable the
+      tracker. The tracker can either have a previous state (after a
+      checkpoint, see section <a class="reference" href="#osa_checkpointing">48.5</a>) or an
+      empty state at this time.
+<p>
+      If the tracker is enabled without any previous state
+      the <b><i>enable</i></b> function will be called
+      before <b><i>add_processor</i></b> is called so no processors will be
+      available. At this point the tracker cannot do all that much except maybe
+      adding a root entity to pass some information on to the mapper about its
+      current configuration.
+</p><p>
+      If on the other hand there was a previous state there will be no
+      calls to <b><i>add_processor</i></b> after enabling the
+      tracker. This means that the tracker might have to install any
+      callbacks to the <code>osa_machine_notification</code>
+      interface at this point. If the tracker adds any entities
+      directly at enable this should not be done if the tracker
+      already has a state as this will have been checkpointed in the
+      framework.
+</p><p>
+      This functions should return true if enabling the tracker went
+      well.
+    </p></dd><dt id="dt:add_processor"><b>add_processor</b></dt><dd>This function is called by the framework or a parent tracker to
+      tell the tracker that the provided processor is available for
+      the tracker.
+<p>
+      If the tracker is on the top level with the framework as parent,
+      this will be called after <b><i>enable</i></b> for each processor
+      in the system.
+</p><p>
+      For a guest tracker, the parent tracker will decide when to add or remove
+      processors. This makes it possible to reflect the software state. For a
+      hypervisor system, the hypervisor tracker will typically do this when the
+      guest OS is scheduled or unscheduled. However, the hypervisor tracker
+      must first have enabled the guest tracker by calling <b><i>enable</i></b>
+      first.
+</p><p>
+      When this is called the tracker should start tracking machine
+      state for the added processor. The current state can be read and
+      notifications should be installed.
+</p><p>
+      The function should return true if adding the processor went
+      well.
+    </p></dd><dt id="dt:remove_processor"><b>remove_processor</b></dt><dd>This is called from a parent tracker when a processor no longer
+      is available to the system that the tracker is tracking. The
+      tracker should then remove any machine state notifications it
+      has installed on this processor and do any necessary tracker
+      state updates related to this processor.
+<p>
+      This function should return true if removing the processor went
+      well.
+</p><p>
+      </p><div class="note">
+<b>Note:</b>
+This function is currently called before <b><i>disable</i></b>
+	for all processors, but that might change so make sure
+	that <b><i>disable</i></b> handles removing all remaining
+	processors.
+      </div></dd><dt id="dt:clear_state"><b>clear_state</b></dt><dd>When receiving this callback the tracker should clear all its
+      internal state, including removing all processors.
+<p>
+      The tracker state in the framework will be cleared once the call
+      to <b><i>clear_state</i></b> is done. So the tracker does not have to remove
+      its entities, but it is allowed.
+</p><p>
+      This will be called when a checkpoint with OS Awareness state
+      (framework was enabled when taking the checkpoint, see
+      <a class="reference" href="#osa_checkpointing">48.5</a>) has been loaded, but the
+      framework was not enabled before advancing the simulation.
+</p><p>
+      After this has been called the tracker should be able to be
+      enabled just as if it hadn't had any previous state.
+</p><p>
+      This will only be called while the tracker is disabled. At this
+      point no notifications should be installed.
+    </p></dd><dt id="dt:disable"><b>disable</b></dt><dd>This should do the same things as <b><i>clear_state</i></b> when it
+      comes to clearing internal state. But as this is called when the
+      tracker is enabled it should also cancel any notifications that
+      it has installed for the <code>osa_machine_notification</code>
+      interface.
+    </dd></dl><p>
+
+
+  </p><h2 class="jdocu"><a name="Writing-a-Mapper">48.3 Writing a Mapper</a></h2>
+<p>
+  
+</p><p>
+  A mapper object is used to map tracker data into a node tree. The
+  node tree should represent the state of the tracked system. See
+  <a class="reference" href="#osa_node_tree">48.1.2</a> for more information about the node
+  tree.
+</p><p>
+  One tracker could potentially have different mappers that build up
+  different node trees from the data provided.
+</p><p>
+  </p><h3 class="jdocu"><a name="Interfaces-that-the-mapper-should-implement">48.3.1 Interfaces that the mapper should implement</a></h3>
+<p>
+  
+</p><p>
+  This section describes the interfaces that need to be implemented by a
+  mapper. For detailed information about the functions and their arguments see
+  the API documentation for that specific interface.
+</p><p>
+  </p><h4 class="jdocu"><a name="osa_mapper_control-interface">48.3.1.1 osa_mapper_control interface</a></h4>
+<p>
+  
+</p><p>
+  The mapper must implement the <code>osa_mapper_control</code>
+  interface which provides functions that are called from the OS
+  Awareness framework when enabling, disabling or when mapper state
+  should be cleared. Below are descriptions of what each of these
+  functions are meant to do when called.
+</p><p>
+  </p><dl><dt id="dt:enable-2"><b>enable</b></dt><dd>This function is called when the framework (or a parent mapper)
+      wants to enable the mapper.
+<p>
+      Upon enable, the mapper can have a state, if it was enabled after
+      loading a checkpoint taken with an active OS Awareness configuration. In
+      this case, the mapper does not usually need to do anything as the state
+      is already stored in the framework. See <a class="reference" href="#osa_checkpointing">48.5</a>
+      for information about how the mapper handles checkpointing.
+</p><p>
+      When the mapper is enabled without having a previous state, the following
+      should be done:
+      </p><ol>
+	<li>
+	  Create the root node by calling <b><i>create</i></b> in
+	  the <code>osa_node_tree_admin</code> interface
+	  (<a class="reference" href="#osa_node_tree_admin">48.3.3.1</a>) of its parent.
+	</li>
+	<li>
+	  Add any additional base nodes by calling
+	  <b><i>add</i></b> in the <code>osa_node_tree_admin</code>
+	  interface with the newly created root node as parent.
+	</li>
+	<li>
+	  Subscribe to the tracker associated with the mapper, using
+	  the <b><i>subscribe_tracker</i></b> function in
+	  the <code>osa_tracker_state_notification</code> interface
+	  (<a class="reference" href="#osa_tracker_state_notification">48.3.2.2</a>) of its
+	  parent.
+	</li>
+	<li>
+	  Get any existing entities for the tracker that the mapper is
+	  associated with using the <b><i>get_entities</i></b> function in
+	  the <code>osa_tracker_state_query</code> interface
+	  (<a class="reference" href="#osa_tracker_state_query">48.3.2.1</a>) of its parent and add nodes
+	  for these entities. Under normal circumstances there should be no
+	  existing entities when the mapper is enabled as the mapper is enabled
+	  before the tracker by the framework, but if the mapper is a guest
+	  under a parent mapper this might not be the case. Doing this is a
+	  good idea, and it should usually be done in the same way as when
+	  adding an entity upon a <b><i>tracker_update</i></b> call.
+	</li>
+      </ol>
+<p>
+      The function should return true if enable went well.
+    </p></dd><dt id="dt:clear_state-2"><b>clear_state</b></dt><dd>This function is called when the framework (or parent mapper)
+      needs the mapper to clear its state so that the mapper can later
+      be enabled again from a clean state. This is called when the
+      state has been restored from a checkpoint, but the simulation
+      advances before the OS Awareness framework is enabled, see
+      <a class="reference" href="#osa_checkpointing">48.5</a> for more information. In this
+      case the mapper needs to clear all its internal state so that
+      when <b><i>enable</i></b> is called it will perform all the steps
+      for the case when the mapper is enabled without a state.
+<p>
+      The mapper does not need to remove nodes in the node tree when
+      clearing state as the framework will clear the node tree state
+      afterwards, but is allowed to remove nodes if it wants to.
+</p><p>
+      This function will only be called when the mapper is disabled.
+    </p></dd><dt id="dt:disable-2"><b>disable</b></dt><dd>This function is called when the framework (or a parent mapper)
+      wants to disable the mapper. This should do the same things as
+      the <b><i>clear_state</i></b> function in this interface.
+<p>
+      The difference from this compared to <b><i>clear_state</i></b> is
+      that this function is called when the mapper is enabled. In
+      general <b><i>disable</i></b> and <b><i>clear_state</i></b> will call
+      a common function for clearing state, but if anything additional
+      needs to be done for an enabled mapper that should be done just
+      for the <b><i>disable</i></b> function.
+    </p></dd></dl><p>
+  </p><h4 class="jdocu"><a name="osa_mapper_admin-interface">48.3.1.2 osa_mapper_admin interface</a></h4>
+<p>
+   This interface only provides
+  one function; <b><i>tracker_updated</i></b>. This function is called
+  from the OS Awareness framework when the tracker state has been
+  updated for a tracker that the mapper is subscribing to.
+</p><p>
+  The function will provide a <i>changeset</i>, providing data for
+  what has been updated in the tracker state, and
+  an <i>initiator</i> telling what processor initiated this change.
+</p><p>
+  The mapper is supposed to map added, removed or modified entities to
+  nodes in the node tree and update the node tree using
+  the <code>osa_node_tree_admin</code> interface
+  (<a class="reference" href="#osa_node_tree_admin">48.3.3.1</a>).
+</p><p>
+  The mapper can also filter out unwanted changes, such as entities or
+  properties that it does not care about. The mapper itself can also
+  modify properties or add additional properties to suit what data it
+  wants to provide the node tree with.
+</p><p>
+  The <i>changeset</i> also provides events that the tracker has
+  sent out. Events are not stored in the tracker state; they contain
+  non-persistent data which the mapper can use to call
+  <b><i>event</i></b> in the <code>osa_node_tree_admin</code> interface
+  (<a class="reference" href="#osa_node_tree_admin">48.3.3.1</a>) to provide the node tree with an
+  event. This can, for example, be a system call in a Linux tracker. The mapper
+  could also choose to filter out an event or modify it before passing it on to
+  the node tree.
+</p><p>
+  For details on the <b><i>tracker_updated</i></b> function see the API
+  reference manual.
+
+  </p><h4 class="jdocu"><a name="osa_mapper_query-interface">48.3.1.3 osa_mapper_query interface</a></h4>
+<p>
+  
+  Both functions in this interface are optional, if not implemented
+  the function should be set to nil in the interface.
+  </p><dl><dt id="dt:get_process_list"><b>get_process_list</b></dt><dd>Needs to be implemented in order for the <b>list</b>
+      command to work. See details on format in the API
+      documentation.
+    </dd><dt id="dt:get_mapper"><b>get_mapper</b></dt><dd>Only needed for stacked mappers that have other mappers as
+      guests. If used, then this should return the mapper object for
+      which a certain node belongs to. If this function is not
+      implemented the framework assumes that the node belongs to the
+      mapper object that created the node tree.
+    </dd></dl><p>
+
+</p><p>
+  </p><h3 class="jdocu"><a name="retrieving-tracker-state">48.3.2 Retrieving tracker state</a></h3>
+<p>
+  
+</p><p>
+  The mapper is supposed to build up node trees from the tracker
+  state. In order to do so the mapper must be able to get the current
+  tracker state and be able to get updates once the tracker state is
+  updated. The OS Awareness framework provides two interfaces for
+  reading the current tracker state and for getting notifications when
+  the tracker state is updated.
+</p><p>
+  </p><h4 class="jdocu"><a name="osa_tracker_state_query">48.3.2.1 osa_tracker_state_query</a></h4>
+<p>
+   This interface provides
+  functions for getting tracker state from the OS Awareness framework.
+  The functions it provides are the <b><i>get_entity</i></b> function,
+  which allows getting the properties of a certain entity, and
+  the <b><i>get_entities</i></b> which returns a dictionary with all the
+  entities for a certain tracker. Neither of these functions are
+  necessary for writing a working mapper, but
+  the <b><i>get_entities</i></b> function is recommended to use during
+  the enable phase to make sure that the mapper works as a guest to
+  some other mapper.
+
+  </p><h4 class="jdocu"><a name="osa_tracker_state_notification">48.3.2.2 osa_tracker_state_notification</a></h4>
+<p>
+   This interface provides
+  functions for subscribing to updates from a certain tracker.
+  The <b><i>subscribe_tracker</i></b> function should be called during
+  the enabling phase to tell the framework that this mapper wants to
+  receive tracker state updates (through calls to
+  the <b><i>tracker_updated</i></b> function in
+  the <code>osa_mapper_admin</code> interface) for a certain
+  tracker.
+</p><p>
+  The tracker object to subscribe to is usually specified by having an
+  attribute in the mapper.
+</p><p>
+  The <b><i>unsubscribe_tracker</i></b> function is normally not used,
+  this will tell the framework that the mapper no longer wants updated
+  for the specified tracker. This is only useful if a mapper
+  subscribes to several trackers and no longer wants updated for some
+  of them, for example a stacked mapper were one of the guests is
+  removed.
+</p><p>
+  When the framework is disabled it will automatically
+  remove any subscriptions so the next time it is enabled again the
+  mapper will have to call <b><i>subscribe_tracker</i></b> again.
+
+
+  </p><h3 class="jdocu"><a name="Creating-a-node-tree">48.3.3 Creating a node tree</a></h3>
+<p>
+  
+  The purpose of a mapper is to map the tracker state into a node
+  tree. The OS Awareness framework provides an interface for creating
+  and modifying a node tree which the mapper should use.
+</p><p>
+  </p><h4 class="jdocu"><a name="osa_node_tree_admin">48.3.3.1 osa_node_tree_admin interface</a></h4>
+<p>
+  
+  The <code>osa_node_tree_admin</code> interface is part of the OS
+  Awareness framework and is the part used to create node trees. The
+  mapper calls the functions of this interface to create and maintain
+  a node tree.
+</p><p>
+  All modifications to the node tree has to be inside a transaction,
+  which is started with the <b><i>begin</i></b> function and ended by
+  the <b><i>end</i></b> function of this interface. Transactions can be
+  stacked as long as the order is so that a transaction started later
+  is ended before any earlier started transaction. Notifications for
+  the node tree changes will be sent out when all transactions have
+  ended.
+</p><p>
+  A mapper should start out by creating a root node
+  using <b><i>create</i></b> once the mapper is enabled. This will give
+  the mapper the root node id of its node tree. After that the mapper
+  can add child nodes by using the <b><i>add</i></b> function. Nodes can
+  be updated using the <b><i>update</i></b> or <b><i>set_property</i></b>
+  functions, removed using the <b><i>remove</i></b> function and set as
+  activated or deactivated using the <b><i>activate</i></b>
+  and <b><i>deactivate</i></b> functions.
+</p><p>
+  Removing a node will also remove all of its child nodes. So removing
+  the root node will end up removing all nodes in the node tree.
+</p><p>
+  The <b><i>activate</i></b> function marks a node as active for a
+  certain processor for a node in the node
+  tree. The <b><i>deactivate</i></b> function deactivates an active
+  node. Only one node can be set as active per processor at once, so
+  when setting a new active node there is no need to
+  call <b><i>deactivate</i></b> on the previously active node as that will
+  be deactivated when a new node is activated. For an active node all
+  its ancestors will be seen as active on that processor in the node
+  tree too.
+</p><p>
+  A mapper can also do some formatting of outputted data for certain
+  properties using the <b><i>register_formatter</i></b> function. This
+  formatter will apply when <b><i>get_formatted_properties</i></b> in
+  the <code>osa_node_tree_query</code> interface is called. One case
+  were this can be used is when a number should be displayed in hex
+  format.
+</p><p>
+
+  </p><h4 class="jdocu"><a name="Properties-with-special-meaning">48.3.3.2 Properties with special meaning</a></h4>
+<p>
+  
+  There are some node properties that have special meaning. These are
+  not necessary, but might be needed for certain built-in functions
+  and services to work.
+</p><p>
+  </p><dl><dt id="dt:name"><b>name</b></dt><dd>In order for node path patterns and most OS Awareness provided
+      commands to work a node must contain a <i>name</i> property.
+      The value of this property must be a string.
+<p>
+      It is recommended that the mapper sets the <i>name</i>
+      property on all its nodes.
+    </p></dd><dt id="dt:extra_id"><b>extra_id</b></dt><dd>A list containing names of properties that uniquely identify
+      nodes on the same level. If not given, the name is assumed to be
+      unique.
+    </dd><dt id="dt:multiprocessor"><b>multiprocessor</b></dt><dd>A boolean that is used by some services to check if a node can
+      be active on more than one processor at a time.
+    </dd><dt id="dt:memory_space"><b>memory_space</b></dt><dd>Used by some services to identify the top most node that a node
+      shares the memory map for. For example, a thread node will have the
+      parent process node as the memory space in the Linux tracker.
+    </dd></dl><p>Some services also requires a leaf node to only be active on one
+  processor at a time.
+
+
+
+  </p><h2 class="jdocu"><a name="Writing-a-Composition-Class">48.4 Writing a Composition Class</a></h2>
+<p>
+  
+</p><p>
+  In order for the tracker and mapper to work with the OS Awareness
+  framework a tracker composition object should be added. This allows adding
+  and removing a tracker to a system and implements so that the
+  tracker and mapper will receive control signals from the framework.
+</p><p>
+  </p><h3 class="jdocu"><a name="Creating-the-composition-class">48.4.1 Creating the composition class</a></h3>
+<p>
+  
+  The class will be written in python and it should inherit from
+  the <b>framework.tracker_composition</b> class of
+  the <b>os-awareness</b> module. So the composition source should
+  import the following:
+  </p><pre class="jdocu_small">from simmod.os_awareness import framework
+  </pre><p>
+</p><p>
+  Then the composition class should be created as follows:
+</p><p>
+  </p><pre class="jdocu_small">class empty_software_tracker_comp(framework.tracker_composition):
+  </pre><p>
+</p><p>
+  One current limitation in the system is that the composition class must
+  always be named as the tracker class with a <code>_comp</code> suffix.
+  In the example above this composition class would be for the tracker with
+  class <b>empty_software_tracker</b>.
+
+  </p><h3 class="jdocu"><a name="Methods-that-need-to-be-implemented">48.4.2 Methods that need to be implemented</a></h3>
+<p>
+  
+</p><p>
+  </p><dl><dt id="dt:get_tracker"><b>get_tracker</b></dt><dd>Should return the tracker object. This can return Nil in case
+      there is no tracker.
+    </dd><dt id="dt:get_mapper-2"><b>get_mapper</b></dt><dd>Should return the mapper object. This can return Nil in case
+      there is no mapper.
+    </dd><dt id="dt:add_objects"><b>add_objects</b></dt><dd>This should create and configure the tracker and mapper
+      objects. Commonly this sets the parent object of the tracker and
+      mapper and for the mapper it sets which tracker it should be
+      associated with.
+<p>
+      The framework will set three attributes which can be used when
+      configuring the objects:
+      </p><dl><dt id="dt:osa_admin"><b>osa_admin</b></dt><dd>The OS awareness object that implements the OS awareness
+	  interfaces.
+	</dd><dt id="dt:tracker_domain"><b>tracker_domain</b></dt><dd>The parent tracker. This is what a parent attribute of
+	  the tracker would usually be set to.
+	</dd><dt id="dt:mapper_domain"><b>mapper_domain</b></dt><dd>The parent mapper. This is what a parent attribute of
+	  the mapper would usually be set to.
+	</dd></dl><p></p></dd></dl><p></p><div class="note">
+<b>Note:</b>
+It is also recommended that the composition class implements the info and
+    status commands by adding the <b><i>_info</i></b>
+    and <b><i>_status</i></b> methods.
+  </div>
+  <h3 class="jdocu"><a name="Supporting-Parameters">48.4.3 Supporting Parameters</a></h3>
+<p>
+  
+</p><p>
+  In order to be able to support parameters the composition class need to
+  implement the <code>osa_parameters</code> interface. This will be
+  done by adding the following line, followed by
+  the implementation of the three interface functions:
+</p><p>
+  </p><pre class="jdocu_small">class osa_parameters(pyobj.Interface):
+  </pre><p>
+  </p><dl><dt id="dt:get_parameters"><b>get_parameters</b></dt><dd>Should return a list on the following formats upon success:
+      <pre class="jdocu_small">[True, [tracker kind, parameters dictionary]]</pre><p>
+</p><p>
+      The first element in the list is a boolean returning true if
+      reading parameters went well.
+</p><p>
+      The tracker kind should be the class of tracker associated with
+      the composition. This must be the name of the composition class
+      without the <code>_comp</code> suffix, otherwise the framework will
+      not be able to automatically create the correct tracker
+      composition object when loading parameters.
+</p><p>
+      If getting the parameters fails then the first value in the
+      returned list should be false while the second element of the
+      list should be an error message of what went wrong:
+      </p><pre class="jdocu_small">[False, error string]</pre><p>
+</p><p>
+      The <i>include_children</i> argument is only used for
+      stacked trackers. See API reference manual for information.
+    </p></dd><dt id="dt:set_parameters"><b>set_parameters</b></dt><dd>Should set parameters for the tracker. This function is provided
+      with parameters on the format:
+<p>
+      </p><pre class="jdocu_small">[tracker kind, parameters dictionary]
+      </pre><p>
+</p><p>
+      The tracker kind and parameters dictionary are the values saved
+      when doing <b><i>get_parameters</i></b>. It is then up to this
+      function to make sure the tracker and/or mapper objects are
+      configured with these parameters.
+    </p></dd><dt id="dt:is_kind_supported"><b>is_kind_supported</b></dt><dd>Will tell if a certain kind of parameters are supported by the
+      tracker. This will in general only do the check that
+      the kind corresponds to the tracker kind set
+      by <b><i>get_parameters</i></b>.
+    </dd></dl><p>The details for the <code>osa_parameters</code> interface can be
+  found in the API documentation.
+</p><p>
+  The OSA framework also provides a helper
+  function, <b><i>save_parameters_file</i></b>, which can be used to save a
+  parameters file. This function is only available from Python and located in
+  <b>simmod.os_awareness.framework</b>. It takes four
+  options, <i>filename</i>, <i>tracker_cls</i>, <i>parameters</i>,
+  and <i>overwrite</i>. In case of failure,
+  a <b>FrameworkException</b> exception will be raised.
+</p><p>
+  It can be called like this:
+  </p><pre class="jdocu_small">framework.save_parameters_file(
+    "linux.params", "sample_linux_tracker", {...}, False)
+  </pre><p>
+</p><p>
+  
+
+
+  </p><h2 class="jdocu"><a name="osa_checkpointing">48.5 Checkpointing</a></h2>
+<p>
+  
+</p><p>
+  Checkpointing for OS Awareness works a bit special. The enable state
+  of the OS Awareness framework is not checkpointed, so the framework
+  will always be disabled after a checkpoint is loaded. This means
+  that if the framework is not enabled before starting the simulation,
+  after loading a checkpoint, the state of the tracker, mapper and
+  framework might be inconsistent with the target software. So if the
+  simulation starts before enabling the framework will send out
+  a <b><i>clear_state</i></b> call to all trackers and mappers. When
+  receiving such a call the tracker or mapper should clear all its
+  internal state so that it can be enabled from scratch again, without
+  any state in the node tree or framework tracker state.
+</p><p>
+  If on the other hand the framework is enabled directly after loading
+  a checkpoint the tracker and mapper should just continue as before
+  the checkpoint.
+</p><p>
+  </p><h3 class="jdocu"><a name="Support-checkpointing-in-models">48.5.1 Support checkpointing in models</a></h3>
+<p>
+  
+  The following should be thought about in order for trackers and
+  mappers to work with checkpointing.
+</p><p>
+  </p><dl><dt id="dt:keep-track-of-if-the-tracker-or-mapper-has-a-state"><b>keep track of if the tracker or mapper has a state</b></dt><dd>The object needs to keep track of if it has any previous state
+      when <b><i>enable</i></b> is called. This can, for example, be done by
+      having an attribute that tells whether or not the root node has been
+      created (for the mapper) or a root entity has been added (for the
+      tracker).
+<p>
+      If nodes already exist in the node tree no new nodes should be
+      added when the mapper <b><i>enable</i></b> function is called as
+      these nodes will already exist in the node tree as part of the
+      checkpoint.
+</p><p>
+      The same goes for the tracker that should not add any entities
+      to the framework tracker state as that state will have been
+      checkpointed. But for the tracker no machine state
+      notifications will have been checkpointed so the tracker needs
+      to install new notification callbacks.
+    </p></dd><dt id="dt:save-the-mapping-between-entities-and-nodes-in-an-attribute"><b>Save the mapping between entities and nodes in an attribute</b></dt><dd>The mapper needs to keep all its internal state that needs to
+      survive a checkpoint in attributes. Specifically the mappings
+      between entities and nodes have to be checkpointed as the mapper
+      will receive updates on the same entities once the framework is
+      enabled again.
+    </dd><dt id="dt:save-the-added-processors"><b>Save the added processors</b></dt><dd>When the framework is enabled after a checkpoint the tracker
+      will not receive any <b><i>add_processor</i></b> function calls as
+      the tracker is expected to have saved the processors in its
+      internal state.
+    </dd></dl><p>
+  </p><h3 class="jdocu"><a name="Micro-checkpointing">48.5.2 Micro-checkpointing</a></h3>
+<p>
+  
+  Simics uses so called micro-checkpoints when executing in reverse.
+  In order for a tracker or mapper to support reverse execution there
+  are some things to think about:
+  </p><ol>
+    <li>
+      Other objects cannot be accessed when a micro-checkpoint sets an
+      attribute, as those objects may not yet have been updated with
+      the restored state. The order of which different objects are
+      restored is not specified.
+    </li>
+    <li>
+      The functions in the <code>osa_machine_query</code> cannot be
+      called from an attribute setter when the simulation is restoring
+      state. This will give an error.
+    </li>
+    <li>
+      Notifications in the <code>osa_machine_notification</code>
+      interface are not checkpointed, so the tracker will have to
+      cancel notifications that are no longer valid and install new
+      notifications for the restored state.
+    </li>
+    <li>
+      As opposed to ordinary checkpoints, restoring a micro-checkpoint
+      will be done while the tracker and mapper are already enabled.
+      This could require special handling for some attributes.
+    </li>
+  </ol>
+<p>
+  In order to help models support reverse execution, the OS Awareness
+  framework provides an
+  interface, <code>osa_micro_checkpoint</code>. This interface has
+  two functions:
+  </p><dl><dt id="dt:started"><b>started</b></dt><dd>Called before Simics starts restoring state as part of loading a
+      micro-checkpoint.
+    </dd><dt id="dt:finished"><b>finished</b></dt><dd>Called after Simics has restored the state for all objects. At
+      this point it is okay to call the functions in
+      the <code>osa_machine_query</code> interface.
+<p>
+      At this point the tracker should update its notifications in
+      the <code>osa_machine_notification</code> interface to match
+      the newly restored state.
+    </p></dd></dl><p>
+
+</p>
+<div class="chain">
+<a href="writing-hypersim-patterns.html">47 Writing Hypersim Patterns</a>
+</div>

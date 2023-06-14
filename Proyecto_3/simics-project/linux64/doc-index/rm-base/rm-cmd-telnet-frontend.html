@@ -1,0 +1,66 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>telnet-frontend</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-tcpdump-stop.html">tcpdump-stop</a>
+<a href="rm-cmd-trace-breakpoint.html">trace-breakpoint – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="telnet-frontend"></a>
+<h1 id="telnet-frontend"><a href="#telnet-frontend">telnet-frontend</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>telnet-frontend</b> [<i>port</i>|<i>unix_socket</i>] [<i>max-connections</i>] [-non-interactive] [-plain-text] [-ipv4] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+
+<p>
+Creates a new Simics command-line accessible using telnet on TCP port <i>port</i> or on UNIX socket <i>unix_socket</i>. If neither <i>port</i> nor <i>unix_socket</i> is specified, a currently free port will be selected. If a busy bort is specified the command will fail. The port or UNIX socket actually used is returned by the command.
+</p><p>
+The command will fail if a privileged TCP socket is specified or if <i>unix_socket</i> specifies a file that already exists. UNIX sockets are not supported on Windows.
+</p><p>
+The <tt>-non-interactive</tt> flag can be used to prepare for scripted, non-interactive sessions. This prevents Simics from using fancy formatting and coloring of the output and disables the asynchronous prompt for commands running the simulation. The <tt>-plain-text</tt> flag can be used to only disable output formatting. These two flags affect all future connections made to the telnet frontend. The corresponding <tt>interactive</tt> and <tt>plain_text</tt> attributes can be used to change the settings of an already created <tt>telnet-frontend</tt> object, although existing connections will not be affected.
+</p><p>
+It is possible to limit the number of allowed connections to the frontend with the <i>max-connections</i> argument. Once this number of connections has been reached, no new connections are allowed even if previous ones disconnect. It is possible to reset the count of connections by writing directly to the <tt>num_connections</tt> attribute in the <tt>telnet-frontend</tt> class. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.telnet-frontend.html">telnet-frontend</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-tcpdump-stop.html">tcpdump-stop</a>
+<a href="rm-cmd-trace-breakpoint.html">trace-breakpoint – deprecated</a>
+</div>

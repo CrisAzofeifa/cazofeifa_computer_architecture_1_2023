@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>device_identification</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_describe_registers.html">describe_registers</a>
+<a href="__rm_interface_direct_memory.html">direct_memory</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_device_identification">device_identification</a></h1>
+<p>
+
+<a name="device_identification"></a><a name="device_identification_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The
+   <code>device_identification</code> interface is used to identify device
+   type such as product, stepping etc.
+<p>
+   <b><i>get_id</i></b> returns the identifier for the given <i>key</i>.
+   Existing keys can be retrieved using the <b><i>get_key</i></b> function. All
+   existing keys should return a valid identifier string. For unknown keys the
+   returned value is NULL.
+</p><p>
+   <b><i>get_key</i></b> returns the key at the specified <i>index</i> or NULL
+   starting at 0, to get the key at that index. At the <i>index</i> where
+   NULL is returned there are no more keys.
+</p><p>
+   <b><i>get_key</i></b> returns the key at the specified <i>index</i>, or
+   NULL if the <i>index</i> does not correspond to a key. To get the
+   complete list of keys, call <b><i>get_key</i></b> using an <i>index</i>
+   starting at zero, and increase the <i>index</i> for each call until
+   <b><i>get_key</i></b> returns NULL.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(device_identification) {
+        const char *(*get_id)(conf_object_t *NOTNULL obj, const char *key);
+        const char *(*get_key)(conf_object_t *NOTNULL obj, unsigned int index);
+};
+
+#define DEVICE_IDENTIFICATION_INTERFACE "device_identification"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_describe_registers.html">describe_registers</a>
+<a href="__rm_interface_direct_memory.html">direct_memory</a>
+</div>

@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;agent_handle&gt;.download</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-agent_handle.discard-jobs.html">&lt;agent_handle&gt;.discard-jobs</a>
+<a href="rm-cmd-agent_handle.download-dir.html">&lt;agent_handle&gt;.download-dir</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="agent_handle.download"></a>
+<h1 id="agent_handle.download"><a href="#agent_handle.download">&lt;agent_handle&gt;.download</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;agent_handle&gt;.download</b> [-overwrite] <i>"from"</i> [<i>to</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Copy a file to the host from the target system, where the Simics Agent connected to this <tt>agent_handle</tt> object is running.
+<p>
+The <i>from</i> argument is mandatory and must refer to an existing readable file in the target system. The path is relative to this agent handle's current working directory, unless it is an absolute path.
+</p><p>
+The optional <i>to</i> argument, allows the user to override the current working directory of Simics and provide an alternate destination path. A provided destination path must refer to an existing directory where the user has write permission. The path is taken as relative to the current working directory on the host, unless it is absolute.
+</p><p>
+The <tt>-overwrite</tt> flag is required to overwrite any existing file in the host system. Otherwise, the command will fail if the destination file already exists.
+</p><p>
+Note: The user who is running Simics must have permissions to create and write files in the host system. The user will be given ownership and access permissions of the downloaded contents.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.matic.html">matic</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-agent_handle.download-dir.html">&lt;agent_handle&gt;.download-dir</a>, 
+<a href="rm-cmd-agent_handle.print-file.html">&lt;agent_handle&gt;.print-file</a>, 
+<a href="rm-cmd-agent_handle.upload.html">&lt;agent_handle&gt;.upload</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-agent_handle.discard-jobs.html">&lt;agent_handle&gt;.discard-jobs</a>
+<a href="rm-cmd-agent_handle.download-dir.html">&lt;agent_handle&gt;.download-dir</a>
+</div>

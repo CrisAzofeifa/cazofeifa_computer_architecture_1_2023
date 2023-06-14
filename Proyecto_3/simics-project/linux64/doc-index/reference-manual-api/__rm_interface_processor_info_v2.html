@@ -1,0 +1,217 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>processor_info_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_processor_info.html">processor_info</a>
+<a href="__rm_interface_ram_access_subscribe.html">ram_access_subscribe</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_processor_info_v2">processor_info_v2</a></h1>
+<p>
+
+<a name="processor_info_v2"></a><a name="processor_info_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>processor_info_v2</code> interface is implemented by
+   processors models. The interface has processor generic functions
+   that are architecture independent.
+<p>
+   The <b><i>disassemble</i></b> function returns the disassemble string for an
+   instruction at <i>address</i> with opcode according to
+   <i>instruction_data</i>. The <i>instruction_data</i> is an
+   <em>attr_value_t</em> value of <em>data</em> type with the bytes of the
+   opcode. The bytes are in the same order as they are stored in memory. For
+   VLIW architectures, <i>sub_operation</i> is used to select which
+   sub-operation to disassemble. The sub-operations start at zero, and a
+   request for the entire unit including all sub-operations is encoded with
+   sub-operation -1. A request for a sub-operation that is not present (for
+   example when <i>sub-operation</i> is neither 0 nor -1 for non-VLIW
+   architectures) results in the integer part of the return tuple being set to
+   zero. If successful, the function should return a tuple with the size of the
+   instruction in bytes and the disassembly string. The disassembly string
+   should be allocated with MM_MALLOC or similar and is to be freed by the
+   caller. If more bytes are needed, then the function should indicate that by
+   returning a negative number in the tuple where the absolute value of the
+   number is the required number of bytes. The string should be NULL if more
+   bytes are needed. The implementor of <code>processor_info_v2</code> is
+   allowed to request one additional byte at a time until enough bytes are
+   passed to determine what the instruction is. Illegal instructions should
+   still result in a valid returned tuple, where the integer part will be used
+   by the disassemble command to skip that many bytes before disassembling the
+   next instruction. The <i>address</i> can be used to display absolute
+   destinations of program counter relative branches.
+</p><p>
+   The <b><i>set_program_counter</i></b> function sets the program
+   counter in the processor. The <b><i>get_program_counter</i></b>
+   function returns the current program counter.
+</p><p>
+   The <b><i>logical_to_physical</i></b> function translates a logical
+   <i>address</i> to a physical address of the type defined by
+   <i>access_type</i>. The function returns a <em>physical_block_t</em>
+   struct with <i>valid</i> bit and the <i>address</i>. The
+   address is valid when the valid bit is not <code>0</code>. The
+   <b><i>logical_to_physical</i></b> function also returns
+   <i>block_start</i> and <i>block_end</i>. The start and end
+   of a block has the same logical to physical transformation as the translated
+   address. The range is inclusive, so block_end should be the
+   address of the last byte of the block.
+   This information can be used to figure out how often the
+   logical_to_physical function needs to be called. An implementation would
+   typically return the page start and end here, but it is free to return any
+   power of 2 sized block as long as it includes the translated address.
+</p><p>
+   The current operating mode of the processor is returned with
+   <b><i>get_processor_mode</i></b>.
+</p><p>
+   The processor can be enabled or disabled with the
+   <b><i>enable_processor</i></b> or <b><i>disable_processor</i></b>
+   functions. The functions should return <code>0</code> if the processor
+   changed from enabled to disabled or from disabled to enabled, and
+   <code>1</code> if the processor did not change state. The current state
+   is returned by the <b><i>get_enabled</i></b> function. Enabled or
+   disabled here refers to the state that the user of the model has
+   put the processor into. In particular, it is independent of the
+   power mode of the processor. A processor that has powered down does
+   not count as disabled in this sense, nor does the
+   <b><i>enable_processor</i></b> wake up a processor that is in
+   a power-saving sleep state.
+</p><p>
+   The endianness of the processor is returned by the
+   <b><i>get_endian</i></b> function.
+</p><p>
+   The physical memory object is returned by the
+   <b><i>get_physical_memory</i></b> function. The object returned by
+   <b><i>get_physical_memory</i></b> is used to set breakpoints by the
+   global <b>break</b> command, and to read and write physical
+   memory through <b>set</b>, <b>get</b>,
+   <b>load-binary</b>, <b>load-file</b>, and the default
+   implementation of <b>disassemble</b>. The object returned
+   implements the <code>memory_space</code> and
+   <code>breakpoint</code> interfaces. The
+   <code>memory_space</code> interface for the returned object is
+   only be used in inquiry mode corresponding to actions by the
+   simulator itself rather than by the simulated software. An
+   implementation may return NULL from this method, which will lead to
+   the command listed above not being supported when such a processor
+   is selected.
+</p><p>
+   The <b><i>get_logical_address_width</i></b> function returns the
+   number of logical/virtual address bits and the
+   <b><i>get_physical_address_width</i></b> function returns the number
+   of physical address bits.
+</p><p>
+   The processor architecture is returned by calling the
+   <b><i>architecture</i></b> function. The architecture should be one of
+   <code>arm</code>, <code>mips32</code>,
+   <code>mips64</code>, <code>ppc32</code>, <code>ppc64</code>, <code>sparc-v8</code>,
+   <code>sparc-v9</code>, <code>x86</code>, <code>x86-64</code>, or something else
+   if none of the listed is a good match.
+</p><p>
+   All functions in the interface are optional. Each function can be
+   set to NULL if it is not supported.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(processor_info_v2) {
+        tuple_int_string_t (*disassemble)(conf_object_t *obj,
+                                          generic_address_t address,
+                                          attr_value_t instruction_data,
+                                          int sub_operation);
+        void (*set_program_counter)(conf_object_t *obj,
+                                    logical_address_t pc);
+        logical_address_t (*get_program_counter)(conf_object_t *obj);
+        physical_block_t (*logical_to_physical)(conf_object_t *obj,
+                                                logical_address_t address,
+                                                access_t access_type);
+        processor_mode_t (*get_processor_mode)(conf_object_t *obj);
+        int (*enable_processor)(conf_object_t *obj);
+        int (*disable_processor)(conf_object_t *obj);
+        int (*get_enabled)(conf_object_t *obj);
+
+        cpu_endian_t (*get_endian)(conf_object_t *obj);
+        conf_object_t *(*get_physical_memory)(conf_object_t *obj);
+
+        int (*get_logical_address_width)(conf_object_t *obj);
+        int (*get_physical_address_width)(conf_object_t *obj);
+
+        const char *(*architecture)(conf_object_t *obj);
+};
+
+#define PROCESSOR_INFO_V2_INTERFACE "processor_info_v2"
+</pre><p>
+</p><p>
+
+   Note that the original version of this interface
+   (<code>processor_info</code>) must also be implemented. The only
+   difference between the two interfaces is that the original version lacks the
+   <b><i>get_processor_mode</i></b> function.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>disassemble</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>set_program_counter</i></b></td>
+           <td class="jdocu_noborder">Global Context (with some additions; see below)</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_program_counter</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>logical_to_physical</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_processor_mode</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>enable_processor</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>disable_processor</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_enabled</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_endian</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_physical_memory</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_logical_address_width</i></b></td>
+       <td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_physical_address_width</i></b></td>
+       <td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>architecture</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   </tbody></table>
+<p>
+   It is explicitly permitted to call <b><i>set_program_counter</i></b> from
+   inside an execution breakpoint handler.
+   
+</p></dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_processor_info.html">processor_info</a>
+<a href="__rm_interface_ram_access_subscribe.html">ram_access_subscribe</a>
+</div>

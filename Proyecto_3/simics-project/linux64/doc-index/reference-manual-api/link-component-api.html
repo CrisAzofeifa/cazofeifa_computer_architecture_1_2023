@@ -1,0 +1,417 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Link Component API</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="link-library-api.html">Link Library API</a>
+<a href="processor-api.html">9 Processor API</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="link-api.html">8 Link Library API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="Link-Component-API">Link Component API</a></h1>
+<p></p><h2 class="jdocu"><a class="not-numbered" name="link_components.create_simple">link_components.create_simple()</a></h2>
+<p>
+  
+  <a name="create_simple"></a> <a name="link_components-Python-modulecreate_simple"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.create_simple"></a><b>create_simple</b> — create a simple link component class</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">create_simple(link_class, endpoint_class, connector_type,
+              class_desc, basename = None, help_categories = [])</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Create a simple link component class based on the following parameters:
+<p>
+</p><dl><dt id="dt:link_class"><b>link_class</b></dt><dd>Name of the link implementation class</dd><dt id="dt:endpoint_class"><b>endpoint_class</b></dt><dd>Name of the link endpoint class</dd><dt id="dt:connector_type"><b>connector_type</b></dt><dd>Name of the connector type for component
+                             connections</dd><dt id="dt:class_desc"><b>class_desc</b></dt><dd>Component description</dd><dt id="dt:basename"><b>basename</b></dt><dd>Prefix used to create new component names when none
+                       is provided</dd></dl><p></p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+A new component class from which to inherit</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">from link_components import create_simple
+
+class datagram_link(
+    create_simple(link_class = 'datagram_link_impl',
+                  endpoint_class = 'datagram_link_endpoint',
+                  connector_type = 'datagram-link',
+                  class_desc = "datagram link",
+                  basename = 'datagram_link')):
+    """The datagram link component creates a datagram-link, which is a simple
+    broadcast bus forwarding messages (as sequences of bytes) from a sender
+    device to all other devices present of the link. The datagram-link is both
+    an example of how to build a link with the Simics Link Library, and a
+    simple broadcast link that can be reused when multi-cell communication
+    between devices is necessary. Refer to the &lt;cite&gt;Link Library Programming
+    Guide&lt;/cite&gt; for more information."""
+</pre><p>
+</p></dd>
+</dl><p></p><h2 class="jdocu"><a class="not-numbered" name="link_components.link_component">link_components.link_component</a></h2>
+<p><a name="link_component"></a> <a name="link_components-Python-modulelink_component"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component"></a><b>link_component</b> — link components base class</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Class from which to inherit when creating a new custom link component.</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h2 class="jdocu"><a class="not-numbered" name="link_components.link_component.add_link_connector">link_components.link_component.add_link_connector()</a></h2>
+<p><a name="add_link_connector"></a> <a name="link_components-Python-modulelink_componentadd_link_connector"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.add_link_connector"></a><b>add_link_connector</b> — add a new initial connector</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_link_connector(self, slot_template, cnt_tmpl)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Add a new initial connector. The <i>slot_template</i>
+argument is the name of the connector in the component. The
+<i>cnt_tmpl</i> argument is the template used for the
+connector, previously registered with
+<b><i>add_connector_template()</i></b>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h2 class="jdocu"><a class="not-numbered" name="link_components.link_component.add_link_connector_template">link_components.link_component.add_link_connector_template()</a></h2>
+<p><a name="add_link_connector_template"></a> <a name="link_components-Python-modulelink_componentadd_link_connector_template"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.add_link_connector_template"></a><b>add_link_connector_template</b> — add a link connector template</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_link_connector_template(self, name, type, growing,
+                            create_unconnected_endpoint,
+                            get_check_data    = None,
+                            get_connect_data  = None,
+                            check             = None,
+                            connect           = None,
+                            disconnect        = None,
+                            allow_new_cnt     = lambda: True,
+                            allow_destroy_cnt = lambda: True)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function registers a new connector template for the component.
+From this template, connectors will be created either statically, via
+the <b><i>add_objects()</i></b> function, or dynamically if requested.
+Component templates can be customized through the parameters of
+<b><i>add_link_connector_template()</i></b>:
+<p>
+</p><dl><dt id="dt:name"><b>name</b></dt><dd>is the name of the template, which will be saved in
+  each connector, so that they can find out from which template they
+  were created.</dd><dt id="dt:type"><b>type</b></dt><dd>is the connector type.</dd><dt id="dt:growing"><b>growing</b></dt><dd>indicates whether the connector is static, or
+  should grow dynamically as connections are made. Static connectors
+  must be created in <b><i>add_objects()</i></b>, and will act as classic
+  component connectors. A dynamic connector will make sure that there
+  is always a free connector of that template available, by increasing
+  or decreasing the number of connectors of this template in the link.
+  Note that several templates can have the same connector type. Each
+  template will make sure that its connectors grow or shrink
+  separately.</dd><dt id="dt:create_unconnected_endpoint"><b>create_unconnected_endpoint</b></dt><dd>is the function to call when
+  a new endpoint pre-conf-object must be created. This endpoint is not
+  yet connected to a device.</dd><dt id="dt:get_check_data"><b>get_check_data</b></dt><dd>(optional) is called whenever the
+  standard <b><i>get_check_data()</i></b> is called. It may return any
+  <em>additional</em> data necessary for the check() call. The standard
+  <b><i>get_check_data()</i></b> will already return the endpoint
+  object.</dd><dt id="dt:get_connect_data"><b>get_connect_data</b></dt><dd>(optional) is similar to
+  <b><i>get_check_data</i></b>, but for the <b><i>connect()</i></b>
+  call.</dd><dt id="dt:check"><b>check</b></dt><dd>(optional) is called whenever the standard
+  <b><i>check()</i></b> is called. It may return <code>True</code>
+  (connection accepted) or <code>False</code> (connection refused).
+  The standard implementation returns always <code>True</code>.</dd><dt id="dt:connect"><b>connect</b></dt><dd>(optional) is called whenever the standard
+  <b><i>connect()</i></b> is called. The standard <b><i>connect()</i></b>
+  will set the device attribute in the endpoint. <b><i>connect</i></b> may
+  take any additional action it deems necessary.</dd><dt id="dt:disconnect"><b>disconnect</b></dt><dd>(optional) is called whenever the standard
+  <b><i>disconnect()</i></b> is called. The standard
+  <b><i>disconnect()</i></b> does not do anything as the endpoint object
+  will be destroyed soon after. <b><i>disconnect()</i></b> may take any
+  additional action for the disconnection to succeed.</dd><dt id="dt:allow_new_nct"><b>allow_new_nct</b></dt><dd>(optional) is used only for growing
+  connectors. It is called every time a new connection is made to ask
+  if creating a new empty connector is allowed. It may return
+  <code>True</code> (new connector allowed) or <code>False</code>
+  (no new connector). The default function always returns
+  <code>True</code> (unlimited number of connectors allowed, with
+  always one free).</dd><dt id="dt:allow_destroy_cnt"><b>allow_destroy_cnt</b></dt><dd>(optional) is used only for growing
+  connectors. It is called every time a connection is severed to ask if
+  the connector being disconnected should be destroyed. It may return
+  <code>True</code> (destroy the connector) or <code>False</code>
+  (let the connector). The endpoint object associated will be
+  automatically destroyed with the connector, or replaced if the
+  connector is left. The default function returns always
+  <code>True</code> (unlimited number of connectors allowed, with
+  always one free).</dd></dl><p></p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The registered connector template</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_cable(link_components.link_component):
+    """Ethernet cable: this component represents a two-points Ethernet cable,
+    allowing two devices to connect to each other."""
+
+    _class_desc = 'an Ethernet cable component'
+    _help_categories = ['Ethernet']
+    
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_cable'
+
+    class connector_count(SimpleAttribute(0, 'i')):
+        """Total number of occupied connectors"""
+
+    def allow_new_connector(self):
+        if self.connector_count.val == 2:
+            # all connectors are occupied
+            return False
+        elif self.connector_count.val == 1:
+            # there is already one free connector
+            self.connector_count.val += 1
+            return False
+        else:
+            self.connector_count.val += 1
+            return True
+
+    def allow_destroy_connector(self):
+        if self.connector_count.val == 2:
+            # two connectors occupied, so let one become free
+            self.connector_count.val -= 1
+            return False
+        else:
+            # one connector was occupied, one free, so destroy one
+            self.connector_count.val -= 1
+            return True
+
+    def create_unconnected_endpoint(self, cnt):
+        return create_cable_endpoint(self.get_slot('link'), None)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'single-ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint,
+            allow_new_cnt = self.allow_new_connector,
+            allow_destroy_cnt = self.allow_destroy_connector)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-cable-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h2 class="jdocu"><a class="not-numbered" name="link_components.link_component.add_objects">link_components.link_component.add_objects()</a></h2>
+<p><a name="add_objects"></a> <a name="link_components-Python-modulelink_componentadd_objects"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.add_objects"></a><b>add_objects</b> — add link object and initial connectors</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_objects(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should be overridden when inheriting from
+<b>link_component</b>. It is expected to create a
+pre-conf-object for the link and to add the initial connectors of the
+component using <b><i>link_component.add_link_connector()</i></b>.
+<b><i>add_objects()</i></b> is only called when creating a component from
+scratch; when restoring a checkpoint, objects are assumed to have
+already been created.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h2 class="jdocu"><a class="not-numbered" name="link_components.link_component.get_link_object_name">link_components.link_component.get_link_object_name()</a></h2>
+<p><a name="get_link_object_name"></a> <a name="link_components-Python-modulelink_componentget_link_object_name"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.get_link_object_name"></a><b>get_link_object_name</b> — return a unique link object name</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">get_link_object_name(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return a unique link object name based on the link component name.
+This is useful for ensuring that all link components with the same name
+in a distributed simulation will indeed represent the same link.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+A unique link name</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h2 class="jdocu"><a class="not-numbered" name="link_components.link_component.register_connector_templates">link_components.link_component.register_connector_templates()</a></h2>
+<p><a name="register_connector_templates"></a> <a name="link_components-Python-modulelink_componentregister_connector_templates"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.register_connector_templates"></a><b>register_connector_templates</b> — register connector templates</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">register_connector_templates(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should be overridden when inheriting from
+<b>link_component</b>. It is expected to register the connector
+templates that will be used in <b><i>add_objects()</i></b>. Unlike
+<b><i>add_objects()</i></b>, this function is always called when creating
+the component, either from scratch or when restoring a checkpoint.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p>
+<div class="chain">
+<a href="link-library-api.html">Link Library API</a>
+<a href="processor-api.html">9 Processor API</a>
+</div>

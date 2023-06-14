@@ -1,0 +1,92 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_tlb_v3</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_tlb_v2.html">x86_tlb_v2</a>
+<a href="__rm_interface_x86_vmp_control.html">x86_vmp_control</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_tlb_v3">x86_tlb_v3</a></h1>
+<p>
+
+<a name="x86_tlb_v3"></a><a name="x86_tlb_v3_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The x86_tlb_v3 interface is used for communication between an x86 cpu
+   and its TLB. The TLB is implemented as a separate class for greater
+   flexibility. The TLB object does no memory operations itself.
+<p>
+   Pages are added to the TLB with <b><i>add</i></b>. Process context identifier,
+   linear and physical address for translation specified using arguments
+   <i>hint</i>, <i>laddr</i> and <i>paddr</i> correspondingly.
+   The fields in <i>attrs</i> argument used for specification of
+   allowed access types and additional page attributes.
+</p><p>
+   <b><i>lookup</i></b> is used by the CPU when a memory access misses the STC.
+   It returns the matching TLB entry if the memory operation specified in
+   <i>mem_tr</i> hits the TLB and does not raise an exception. Otherwise
+   NULL is returned. The <i>hint</i> argument specifies process context
+   identifier. The <i>mode</i>, <i>linear_address</i>, and
+   <i>type</i> fields in <i>mem_tr</i> need to be valid when the method
+   is invoked. The other fields passed through <i>mem_tr</i> are not to be
+   used by the method and can carry any value. If the method returns not NULL,
+   the <i>s.physical_address</i>, <i>pat_type</i>, and
+   <i>mtrr_type</i> fields of <i>mem_tr</i> must be updated by
+   <b><i>lookup</i></b>.
+</p><p>
+   <b><i>itlb_lookup</i></b> is a simplified version of <b><i>lookup</i></b> used
+   only for instruction TLB lookups. If the lookup is successful
+   <i>valid</i> and <i>paddr</i> should be set, otherwise
+   <i>valid</i> should be cleared.
+</p><p>
+   <b><i>invalidate_page</i></b> is used to remove from TLB page corresponding to
+   given linear address specified by argument <i>laddr</i> in process
+   context with identifier from argument <i>hint</i>.
+</p><p>
+   <b><i>invalidate</i></b> is invoked when value of CR4.PCIDE bit set and CPU
+   executes INVPCID instruction. Direct and indirect operands of instruction
+   transferred in <i>hint</i>, <i>la</i> and <i>type</i>
+   arguments. TLB entries flushed according to INVPCID instruction description.
+   New invalidation type X86_Tlb_Invalidate_Address_Space added to implement
+   flush_all function from previous interfaces. The method also can be used to
+   flush required TLB entries in any required cases.
+</p><p>
+   The class implementing the interface must make sure that only addresses
+   mapped in the TLB are present in the STCs.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_tlb_v2.html">x86_tlb_v2</a>
+<a href="__rm_interface_x86_vmp_control.html">x86_vmp_control</a>
+</div>

@@ -1,0 +1,136 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ms1553_link</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_mips_ite.html">mips_ite</a>
+<a href="__rm_interface_ms1553_snoop.html">ms1553_snoop</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ms1553_link">ms1553_link</a></h1>
+<p>
+
+<a name="ms1553_link"></a><a name="ms1553_link_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(ms1553_link) {
+        int  (*connect_terminal)(conf_object_t *link,
+                                 conf_object_t *NOTNULL obj);
+        void (*disconnect_terminal)(conf_object_t *link, int id);
+        void (*send_data)(conf_object_t *link, int id,
+                          ms1553_phase_t phase, ms1553_words_t data);
+        void (*set_terminal_address)(conf_object_t *link, int id, int address);
+        void (*clr_terminal_address)(conf_object_t *link, int id);
+        void (*set_idle)(conf_object_t *link, int id);
+        void (*inject_data)(conf_object_t *link,
+                            ms1553_phase_t phase, ms1553_words_t data);
+        void (*inject_error)(conf_object_t *link,
+                             ms1553_error_t err);
+};
+
+#define MS1553_LINK_INTERFACE "ms1553_link"
+</pre><p>
+</p><p>
+   This interface is implemented by the MIL-STD-1553 link objects that provide
+   a protocol level interface for message delivery.
+</p><p>
+   The <b><i>connect_terminal()</i></b> function attaches an 1553 device to the
+   link.  The device must implement the <code>ms1553_terminal</code>
+   interface.  The return value is an identification number that should be used
+   in subsequent calls to the link to identify the device.  On failure, for
+   example if there is not room for more terminals on the link, the connect
+   function will return -1.  Terminals should always reconnect to the link when
+   starting from a checkpoint.
+</p><p>
+   The <b><i>disconnect_terminal()</i></b> function detaches an 1553 device from
+   the link.  It will not receive any more data from the link and may not call
+   any functions in the interface again, except <b><i>connect_terminal()</i></b>.
+</p><p>
+   A remote terminal may, and should preferably, register its terminal
+   address using the <b><i>set_terminal_address()</i></b> to only receive data
+   destined for it.  If no address is registered it will receive all data sent
+   on the bus.  The <b><i>clr_terminal_address()</i></b> is used to unregister a
+   previously installed terminal address from the 1553 link.  Models of bus
+   monitors should typically not register any address, but instead receive all
+   data traffic.
+</p><p>
+   The <b><i>send_data()</i></b> function is used by all devices to send data
+   words to the link.  Devices must observe the 1553 protocol standards.  I.e.
+   a message starts with a command from the bus controller device.  This
+   command will be sent to the addressed remote terminal, or all of them in
+   case of broadcast, using the <b><i>receive_data()</i></b> function in the
+   <code>ms1553_terminal</code> interface.  The addressed terminal responds
+   with status and data, in case of a "Transmit" command, using the
+   <b><i>send_data()</i></b> function.  For a "Receive" command, the bus
+   controller sends the data with <b><i>send_data()</i></b> and the addressed
+   remote terminal finally sends the status word.
+</p><p>
+   Commands, status and data are always sent in separate calls to
+   <b><i>send_data()</i></b>, where the <i>phase</i> parameter describes
+   what kind is sent.  The <i>phase</i> is provided to simplify the
+   implementation of the protocol handling in devices, it is possible to figure
+   out the kind of the sent data by decoding the words sent on the link as in
+   a real case.  The values in the <code>ms1553_phase_t</code> type correspond to
+   the <em>Idle</em>, <em>Transmit Command</em>, <em>Receive Command</em>,
+   <em>Transmit Mode Command</em>, <em>Receive Mode Command</em>,
+   <em>No-data Mode Command</em>, <em>Data</em> and <em>Status</em> phases.
+</p><p>
+   Commands, status and data words should always be stored in host endian
+   byte order, when packed in a ms1553_words_t structure.
+</p><p>
+   A terminal may not respond by calling <b><i>send_data()</i></b> directly from
+   its own <b><i>receive_data()</i></b>. A simple way to delay the reply transfer
+   is to post it as a Simics event.
+</p><p>
+   The <b><i>set_idle()</i></b> function should be used by the bus controller to
+   restore the protocol checking engine in the link after a protocol error has
+   occurred, for example after an RT timeout.
+</p><p>
+   Common link errors are reported by the link using
+   <b><i>receive_error()</i></b>, simplifying the implementation of device
+   models.  Some error types are not detected in Simics itself, such as
+   Manchester decoding errors, due to the modeling abstraction in Simics but
+   may be injected to test error handling in drivers.
+</p><p>
+   Errors can also be injected in the link with <b><i>inject_error()</i></b>,
+   and terminals
+   should be prepared to handle calls to their <b><i>receive_error()</i></b>.
+</p><p>
+   Data traffic can be also be injected with <b><i>inject_data()</i></b>, to
+   simulate generic traffic without registering a device.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_mips_ite.html">mips_ite</a>
+<a href="__rm_interface_ms1553_snoop.html">ms1553_snoop</a>
+</div>

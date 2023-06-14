@@ -1,0 +1,141 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>16.1 Measuring Performance</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simulation-performance.html">16 Simulation Performance</a>
+<a href="multithreaded-simulation-profiling-and-tuning.html">16.2 Multithreaded Simulation Profiling and Tuning</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="simulation-performance.html">16 Simulation Performance</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="system-perfmeter">16.1 Measuring Performance</a></h1>
+<p>
+
+<a name="system-perfmeter"></a>
+<a name="MIPS"></a>
+<a name="slowdown"></a>
+<a name="CPU-utilization"></a>
+<a name="idle-loop"></a>
+</p><p>
+The <b>system-perfmeter</b> extension can be used to understand the
+performance you get out of Simics. The system-perfmeter is sample based,
+which means that you can see the performance during the workload execution,
+and how it varies, not only the end result when a workload is finished.
+</p><p>
+The easiest way to try it out is simply to issue the <b>system-perfmeter</b>
+command without any additional arguments:
+</p><pre class="jdocu_small">simics&gt; <b>system-perfmeter</b>
+</pre><p>
+</p><p>
+This will cause a sample to be taken every 1.0 virtual seconds.
+For each sample the system-perfmeter extracts various counters from Simics
+and displays the delta since last time.
+The output can look like this:
+</p><pre class="jdocu_small">simics&gt; c
+SystemPerf: Total-vt Total-rt Sample-vt Sample-rt Slowdown  CPU Idle
+SystemPerf: -------- -------- --------- --------- -------- ---- ----
+SystemPerf:     1.0s     6.0s     1.00s     5.99s     5.99  97%   0%
+SystemPerf:     2.0s     6.7s     1.00s     0.69s     0.69  97%   0%
+SystemPerf:     3.0s     8.0s     1.00s     1.34s     1.34  92%   0%
+SystemPerf:     4.0s     8.4s     1.00s     0.42s     0.42 100%   0%
+SystemPerf:     5.0s     9.2s     1.00s     0.78s     0.78  98%  14%
+SystemPerf:     6.0s    10.5s     1.00s     1.31s     1.31  96%  55%
+SystemPerf:     7.0s    10.7s     1.00s     0.12s     0.12  92%  93%
+SystemPerf:     8.0s    10.7s     1.00s     0.00s     0.00 100% 100%
+</pre><p>
+Here we can see the execution for the first 8 virtual seconds and the
+corresponding performance measured in each second sample. To simulate
+these 8 virtual seconds, it took Simics 10.7 host seconds, thus the
+average slowdown is 1.34.
+</p><p>
+The <code>CPU</code> column shows how much of the host CPU that Simics has
+used, allowing you to notice if there is another process consuming the
+host CPU resources.  Another reason for CPU utilization to be low can
+be that Simics itself is running in real-time mode where Simics sleeps
+so that virtual time does not race ahead of host time.
+</p><p>
+When an 'idle' condition has been detected (see chapter <a class="reference" href="workload-characteristics.html#idle-loop-performance">16.4.1</a>), the total idleness of the system is
+reported in the <code>Idle</code> column.  If the simulated system
+consists of multiple processors and you wish to see how much each
+processor is idling you can use the <i>-cpu-idle</i> switch to
+<b>system-perfmeter</b>.  Note that idling is defined by the
+simulator, not by the target architecture (see chapter
+<a class="reference" href="workload-characteristics.html#idle-loop-performance">16.4.1</a>). With
+the <i>-cpu-exec-mode</i>, information is also gathered and
+printed on how simulation steps are executed in the CPU model. The
+fastest mode to be executing in is idle, followed by VMP, JIT, and
+interpreter.
+</p><p>
+The <b>system-perfmeter</b> can also be used to get an understanding of which processor
+that takes the longest time to simulate. The <i>-cpu-host-ticks</i> switch
+adds extra columns per CPU for this. For example:
+</p><pre class="jdocu_small">SystemPerf: Total-vt Total-rt Sample-vt Sample-rt Slowdown  CPU Idle [   0   1   2   3 ]
+SystemPerf: -------- -------- --------- --------- -------- ---- ----   --- --- --- ---
+SystemPerf:     1.0s    15.6s     1.00s    15.63s     15.6  99%  74% [  71  11  11   8 ]
+SystemPerf:     2.0s    32.6s     1.00s    16.97s     17.0  98%  72% [  70  11  10   9 ]
+</pre><p>
+Here we have a 4 CPU system which is idle roughly 70% and the last columns show
+that CPU0 takes 70% of the time to simulate, while the other three about 10% each. Hence CPU0 is working while the other CPUs are idling.
+</p><p>
+The <i>-module-profile</i> flag enables live profiling of the main
+Simics thread. The profiling is sample based, and any sample hitting
+in code produced dynamically by a JIT engine will be reported as
+<code>"</code><em>classname</em><code> JIT"</code>. The <i>-module-profile</i>
+data is not printed in the standard line print mode, so you must use
+either <i>-top</i> or <i>-summary</i> to get profiling
+information.
+</p><p>
+</p><div class="figure" id="perfmeter-fig">
+
+<div style="text-align: center">
+<img alt="" src="perfmeter_description.png">
+<p>
+</p><div class="caption">Figure 30. Annotated output from 
+<b>system-perfmeter <i>-top</i> <i>-module-profile</i> <i>-cpu-exec-mode</i></b>
+</div>
+<p>
+</p></div>
+</div>
+
+<p>
+Figure <a class="reference" href="#perfmeter-fig">30</a> explains the output of
+<b>system-perfmeter</b>. There are many other options to the
+system-perfmeter command, please read the associated help text for
+details.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>help system-perfmeter</b>
+</pre><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="simulation-performance.html">16 Simulation Performance</a>
+<a href="multithreaded-simulation-profiling-and-tuning.html">16.2 Multithreaded Simulation Profiling and Tuning</a>
+</div>

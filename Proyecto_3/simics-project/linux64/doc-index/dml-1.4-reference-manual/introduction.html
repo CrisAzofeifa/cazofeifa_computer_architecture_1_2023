@@ -1,0 +1,369 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>1 Introduction</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+<a href="running-dmlc.html">2 The DML compiler</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="introduction">1 <a href="#introduction">Introduction</a></h1>
+<p>Device Modeling Language (DML) is a domain-specific programming language for
+developing device models to be simulated with Simics. DML has been designed to
+make it easy to represent the kind of things that are needed by a device model,
+and uses special syntactic constructs to describe common elements such as memory
+mapped hardware registers, connections to other Simics configuration objects,
+and checkpointable device state.</p>
+<p>DML is an object-oriented language, where each device is represented
+through an object, which — as members — may feature pieces
+of mutable state, configurable parameters and attributes, subroutines
+(called methods), and subobjects that may have their own members. In
+contrast to most general-purpose object-oriented languages, objects in
+DML are statically declared rather than dynamically created, and
+typically represent logical components of the device.</p>
+<p>A complete DML model specifies exactly one device model, together with:</p>
+<ul>
+<li>Associated register banks, and how these may be memory mapped</li>
+<li>Specifications of connections to other devices that the device expects to have
+access to, and thus may make use of.</li>
+<li>Specifications of connections that other devices may establish to the device,
+and how messages sent through those connections are handled by the device.</li>
+<li>Specification of attributes that Simics may access for the purposes of
+configuring the device, inspect the device operation, or to checkpoint the
+device state.</li>
+<li>The name and description of the device, together with other static
+meta-information</li>
+</ul>
+<p>These are the crucial properties of device models that must be made visible to
+Simics, and each of these have specialized language features in order to declare
+them. Beyond these, DML also has a number of features to improve the expressive
+power of the language and simplify development; for instance, DML offers
+<em>templates</em>, a powerful metaprogramming tool that allows for code reduction and
+reuse, as well as a means of building abstractions.</p>
+<p>The DML compiler is called <em>Device Modeling Language Compiler</em>,
+<code>dmlc</code>. It translates a device model description written in DML into C
+source code that can be compiled and loaded as a Simics module.</p>
+<p>This document describes the DML language, the standard libraries, and
+the <code>dmlc</code> compiler, as of version 1.4 of DML. See also <em>Simics Model
+Builder User's Guide</em> for an introduction to DML.</p>
+<h2 id="source-file-example">1.1 <a href="#source-file-example">Source File Example</a></h2>
+<p>The following is an example of a small DML model defining a very
+simple device. This lacks many details that would appear in a real
+device.</p>
+<pre><code>dml 1.4;
+
+device contraption;
+
+connect wakeup {
+    interface signal;
+}
+
+bank config_registers {
+    register cfg1 size 4 @ 0x0000 {
+        field status @ [7:6] is (read, write) {
+            method read() -&gt; (uint64) {
+                local uint2 ret;
+                ret[0] = enable.val;
+                ret[1] = coefficient[1] &amp; 1;
+                return ret;
+            }
+        }
+        field enable @ [8] is (read_unimpl, write) {
+            method write(uint64 val) {
+                if (this.val == 0 and val == 1) {
+                    wakeup.signal.signal_raise();
+                } else if (this.val == 1 and val == 0) {
+                    wakeup.signal.signal_lower();
+                }
+            }
+        }
+    }
+
+    register coefficient[i &lt; 4] size 8 @ 0x0008 + i * 8 is (read, write) {}
+}
+</code></pre>
+<ul>
+<li>
+<p>The <code>device contraption;</code> statement declares the name of the device.</p>
+</li>
+<li>
+<p>The <code>connect wakeup</code> part declares that the device can be configured
+to communicate with other devices using the <code>signal</code> interface.</p>
+</li>
+<li>
+<p>The <code>bank config_registers</code> part declares a bank of memory-mapped
+registers. If the bank is mapped into a memory space, then software
+can use this to control the device through reads and writes.</p>
+</li>
+<li>
+<p>The bank contains <em>registers</em>, which declare sizes and offsets
+statically. When the bank is accessed with a memory transaction, it
+will check which register the transaction hits, and redirect as a
+read or write operation in that register.</p>
+</li>
+<li>
+<p>The <code>cfg1</code> register is further subdivided into <em>fields</em>, one
+covering bits 7 and 6 and one covering bit 8.</p>
+</li>
+<li>
+<p>The bank, registers and fields form a <em>hierarchy</em> of objects, which
+provides a simple mechanism for encapsulation. Each object is a
+separate namespace, and the object hierarchy naturally forms a
+nested scope.</p>
+</li>
+<li>
+<p>The <code>is</code> statement specifies a number of <em>templates</em> to be instantiated for
+the associated object. The <code>read</code> and <code>write</code> templates prepare code for the
+targeted field which makes it software readable and writable, as well as
+methods <code>read</code> and <code>write</code> that may be overridden in order to customize the
+behavior upon a software read or write. In contrast, the <code>read_unimpl</code>
+template prepares code that causes the field to log a warning if read by
+software.</p>
+</li>
+<li>
+<p>Methods in DML are much like functions in C. The statements of the
+method body are similar to C with some differences; e.g., integers
+support bitslicing using the syntax <code>value[a:b]</code>. Methods also have
+a place in the object hierarchy, and can freely access the object's
+state and connections.</p>
+</li>
+<li>
+<p><code>coefficient</code> is an <em>array</em> of register objects, marked by the use
+of <code>[i &lt; <em>size</em>]</code>. The object specification provided
+to an object array is used for each element of the array, and the
+<code>i</code> parameter can be used for element-specific logic. In this case,
+<code>i</code> is used to assign each register of the array to different
+address offsets.</p>
+</li>
+</ul>
+<h2 id="object-types">1.2 <a href="#object-types">Object types</a></h2>
+<p>The <a href="#source-file-example">above example</a> demonstrates how a DML
+device is built from a hierarchy of objects, such as banks and
+register. The hierarchy is composed of the following object types:</p>
+<ul>
+<li>
+<p>Each DML model defines a single <a href="language.html#the-device"><code>device</code> object</a>,
+which can be instantiated as a configuration object in Simics. All objects
+declared at the top level are members of the device object.</p>
+</li>
+<li>
+<p>An <a href="language.html#attributes"><code>attribute</code> object</a> creates a Simics
+configuration attribute of the device. An attribute usually has one of three
+uses:</p>
+<ul>
+<li>Configuring some aspect of the device on instantiation</li>
+<li>Saving and restoring simulation state for checkpointing. For
+simple types this is easier to achieve with <a href="language.html#saved-variables">saved
+variables</a>, but attributes can be
+necessary to serialize more complex types.</li>
+<li>Exposing a back-door into the model for inspection or debugging,
+called a <em>pseudo</em> attribute</li>
+</ul>
+</li>
+<li>
+<p>A <a href="language.html#register-banks"><code>bank</code> object</a> makes sets of registers
+accessible by placing them in an <em>address space</em>. Register banks can be
+individually mapped into Simics memory spaces.</p>
+</li>
+<li>
+<p>A <a href="language.html#registers"><code>register</code> object</a> holds an integer value, and is
+generally used to model a hardware register, used for communication via
+memory-mapped I/O. A register is between 1 and 8 bytes wide. Registers divide
+the address space of a bank into discrete elements with non-overlapping
+addresses.</p>
+</li>
+<li>
+<p><a href="language.html#fields"><code>field</code> objects</a> constitute a further subdivision of
+<code>register</code> objects, on the bit level. Each field can be accessed separately,
+both for reading and for writing. The fields of a register may not overlap.</p>
+</li>
+<li>
+<p><a href="language.html#groups"><code>group</code></a> is the general-purpose object type, without
+any special properties or restrictions. Groups are mainly used as container
+objects — in particular, to define logical groups of registers within a
+bank. The generic nature of groups also makes them useful as a tool for
+creating abstractions.</p>
+</li>
+<li>
+<p>A <a href="language.html#connects"><code>connect</code> object</a> holds a reference to a Simics
+configuration object. (Typically, the connected object is expected to
+implement some particular Simics-interface.) An attribute with the same name
+is added to the <code>device</code>; thus, a <code>connect</code> is similar to a simple <code>attribute</code>
+object. Usually, initialization is done when the device is configured, e.g.
+when loading a checkpoint or instantiating a component.</p>
+</li>
+<li>
+<p>An <a href="language.html#interfaces"><code>interface</code> object</a> may be declared within a
+<code>connect</code> object, and specifies a Simics interface assumed to be implemented
+by the connected object. In many cases, the name of the interface is
+sufficient, and the body of the object can be left empty.</p>
+</li>
+<li>
+<p>A <a href="language.html#ports"><code>port</code> object</a> represents a point where an outside
+device can connect to this device. This is done by creating a separate Simics
+object; if a device has a declaration <code>port irq</code> and the device is
+instantiated as <code>dev</code> in Simics, then the port object is named <code>dev.port.irq</code>.</p>
+</li>
+<li>
+<p>An <a href="language.html#implements"><code>implement</code> object</a> specifies an implementation
+of a <em>Simics interface</em> that the device implements. An <code>implement</code> object is
+normally declared inside a <code>port</code>, and defines the interfaces registered on
+the corresponding Simics configuration object; however, <code>implement</code> can also
+be declared on the top-level <code>device</code> object or in a <code>bank</code> object.</p>
+<p>The methods defined within the <code>implement</code> object must correspond to
+the functions of the Simics interface.</p>
+<p>A device can implement the same interface several times, by creating
+multiple <code>port</code> objects with <code>implement</code> objects of the same name.</p>
+</li>
+<li>
+<p>An <a href="language.html#events"><code>event</code> object</a> is an encapsulation of a Simics
+event, that can be posted on a time queue (CPU or clock).</p>
+</li>
+<li>
+<p>A <a href="language.html#subdevices"><code>subdevice</code> object</a> represents a subsystem of a
+device, which can contain its own ports, banks, and attributes.</p>
+</li>
+</ul>
+<h2 id="methods-and-mutable-variables">1.3 <a href="#methods-and-mutable-variables">Methods and Mutable Variables</a></h2>
+<p><a href="language.html#methods-detailed">Methods</a> are the DML representation of subroutines.
+They may be declared as members of any object or template. Any method may have
+multiple input parameters, specified similarly as C functions. Unlike C, DML
+methods may have multiple return values, and the lack of a return value is
+indicated through an empty list of return values rather than <code>void</code>. The
+following demonstrates a method declaration with no input parameters or return
+values:</p>
+<pre><code>method noop() -&gt; () {
+    return;
+}
+</code></pre>
+<p>Alternatively:</p>
+<pre><code>method noop() {
+    return;
+}
+</code></pre>
+<p>The following demonstrates a method declaration with multiple input
+and parameters and return values:</p>
+<pre><code>method div_mod(uint64 dividend, uint64 divisor)
+    -&gt; (uint64, uint64) {
+    local uint64 quot = dividend / divisor;
+    local uint64 rem = dividend % divisor;
+    return (quot, rem);
+}
+</code></pre>
+<p>This also demonstrates how local, stack-allocated variables within methods may
+be declared; through the <code>local</code> keyword. This is analogous to C’s <code>auto</code>
+variable kind, but unlike C, the keyword must be explicitly given. DML features
+two other variable kinds: <a href="language.html#session-variables"><code>session</code></a> and
+<a href="language.html#session-variables"><code>saved</code></a>. Unlike <code>local</code> variables, <code>session</code>
+and <code>saved</code> variables may also be declared as members of any object within the
+DML model, and can only be initialized with constant expressions.</p>
+<p><code>session</code> variables represent statically allocated variables, and act as the
+DML equivalent of static variables in C. The value of a <code>session</code> variable
+is preserved for the duration of the current simulation session, but are not
+automatically serialized and restored during checkpointing. This means that
+it is the model developer’s responsibility to manually serialize and restore
+any <code>session</code> variables upon saving or restoring a checkpoint.
+<code>saved</code> variables behave exactly like <code>session</code> variables, except the value of
+<code>saved</code> variables are serialized and restored during checkpointing. Because of
+this, a <code>saved</code> variable must be of a type that DML knows how to serialize.
+Most built-in non-pointer C types are serializable, and any <code>struct</code>
+that consists solely of serializable types are also considered serializable.
+Pointer types are never considered serializable.</p>
+<p>Methods have access to a basic exception-handling mechanism through the <a href="language.html#throw-statements"><code>throw</code>
+statement</a>, which raises an exception without
+associated data. Such exceptions may be caught via the <a href="language.html#try-statements"><code>try { ... } except { ... }</code> statement</a>. If a method may throw an
+uncaught exception, that method must be declared <code>throws</code>; for example:</p>
+<pre><code>method demand(bool condition) throws {
+    if (!condition) {
+        throw;
+    }
+}
+</code></pre>
+<h2 id="templates-and-parameters">1.4 <a href="#templates-and-parameters">Templates and Parameters</a></h2>
+<p>A <a href="language.html#templates"><em>template</em></a> specifies a block of code that may be
+inserted into objects. Templates may only be declared at the top-level, which is
+done as follows:</p>
+<pre>template <em>name</em> { <em>body</em> }
+</pre>
+<p>where <em>name</em> is the name of the template, and <em>body</em> is a set of object statements.
+A template may be instantiated through the <code>is</code> object statement, which
+can be used within either objects, or within templates. For example:</p>
+<pre><code>bank regs {
+    // Instantiate a single template: templateA
+    is templateA;
+    // Instantiate multiple templates: templateB and templateC
+    is (templateB, templateC);
+
+    register reg size 1 @0x0;
+}
+</code></pre>
+<p>The <code>is</code> object statement causes the body of the specified templates to be
+injected into the object or template in which the statement was
+used.</p>
+<p><code>is</code> can also be used in a more idiomatic fashion together with the declaration
+of an object or template as follows:</p>
+<pre><code>// Instantiate templates templateA, templateB, and templateC
+bank regs is (templateA, templateB, templateC) {
+    register reg size 1 @0x0;
+}
+</code></pre>
+<p>A language feature closely related to templates are
+<a href="language.html#parameters"><em>parameters</em></a>. A parameter can be thought of as an
+<em>expression macro</em> that is a member of a particular object or template.
+Parameters may optionally be declared without an accompanying definition —
+which will result in a compile-time error if not overridden — or with a
+<em>default</em>, overridable definition. Parameters declared this way can be
+overridden by any later declaration of the same parameter. This can be leveraged
+by templates in order to declare a parameter that the template may make use of,
+while requiring any instance of the template to provide a definition for the
+parameter (or allow instances to override the default definition of that
+parameter).</p>
+<p>Parameters are declared as follows:</p>
+<ul>
+<li>Abstract, without definition:<pre>param <em>name</em>;
+</pre>
+</li>
+<li>With overridable definition:<pre>param <em>name</em> default <em>expression</em>;
+</pre>
+</li>
+<li>With unoverridable definition:<pre>param <em>name</em> = <em>expression</em>;
+</pre>
+</li>
+</ul>
+<p>Much of the DML infrastructure, as well as DML’s built-in features, rely heavily
+on templates. Due to the importance of templates, DML has a number of features
+to generically manipulate and reference template instances, both at compile time
+and at run time. These are <a href="language.html#templates-as-types"><em>templates as
+types</em></a>, <a href="language.html#each-in-expressions"><code>each</code>-<code>in</code>
+expressions</a>, and <a href="language.html#in-each-declarations"><code>in each</code>
+declarations</a>.</p>
+
+<div class="chain">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+<a href="running-dmlc.html">2 The DML compiler</a>
+</div>

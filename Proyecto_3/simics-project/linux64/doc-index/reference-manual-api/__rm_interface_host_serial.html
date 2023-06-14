@@ -1,0 +1,70 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>host_serial</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_gfx_break.html">gfx_break</a>
+<a href="__rm_interface_instrumentation_connection.html">instrumentation_connection</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_host_serial">host_serial</a></h1>
+<p>
+
+<a name="host_serial"></a><a name="host_serial_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>host_serial</code> interface is used to control the text
+   console host serial connection.
+<p>
+   The <b><i>setup</i></b> method will set up a host serial connection on a pty
+   (Linux) or COM port (Windows). On Linux, <i>name</i> can be
+   <code>NULL</code> in which case a new pty is opened.
+</p><p>
+   The <b><i>name</i></b> method returns the name of any opened pty or COM port,
+   or <code>NULL</code>.
+</p><p>
+   The <b><i>shutdown</i></b> closes any opened pty or COM port.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(host_serial) {
+        bool (*setup)(conf_object_t *NOTNULL obj, const char *name);
+        const char *(*name)(conf_object_t *NOTNULL obj);
+        void (*shutdown)(conf_object_t *NOTNULL obj);
+};
+#define HOST_SERIAL_INTERFACE "host_serial"
+</pre><p>
+ 
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context
+   for all methods
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_gfx_break.html">gfx_break</a>
+<a href="__rm_interface_instrumentation_connection.html">instrumentation_connection</a>
+</div>

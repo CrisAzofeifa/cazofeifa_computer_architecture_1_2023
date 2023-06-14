@@ -1,0 +1,103 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>generic_message_link</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_generic_message_device.html">generic_message_device</a>
+<a href="__rm_interface_hpi.html">hpi</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_generic_message_link">generic_message_link</a></h1>
+<p>
+
+<a name="generic_message_link"></a><a name="generic_message_link_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(generic_message_link) {
+#ifndef PYWRAP
+        int  (*connect_device)(conf_object_t *_obj, conf_object_t *dev,
+                               int *new_connection, uint32 address);
+        void (*disconnect_device)(conf_object_t *_obj, conf_object_t *dev);
+#endif
+        void (*send_frame)(conf_object_t *_obj, int id, uint32 address,
+                           dbuffer_t *frame, nano_secs_t delay);
+};
+
+#define GENERIC_MESSAGE_LINK_INTERFACE "generic_message_link"
+</pre><p>
+</p><p>
+
+   </p><div class="note">
+<b>Note:</b>
+This interface is used for gml-link which is based on the link library.
+    Refer to the <em>Link Library</em> for more information.</div>This interface is implemented by generic message link objects that provide a
+   data link layer interface for frame delivery. It is used by the device
+   object to talk to the link object. The device must implement the
+   <code>generic_message_device</code> interface.
+<p>
+   The <b><i>connect_device</i></b> function attaches a generic link device to the
+   link. The return value is an identification number that should be used
+   in subsequent calls to the link to identify the device. The
+   <i>address</i> parameter sets the address of the device on the link.
+   Currently the <i>new_connection</i> parameter is not in use, a NULL
+   pointer can be passed as the parameter.
+</p><p>
+   The <b><i>disconnect_device</i></b> function detaches a generic link
+   device from the link.  It will not receive any more frames from the
+   link and may not call any functions in the interface, except
+   <b><i>connect_device</i></b>.
+</p><p>
+   The <b><i>send_frame</i></b> function is used by a device to send a generic
+   device frame onto the link to be delivered to another device connected to
+   the same link.  The frame should be a <code><a name="dbuffer_t">dbuffer_t</a></code>
+   containing a data frame.  The <i>address</i> parameter is the address
+   to sent the frame to. The <i>delay</i> makes it possible to add a
+   small delay to the frame.  This can be used when a device wants to send
+   multiple frames at once, but want them to be delivered in a specific
+   sequence.  Instead of using an event handler to send each frame, they can be
+   sent at once, with an increasing delay for each frame. The delay is given in
+   nanoseconds.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>connect_device</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>disconnect_device</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>send_frame</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_generic_message_device.html">generic_message_device</a>
+<a href="__rm_interface_hpi.html">hpi</a>
+</div>

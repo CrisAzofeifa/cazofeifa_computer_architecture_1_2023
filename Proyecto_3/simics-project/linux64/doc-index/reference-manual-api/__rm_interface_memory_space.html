@@ -1,0 +1,138 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>memory_space</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_mdio45_phy.html">mdio45_phy</a>
+<a href="__rm_interface_microwire.html">microwire</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_memory_space">memory_space</a></h1>
+<p>
+
+<a name="memory_space"></a><a name="memory_space_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="memory_space_interface_t2"></a>
+   This interface is implemented by classes that provide linear address
+   spaces.
+<p>
+   Other objects may perform accesses in the address space using
+   the <b><i>access</i></b> function or one of the simplified access functions,
+   or may ask for mapped objects using <b><i>space_lookup</i></b>. Typical usage
+   of this interface would be memory accesses from devices or processors.
+</p><p>
+   The <b><i>space_lookup</i></b> function would be used to find end-points for a
+   memory request. The <i>mop</i> needs to be crafted similarly as for a
+   regular read or write operation and would typically be created with
+   <b><i>SIM_make_mem_op_read</i></b> or <b><i>SIM_make_mem_op_write</i></b>. The
+   return value for <b><i>space_lookup</i></b> is a list of all mappings that
+   match the input <i>mop</i>.
+</p><p>
+   The <b><i>access</i></b> function operates on a generic transaction that would
+   typically be created with <b><i>SIM_make_mem_op_read</i></b> or
+   <b><i>SIM_make_mem_op_write</i></b>.
+   The <b><i>access_simple</i></b> function is similar to <b><i>access</i></b>
+   but takes some additional arguments instead of a complete
+   <code>generic_transaction_t</code> structure. An inquiry version of this
+   function is available as <b><i>access_simple_inq</i></b>. Both these
+   functions can perform endian conversion if the buffer pointed to by
+   <i>buf</i> contains a value in host endian byte-order. To avoid endian
+   conversion, <code>Sim_Endian_Target</code> should be specified as
+   <i>endian</i>.
+   These two functions are not available from Python.
+</p><p>
+   The <b><i>read</i></b> and <b><i>write</i></b> methods are primarily intended
+   for use in Python. They operate on data encapsulated in attribute values
+   which should be of data type; in Python, this corresponds to tuples of
+   integers (bytes). These two methods signal errors by raising a frontend
+   exception. They can be used to read or write up to 1024 bytes in a single
+   call. The return value from <b><i>write</i></b> should be ignored.
+</p><p>
+   The <b><i>fill</i></b> method fills <i>size</i> bytes starting at
+   <i>start</i> with <i>value</i>. It only works on memory,
+   and returns the number of bytes actually written before encountering
+   something that isn't RAM.
+</p><p>
+   The <b><i>timing_model_operate</i></b> method is deprecated. It was used by
+   objects of class <b>memory-space</b> to trigger an associated timing
+   model, e.g. a cache model. See the <em>Analyzer's User Guide</em> for
+   how to use the instrumentation API to connect cache models.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(memory_space) {
+        map_list_t *(*space_lookup)(conf_object_t *NOTNULL obj,
+                                    generic_transaction_t *NOTNULL mop,
+                                    map_info_t mapinfo);
+        exception_type_t (*access)(conf_object_t *NOTNULL obj,
+                                   generic_transaction_t *NOTNULL mop);
+#if !defined(PYWRAP)
+        exception_type_t (*access_simple)(conf_object_t *obj,
+                                          conf_object_t *initiator,
+                                          physical_address_t addr,
+                                          uint8 *buf,
+                                          physical_address_t len,
+                                          read_or_write_t type,
+                                          endianness_t endian);
+        exception_type_t (*access_simple_inq)(conf_object_t *obj,
+                                              conf_object_t *initiator,
+                                              physical_address_t addr,
+                                              uint8 *buf,
+                                              physical_address_t len,
+                                              read_or_write_t type,
+                                              endianness_t endian);
+#endif /* !PYWRAP */
+        attr_value_t (*read)(conf_object_t *NOTNULL obj,
+                             conf_object_t *initiator,
+                             physical_address_t addr,
+                             int length,
+                             int inquiry);
+        exception_type_t (*write)(conf_object_t *NOTNULL obj,
+                                  conf_object_t *initiator,
+                                  physical_address_t addr,
+                                  attr_value_t data,
+                                  int inquiry);
+        cycles_t (*timing_model_operate)(conf_object_t *NOTNULL space,
+                                         generic_transaction_t *NOTNULL mop);
+        uint64 (*fill)(conf_object_t *NOTNULL obj,
+                       physical_address_t start, uint64 size, uint8 value,
+                       bool inquiry);
+};
+
+#define MEMORY_SPACE_INTERFACE "memory_space"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_mdio45_phy.html">mdio45_phy</a>
+<a href="__rm_interface_microwire.html">microwire</a>
+</div>

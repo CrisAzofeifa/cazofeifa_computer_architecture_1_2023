@@ -1,0 +1,2578 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Processor Model Integration Guide</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>Processor Model Integration Guide</h1>
+
+<p>
+      
+      
+      
+</p><p>
+</p><h2 class="jdocu"><a name="Introduction">1 Introduction</a></h2>
+<p>
+
+</p><p>
+This document describes the API used to implement models of processors
+in Simics. Simics will handle the simulation framework, including the
+user interfaces, standardized APIs, plug-in administration, and
+commonly used utilities and resources. The processor models use and
+implement the standardized APIs, which allows mixing simulation models and
+creating a uniform interface to the user.
+</p><p>
+The processor API is the part of the API that allows a model to get
+control over simulator scheduling and includes processor specific interfaces to
+enable standard functions and commands for the processor models as well as
+efficient memory interfaces to allow fast simulation. The most
+important interfaces are covered in this document, for the other
+interfaces please refer to the relevant Simics reference Manual.
+</p><p>
+Depending on use, the processors should implement and use different
+parts of the interfaces described.
+</p><p>
+A number of areas that a processor model may support can be identified
+as follows:
+</p><p>
+</p><dl><dt id="dt:simulation-scheduling"><b>Simulation scheduling</b></dt><dd>There must be basic support for advancing the simulation. This
+  support must be present for any fast functional processor
+  model. Cycle driven models may be designed using the built-in clock
+  class that handles the scheduling interaction with the
+  framework.</dd><dt id="dt:direct-access-to-memory"><b>Direct Access to Memory</b></dt><dd>Interfaces used to cache pointers to memory, allowing accesses to
+be carried out without involving the API.</dd><dt id="dt:inspection-and-control-of-processor-models"><b>Inspection and control of processor models</b></dt><dd>As processors are very visible to the user of the simulator, there
+are several standardized ways for the user to access and control a
+processor. To support these, the processor models in turn have to
+implement interfaces and trigger haps.</dd><dt id="dt:breakpoints"><b>Breakpoints</b></dt><dd>The processor model is fully responsible for triggering virtual
+address breakpoints. For physical address breakpoints, the processor
+model needs to check if ranges mapped with direct memory access
+contain breakpoints and then either request more fine grained regions
+of memory without breakpoints or fall back to explicit memory
+operations, where the explicit memory operations will handle
+breakpoints if they happen to match.</dd><dt id="dt:simulation-of-models"><b>Simulation of models</b></dt><dd>Covers the mechanisms used to communicate between processors and
+devices.</dd></dl><p>Like any other model, processor models should be written to integrate well into
+the Simics environment. See <em>Simics Model Development Checklist</em> for
+a good checklist to follow when designing and implementing the model. See also
+the <em>Simics User's Guide</em> for more information about the features
+discussed in this document.
+</p><p>
+How to configure a system and create start scripts is described in the
+<em>Model Builder User's Guide</em>. Example system configurations can be
+found in <code>[simics]/targets/cosim/</code>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="cosimulator-examples">2 Processor Scheduling Examples</a></h2>
+<p>
+
+</p><p>
+This chapter describes how to interface processors to Simics depending
+on the requirements on the simulation.
+</p><p>
+A processor model defines one or more classes to integrate with the
+Simics environment. Simics classes have attributes and implement
+interfaces. Even though Simics classes can be written in <i>DML</i>,
+<i>C</i>, <i>C++</i>, or <i>Python</i>, only <i>C</i> and <i>C++</i>
+is currently supported for writing processor models. See the
+<i>Configuration and Checkpointing</i> chapter in the <em>Simics User's
+Guide</em> for more information about classes in Simics and how to
+instantiate them into Simics objects.
+</p><p>
+A key issue for fast simulation is how it is scheduled. A
+<em><a name="scheduler">scheduler</a></em> is an object that implements the
+<code>execute</code> interface. Such an object advances virtual time
+for itself and for the objects associated with it. A processor that
+also is a scheduler can thus simulate a sequence of instructions that
+occur at different points in virtual time without having to return
+back to the framework.
+</p><p>
+Processors can be scheduled in any of the following ways:
+</p><p>
+</p><dl><dt id="dt:processors-without-custom-scheduling"><b>Processors without custom scheduling</b></dt><dd>Processors models do not have any customized scheduling, but
+rather use event callbacks to perform simulation. This setup is
+suitable for clock cycle driven simulation as it performs simulation
+in strict virtual time order. See figure <a class="reference" href="#exact_time_model">1</a>.</dd><dt id="dt:scheduling-a-set-of-processors"><b>Scheduling a set of processors</b></dt><dd>The processors are scheduled together, and a single object
+implements the <code>execute</code> and <code>cycle</code>
+interfaces used by the framework to schedule the set of processors,
+see figure <a class="reference" href="#cosim_queue_in_blobb">2</a>. This type of
+scheduling allows the simulation to run faster since it requires less
+synchronization and fewer context switches. The drawback is that both
+the <code>cycle</code> interface and the optional
+<code>step</code> interface are hard to implement.</dd><dt id="dt:scheduling-each-processor"><b>Scheduling each processor</b></dt><dd>The <code>execute</code> and <code>cycle</code> interfaces are
+here implemented in each thread/core objects instead of in a central
+scheduler object, see figure <a class="reference" href="#execute_per_thread">3</a>. This
+is the model used by all Simics standard processors models. The
+multiple clocks in this type of setup are forced by Simics to stay
+within a defined window of virtual time. As the clocks are driven
+individually, this leads to temporal decoupling between the
+processors.</dd></dl><p>The documentation for the <code>execute</code> interface describes
+how the Simics core controls the simulation, see Section <a class="reference" href="#execute-interface">3.1</a>.
+</p><p>
+</p><h3 class="jdocu"><a name="exact-time-model">2.1 Processor Models without Custom Scheduling</a></h3>
+<p>
+
+</p><p>
+Cycle driven models are typically slow models. The setup only has one
+clock object which handles timing for all objects in the setup. All
+objects run in lock step mode where each object run one cycle at a
+time. Figure <a class="reference" href="#exact_time_model">1</a> shows an example setup of
+event driven processors. The type of simulation where this setup
+should be used are for example clock cycle accurate HDL simulator
+models.
+</p><p>
+</p><div class="figure" id="exact_time_model">
+
+<div style="text-align: center">
+<img alt="" src="exact_time_model.png">
+<div class="caption">Figure 1. Event driven processors in Simics.</div>
+</div>
+</div>
+
+<p>
+The objects in figure <a class="reference" href="#exact_time_model">1</a> are:
+</p><p>
+</p><dl><dt id="dt:simics-core"><b>Simics core</b></dt><dd>The Simics core providing simulation services
+through the Simics API.</dd><dt id="dt:clock"><b>clock</b></dt><dd>The Simics clock object implementing the
+<code>execute</code> interface and the <code>cycle</code>
+interface. The clock handles all timing in the system.</dd><dt id="dt:thread-core"><b>thread/core</b></dt><dd>The thread/core objects are placeholders for
+each simulated thread/core. They implement standard processor
+interfaces such as the <code>processor_info_v2</code>,
+<code>int_register</code>, and <code>exception</code>
+interfaces. These interfaces are used by standard Simics commands for
+showing time, events, register contents, instruction disassemble,
+etc.</dd><dt id="dt:memory-space"><b>memory-space</b></dt><dd>Generic Simics memory-space objects handling
+memory accesses.</dd><dt id="dt:device"><b>device</b></dt><dd>Device models for the system.</dd></dl><p>
+</p><h3 class="jdocu"><a name="Scheduling-a-Set-of-Processors">2.2 Scheduling a Set of Processors</a></h3>
+<p>
+
+</p><p>
+In the setup shown in figure <a class="reference" href="#cosim_queue_in_blobb">2</a>, the
+processors export one implementation of the time event queue instead
+having a Simics object do that. The result is that the processor
+model has better control of when new events are added and also that
+the processor model triggers the events. The Simics core instructs the
+scheduler to run the simulation forward through the
+<code>execute</code> interface. All objects in a cell implementing
+the <code>execute</code> interface will be kept within a time window
+defined by the <i>time_quantum</i> attribute of the cell. Having
+a quantum that is significantly larger than a single cycle (as in a
+cycle driven model) allows for faster simulation since optimizations
+such as binary translation and hypersimulation can then be employed.
+</p><p>
+</p><div class="figure" id="cosim_queue_in_blobb">
+
+<div style="text-align: center">
+<img alt="" src="cosim_queue_in_blobb.png">
+<div class="caption">Figure 2. Scheduling a set of processors.</div>
+</div>
+</div>
+
+<p>
+The objects in figure <a class="reference" href="#cosim_queue_in_blobb">2</a> are:
+</p><p>
+</p><dl><dt id="dt:simics-core-2"><b>Simics core</b></dt><dd>The Simics core providing simulation services
+through the Simics API.</dd><dt id="dt:scheduler"><b>scheduler</b></dt><dd>Implements the <code>execute</code> and
+<code>cycle</code> interfaces. Simics core and devices will use this
+object for posting events and for driving the simulation. The
+scheduler object may correspond to something particular in hardware,
+such as a processors with multiple cores.</dd><dt id="dt:thread-core-2"><b>thread/core</b></dt><dd>The thread/core objects are placeholders for
+each simulated thread/core. They implement standard processor
+interfaces for example the <code>processor_info_v2</code>
+interface. These interfaces are used by standard Simics commands for
+showing time, events, register contents, instruction disassemble,
+etc.</dd><dt id="dt:memory-space-2"><b>memory-space</b></dt><dd>Generic Simics memory-space objects handling
+memory accesses.</dd><dt id="dt:device-2"><b>device</b></dt><dd>Device models for the system.</dd></dl><p>The processor model has control of time and can optimize for running
+long quanta. The Simics core notifies the execute object that it can
+start to execute and it is up to the implementation to control how
+everything is scheduled.  The threads/cores may be simulated in
+parallel with multiple threads.  Note that care must be taken if
+typical Simics processor model features such as deterministic
+execution and reverse execution are to be supported.
+</p><p>
+An example system with this setup can be found in
+<code>[simics]/targets/cosim/queues-in-cosimulator.simics</code>. The
+source code for the example can be found in
+<code>[simics]/src/extensions/sample-risc</code>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Scheduling-Each-Processor">2.3 Scheduling Each Processor</a></h3>
+<p>
+
+</p><p>
+In the setup shown in figure <a class="reference" href="#execute_per_thread">3</a>, each
+processor implements the scheduling interfaces. This is a special case
+of the previous mechanism where each set of processors only include a
+single processor. The Simics core instructs the scheduler to run the
+simulation forward through the <code>execute</code> interface. All
+objects in a cell implementing the <code>execute</code> interface
+will be kept within a time window defined by the
+<i>time_quantum</i> attribute of the cell. Having a quantum that
+is significantly larger than a single cycle (as in a cycle driven
+model) allows for faster simulation since optimizations such as binary
+translation and hypersimulation can then be employed.
+</p><p>
+</p><div class="figure" id="execute_per_thread">
+
+<div style="text-align: center">
+<img alt="" src="execute_per_thread.png">
+<div class="caption">Figure 3. Scheduling Each Processor.</div>
+</div>
+</div>
+
+<p>
+The objects in figure <a class="reference" href="#execute_per_thread">3</a> are:
+</p><p>
+</p><dl><dt id="dt:simics-core-3"><b>Simics core</b></dt><dd>The Simics core providing simulation services
+through the Simics API.</dd><dt id="dt:thread-core-3"><b>thread/core</b></dt><dd>The thread/core objects implement both the
+execution related interfaces (<code>execute</code> and
+<code>cycle</code>), and the interfaces used to control and inspect
+the individual cores (<code>processor_info_v2</code>,
+<code>step</code>, <code>int_register</code>, etc).</dd><dt id="dt:memory-space-3"><b>memory-space</b></dt><dd>Generic Simics memory-space objects handling
+memory accesses.</dd><dt id="dt:device-3"><b>device</b></dt><dd>Device models for the system.</dd></dl><p>This model is similar to the previous model with the difference that
+each thread/core defines its own time domain. This also means that
+each object will be driven individually by the Simics core. This is
+the type of model used by all standard processor models in Simics.
+</p><p>
+
+</p><p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="Simulation-Scheduling">3 Simulation Scheduling</a></h2>
+<p>
+
+</p><p>
+This chapter describes the interfaces used for customized simulation
+scheduling.
+</p><p>
+</p><h3 class="jdocu"><a name="execute-interface">3.1 Execute Interface</a></h3>
+<p>
+
+<a name="execute"></a>
+
+</p><p>
+   The <code>execute</code> interface is implemented by objects that
+   drive a simulation, which is often processor models. The object
+   does not have to implement <code>cycle</code> or
+   <code>step</code>.
+</p><p>
+   An object implementing the <code>execute</code> interface must be
+   coupled with one object implementing the <code>cycle</code>
+   interface. It can be the same object that implements the
+   <code>cycle</code> interface.
+</p><p>
+   The <b><i>run</i></b> function is called when the simulator starts or
+   restarts the execution.
+</p><p>
+   The implementation of the <b><i>run</i></b> function is responsible
+   for maintaining the simulators view of the current objects
+   implementing the <code>processor_info</code> and
+   <code>step</code> interfaces. It does
+   that by using the appropriate functions in the
+   <code>cell_inspection</code> interface. The current objects must
+   always be correctly set when either the <b><i>run</i></b> function
+   returns, when any API method is called, or when any other object is
+   called through an interface. Several Simics features, such as CLI
+   commands, device logging, and hap handling make use of the current
+   objects.
+</p><p>
+   To handle asynchronous events, and thus allow for reasonable interactive
+   performance, the implementor of <code>execute</code> needs to either make
+   sure that <b><i>run</i></b> returns after not having run for too long, or
+   preferably regularly call the <b><i>VT_check_async_events</i></b> method. In
+   the Simics library CPU models, <b><i>VT_check_async_events</i></b> is called
+   after servicing events from the <code>cycle</code> or <code>step</code>
+   interfaces.
+</p><p>
+   The simulator core will call <b><i>stop</i></b> when it detects a
+   condition that should interrupt the simulation. The callee should
+   stop as soon as possible when in a stable state, typically when the
+   current executing instruction is finished after getting a request
+   to stop. In some cases the callee might receive multiple stop
+   requests in a rapid sequence. Conditions leading to a stop request
+   include <b><i>SIM_break_simulation</i></b> being called from a device
+   or hap-handler, breakpoint triggered, low-memory situations, the
+   user interrupting the simulation with Ctrl-C, and the Simics core
+   halting the object when it is at the end of the allowed time window
+   in temporal decoupled simulation. It is forbidden to do anything in
+   the <b><i>stop</i></b> function that can lead to a new stop request,
+   this includes posting events, printing <b><i>SIM_log</i></b>-messages,
+   etc. Before returning from the <b><i>run</i></b> method, the
+   <b><i>VT_stop_event_processing</i></b> function should be called. The
+   requirement to call <b><i>VT_stop_event_processing</i></b> is likely
+   to be lifted in future versions of Simics.
+</p><p>
+   The <b><i>switch_in</i></b> function is called whenever the
+   execute object is about to gain control of the simulation
+   from some other execute object in the cell. Similarly,
+   <b><i>switch_out</i></b> is invoked before control is relinquished.
+   It should be noted that these functions are called in a
+   deterministic manner which is not true for <b><i>run</i></b>.
+</p><p>
+   The <b><i>switch_in</i></b> and <b><i>switch_out</i></b> functions
+   are not called at simulation start (or checkpoint load), in
+   general.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(execute) {
+        void (*run)(conf_object_t *obj);
+        void (*stop)(conf_object_t *obj);
+
+        void (*switch_in)(conf_object_t *obj);
+        void (*switch_out)(conf_object_t *obj);
+};
+
+#define EXECUTE_INTERFACE "execute"
+</pre><p>
+</p><p>
+
+   
+</p><p>
+In figure <a class="reference" href="#execute_fig">4</a> there is an example call-graph of
+Simics core and processor scheduler communication. Simics posts events
+on the processor's event queues to be triggered, for instance, at
+the end of the allowed time window. Simics then calls the
+<b><i>run</i></b> function in the <code>execute</code> interface and
+the processor starts executing instructions. The processor which
+implements the event queues will after a while execute an event
+callback for the event posted by the Simics core in one of the event
+queues. The Simics core handles the event which will trigger a stop
+request via the <b><i>stop</i></b> function. Note that not all events
+will trigger a stop request. Having received <b><i>stop</i></b>, the
+processor model must stop the simulation as soon as possible and
+return to the Simics core. This is typically done as soon as the
+currently executing instruction is committed.
+</p><p>
+</p><div class="figure" id="execute_fig">
+
+<div style="text-align: center">
+<img alt="" src="execute_scheduler.png">
+<div class="caption">Figure 4. An example of Simics core and scheduler communication.</div>
+</div>
+</div>
+
+<p>
+
+
+</p><h3 class="jdocu"><a name="Cell-Inspection-Interface">3.2 Cell Inspection Interface</a></h3>
+<p>
+
+<a name="cell_inspection"></a>
+
+</p><p>
+   The <code>cell_inspection</code> interface is implemented by
+   objects of the cell class. It is used by objects implementing the
+   <code>execute</code> interface to update the currently executing
+   objects when control is transferred outside of the execute object.
+</p><p>
+   The current object implementing <code>processor_info</code> is set with
+   <b><i>set_current_processor_obj()</i></b>. Similarly, the current object
+   implementing <code>step</code> is set with
+   <b><i>set_current_step_obj()</i></b>.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(cell_inspection) {
+        void (*set_current_processor_obj)(conf_object_t *obj,
+                                          conf_object_t *cpu_obj);
+        void (*set_current_step_obj)(conf_object_t *obj,
+                                     conf_object_t *step_obj);
+};
+
+#define CELL_INSPECTION_INTERFACE "cell_inspection"
+</pre><p>
+</p><p>
+   
+
+</p><h3 class="jdocu"><a name="Cycle-Interface">3.3 Cycle Interface</a></h3>
+<p>
+
+<a name="cycle"></a>
+
+</p><p>
+  </p><dl><dt id="dt:interface-methods"><b>Interface Methods</b></dt><dd>The <code>cycle</code> interface is typically implemented by
+  processors, but can be implemented by other objects as well. Its purpose is
+  to handle events based on time. The cycle queue has a cycle as the smallest
+  time unit. The cycle queue also has an associated frequency which makes it
+  possible to define events based on seconds or picoseconds.
+<p>
+  The <b><i>get_frequency</i></b> function returns the frequency in Hertz for
+  the <i>queue</i>. Most objects implementing <code>cycle</code> also
+  have a notification mechanism for frequency changes through the
+  <code>simple_dispatcher</code> interface in the <i>cpu_frequency</i>
+  port. It is recommended that such a notification mechanism is used to get
+  updates rather than polling with <b><i>get_frequency</i></b>.
+</p><p>
+  The current number of cycles executed by the <i>queue</i> is returned
+  by <b><i>get_cycle_count</i></b>. Time elapsed since the queue was created is
+  returned by <b><i>get_time</i></b> (in seconds) and <b><i>get_time_in_ps</i></b>
+  (in picoseconds); this will be equal to the value returned
+  by <b><i>get_cycle_count</i></b> divided by the value returned
+  by <b><i>get_frequency</i></b> if the frequency has been constant since time
+  zero.
+</p><p>
+  The <b><i>cycles_delta</i></b> function returns the highest number of cycles
+  <i>obj</i> can run <em>before</em> it passes the absolute local time
+  <i>when</i>, assuming no frequency change occurs in the
+  meantime. Note that <b><i>cycles_delta</i></b> can raise an exception if
+  <i>when</i> was too far ahead in the future. The
+  <b><i>cycles_delta_from_ps</i></b> function performs the same function, for an
+  absolute local time expressed in picoseconds.
+</p><p>
+  The <b><i>post_cycle</i></b> function will schedule an event that will occur
+  after <i>cycles</i> counted from local current time at
+  <i>queue</i>. The <b><i>post_time</i></b> function is similar but takes
+  <i>seconds</i> as argument, while <b><i>post_time_in_ps</i></b> takes
+  a number of <i>picoseconds</i>. The arguments
+  <i>cycles</i>, <i>seconds</i> and
+  <i>picoseconds</i> must be nonnegative.
+</p><p>
+  An event previously posted can be removed by calling <b><i>cancel</i></b>. The
+  <b><i>cancel</i></b> function takes a function <i>pred</i> as argument
+  which is called when a matching event is found. The event is only removed if
+  <i>pred</i> returns <code>1</code>. 
+</p><p>
+  The <b><i>find_next_cycle</i></b>, <b><i>find_next_time</i></b> and
+  <b><i>find_next_time_as_ps</i></b> functions take the same arguments as
+  <b><i>cancel</i></b> but only return the number of cycles, seconds or
+  picoseconds before the event occur. The <i>evclass</i> is the event
+  class, <i>obj</i> is the object posting the event, and
+  <i>user_data</i> is pointer to data used as a parameter when calling
+  the callback function defined in the <i>evclass</i>.
+  If no matching event was found, <b><i>find_next_cycle</i></b> and
+  <b><i>find_next_time</i></b> return −1;
+  <b><i>find_next_time_as_ps</i></b> returns <code>ILLEGAL_DURATION</code>.
+</p><p>
+  The <b><i>events</i></b> method returns a list of all pending events in
+  expiration order. Each element is a four-element list containing the event
+  object, the event class name, the expiration time counted in cycles as an
+  integer and the event description as given by the event class
+  <b><i>describe</i></b> method, or NIL for events whose event class does not
+  define that method.
+</p><p>
+  What happens to already posted events when a frequency change occurs is
+  implementation dependent. Simics processors will scale the cycle queue to
+  keep the time left before triggering events equal across the frequency
+  change. Note that the new times will be rounded to entire cycles during the
+  scaling, so approximations may occur when switching between high and low
+  frequencies.</p></dd><dt id="dt:implementation"><b>Implementation</b></dt><dd>It is implementation dependent how the queue is implemented, whether
+  cycles or seconds are used as underlying time unit, and what happens when the
+  frequency is changed.
+<p>
+  Objects implementing the cycle interface are usually meant to be scheduled by
+  Simics itself. For this to happen, a number of conditions must be fulfilled:
+</p><p>
+  </p><ul>
+
+  <li>Each schedulable object implementing the <code>cycle</code> interface
+  must be controlled by an object implementing the <code>execute</code>
+  interface. It can be the same object that implements the
+  <code>execute</code> interface. The object implementing the
+  <code>execute</code> interface points to the object implementing the
+  <code>cycle</code> interface via its <i>queue</i> attribute.</li>
+
+  <li>Any schedulable object implementing the <code>cycle</code> interface
+  must inform Simics about changes in frequency by calling the
+  <b><i>VT_clock_frequency_change</i></b> function. That also applies to the
+  initial frequency set when the object is created.</li>
+
+  <li>For schedulable objects, the <code>cycle</code> interface must be
+  registered with <b><i>SIM_register_clock</i></b>, which will also add some
+  Simics specific attributes to the corresponding class. Beyond those, the
+  implementor of the <code>cycle</code> can use any checkpoint
+  representation. The <i>name</i> field in the event class data
+  structure is unique, and the attribute setter function for checkpoint restore
+  can use <b><i>VT_get_event_class</i></b> to get the event class structure
+  corresponding to an event class name.</li>
+
+  </ul></dd></dl><p></p><pre class="jdocu_small">
+SIM_INTERFACE(cycle) {
+
+        cycles_t (*get_cycle_count)(conf_object_t *queue);
+        double (*get_time)(conf_object_t *queue);
+        cycles_t (*cycles_delta)(conf_object_t *NOTNULL clock,
+                                 double when);
+
+        uint64 (*get_frequency)(conf_object_t *queue);
+
+        void (*post_cycle)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                cycles_t cycles,
+                lang_void *user_data);
+        void (*post_time)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                double seconds,
+                lang_void *user_data);
+
+        void (*cancel)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+
+        cycles_t (*find_next_cycle)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+
+        double (*find_next_time)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+
+        attr_value_t (*events)(conf_object_t *NOTNULL obj);
+
+        /* new picoseconds based functions */
+        local_time_t (*get_time_in_ps)(conf_object_t *queue);
+        cycles_t (*cycles_delta_from_ps)(conf_object_t *NOTNULL clock,
+                                         local_time_t when);
+        void (*post_time_in_ps)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                duration_t picoseconds,
+                lang_void *user_data);
+
+        duration_t (*find_next_time_in_ps)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+};
+
+#define CYCLE_INTERFACE "cycle"
+</pre><p>
+</p><p>
+  
+
+</p><h3 class="jdocu"><a name="Co-Execute-Interface">3.4 Co-Execute Interface</a></h3>
+<p>
+
+<a name="co_execute"></a>
+
+</p><p>
+   Experimental, may change without notice.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(co_execute) {
+        void (*start_thread)(conf_object_t *NOTNULL obj,
+                             void (*entry)(lang_void *arg), lang_void *arg);
+        void (*yield)(conf_object_t *NOTNULL obj);
+};
+#define CO_EXECUTE_INTERFACE "co_execute"
+</pre><p>
+</p><p>
+
+   
+
+</p><h3 class="jdocu"><a name="Synchronous-Mode-Interface">3.5 Synchronous Mode Interface</a></h3>
+<p>
+
+<a name="synchronous_mode"></a>
+
+</p><p>
+   Experimental, may change without notice.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(synchronous_mode) {
+        int (*enter)(conf_object_t *NOTNULL obj);
+        int (*leave)(conf_object_t *NOTNULL obj);
+};
+#define SYNCHRONOUS_MODE_INTERFACE "synchronous_mode"
+</pre><p>
+</p><p>
+
+   
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Direct-Access-to-Memory">4 Direct Access to Memory</a></h2>
+<p>
+
+</p><p>
+The processor API includes support for caching pointers to simulated
+memory so that the model can perform accesses directly instead of
+having to use the API for every individual access.
+</p><p>
+This chapter describes the interfaces and API calls used to setup and
+handle direct access to memory.
+</p><p>
+</p><h3 class="jdocu"><a name="Direct-Memory-Lookup-Interface">4.1 Direct Memory Lookup Interface</a></h3>
+<p>
+
+
+   <a name="direct_memory_lookup_t"></a>
+</p><p>
+   The <code>direct_memory_lookup</code> interface is implemented by Simics
+   memory-spaces. The interface is used by simulator objects that want to do
+   fast accesses to memory and/or want to build up a cached representation of
+   memory. These objects are referred to as memory users, e.g., processors.
+   Fast accesses are done via host pointers to simulated memory. The
+   <code>direct_memory_lookup</code> interface is used in conjunction with
+   the <code>direct_memory</code> interface which is implemented by objects
+   that own the actual data storage, e.g., RAM/ROM objects. These objects are
+   called direct-memory objects.
+</p><p>
+   To access data, a memory-user object first calls the <b><i>lookup</i></b>
+   method on the memory space <i>obj</i>. The
+   <i>requester</i> is the memory-user doing the lookup.
+   The <b><i>lookup</i></b> method traces the range specified by
+   <i>addr</i> and <i>size</i>
+   through memory spaces and translators until a direct-memory object
+   is reached. The direct-memory object is returned in the
+   <i>target</i> field and the offset into this object
+   corresponding to <i>addr</i> is returned in the
+   <i>offs</i> field.
+</p><p>
+   The call to <b><i>lookup</i></b> fails if the specified range does
+   not map continuously to a direct-memory object. A lookup failure
+   is indicated by returning NULL in the <i>target</i> field.
+</p><p>
+   The <i>access</i> argument is a bit field of at least one
+   <code>access_t</code> value specifying what kind of accesses the memory user
+   is interested in. All specified access types must reach the same
+   direct-memory object and range for the lookup to succeed. If the memory
+   space, for example, redirects reads and writes to different memory ranges or
+   direct-memory objects, a lookup would fail if <i>access</i>
+   specified both read and write. Note that the actual access permissions
+   needed to access the real data must be requested from
+   the direct-memory object using the <b><i>request</i></b> method of
+   the <code>direct_memory</code> interface. The <i>access</i>
+   argument is only used to locate the direct-memory object.
+</p><p>
+   The return field <i>access</i> contains at least the access
+   bits requested used in the lookup request, but may as an optimization
+   contain a superset, indicating that the lookup result is valid for this
+   superset. However, there is no guarantee that this optimization
+   takes place.
+</p><p>
+   Once a direct-memory object has been found, the <code>direct_memory</code>
+   interface can be used to obtain a direct pointer to the contents
+   of the direct-memory object.
+</p><p>
+   The <i>tracers</i> and <i>breakpoints</i> fields in the
+   return value contain information about installed tracers and breakpoints
+   that intersect the range. Examples of tracers are timing models
+   and snoop objects. In order to trigger breakpoints and invoke any tracers,
+   the memory user should perform memory operations using the
+   <code>memory_space</code> interface. Only breakpoints and tracers that
+   overlap (binary and) with the provided <i>access</i> argument need to be
+   considered.
+</p><p>
+   
+   <a name="direct_memory_t"></a>
+   </p><pre class="jdocu_small">typedef struct {
+        conf_object_t     *target;
+        uint64             offs;
+
+        access_t           breakpoints;      // conflicting breakpoints
+        access_t           tracers;          // conflicting tracers
+        access_t           access;           // handle valid for access
+} direct_memory_lookup_t;</pre><p>
+</p><p>
+   
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(direct_memory_lookup) {
+        direct_memory_lookup_t (*lookup)(conf_object_t *NOTNULL obj,
+                                         conf_object_t *requester,
+                                         physical_address_t addr,
+                                         unsigned size,
+                                         access_t access);
+};
+
+#define DIRECT_MEMORY_LOOKUP_INTERFACE "direct_memory_lookup"
+</pre><p>
+</p><p>
+
+   The <code>direct_memory_lookup</code> and <code>direct_memory</code>
+   interfaces replace the <code>memory_page</code> interface of Simics 4.8.
+   
+
+</p><h3 class="jdocu"><a name="Direct-Memory-Interface">4.2 Direct Memory Interface</a></h3>
+<p>
+
+
+   <a name="direct_memory_handle_t"></a>
+   <a name="direct_memory_ack_id_t"></a>
+   <a name="direct_memory_t2"></a>
+</p><p>
+   The <code>direct_memory</code> interface is implemented by objects that
+   model memory, such as RAM and ROM objects. These are called direct-memory
+   objects. A user of the interface is called a memory user and is
+   typically a processor that wants to do fast accesses to memory. The
+   direct-memory object corresponding to a particular physical address
+   can be obtained using the <b><i>lookup</i></b> method of the
+   <code>direct_memory_lookup</code> interface.
+   See the documentation for the
+   <code>direct_memory_lookup</code> interface for more information.
+</p><p>
+   A memory user using the <code>direct_memory</code> interface 
+   must implement the <code>direct_memory_update</code> interface.
+</p><p>
+   The <b><i>get_handle</i></b> method is used by a memory user
+   to create or retrieve a handle to the memory region starting
+   at offset <i>offs</i> with size <i>size</i>.
+   The handle is typically used later on to request access permissions
+   and to retrieve a direct pointer to the region.
+   The handle returned by <b><i>get_handle</i></b> is private to the
+   memory user specified in the <i>requester</i> parameter.
+</p><p>
+   If <b><i>get_handle</i></b> is invoked multiple times for the same
+   range, and with identical <i>requester</i> and
+   <i>subsystem</i> arguments, then the same handle will
+   be returned each time, assuming the original handle is still valid.
+   Note that the original handle is only returned if the range
+   matches exactly. A single memory user can obtain multiple
+   distinct handles for the same memory range by using different values for the
+   <i>subsystem</i> parameter.
+</p><p>
+   For RAM and ROM, <i>offs</i> and <i>size</i> must
+   specify a region which does not intersect a naturally aligned
+   8192 byte boundary, or the request will fail with a NULL return
+   value. Other direct-memory objects might have different requirements.   
+</p><p>
+   The <b><i>request</i></b> method is used to request a host pointer to simulated
+   memory. This pointer can be used to carry out fast memory operations without
+   having to involve the Simics API. The <i>handle</i> argument is the
+   handle obtained using <b><i>get_handle</i></b>.
+</p><p>
+   Both the <i>permission</i> argument and the <i>inhibit</i> argument
+   are <code>access_t</code> type bit fields. The <i>permission</i>
+   argument is used to specify what kind of memory operations the memory user
+   will perform. For example, if a memory user wants to read memory, the
+   <i>permission</i> argument must include the Sim_Access_Read value.  The
+   <i>inhibit</i> argument specifies what other memory users are not
+   allowed to do. For example, if <i>inhibit</i> is set to Sim_Access_Write
+   other memory users are not allowed to write to the memory range.  This
+   protection mechanism can be used to create caches of simulated memory,
+   request exclusive permissions to a memory range in order to carry out atomic
+   operations, and similar.  When a memory user is requesting permission to a
+   memory range that another memory user has protected with conflicting inhibit
+   bits, the direct-memory object will inform the other memory user of
+   the lost permissions and protection through the
+   <code>direct_memory_update</code> interface.  A user can lose both the
+   permission and protection for a memory range in this way. When this happens,
+   a memory user may re-request permissions and inhibit protection.
+</p><p>
+   Note: if a memory user has multiple handles which overlaps, then
+   each handle is considered to be a distinct memory user. For example,
+   if a memory user holds two handles, and requests write inhibit on
+   one of them, then write permission will be revoked from the second
+   handle (if such permission had been granted).
+</p><p>
+   The <b><i>request</i></b> method returns a <code>direct_memory_t</code> value
+   with information about the retrieved permissions and inhibit bits. These
+   bits can be a super set of the bits that actually was requested. The
+   returned data pointer can be used to access the memory range. Accesses are
+   valid from the data pointer and up to the end of the range, i.e., addresses
+   up to data pointer + <i>size</i> - 1, where size is the size valid for
+   the handle. A call to <b><i>request</i></b> always succeeds and the
+   corresponding memory range is valid until the permissions or the handle are
+   revoked by the <code>direct_memory_update</code> interface.  Note that the
+   data pointer may change each time <b><i>request</i></b> is called (with the
+   same handle) since Simics may move simulated memory. If the pointer
+   changes, then the old pointer must not be used.
+</p><p>
+   With <b><i>set_user_data</i></b>, a memory user can associate 
+   a user-defined pointer with a specific handle. The pointer can
+   be retrieved using the <b><i>get_user_data</i></b> method, which takes
+   a <i>handle</i> as an argument.
+</p><p>
+   A memory user can use the <b><i>release</i></b> function to notify the
+   direct-memory object when it is no longer interested in the memory
+   region corresponding to <i>handle</i>. The handle is invalid
+   and must not be used for anything after being released.
+   </p><p>
+   The <b><i>ack</i></b> method is used by a memory user to inform the 
+   direct-memory object that it has given up the corresponding permission and
+   inhibit rights for a memory range when called by a method in the
+   <code>direct_memory_update</code> interface.
+</p><p>
+   Permissions can be revoked from all memory users by invoking the
+   <b><i>revoke</i></b> method. The <i>permission</i> parameter
+   specifies the permissions which will be revoked from all memory users.
+   Similarly, <i>inhibit</i> specifies the inhibit privileges which
+   will be revoked. For instance, calling <b><i>revoke</i></b> with
+   <i>permission</i>
+   set to <code>Sim_Access_Write</code> will ensure that nobody has
+   write permissions to the direct-memory object.
+</p><p>
+   
+</p><pre class="jdocu_small">typedef granted_mem_t *direct_memory_handle_t;</pre><p>
+
+   
+   <a name="direct_memory_t3"></a>
+   </p><pre class="jdocu_small">typedef struct {
+#ifndef PYWRAP
+        uint8                 *data;
+#endif
+        access_t               permission;
+        access_t               inhibit;
+} direct_memory_t;</pre><p>
+</p><p>
+   
+   
+</p><pre class="jdocu_small">typedef uint64 direct_memory_ack_id_t;</pre><p>
+
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(direct_memory) {
+        direct_memory_handle_t (*get_handle)(conf_object_t *NOTNULL obj,
+                                             conf_object_t *NOTNULL requester,
+                                             uint64 subsystem,
+                                             uint64 offs,
+                                             unsigned size);
+        direct_memory_t (*request)(conf_object_t *NOTNULL obj,
+                                   direct_memory_handle_t handle,
+                                   access_t permission,
+                                   access_t inhibit);
+        void (*revoke)(conf_object_t *NOTNULL obj,
+                       access_t access,
+                       access_t permission,
+                       access_t inhibit);
+#ifndef PYWRAP
+        void *(*get_user_data)(conf_object_t *NOTNULL obj,
+                                    direct_memory_handle_t handle);
+        void (*set_user_data)(conf_object_t *NOTNULL obj,
+                              direct_memory_handle_t handle,
+                              void *user_data);
+#endif
+        void (*release)(conf_object_t *NOTNULL obj,
+                        direct_memory_handle_t handle);
+        void (*ack)(conf_object_t *NOTNULL obj,
+                    direct_memory_ack_id_t id);
+};
+
+#define DIRECT_MEMORY_INTERFACE "direct_memory"
+</pre><p>
+</p><p>
+   
+
+</p><h3 class="jdocu"><a name="Direct-Memory-Flush-Interface">4.3 Direct Memory Flush Interface</a></h3>
+<p>
+
+
+     The <code>direct_memory_flush</code> interface is implemented by objects
+     that model memory, such as RAM and ROM objects, and is used for flushing
+     granted rights and for managing access rights.
+</p><p>
+     The <b><i>revoke</i></b> method revokes granted access, permissions and
+     inhibit rights from memory-user regions intersecting
+     [<i>base</i>, <i>base</i> + <i>size</i>).
+</p><p>
+     The <b><i>set_access_bits</i></b> method grants access rights
+     <i>access</i> for the region [<i>base</i>,
+     <i>base</i> + <i>size</i>) to the memory user
+     <i>requester</i>. If <i>requester</i> is NULL, then
+     access rights are granted to all memory users. If the set succeeds, true is
+     returned, otherwise false.
+</p><p>
+     </p><pre class="jdocu_small">SIM_INTERFACE(direct_memory_flush) {
+        void (*revoke)(conf_object_t *NOTNULL obj,
+                       uint64 base, uint64 size,
+                       access_t access, access_t perm, access_t inhibit);
+        bool (*set_access_bits)(conf_object_t *NOTNULL obj,
+                                conf_object_t *requester,
+                                uint64 base, uint64 size,
+                                access_t access);
+};
+#define DIRECT_MEMORY_FLUSH_INTERFACE "direct_memory_flush"
+</pre><p>
+</p><p>
+   
+
+</p><h3 class="jdocu"><a name="Direct-Memory-Update-Interface">4.4 Direct Memory Update Interface</a></h3>
+<p>
+
+
+</p><p>
+   The <code>direct_memory_update</code> interface must be implemented by
+   memory-user objects that use the <code>direct_memory</code> interface.
+</p><p>
+   The <code>direct_memory_update</code> interface replaces the
+   <code>memory_page_update</code> interface from Simics 4.8.
+</p><p>
+   Accesses to memory are controlled by a handle that the memory-user object
+   requests by calling the <b><i>get_handle</i></b> method of the
+   <code>direct_memory</code> interface. The object implementing the
+   <code>direct_memory</code> interface through which the handle was
+   established is passed to the functions in
+   <code>direct_memory_update</code> as <i>target</i>.
+</p><p>
+   If the <b><i>release</i></b> method is called, the corresponding
+   <i>handle</i> and all the permissions and inhibit protections are
+   recalled. The memory-user object must stop using the handle and
+   associated data pointers and then call the acknowledge method
+   <b><i>ack</i></b> in the <code>direct_memory</code> interface from
+   which the handle was granted.
+</p><p>
+   A call to the <b><i>update_permission</i></b> method revokes earlier requested
+   rights for a handle. The <i>lost_access</i> argument recalls rights to
+   use the handle for the given access bits. This means that the handle needs
+   to be re-fetched (by a call to the <b><i>lookup</i></b> method of the
+   <code>direct_memory_lookup</code> interface followed by a call to the
+   <b><i>get_handle</i></b> method of the <code>direct_memory</code> interface)
+   before the handle can be used again for the particular access. This typically
+   happens if a new breakpoint is inserted or a remap of the memory system is
+   done. In case of a remap it is possible that the same handle will never be
+   returned again which means that any user data associated with the handle
+   should be reclaimed. 
+</p><p>
+   The <i>lost_permission</i> and the <i>lost_inhibit</i> arguments
+   describe which permission rights and inhibit protection that are
+   revoked. However, in contrast to the <i>lost_access</i>, the
+   <i>handle</i> is still valid and can be used to re-request permission
+   rights and inhibit protection.
+</p><p>
+   A call to the <b><i>conflicting_access</i></b> method informs a memory-user
+   object that a conflicting memory operation will be performed. Hence, if the
+   memory-user object have some protected representation of memory (such as
+   decoded instructions in an internal cache), that representation of memory
+   has to be flushed (or written back to memory in case of dirty data). Note
+   however that the memory-user object does not lose any permission rights or
+   any inhibit protection. 
+</p><p>
+   There is no mechanism for locking simulated memory in host memory.
+</p><p>
+   All methods in this interface receive a <code>direct_memory_ack_id_t</code>
+   value as an argument. The <b><i>ack</i></b> method of the
+   <code>direct_memory</code> interface must be called with this
+   <i>id</i> as an argument when the corresponding operation has been
+   carried out. The <b><i>ack</i></b> method may be called after the
+   <code>direct_memory_update</code> interface function has returned, which
+   allows for queueing of update requests. This may be valuable if multiple
+   simulator threads are used.
+</p><p>
+   An exception to the allowed queueing of update requests is for update
+   requests that are received while calling <b><i>request</i></b> in the
+   <code>direct_memory</code> interface. Such requests must be handled
+   immediately with <b><i>ack</i></b> being called before the return of the
+   <code>direct_memory_update</code> interface function. This requirement
+   avoids a dead-lock that would otherwise happen if <b><i>request</i></b> would
+   wait for <b><i>ack</i></b> before returning, but <b><i>ack</i></b> is
+   queued to be handled at some time after <b><i>request</i></b> has returned.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(direct_memory_update) {
+        void (*release)(conf_object_t *NOTNULL obj,
+                        conf_object_t *NOTNULL target,
+                        direct_memory_handle_t handle,
+                        direct_memory_ack_id_t id);
+        void (*update_permission)(conf_object_t *NOTNULL obj,
+                                  conf_object_t *NOTNULL target,
+                                  direct_memory_handle_t handle,
+                                  access_t lost_access,
+                                  access_t lost_permission,
+                                  access_t lost_inhibit,
+                                  direct_memory_ack_id_t id);
+        void (*conflicting_access)(conf_object_t *NOTNULL obj,
+                                   conf_object_t *NOTNULL target,
+                                   direct_memory_handle_t handle,
+                                   access_t conflicting_permission,
+                                   direct_memory_ack_id_t id);
+};
+
+#define DIRECT_MEMORY_UPDATE_INTERFACE "direct_memory_update"
+</pre><p>
+</p><p>
+   
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Controlling-and-Inspecting-Processor-State">5 Controlling and Inspecting Processor State</a></h2>
+<p>
+
+</p><p>
+The processor state can be controlled and inspected using commands or
+GUI controls. This chapter describe the interfaces, haps, and
+breakpoint functionality required for supporting this.
+</p><p>
+</p><h3 class="jdocu"><a name="simics-api-commands">5.1 Commands</a></h3>
+<p>
+
+<a name="command"></a>
+</p><p>
+Several generic Simics commands automatically works by just
+implementing standard interfaces. How the interfaces map onto objects
+depend on how the model is designed, for example the type of models
+described in Chapter <a class="reference" href="#cosimulator-examples">2</a>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Interfaces">5.2 Interfaces</a></h3>
+<p>
+
+</p><p>
+This section lists the interfaces that can be implemented by the
+processor model to enable certain Simics features. They are not required,
+but implementing them will allow user defined processor models to
+support the same generic feature set as Simics standard processor
+models. If you intend to plug your model into an existing
+Simics-provided platform, then many of these interfaces are actually
+required for such a platform to function.
+</p><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="Processor-Info-Interface">Processor Info Interface</a></h4>
+<p>
+
+<a name="processor_info"></a>
+<a name="processor_info_v2"></a>
+
+</p><p>
+   The <code>processor_info_v2</code> interface is implemented by
+   processors models. The interface has processor generic functions
+   that are architecture independent.
+</p><p>
+   The <b><i>disassemble</i></b> function returns the disassemble string for an
+   instruction at <i>address</i> with opcode according to
+   <i>instruction_data</i>. The <i>instruction_data</i> is an
+   <em>attr_value_t</em> value of <em>data</em> type with the bytes of the
+   opcode. The bytes are in the same order as they are stored in memory. For
+   VLIW architectures, <i>sub_operation</i> is used to select which
+   sub-operation to disassemble. The sub-operations start at zero, and a
+   request for the entire unit including all sub-operations is encoded with
+   sub-operation -1. A request for a sub-operation that is not present (for
+   example when <i>sub-operation</i> is neither 0 nor -1 for non-VLIW
+   architectures) results in the integer part of the return tuple being set to
+   zero. If successful, the function should return a tuple with the size of the
+   instruction in bytes and the disassembly string. The disassembly string
+   should be allocated with MM_MALLOC or similar and is to be freed by the
+   caller. If more bytes are needed, then the function should indicate that by
+   returning a negative number in the tuple where the absolute value of the
+   number is the required number of bytes. The string should be NULL if more
+   bytes are needed. The implementor of <code>processor_info_v2</code> is
+   allowed to request one additional byte at a time until enough bytes are
+   passed to determine what the instruction is. Illegal instructions should
+   still result in a valid returned tuple, where the integer part will be used
+   by the disassemble command to skip that many bytes before disassembling the
+   next instruction. The <i>address</i> can be used to display absolute
+   destinations of program counter relative branches.
+</p><p>
+   The <b><i>set_program_counter</i></b> function sets the program
+   counter in the processor. The <b><i>get_program_counter</i></b>
+   function returns the current program counter.
+</p><p>
+   The <b><i>logical_to_physical</i></b> function translates a logical
+   <i>address</i> to a physical address of the type defined by
+   <i>access_type</i>. The function returns a <em>physical_block_t</em>
+   struct with <i>valid</i> bit and the <i>address</i>. The
+   address is valid when the valid bit is not <code>0</code>. The
+   <b><i>logical_to_physical</i></b> function also returns
+   <i>block_start</i> and <i>block_end</i>. The start and end
+   of a block has the same logical to physical transformation as the translated
+   address. The range is inclusive, so block_end should be the
+   address of the last byte of the block.
+   This information can be used to figure out how often the
+   logical_to_physical function needs to be called. An implementation would
+   typically return the page start and end here, but it is free to return any
+   power of 2 sized block as long as it includes the translated address.
+</p><p>
+   The current operating mode of the processor is returned with
+   <b><i>get_processor_mode</i></b>.
+</p><p>
+   The processor can be enabled or disabled with the
+   <b><i>enable_processor</i></b> or <b><i>disable_processor</i></b>
+   functions. The functions should return <code>0</code> if the processor
+   changed from enabled to disabled or from disabled to enabled, and
+   <code>1</code> if the processor did not change state. The current state
+   is returned by the <b><i>get_enabled</i></b> function. Enabled or
+   disabled here refers to the state that the user of the model has
+   put the processor into. In particular, it is independent of the
+   power mode of the processor. A processor that has powered down does
+   not count as disabled in this sense, nor does the
+   <b><i>enable_processor</i></b> wake up a processor that is in
+   a power-saving sleep state.
+</p><p>
+   The endianness of the processor is returned by the
+   <b><i>get_endian</i></b> function.
+</p><p>
+   The physical memory object is returned by the
+   <b><i>get_physical_memory</i></b> function. The object returned by
+   <b><i>get_physical_memory</i></b> is used to set breakpoints by the
+   global <b>break</b> command, and to read and write physical
+   memory through <b>set</b>, <b>get</b>,
+   <b>load-binary</b>, <b>load-file</b>, and the default
+   implementation of <b>disassemble</b>. The object returned
+   implements the <code>memory_space</code> and
+   <code>breakpoint</code> interfaces. The
+   <code>memory_space</code> interface for the returned object is
+   only be used in inquiry mode corresponding to actions by the
+   simulator itself rather than by the simulated software. An
+   implementation may return NULL from this method, which will lead to
+   the command listed above not being supported when such a processor
+   is selected.
+</p><p>
+   The <b><i>get_logical_address_width</i></b> function returns the
+   number of logical/virtual address bits and the
+   <b><i>get_physical_address_width</i></b> function returns the number
+   of physical address bits.
+</p><p>
+   The processor architecture is returned by calling the
+   <b><i>architecture</i></b> function. The architecture should be one of
+   <code>arm</code>, <code>mips32</code>,
+   <code>mips64</code>, <code>ppc32</code>, <code>ppc64</code>, <code>sparc-v8</code>,
+   <code>sparc-v9</code>, <code>x86</code>, <code>x86-64</code>, or something else
+   if none of the listed is a good match.
+</p><p>
+   All functions in the interface are optional. Each function can be
+   set to NULL if it is not supported.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(processor_info_v2) {
+        tuple_int_string_t (*disassemble)(conf_object_t *obj,
+                                          generic_address_t address,
+                                          attr_value_t instruction_data,
+                                          int sub_operation);
+        void (*set_program_counter)(conf_object_t *obj,
+                                    logical_address_t pc);
+        logical_address_t (*get_program_counter)(conf_object_t *obj);
+        physical_block_t (*logical_to_physical)(conf_object_t *obj,
+                                                logical_address_t address,
+                                                access_t access_type);
+        processor_mode_t (*get_processor_mode)(conf_object_t *obj);
+        int (*enable_processor)(conf_object_t *obj);
+        int (*disable_processor)(conf_object_t *obj);
+        int (*get_enabled)(conf_object_t *obj);
+
+        cpu_endian_t (*get_endian)(conf_object_t *obj);
+        conf_object_t *(*get_physical_memory)(conf_object_t *obj);
+
+        int (*get_logical_address_width)(conf_object_t *obj);
+        int (*get_physical_address_width)(conf_object_t *obj);
+
+        const char *(*architecture)(conf_object_t *obj);
+};
+
+#define PROCESSOR_INFO_V2_INTERFACE "processor_info_v2"
+</pre><p>
+</p><p>
+
+   Note that the original version of this interface
+   (<code>processor_info</code>) must also be implemented. The only
+   difference between the two interfaces is that the original version lacks the
+   <b><i>get_processor_mode</i></b> function.
+</p><p>
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Processor-CLI-Interface">Processor CLI Interface</a></h4>
+<p>
+
+<a name="processor_cli"></a>
+
+</p><p>
+   Some commands and features in the CLI use the
+   <code>processor_cli</code> interface. Those commands will have
+   limited functionality if the interface is not fully implemented.
+</p><p>
+   The first argument to each function is the object to act on. This object
+   should implement both the <code>processor_info</code> interface and the
+   <code>processor_cli</code> interface.
+</p><p>
+   The <b><i>get_disassembly</i></b> function is used for the
+   <b>disassemble</b> command as well as to disassemble the next
+   instruction to be executed, when control is returned to the CLI prompt. For
+   most architectures, <b><i>get_disassembly</i></b> can be set to NULL, in which
+   case the command will use other interfaces to provide a generic
+   disassembly. The <b><i>get_disassembly</i></b> function should return a tuple
+   with the length of the instruction in bytes and the disassembly string. The
+   <i>addr_prefix</i> parameter selects the address type of the address
+   parameter, whether it is a physical address ("p"), a linear address ("l") or
+   a virtual address ("v"), just as returned from
+   <b><i>get_address_prefix</i></b>. The <i>address</i> parameter is the
+   program counter for the instruction to disassemble. If
+   <i>print_cpu</i> is non-zero, then the name of the processor should
+   be included first in the disassembly line. If <i>mnemonic</i> is not
+   NULL, then it should be output instead of the instruction disassemble. The
+   mnemonic is used to print exception or interrupt information as returned by
+   the <b><i>get_pending_exception_string</i></b> function.
+</p><p>
+   <b><i>get_pregs</i></b> returns the string to output in the CLI for the
+   <b>print-processor-registers</b> command. The <i>all</i>
+   parameter is a boolean corresponding to the <i>-all</i> switch to the
+   <b>print-processor-registers</b> command.
+</p><p>
+   The <b><i>diff_regs</i></b> function is used by the <b>stepi</b>
+   command when the <i>-r</i> flag is used. The
+   <b><i>diff_regs</i></b> function returns a list of register names,
+   where each register in that list will be read through the
+   <code>int_register</code> interface before and after an
+   instruction.
+</p><p>
+   When returning to the CLI prompt, information about the next
+   instruction or step to execute is printed. Normally, that is the
+   disassemble of the instruction at the current program counter. The
+   <b><i>get_pending_exception_string</i></b> function is called before
+   the disassembly to find out if the next step will not be an
+   instruction, but rather a taken exception or interrupt. The
+   function should inspect the given <i>cpu</i> (an object
+   implementing <code>processor_info</code> and
+   <code>processor_cli</code>) and return NULL if the next step will
+   be the execution of the instruction at the current program
+   counter. If the next step will instead be the handling of an
+   exception or interrupt, then a string saying that should be
+   returned.
+</p><p>
+   The <b><i>get_address_prefix</i></b> function returns a string with
+   the default address prefix for memory related commands. Simics
+   defines the generic prefixes "v" for virtual addresses, "l" for
+   linear addresses, and "p" for physical addresses. The default if
+   <b><i>get_address_prefix</i></b> is NULL is "v" for virtual addresses.
+</p><p>
+   <b><i>translate_to_physical</i></b> translates an address to a
+   physical address. If <b><i>translate_to_physical</i></b> is NULL, then
+   the only allowed address prefixes are "v" (virtual) and "p"
+   (physical), and the <b><i>logical_to_physical</i></b> function in the
+   <code>processor_info</code> interface will be used to translate
+   virtual addresses.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(processor_cli) {
+	tuple_int_string_t (*get_disassembly)(conf_object_t *obj,
+                                              const char *addr_prefix,
+                                              generic_address_t address,
+                                              bool print_cpu,
+                                              const char *mnemonic);
+	char *(*get_pregs)(conf_object_t *cpu,
+                           bool all);
+	attr_value_t (*get_diff_regs)(conf_object_t *obj);
+	char *(*get_pending_exception_string)(conf_object_t *obj);
+	char *(*get_address_prefix)(conf_object_t *obj);
+	physical_block_t (*translate_to_physical)(conf_object_t *obj,
+                                                  const char *prefix,
+                                                  generic_address_t address);
+};
+
+#define PROCESSOR_CLI_INTERFACE "processor_cli"
+</pre><p>
+</p><p>
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Processor-GUI-Interface">Processor GUI Interface</a></h4>
+<p>
+
+<a name="processor_gui"></a>
+
+</p><p>
+   The <code>processor_gui</code> interface is implemented by
+   processors that support displays in the Simics native GUI. It is
+   only registered to indicate support for the displays, and does not
+   contain any actual functionality.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(processor_gui) {
+        void (*dummy)(conf_object_t *obj);
+};
+
+#define PROCESSOR_GUI_INTERFACE "processor_gui"
+</pre><p>
+</p><p>
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Step-Interface">Step Interface</a></h4>
+<p>
+
+<a name="step"></a>
+
+</p><p>
+  The <code>step</code> interface is typically implemented by
+  processors, but can be implemented by other objects as well. Its
+  purpose is to handle step events using a queue.
+</p><p>
+  The current number of steps for the <i>queue</i> is returned
+  when calling <b><i>get_step_count</i></b>.
+</p><p>
+  The <b><i>post_step</i></b> function will schedule an event that will
+  occur after <i>steps</i> (which must be nonnegative)
+  counted from local current step at
+  <i>queue</i>. An event previously posted can be removed by
+  calling <b><i>cancel_step</i></b>. The <b><i>cancel_step</i></b> function takes a
+  function <i>pred</i> as argument which is called when a matching
+  event is found. The event is only removed if <i>pred</i> returns
+  <code>1</code>. The <b><i>find_next_step</i></b> takes the same arguments
+  as <b><i>cancel_step</i></b> but only returns the number of cycles before
+  the event will occur. The <i>evclass</i> is the event class,
+  <i>obj</i> is the object posting the event, and
+  <i>user_data</i> is pointer to data used as a parameter when
+  calling the callback function defined in the <i>evclass</i>.
+  If no matching event was found, <b><i>find_next_step</i></b> returns
+  −1.
+</p><p>
+  The <b><i>events</i></b> method returns a list of all pending events in
+  expiration order. Each element is a four-element list containing the event
+  object, the event class name, the expiration time counted in steps as an
+  integer and the event description as given by the event class
+  <b><i>describe</i></b> method, or <em>nil</em> for events whose event class do
+  not define that method.
+</p><p>
+  The <b><i>advance</i></b> function will increment the number of steps
+  for the queue, decrementing the number of steps to the first event
+  to the value defined by <i>steps</i>. The number of steps remaining
+  to the next event is returned. It is an error to advance beyond the
+  next pending event, so the return value is never negative.
+</p><p>
+  The implementor of the <code>step</code> interface can use any
+  checkpoint representation. The <i>name</i> field in the
+  event class data structure is unique, and the attribute setter
+  function for checkpoint restore can use
+  <b><i>VT_get_event_class</i></b> to get the event class structure
+  corresponding to an event class name.
+</p><p>
+  </p><pre class="jdocu_small">
+SIM_INTERFACE(step) {
+        pc_step_t (*get_step_count)(conf_object_t *NOTNULL queue);
+        void (*post_step)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                pc_step_t steps,
+                lang_void *user_data);
+        void (*cancel_step)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+        pc_step_t (*find_next_step)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+
+        attr_value_t (*events)(conf_object_t *NOTNULL obj);
+
+        pc_step_t (*advance)(conf_object_t *queue, pc_step_t steps);
+};
+
+#define STEP_INTERFACE "step"
+</pre><p>
+</p><p>
+  
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Step-Cycle-Ratio-Interface">Step-Cycle-Ratio Interface</a></h4>
+<p>
+
+<a name="step_cycle_ratio"></a>
+
+</p><p>
+  The <code>step_cycle_ratio</code> interface is implemented by
+  processors that support a changeable ratio between steps and
+  cycles. The <b>set-step-rate</b> command uses this interface to
+  set the ratio between steps and cycles.
+</p><p>
+  The <b><i>set_ratio</i></b> sets the ratio between <i>steps</i> and
+  <i>cycles</i>. Note that the introduction of stall cycles can
+  skew the ratio. The <b><i>get_ratio</i></b> simply returns the current
+  ratio.
+</p><p>
+  The <i>cycles</i> and <i>step</i> arguments must be in the range
+  [1..128] and <i>cycles</i> must be a power of two. Implementers of this
+  interface may choose to ignore other values of <i>cycles</i> and
+  <i>step</i> and may log an error.
+</p><p>
+  </p><pre class="jdocu_small">
+typedef struct {
+        uint32 steps;
+        uint32 cycles;
+} step_cycle_ratio_t;
+
+SIM_INTERFACE(step_cycle_ratio) {
+        step_cycle_ratio_t (*get_ratio)(conf_object_t *obj);
+        void (*set_ratio)(conf_object_t *obj, uint32 steps, uint32 cycles);
+};
+
+#define STEP_CYCLE_RATIO_INTERFACE "step_cycle_ratio"
+</pre><p>
+</p><p>
+  
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Stall-Interface">Stall Interface</a></h4>
+<p>
+
+<a name="stall"></a>
+
+</p><p>
+  The <code>stall</code> interface can be implemented by objects that also
+  implement the <code>cycle</code> and <code>step</code> interfaces. The
+  <code>stall</code> interface controls the addition of extra cycles between
+  steps.
+</p><p>
+  The <b><i>get_stall_cycles</i></b> function returns the remaining number of
+  stall cycles. The object will advance that number of cycles before starting
+  with the next step.
+</p><p>
+  The <b><i>set_stall_cycles</i></b> function is used to change the number of
+  stall cycles before the next step. It is legal to first call this function
+  with a large value for <i>cycles</i> and then at a later point reduce the
+  cycle count is resume execution earlier than indicated by the first call.
+</p><p>
+  The <b><i>get_total_stall_cycles</i></b> returns the total accumulated number of
+  stall cycles.
+</p><p>
+  </p><pre class="jdocu_small">SIM_INTERFACE(stall) {
+        cycles_t (*get_stall_cycles)(conf_object_t *obj);
+        void (*set_stall_cycles)(conf_object_t *obj, cycles_t cycles);
+        cycles_t (*get_total_stall_cycles)(conf_object_t *obj);
+};
+#define STALL_INTERFACE "stall"
+</pre><p>
+</p><p>
+  
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Register-Interface">Register Interface</a></h4>
+<p>
+
+<a name="int_register"></a>
+<a name="Sim_RegInfo_Catchable"></a>
+ The <code>int_register</code>
+   interface is used for access to registers in a processor.  It
+   can be used to access any kind of integer register, not only the
+   "normal" registers.  This includes all kinds of control registers,
+   hidden registers and anything else that might be useful to access as
+   a register.  The only limitation is that the register value should
+   be representable as a 64-bit unsigned integer.
+</p><p>
+   This interface can be implemented by other classes than processors,
+   but it is likely to be found mostly in processors.
+ </p><p>
+   Registers are identified by a number, and there are two functions
+   to translate from register names to register numbers and back.  The
+   translation need not be one-to-one, which means that one register
+   can have several names.  A register name can, however, only
+   translate to a single register number.
+</p><p>
+   Often, registers are grouped in <i>register banks</i>, where
+   registers in the bank are numbered from 0 up. Registers in a bank
+   should have consecutive numbers (unless their numbering is very sparse).
+   This allows a user to deduce register numbers by calling
+   <b><i>get_number</i></b> for the first register only.
+   The first register numbers should be used for the general-purpose integer 
+   registers, if possible (so that integer register <b>r</b>N has number N).
+</p><p>
+   Using this interface to read or write registers does not cause any
+   side effects, such as triggering interrupts or signalling haps.
+</p><p>
+   <b>get_number</b> translates a register name to its number. Returns -1 if
+   the register does not exist.
+</p><p>
+   <b>get_name</b> translates a register number to its canonical name.
+</p><p>
+   <b>read</b> reads a register value.
+</p><p>
+   <b>write</b> writes a new register value.
+</p><p>
+   <b>all_registers</b> returns a list of all register numbers that can
+   be used for this object.
+</p><p>
+   <b>register_info</b> returns information about a single register.
+   The information return depends on the <i>info</i> parameter.
+</p><p>
+   </p><dl><dt id="dt:sim_reginfo_catchable"><b>Sim_RegInfo_Catchable</b></dt><dd>Return 1 if
+   <code>Core_Control_Register_Write</code> and
+   <code>Core_Control_Register_Read</code> are triggered when this
+   register is written or read.</dd>Return 0 otherwise.
+
+   </dl><p><span class="jdocu_small">
+   <a name="ireg_info_t"></a></span></p><pre class="jdocu_small">typedef enum {
+        Sim_RegInfo_Catchable
+} ireg_info_t;</pre><p>
+
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(int_register) {
+        int (*get_number)(conf_object_t *NOTNULL obj,
+                          const char *NOTNULL name);
+        const char *(*get_name)(conf_object_t *NOTNULL obj, int reg);
+        uint64 (*read)(conf_object_t *NOTNULL obj, int reg);
+        void (*write)(conf_object_t *NOTNULL obj, int reg, uint64 val);
+        attr_value_t (*all_registers)(conf_object_t *NOTNULL obj);
+        int (*register_info)(conf_object_t *NOTNULL obj, int reg,
+                             ireg_info_t info);
+};
+
+#define INT_REGISTER_INTERFACE "int_register"
+</pre><p>
+</p><p>
+   
+</p><p>
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Decoder-Interface">Decoder Interface</a></h4>
+<p>
+
+
+   <a name="decoder_interface_t"></a>
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(decoder) {
+        void (*register_decoder)(conf_object_t *obj, 
+                                 decoder_t *NOTNULL decoder);
+        void (*unregister_decoder)(conf_object_t *obj, 
+                                   decoder_t *NOTNULL decoder);
+};</pre><p>
+</p><p>
+
+   The <code>decoder</code> interface is implemented by processors
+   that allows connecting user decoders. This allows a user to
+   implement the semantics of instructions that are not available in
+   the standard Simics model or change the semantics of instructions
+   implemented by Simics. This interface replaces
+   <b><i>SIM_register_arch_decoder</i></b> and
+   <b><i>SIM_unregister_arch_decoder</i></b> functions.
+</p><p>
+   The <b><i>register_decoder</i></b> function adds a decoder and
+   <b><i>unregister_decoder</i></b> removes a decoder.
+</p><p>
+   The decoder is installed/removed for every object of the same class as the
+   <i>obj</i> argument which must be the same object from
+   which the interface was fetched.
+</p><p>
+   When Simics decodes an instruction, it will first see if any
+   instruction decoders are registered for the current CPU class.
+   For any decoders it finds, Simics will let it try to decode the
+   instruction.  The decoders are called in order, starting with the
+   last registered decoder, and if one decoder accepts the instruction,
+   the rest of the decoders will not be called.
+</p><p>
+   The decoder is specified by the <code>decoder_t</code> data structure that the 
+   user supplies:
+</p><p>
+   
+   </p><pre class="jdocu_small">typedef struct {
+        void *user_data;
+        int (*NOTNULL decode)(uint8 *code,
+                              int valid_bytes,
+                              conf_object_t *cpu,
+                              instruction_info_t *ii,
+                              void *user_data);
+        tuple_int_string_t (*NOTNULL disassemble)(uint8 *code,
+                                                  int valid_bytes,
+                                                  conf_object_t *cpu,
+                                                  void *user_data);
+        int (*NOTNULL flush)(instruction_info_t *ii,
+                             void *user_data);
+} decoder_t;</pre><p>
+</p><p>
+   <a name="decoder_t"></a>
+</p><p>
+   The <b><i>decode</i></b> function is called to decode an instruction
+   pointed to by <i>code</i>.  The first byte corresponds to
+   the lowest address of the instruction in the simulated
+   memory. <i>valid_bytes</i> tells how many bytes can be
+   read. The CPU is given in the <i>cpu</i> parameter.  When
+   the decoder has successfully decoded an instruction, it should set
+   the <i>ii_ServiceRoutine</i>, the <i>ii_Arg</i>, and the
+   <i>ii_Type</i> members of the <i>ii</i> structure (see
+   below), and returns the number of bytes used in the decoding.  If
+   it does not apply to the given instruction, it should return zero.
+   If the decoder needs more data than <i>valid_bytes</i> it
+   should return a negative number corresponding to the total number
+   of bytes it will need to continue the decoding. The underlying
+   architecture limits the number of bytes that can be requested,
+   e.g. no more than 4 bytes can be requested on most RISC
+   architectures. Simics will call the decoder again when more bytes
+   are available. This process is repeated until the decoder accepts
+   or rejects the instruction.  A decoder should never request more
+   data than it needs. For example, if an instructions can be rejected
+   by looking at the first byte, the decoder should never ask for more
+   bytes.
+</p><p>
+   The <code>instruction_info_t</code> is defined as follows:
+</p><p>
+   
+   </p><pre class="jdocu_small">typedef struct instruction_info {
+        service_routine_t  ii_ServiceRoutine;
+        uint64             ii_Arg;
+        unsigned int       ii_Type;
+        lang_void         *ii_UserData;
+        logical_address_t  ii_LogicalAddress;
+        physical_address_t ii_PhysicalAddress;
+} instruction_info_t;</pre><p>
+</p><p>
+   <a name="instruction_info_t"></a>
+</p><p>
+   <i>ii_ServiceRoutine</i> is a pointer to a function that will
+   be called by Simics every time the instruction is executed. It has
+   the following prototype:
+   </p><p>
+   
+   </p><pre class="jdocu_small">typedef exception_type_t (*service_routine_t)(conf_object_t *cpu, 
+                                              uint64 arg,
+                                              lang_void *user_data);</pre><p>
+<a name="service_routine_t"></a>
+    
+</p><p>
+   The service routine function should return an exception when it is
+   finished to signal its status. If no exception occurs
+   <code>Sim_PE_No_Exception</code> should be returned.
+</p><p>
+   See <code>exception_type_t</code> in
+   <code>src/include/simics/base/memory.h</code> for the different
+   exceptions available.
+</p><p>
+   A special return value, <code>Sim_PE_Default_Semantics</code>, can be
+   returned; this signals Simics to run the default semantics for the
+   instruction. This is useful if the semantics of an instruction
+   should be changed but the user routine does not want to handle it all
+   the time.
+</p><p>
+   Note that in a shared memory multiprocessor, the CPU
+   used in decoding may differ from the CPU that executes the
+   instruction, since the decoded instructions may be cached.
+</p><p>
+   <i>ii_Arg</i> is the argument <i>arg</i> that will be
+   passed on to the service routine function. Op code bit-fields for
+   the instruction such as register numbers or intermediate values can
+   be stored here. The <i>ii_UserData</i> field can also be used
+   to pass information to the service routine if more data is needed.
+</p><p>
+   <i>ii_Type</i> is either <code>UD_IT_SEQUENTIAL</code> or
+   <code>UD_IT_CONTROL_FLOW</code>.  A sequential type means that the
+   instruction does not perform any branches and the update of the
+   program counter(s) is handled by Simics. In a control flow
+   instruction on the other hand it is up to the user to set the
+   program counter(s).
+</p><p>
+   <i>ii_LogicalAddress</i> and <i>ii_PhysicalAddress</i>
+   holds the logical and physical addresses of the instruction to be
+   decoded.
+</p><p>
+   
+</p><p>
+   The <b><i>disassemble</i></b> function is called to disassemble an
+   instruction.  It uses the same <i>code</i>,
+   <i>valid_bytes</i>, and <i>cpu</i> parameters as
+   the <b><i>decode</i></b> function. If the disassembly is valid, then
+   the string part of the returned <code>tuple_int_string_t</code> struct
+   should be a MALLOCed string with the disassembly and the integer
+   part should be its length in bytes.  The caller is responsible for
+   freeing the disassembly string. The string member should be NULL
+   and the integer part should be zero if the disassembly is not
+   valid.  If the disassemble function needs more data than
+   <i>valid_bytes</i> it should return a negative number in
+   the integer part in the same way as the <b><i>decode</i></b> function,
+   and set the string part to NULL.
+</p><p>
+   The <b><i>flush</i></b> function is called to free any memory
+   allocated when decoding an instruction and any user data associated
+   with the instruction.  It should return zero if it does not
+   recognize the instruction, and non-zero if it has accepted it.
+   Usually, the way to recognize if a decoded instruction is the right
+   one to flush is to compare <code>ii-&gt;ii_ServiceRoutine</code> with the
+   function that was set in the <i>decode</i> function. Note
+   that the <i>cpu</i> parameter is the processor that caused
+   the flush. It is more or less an arbitrary processor and should be
+   ignored.
+</p><p>
+   In addition to the function pointers, the
+   <code>decoder_t</code> structure contains a
+   <i>user_data</i> pointer that is passed to all the
+   functions.  This can be used for passing any data to the decoder
+   functions.
+</p><p>
+   
+</p><p>
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Exception-Interface">Exception Interface</a></h4>
+<p>
+
+<a name="exception"></a>
+<a name="hapCore_Exception"></a>
+</p><p>
+The <code>exception</code> interface is used together with the
+Core_Exception hap to enable inspection abilities for triggered
+exceptions.
+</p><p>
+
+</p><p>
+   The <code>exception</code> interface is used to translate
+   exception numbers, as received by the Core_Exception hap, to names,
+   and vice versa.
+</p><p>
+   The <b><i>get_number</i></b> function returns the number associated
+   with an exception name, or -1 if the no exception with the given
+   name exist. The <b><i>get_name</i></b> returns the name
+   associated with an exception number. The <b><i>get_source</i></b>
+   function is only used on X86 targets and returns the source for an
+   exception, as an exception number can be raised from different
+   sources. The <b><i>all_exceptions</i></b> function returns a list of
+   all exceptions numbers.
+</p><p>
+   The exception numbers are architecturally defined, while their
+   names are defined by the model.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(exception) {
+        int (*get_number)(conf_object_t *NOTNULL obj,
+                          const char *NOTNULL name);
+        const char *(*get_name)(conf_object_t *NOTNULL obj, int exc);
+        int (*get_source)(conf_object_t *NOTNULL obj, int exc);
+        attr_value_t (*all_exceptions)(conf_object_t *NOTNULL obj);
+};
+
+#define EXCEPTION_INTERFACE "exception"
+</pre><p>
+</p><p>
+   
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Context-Handler-Interface">Context Handler Interface</a></h4>
+<p>
+
+<a name="context_handler"></a>
+
+   </p><div class="note">
+<b>Note:</b>
+This interface is not supported, and may change in the future.</div>Get and set current context. The <b><i>set_current_context</i></b> function
+   returns zero if the passed object is not of the context class, otherwise
+   one is returned.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(context_handler) {
+        conf_object_t *(*get_current_context)(conf_object_t *obj);
+        int (*set_current_context)(conf_object_t *obj, conf_object_t *ctx);
+};
+
+#define CONTEXT_HANDLER_INTERFACE "context_handler"
+</pre><p>
+</p><p>
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Exec-Trace-Interface">Exec Trace Interface</a></h4>
+<p>
+
+<a name="exec_trace"></a>
+
+</p><p>
+  The <code>exec_trace</code> interface is implemented by processor models
+  that support tracing. A trace listener registers itself with the
+  <b><i>register_tracer</i></b> call. The <i>tracer</i> callback will be
+  called by the processor model
+  when each instruction is just about to be executed, passing the
+  <i>tracer_data</i> as passed to the <b><i>register_tracer</i></b> function
+  in addition to information about the instruction that is executed.
+  Invoke <b><i>unregister_tracer</i></b> with the same two pointers to deregister
+  the listener.
+</p><p>
+  
+</p><pre class="jdocu_small">typedef void (*instruction_trace_callback_t)(lang_void *tracer_data,
+                                             conf_object_t *cpu,
+                                             linear_address_t la,
+                                             logical_address_t va,
+                                             physical_address_t pa,
+                                             byte_string_t opcode);</pre><p>
+
+</p><p>
+  The <i>pa</i> parameter to the callback will always be valid, but some
+  CPU architectures may not support <i>la</i> or <i>va</i>. The
+  <i>la</i> argument is typically only valid for x86 CPUs. Lastly, the
+  opcode of the instruction is passed in <i>opcode</i>. The
+  <i>opcode</i> is passed without endian conversion, meaning that byte X in
+  <i>opcode</i> corresponds to the byte at <i>pa</i> + X.
+</p><p>
+  </p><pre class="jdocu_small">SIM_INTERFACE(exec_trace) {
+        void (*register_tracer)(conf_object_t *NOTNULL cpu_obj,
+                                instruction_trace_callback_t tracer,
+                                lang_void *tracer_data);
+        void (*unregister_tracer)(conf_object_t *NOTNULL cpu_obj,
+                                  instruction_trace_callback_t tracer,
+                                  lang_void *tracer_data);
+};
+
+#define EXEC_TRACE_INTERFACE "exec_trace"
+</pre><p>
+</p><p>
+  
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Opcode-Info-Interface">Opcode Info Interface</a></h4>
+<p>
+
+<a name="opcode_info"></a>
+
+</p><p>
+   The <code>opcode_info</code> interface is implemented by
+   processors that need to communicate information about the encoding
+   of instructions to the GUI.
+</p><p>
+   The <b><i>get_opcode_length</i></b> function returns information about
+   instruction encoding in the current operating mode of the
+   processor. The <b><i>min_alignment</i></b> field indicates the
+   smallest allowed alignment of instructions, typically 4 for regular
+   RISC architectures. The <b><i>max_length</i></b> field specifies the
+   maximum instruction length in bytes. The <b><i>avg_length</i></b> is
+   an approximation of the average instruction size.
+</p><p>
+   </p><pre class="jdocu_small">
+typedef struct {
+        int min_alignment;
+        int max_length;
+        int avg_length;
+} opcode_length_info_t;
+
+SIM_INTERFACE(opcode_info) {
+        opcode_length_info_t (*get_opcode_length_info)(conf_object_t *obj);
+};
+
+#define OPCODE_INFO_INTERFACE "opcode_info"
+</pre><p>
+</p><p>
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Virtual-Data-Breakpoint-Interface">Virtual Data Breakpoint Interface</a></h4>
+<p>
+
+<a name="virtual_data_breakpoint"></a>
+
+</p><p>
+     Add and remove virtual-address (and, on x86, linear-address) read and
+     write breakpoints. On every read access that intersects a read
+     breakpoint's interval, the registered callback function is called with the
+     object that initiated the read, and the address and size of the read. (The
+     interval includes both endpoints; <i>first</i> must be less than
+     or equal to <i>last</i>.) Write breakpoints work exactly the same,
+     except that the callback is given the actual value being written, not just
+     its size.
+</p><p>
+     The callback is called before the read or write has taken place, but may
+     not intervene. If one or more breakpoint callbacks stop the simulation,
+     the current instruction is completed before the stop takes effect. If more
+     than one breakpoint is triggered by the same read or write, the
+     implementation may call their callbacks in any order.
+</p><p>
+     On x86, the <code>Virtual_Breakpoint_Flag_Linear</code> flag causes the
+     breakpoint to use linear rather than virtual addresses. (Adding a
+     breakpoint with unsupported flags is illegal.)
+</p><p>
+     </p><div class="note">
+<b>Note:</b>
+This interface is preliminary and may change without prior notice.
+     </div><a name="virtual_breakpoint_flags_t"></a>
+<pre class="jdocu_small">typedef enum {
+        Virtual_Breakpoint_Flag_Linear = 1
+} virtual_breakpoint_flags_t;</pre><p>
+
+</p><p>
+     </p><pre class="jdocu_small">SIM_INTERFACE(virtual_data_breakpoint) {
+        virtual_data_bp_handle_t *NOTNULL (*add_read)(
+                conf_object_t *NOTNULL obj,
+                generic_address_t first, generic_address_t last,
+                void (*NOTNULL callback)(
+                        cbdata_call_t data, conf_object_t *NOTNULL initiator,
+                        generic_address_t address, unsigned size),
+                cbdata_register_t data, uint32 flags);
+        virtual_data_bp_handle_t *NOTNULL (*add_write)(
+                conf_object_t *NOTNULL obj,
+                generic_address_t first, generic_address_t last,
+                void (*NOTNULL callback)(
+                        cbdata_call_t data, conf_object_t *NOTNULL initiator,
+                        generic_address_t address, bytes_t value),
+                cbdata_register_t data, uint32 flags);
+        void (*remove)(conf_object_t *NOTNULL obj,
+                       virtual_data_bp_handle_t *NOTNULL bp_handle);
+};
+#define VIRTUAL_DATA_BREAKPOINT_INTERFACE "virtual_data_breakpoint"
+</pre><p>
+</p><p>
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Virtual-Instruction-Breakpoint-Interface">Virtual Instruction Breakpoint Interface</a></h4>
+<p>
+
+<a name="virtual_instruction_breakpoint"></a>
+
+</p><p>
+     Add and remove virtual-address (and, on x86, linear-address) instruction
+     breakpoints. Every time the processor executes an instruction that
+     intersects the breakpoint's interval, the callback function is called with
+     the processor, and the address and size of the instruction. (The interval
+     includes both endpoints; <i>first</i> must be less than or equal
+     to <i>last</i>.)
+</p><p>
+     The callback is called before the instruction is executed. If one or more
+     breakpoint callbacks stop the simulation, the stop takes effect before
+     the instruction is run. (This means that once the simulation starts
+     again, the same breakpoints will trigger immediately again. The callback
+     can use <b><i>VT_step_stamp</i></b> to detect re-triggering.) If more than
+     one breakpoint is triggered by the same instruction, the implementation
+     may call their callbacks in any order.
+</p><p>
+     If the filter function is non-null and returns false, the callback is not
+     called. The filter function is supplied with the instruction opcode (the
+     raw bytes of the instruction) and a processor (which may not be the same
+     processor that the breakpoint is set on, but is guaranteed to be of the
+     same class). The filter may base its decision only on the opcode bytes and
+     the string obtained by asking the processor to disassemble the
+     instruction; this allows the implementation to cache the result and omit
+     future calls to the filter function where the opcode and disassembly
+     string would be the same.
+</p><p>
+     On x86, the <code>Virtual_Breakpoint_Flag_Linear</code> flag causes the
+     breakpoint to use linear rather than virtual addresses. Calling with
+     unsupported flags is illegal.
+</p><p>
+     </p><div class="note">
+<b>Note:</b>
+This interface is preliminary and may change without prior notice.
+     </div><a name="virtual_breakpoint_flags_t2"></a>
+<pre class="jdocu_small">typedef enum {
+        Virtual_Breakpoint_Flag_Linear = 1
+} virtual_breakpoint_flags_t;</pre><p>
+
+</p><p>
+     </p><pre class="jdocu_small">SIM_INTERFACE(virtual_instruction_breakpoint) {
+        virtual_instr_bp_handle_t *NOTNULL (*add)(
+                conf_object_t *NOTNULL obj,
+                generic_address_t first, generic_address_t last,
+                bool (*filter)(cbdata_call_t filter_data,
+                               conf_object_t *NOTNULL cpu, bytes_t opcode),
+                cbdata_register_t filter_data,
+                void (*NOTNULL callback)(
+                        cbdata_call_t callback_data, conf_object_t *NOTNULL cpu,
+                        generic_address_t address, unsigned size),
+                cbdata_register_t callback_data, uint32 flags);
+        void (*remove)(conf_object_t *NOTNULL obj,
+                       virtual_instr_bp_handle_t *NOTNULL bp_handle);
+};
+#define VIRTUAL_INSTRUCTION_BREAKPOINT_INTERFACE \
+        "virtual_instruction_breakpoint"
+</pre><p>
+</p><p>
+   
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Describe-Registers-Interface">Describe Registers Interface</a></h4>
+<p>
+
+<a name="describe_registers"></a>
+
+</p><p>
+  This interface is used by the Simics debugger to get certain information from
+  a processor.
+</p><p>
+  The <b><i>first_child</i></b> function returns the first description in the
+  sequence of child descriptions of parent or NULL if parent has no
+  children. Groups can have both registers and groups as children, registers
+  can only have fields as children and fields cannot have any children. If
+  parent is NULL, return the first description in the sequence of top-level
+  descriptions.
+</p><p>
+  Use <b><i>next_description</i></b> to deallocate the previous description and
+  return the next description in the sequence or NULL if there are no more
+  descriptions in the current sequence.
+</p><p>
+  The <b><i>free_description</i></b> function is used to free the description
+  without returning the next one in the sequence.
+</p><p>
+  The <b><i>first_named_value</i></b> function returns the first named value in
+  the sequence of named values for parent or NULL if there are no named values
+  for parent. Only fields and registers can have named values.
+</p><p>
+  Use <b><i>next_named_value</i></b> to deallocate the previous named value and
+  return the next named value or NULL if there are no more named values in this
+  sequence.
+</p><p>
+  Use <b><i>free_named_value</i></b> to free the named value without returning the
+  next one in the sequence.
+</p><p>
+  The <b><i>get</i></b> and <b><i>set</i></b> functions are used to get and set the
+  value of the register. To set the value pass in a bytes_t for the value. The
+  value passed in must be long enough to contain the full value of the
+  register. If the bytes_t is too long it will be truncated. To get the value
+  pass in a buffer_t which is long enough to contain the register's value. The
+  value is encoded in little endian byte order.
+</p><p>
+  <a name="description_type_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Description_Type_Group,
+
+        Description_Type_Int_Reg,
+        Description_Type_Float_Reg,
+        Description_Type_Fields_Reg,
+
+        Description_Type_Int_Field,
+        Description_Type_Float_Field,
+} description_type_t;</pre><p>
+
+  <a name="reg_role_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Reg_Role_None, /* No special role for the register. */
+        Reg_Role_Program_Counter /* The register is the program counter. */
+} reg_role_t;</pre><p>
+
+  <a name="reg_bitorder_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Reg_Bitorder_Little_Endian,
+        Reg_Bitorder_Big_Endian
+} reg_bitorder_t;</pre><p>
+
+  <a name="named_value_t"></a>
+</p><pre class="jdocu_small">typedef struct {
+        const char *name;
+        const char *description;
+        const bytes_t value; /* Little endian byte order */
+} named_value_t;</pre><p>
+
+  <a name="description_t"></a>
+</p><pre class="jdocu_small">typedef struct {
+        /* Common fields */
+        description_type_t type;
+        const char *name;
+        const char *description;
+
+        /* Register and field fields */
+        int16 dwarf_id;            /* id used by dwarf for this register
+                                      or -1 if no such id is defined. This
+                                      is ABI specific, but the CPU will
+                                      give the ids for the most common ABI
+                                      for that architecture. */
+        reg_bitorder_t bitorder;   /* Bitorder convention used in the
+                                      documentation for this register or
+                                      field. */
+        reg_role_t role;           /* Role of this register in the ABI/HW. */
+        bool memory_mapped;        /* True if the register is memory mapped. */
+        uint64 offset;             /* Offset into the bank for memory mapped
+                                      registers. */
+        bool catchable;            /* True if Core_Control_Register_Write and
+                                      Core_Control_Register_Read are triggered
+                                      when this register is written or read. */
+        int msb, lsb;              /* Most and least significant bit of the
+                                      register or field. Always given in le
+                                      bitorder. For groups msb == -1 and
+                                      lsb == 0. */
+        int regsize;               /* Number of bits in the register, or the
+                                      register this field is a part of. */
+        int reg_id;                /* For registers and fields the id to pass
+                                      to the get and set methods to access the
+                                      register's value. Fields have the same
+                                      reg_id as the register they are a part
+                                      of. Not valid for groups.*/
+} description_t;</pre><p>
+
+  </p><pre class="jdocu_small">
+SIM_INTERFACE(describe_registers) {
+        const description_t *(*first_child)(
+                conf_object_t *NOTNULL obj, const description_t *parent);
+        const description_t *(*next_description)(
+                conf_object_t *NOTNULL obj, const description_t *prev);
+        void (*free_description)(conf_object_t *NOTNULL obj,
+                                 const description_t *desc);
+        const named_value_t *(*first_named_value)(
+                conf_object_t *NOTNULL obj, const description_t *parent);
+        const named_value_t *(*next_named_value)(
+                conf_object_t *NOTNULL obj, const named_value_t *prev);
+        void (*free_named_value)(conf_object_t *NOTNULL obj,
+                                 const named_value_t *nv);
+        void (*get)(conf_object_t *NOTNULL obj, int reg_id, buffer_t dest);
+        void (*set)(conf_object_t *NOTNULL obj, int reg_id, bytes_t value);
+};
+
+#define DESCRIBE_REGISTERS_INTERFACE "describe_registers"
+</pre><p>
+</p><p>
+  
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="Using-Haps">5.3 Using Haps</a></h3>
+<p>
+
+</p><p>
+A <a name="hap">hap</a> is an event or occurrence in Simics with some specific semantic
+meaning, either related to the target or to the internals of the
+simulator. Haps can for instance be used by the cosimulator to trigger
+events on control register reads or writes.
+</p><p>
+The cosimulator calls one of the <b><i>SIM_c_hap_occurred...</i></b> functions to
+trigger a hap. The <em>Simics Reference Manual</em> lists standard haps to
+trigger. The <em>Simics User's Guide</em> document describes how to get
+a callback when a hap is triggered.
+</p><p>
+To be fully compatible with regular Simics CPU models, a cosimulator
+should trigger the following haps:
+<a name="hapCore_Exception2"></a>
+<a name="hapCore_Exception_Return"></a>
+<a name="hapCore_Asynchronous_Trap"></a>
+<a name="hapCore_Control_Register_Read"></a>
+<a name="hapCore_Control_Register_Write"></a>
+<a name="hapCore_External_Interrupt"></a>
+<a name="hapCore_Sync_Instruction"></a>
+<a name="hapCore_Mode_Switch"></a>
+<a name="hapCore_Interrupt_Status"></a>
+<a name="hapCore_Magic_Instruction"></a>
+<a name="hapCore_Mode_Change"></a>
+</p><ul>
+<li>Core_Exception</li>
+<li>Core_Exception_Return</li>
+<li>Core_Asynchronous_Trap</li>
+<li>Core_Control_Register_Read</li>
+<li>Core_Control_Register_Write</li>
+<li>Core_External_Interrupt</li>
+<li>Core_Sync_Instruction</li>
+<li>Core_Mode_Switch (x86 processors only)</li>
+<li>Core_Interrupt_Status (x86 processors only)</li>
+<li>Core_Magic_Instruction</li>
+<li>Core_Mode_Change</li>
+</ul>
+<p>
+Details about the haps can be found in the <em>Simics Reference
+Manual</em>, or online with the <b>list-haps</b> command. The
+<b>sample-risc</b> module in
+<code>[simics]/src/extensions/sample-risc/</code> contains example
+code how to raise <em>Core_Control_Register_Read</em> and
+<em>Core_Control_Register_Write</em> haps.
+</p><p>
+The cosimulator should not trigger the following haps as they are
+triggered by the Simics core:
+<a name="hapCore_Breakpoint"></a>
+<a name="hapCore_Breakpoint_Memop"></a>
+</p><ul>
+<li>Core_Breakpoint</li>
+<li>Core_Breakpoint_Memop</li>
+</ul>
+<p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="processor-api-breakpoints">6 Breakpoints</a></h2>
+<p>
+
+<a name="breakpoint"></a>
+</p><p>
+Breakpoints in Simics are set on physical, linear, or virtual address
+for read, write, or execute accesses. Linear address breakpoints are
+usually only supported by x86 processors. Figure <a class="reference" href="#processor_api_breakpoints">5</a> shows how to carry out a memory
+access to support breakpoints.
+</p><p>
+</p><div class="figure" id="processor_api_breakpoints">
+
+<div style="text-align: center">
+<img alt="" src="processor_api_breakpoints.png">
+<div class="caption">Figure 5. Memory access path with breakpoint support and direct access to memory.</div>
+</div>
+</div>
+
+<p>
+Simics keeps an updated list of virtual breakpoints for a given
+virtual context in a context object. A processor object must make sure
+that all accesses are checked against the list and trigger a
+breakpoint when there is a hit.
+</p><p>
+<a name="context"></a>
+<a name="breakpoint_trigger"></a>
+The processor object may cache the list internally for efficiency. A
+processor that does not optimize the breakpoint checking internally
+can request that the context checks and triggers breakpoints. It does
+that by calling the <b><i>trigger_breakpoint</i></b> function in the
+<code>breakpoint_trigger</code> interface with the <i>handle</i>
+set to <i>BREAKPOINT_HANDLE_ANY</i>.
+</p><p>
+There are two ways that the list of virtual address breakpoints can
+change and the processor must then refresh or invalidate its
+breakpoint information cache:
+</p><p>
+</p><ul>
+<li>Breakpoints may be added to or removed from a context.</li>
+<li>The current active context may change to another context.</li>
+</ul>
+<p>
+<a name="hapCore_Breakpoint_Change"></a>
+<a name="breakpoint_change"></a>
+Breakpoint changes can be listened for either using the
+<em>Core_Breakpoint_Change</em> hap, or by registering callbacks
+through the <code>breakpoint_change</code> interface.
+</p><p>
+<a name="context_handler2"></a>
+The active context is changed through the <b><i>set_context</i></b>
+function in the <code>context_handler</code> interface.
+</p><p>
+<a name="direct_memory_lookup"></a>
+<a name="memory_space"></a>
+The <code>direct_memory_lookup</code> interface will return
+information flagging if breakpoints or tracers are present on a
+returned lookup. If breakpoints or tracers are flagged and overlap
+with the access type the direct memory user wants to perform, then the
+access should be performed using the <code>memory_space</code>
+interface. When accessing memory through
+the <code>memory_space</code> interface, physical address
+breakpoints will be handled by the memory-space and do not need to be
+handled in the cosimulator. Unlike for virtual breakpoints, the
+cosimulator does not need to listen for new or changed physical
+breakpoints. Any change to a physical breakpoint on a requested page
+will result in the page being invalidated through
+the <code>direct_memory_update</code> interface.
+</p><p>
+</p><h3 class="jdocu"><a name="Breakpoint-Query-Interface">6.1 Breakpoint Query Interface</a></h3>
+<p>
+
+<a name="breakpoint_query_v2"></a>
+
+</p><p>
+   Objects of the <b>context</b> and <b>memory-space</b>
+   classes implement the <code>breakpoint_query_v2</code> interface. It is
+   used by processors to check for breakpoints.
+</p><p>
+   Implementors of this interface should use
+   <b><i>SIM_register_compatible_interfaces</i></b> after
+   <b><i>SIM_register_interface</i></b> to also register earlier versions of the
+   interface.
+</p><p>
+   The <b><i>get_breakpoints</i></b> function returns a set of
+   breakpoints that intersect the range given in <i>start</i> and
+   <i>end</i>, including both start and end in the range. Only
+   breakpoints set on access types with bits set in
+   <i>read_write_execute</i> will be returned.
+</p><p>
+   When information from <b><i>get_breakpoints</i></b> has been processed, the
+   breakpoints array in the breakpoint_set_t structure should be freed with
+   MM_FREE.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(breakpoint_query_v2) {
+        breakpoint_set_t (*get_breakpoints)(conf_object_t *obj,
+                                            access_t read_write_execute,
+                                            generic_address_t start,
+                                            generic_address_t end);
+};
+
+#define BREAKPOINT_QUERY_V2_INTERFACE "breakpoint_query_v2"
+</pre><p>
+</p><p>
+   
+
+</p><h3 class="jdocu"><a name="Breakpoint-Change-Interface">6.2 Breakpoint Change Interface</a></h3>
+<p>
+
+<a name="breakpoint_change2"></a>
+
+</p><p>
+   The <code>breakpoint_change</code> interface is implemented by
+   objects that wish to get notified when breakpoints are added,
+   removed, or changed in some way.
+</p><p>
+   The object that wants to get notified of changes to breakpoints in
+   a another object would use the <code>simple_dispatcher</code> in
+   the breakpoint_change port of that other object. The other object
+   will then lookup the <code>breakpoint_change</code> interface in
+   the object to notify and use that when breakpoint updates occur.
+</p><p>
+   The breakpoint_change port is implemented by objects of the
+   <b>cell</b> class, and a listener that registers on a cell with get
+   notified on any breakpoint changes in that cell.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(breakpoint_change) {
+        void (*breakpoint_added)(conf_object_t *obj,
+                                 conf_object_t *bp_obj,
+                                 breakpoint_handle_t handle);
+        void (*breakpoint_removed)(conf_object_t *obj,
+                                   conf_object_t *bp_obj,
+                                   breakpoint_handle_t handle);
+};
+
+#define BREAKPOINT_CHANGE_INTERFACE "breakpoint_change"
+</pre><p>
+</p><p>
+   
+
+</p><h3 class="jdocu"><a name="Breakpoint-Trigger-Interface">6.3 Breakpoint Trigger Interface</a></h3>
+<p>
+
+<a name="breakpoint_trigger2"></a>
+
+</p><p>
+   Objects implementing the <code>breakpoint</code> interface
+   typically also implement the <code>breakpoint_trigger</code>
+   interface. Processors call the <b><i>trigger_breakpoint</i></b>
+   function to signal that a memory access intersects a
+   breakpoint. The <b><i>trigger_breakpoint</i></b> function will raise
+   the appropriate haps and the currently scheduled execute object may
+   receive a <b><i>stop</i></b> call during the call to
+   <b><i>trigger_breakpoint</i></b>.
+</p><p>
+   The <i>obj</i> argument is the object that holds the
+   breakpoint, typically a memory space or a context
+   object. <i>initiator_obj</i> is the source of the memory
+   operation that triggers the breakpoint. The <i>handle</i>
+   argument identifies the breakpoint to trigger. A value of
+   <i>BREAKPOINT_HANDLE_ANY</i> can be passed as
+   <i>handle</i>, in which case all the breakpoints that match the
+   given <i>address</i>, <i>size</i>, and <i>access</i>
+   will be triggered. The <i>address</i>, <i>size</i>, and
+   <i>access</i> arguments specify information about the access
+   that triggers the breakpoint. The <i>data</i> argument points
+   to a buffer where the data for the access is kept.
+</p><p>
+   If a <b><i>stop</i></b> is received during a call to
+   <b><i>trigger_breakpoint</i></b>, then it is recommended that any
+   software visible actions carried out after the breakpoint are
+   logged. That could for example be to notify the user if the entire
+   instruction that triggers a breakpoint will complete, and that the
+   instruction will then not be re-executed when the simulation
+   restarts.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(breakpoint_trigger) {
+        void (*trigger_breakpoint)(conf_object_t *obj,
+                                   conf_object_t *initiator_obj,
+                                   breakpoint_handle_t handle,
+                                   generic_address_t address,
+                                   generic_address_t size,
+                                   access_t access,
+                                   uint8 *data);
+};
+
+#define BREAKPOINT_TRIGGER_INTERFACE "breakpoint_trigger"
+</pre><p>
+</p><p>
+   
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Simics-Environment-Interaction">7 Simics Environment Interaction</a></h2>
+<p>
+
+</p><p>
+How a processor model fits into the Simics environment is the topic of
+this Chapter.
+</p><p>
+</p><dl><dt id="dt:simics-api"><b>Simics API</b></dt><dd>Although the processor model does not directly expose any part of
+the Simics API, many API calls make use of the interfaces described in
+this document.</dd><dt id="dt:command-line-interface"><b>Command Line Interface</b></dt><dd>Some commands are bound to interfaces, and a processor model that
+implements a set of interfaces therefore automatically gets a set of
+commands defined. See Section <a class="reference" href="#simics-api-commands">5.1</a> for
+more information about such commands. The processor model can
+implement additional commands beyond the pre-defined commands.</dd><dt id="dt:debug-functionality"><b>Debug Functionality</b></dt><dd>Low-level debug functionality that can be supported by a processor
+model is breakpoints (see Chapter <a class="reference" href="#processor-api-breakpoints">6</a>) and the <code>context_handler</code> interface. The
+<code>context_handler</code> interface is used by a context switcher
+object to change target software context based on information from an
+operating system awareness module.</dd><dt id="dt:checkpointing"><b>Checkpointing</b></dt><dd>Just like any other model, a processor model needs to properly
+save and restore all simulated state through attributes to support
+checkpointing.</dd><dt id="dt:reverse-execution"><b>Reverse Execution</b></dt><dd>Reverse execution is built upon the checkpointing system. Any
+deterministic model that records all external stimuli through recorder
+objects and fully supports checkpointing will automatically support
+reverse execution.</dd><dt id="dt:system-model-devices"><b>System Model Devices</b></dt><dd>Device models interact with the processor model through interfaces
+and can be reused as is when using a new processor model. Naturally,
+modifications need to be made if a different system is to be
+simulated. Close interaction with the system model builder is
+typically needed when changing the CPU model. For some system models,
+information about this is covered in the associated target guide.</dd><dt id="dt:system-model-components"><b>System Model Components</b></dt><dd>Components are usually built to abstract away the low-level
+configuration of a model. Components for a user defined processor
+model can usually be derived from a Simics-provided component with
+only minor changes needed to bridge low-level differences in
+attributes and configuration.</dd><dt id="dt:operating-system-awareness"><b>Operating System Awareness</b></dt><dd>The Simics environment provides support for application debugging
+and analysis through operating system awareness modules that define
+process tracker objects. The operating system awareness models need to
+be modified to support new architectures, new revisions of operating
+systems, and also for completely new operating systems. When using an
+existing operating system awareness module with a user defined
+processor model, the naming of registers in the
+<code>int_register</code> interface needs to consistent.</dd><dt id="dt:software-development-environment-awareness"><b>Software Development Environment Awareness</b></dt><dd>Software development environments such as WindRiver Workbench are
+supported on multiple levels, including symbolic debugging
+capabilities and integration with vendor IDEs. The software
+development environment awareness support in Simics can be used as-is
+with a user defined processor model.</dd></dl><p>
+</p><h2 class="jdocu"><a name="Simics-API-Functions">8 Simics API Functions</a></h2>
+<p>
+
+</p><p>
+This section lists Simics API functions that a processor model may
+need to use beyond what is described in other parts of this document.
+Simics API <b><i>SIM_register_clock</i></b> is described in
+<em>API Reference Manual</em>.
+</p><p>
+
+
+<a name="VT_check_async_events"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_check_async_events"></a><b>VT_check_async_events</b> — check for asynchronous events</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">bool
+VT_check_async_events(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Check if any async events are pending and if so, make the current
+   executing object exit in order for them to be handled. Return nonzero
+   if there are pending events.
+<p>
+   The Simics platform will check for asynchronous events between invocations
+   of the <b><i>run</i></b> method in the <code>execute</code>. If significant
+   time passes between such invocations, which will typically be the case
+   unless there are multiple simulated CPUs that are switched between, then the
+   implementor of <code>execute</code> needs to either call this method or
+   exit pre-maturely from <b><i>run</i></b> to allow asynchronous events to be
+   handled. If neither is performed, then interactive performance will suffer
+   as user input would be waiting significant time before being processed.
+</p><p>
+   If only the async event state is requested, the faster
+   <b><i>VT_async_events_pending</i></b> should be used instead.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+
+
+<a name="VT_new_code_block"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_new_code_block"></a><b>VT_new_code_block</b> — inform platform of new code block</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_new_code_block(void *start, size_t len);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function informs the Simics platform that there is a <i>len</i>
+   bytes block at <i>start</i> that can be executed from. The call should
+   be made before the passed code area is executed from. This information is
+   used by Simics to communicate with systems like Pin or Valgrind that do not
+   automatically detect run-time generated code. If modifications are done to a
+   block, then a new call to this function is needed to inform the platform of
+   that.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+
+
+<a name="VT_set_object_clock"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_set_object_clock"></a><b>VT_set_object_clock</b> — set clock association for object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_set_object_clock(conf_object_t *NOTNULL obj, conf_object_t *clock);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The simulation infrastructure keeps track of clock associations for every
+   object. For most objects, this is initialized through the queue attribute.
+<p>
+   An object that is itself a clock needs to call this function to initialize
+   the clock coupling to itself. The call to initialize the coupling should be
+   made from the <b><i>init</i></b> method registered for the class in its 
+   <code>class_info_t</code> (or <b><i>init_object</i></b> if registered using
+   <code>class_data_t</code>).</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+
+
+
+<a name="VT_clock_frequency_about_to_change"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_clock_frequency_about_to_change"></a><b>VT_clock_frequency_about_to_change</b> — inform before clock frequency change</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_clock_frequency_about_to_change(conf_object_t *obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+To be called by a clock prior to a clock frequency change, with
+   events and cycles reflecting the frequency before the change.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+
+
+<a name="VT_clock_frequency_change"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_clock_frequency_change"></a><b>VT_clock_frequency_change</b> — inform after clock frequency change</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_clock_frequency_change(conf_object_t *obj, uint64 cycles_per_second);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+To be called by a clock when the clock frequency has changed, with
+   events and cycles reflecting the frequency after the change.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+
+
+<a name="VT_stop_event_processing"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_stop_event_processing"></a><b>VT_stop_event_processing</b> — stop event processing</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_stop_event_processing(conf_object_t *clock);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This method is to be called by a clock when it has received a stop request
+   through the execute interface and the clock is about to return from the run
+   method in the execute interface.
+<p>
+   In the future, the simulation framework may keep track of this thus
+   relieving the clock from the duty of having to call this method.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Miscellaneous-Remarks">9 Miscellaneous Remarks</a></h2>
+<p>
+
+</p><p>
+</p><ul>
+
+<li>Partial implementation of interfaces is most often not allowed. If
+the interface documentation states that a function is optional, then
+it does not have to be implemented and can be initialized to
+NULL.</li>
+
+<li>Not all features of Simics standard processor models are covered
+by the API described in this document. List of features and interfaces
+not covered in this document:
+<p>
+</p><ul>
+
+<li>Profiling with the <b>attach-branch-recorder</b>,
+<b>detach-branch-recorder</b>, and
+<b>start-instruction-profiling</b> commands.</li>
+
+<li>Displays in the native GUI, including the
+<b>win-cpu-registers</b>, <b>win-disassembly</b>,
+<b>win-source-view</b>, and <b>win-stack-trace</b>
+commands.</li>
+
+<li>The <b>aprof-views</b> command to show profiling data in
+disassembly.</li>
+
+<li>The protocol used between processor tracker classes and the
+processor.</li>
+</ul>
+<p>
+</p></li>
+
+</ul>
+<p>
+
+
+</p><p>
+</p>
+<div class="chain">
+<span></span>
+</div>

@@ -1,0 +1,438 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>20 Representing Network Packets with frags_t</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="modeling-i2c-devices.html">19 Modeling I2C Devices</a>
+<a href="modeling-network-communication.html">21 Modeling Network Communication</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-common-hardware-components.html">III Modeling Common Hardware Components</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="frags_t">20 Representing Network Packets with frags_t</a></h1>
+<p>
+
+<a name="frags_t"></a>
+</p><p>
+</p><h2 class="jdocu"><a name="Background">20.1 Background</a></h2>
+<p>
+
+</p><p>
+When modeling computer systems it is often necessary to send chunks of data
+around. This is especially common when modeling network devices where one
+device model may pick up a network packet from target memory, attach a header
+or a CRC and pass it on to another device that sends it out on the simulated
+network. When receiving a network packet, the device will get a network packet,
+examine it, optionally strip parts from it and pass it on to other devices or
+the target memory.
+</p><p>
+Models of more advanced devices will need to do additional processing of the
+packets, adding, removing or updating headers on the way. And a more abstract
+model of a network node may want to model the whole network stack.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Fragment-lists">20.2 Fragment lists</a></h2>
+<p>
+
+</p><p>
+The <code>frags_t</code> data type is designed to facilitate the efficient
+implementation of functions passing these chunks around. It represents the data
+as a list of fragments, where the individual fragments references pieces of the
+actual data. The data is not stored in the <code>frags_t</code> structure, nor
+is it owned by it. Instead, it can be seen as a pointer that points to multiple
+memory locations in sequence.
+</p><p>
+The typical use is a function that is passed some block of data. Without
+<code>frags_t</code>, it might have taken a plain pointer and a size:
+</p><p>
+</p><pre class="jdocu_small">void old_receive_data(const uint8 *data, size_t data_len);
+</pre><p>
+
+</p><p>
+But with <code>frags_t</code> it would instead take a pointer to a constant
+<code>frags_t</code>:
+</p><p>
+</p><pre class="jdocu_small">void receive_data(const frags_t *data);
+</pre><p>
+
+</p><p>
+The usage is very similar. Instead of passing the data as a single, contiguous
+block of memory, it is passed as a list of references to fragments of the
+data. The only important difference is that the <b><i>receive_data()</i></b>
+function will need another way to access the data itself.
+</p><p>
+To complete the introduction, this is how a <code>frags_t</code> is created
+before calling this function:
+</p><p>
+<a name="frags_init_add"></a> <a name="frags_add"></a>
+</p><pre class="jdocu_small">frags_t data;
+frags_init_add(&amp;data, header, header_len);
+frags_add(&amp;data, payload, payload_len);
+receive_data(&amp;data);
+</pre><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Getting-to-the-data">20.3 Getting to the data</a></h2>
+<p>
+
+</p><p>
+A function that receives a <code>const frags_t *</code> argument can use it to
+read the data it references in two ways.
+</p><p>
+The first, and most common, way is to extract it to another buffer, using the
+<b><i><a name="frags_extract">frags_extract</a>()</i></b> function, or using
+the <b><i><a name="frags_extract_slice">frags_extract_slice</a>()</i></b> function to only extract
+parts of it.
+</p><p>
+</p><pre class="jdocu_small">void receive_data_extract(const frags_t *data)
+{
+        uint8 buf[frags_len(data)];
+        frags_extract(data, buf);
+        // buf now contains all the data
+        // ...
+}
+</pre><p>
+
+</p><p>
+Or
+</p><p>
+</p><pre class="jdocu_small">void receive_data_slice(const frags_t *data)
+{
+        uint8 buf[HEADER_LEN];
+        frags_extract_slice(data, buf, 0, HEADER_LEN);
+        // buf now contains the header
+        // ...
+}
+</pre><p>
+
+</p><p>
+To avoid copies, it is sometimes useful to use the
+iterator <a name="frags_titerator"></a> functions. This is an example of a simple
+checksum function:
+</p><p>
+<a name="frags_it_t"></a> <a name="frags_it"></a> <a name="frags_len"></a> 
+<a name="frags_it_end"></a> <a name="frags_it_next"></a> <a name="frags_it_data"></a>
+<a name="frags_it_len"></a>
+</p><pre class="jdocu_small">int checksum(const frags_t *data)
+{
+        int chksum = 0;
+        for (frags_it_t it = frags_it(data, 0, frags_len(data));
+             !frags_it_end(it);
+             it = frags_it_next(it))
+                chksum = partial_checksum(chksum,
+                                          frags_it_data(it),
+                                          frags_it_len(it));
+        return chksum;
+}
+</pre><p>
+
+</p><p>
+The iterator will provide the pointer to the data in one fragment at a
+time. These iterator functions are usually not very useful to do common things
+like read the header of a network packet, since there is no guarantee that any
+fragment contains the entire header.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Avoiding-allocation">20.4 Avoiding allocation</a></h2>
+<p>
+
+</p><p>
+To avoid the cost of heap allocation, the preferred way to allocate data to be
+referenced by a fragment list, and the fragment list itself, is on the
+stack. Allocating on the stack is extremely cheap, and with variable-sized
+arrays in C99 (and DML), it is also very simple to use. A typical network
+device that reads a packet using DMA and attaches a CRC before sending it to
+the link could look like this:
+</p><p>
+<a name="frags_init_add2"></a> <a name="frags_add2"></a>
+</p><pre class="jdocu_small">void send_packet(nic_t *dev)
+{
+        dma_desc_t desc = get_next_dma_desc(dev);
+        uint8 data[desc.len];
+        dma_read(dev, desc.addr, desc.len, data);
+        uint8 crc[4];
+        calculate_crc(data, crc);
+                
+        frags_t packet;
+        frags_init_add(&amp;packet, data, desc.len);
+        frags_add(&amp;packet, crc, 4);
+        send_to_link(dev, &amp;packet);
+}
+</pre><p>
+
+</p><p>
+One advantage of stack allocation is that there is no need for any destructors;
+the memory is automatically released when the stack frame is removed.
+</p><p>
+This works since the <code>frags_t</code> type has no external
+allocation. Adding fragments will not cause any dynamic allocations to be
+made. This also means that the size of the fragment list fixed, so there is a
+limit to the number of fragments that can be added. The size of the list is
+eight, which should be enough for most cases, while still being manageable.
+</p><p>
+Stack allocation also means that there is never any doubt about the ownership
+of the data. The pointers to the data can not be taken over by anyone else, so
+the ownership remains with the function that allocates it.
+</p><p>
+The references to the data in the fragment list is read-only. It is not
+possible to use a <code>frags_t</code> reference to modify any data that it
+points to. There could be other, writeable, references to the same data, such
+as the local variables <i>data</i> and <i>crc</i> in the example above,
+but when those are not available to a function it has no way of modifying the
+data.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Keeping-the-data">20.5 Keeping the data</a></h2>
+<p>
+
+</p><p>
+Since ownership of a fragment list, or of any of its fragments, can not be
+passed in a function call, there is no way to simply store a fragment list for
+later use. Instead, the data must be copied if it is going to be needed later.
+</p><p>
+A network link model that receives a network packet in a <code>frags_t</code>
+will typically need to hold on to the data for a while before delivering it to
+all the recipients. This means that it should extract the data into a buffer
+that it allocates on the heap. And when it sends the packet to one of the
+recipients, it can simply create a <code>frags_t</code> that references the
+heap-allocated data and pass that pointer to the receiving device.
+</p><p>
+Here is some pseudo-code for a link model:
+</p><p>
+<a name="frags_extract2"></a> <a name="frags_init_add3"></a>
+</p><pre class="jdocu_small">void send_a_packet(link_t *link, const frags_t *packet)
+{
+        link-&gt;packet_buffer = MM_MALLOC(frags_len(packet), uint8);
+        link-&gt;packet_buffer_len = frags_len(packet);
+        frags_extract(packet, link-&gt;packet_buffer);
+        // ... defer delivery to a later time ...
+}
+
+void deliver_a_packet(link_t *link)
+{
+        frags_t packet;
+        frags_init_add(&amp;packet, link-&gt;packet_buffer,
+                       link-&gt;packet_buffer_len);
+        for (link_dev_t *dev = link-&gt;recipients; dev;
+             dev = dev-&gt;next)
+                deliver_to_dev(link, dev, &amp;packet);
+        MM_FREE(link-&gt;packet_buffer);
+        link-&gt;packet_buffer = NULL;
+}
+</pre><p>
+
+</p><p>
+As a convenience, there is a
+function <b><i><a name="frags_extract_alloc">frags_extract_alloc</a>()</i></b> that does the allocation
+and extracts to the allocated buffer, so the send function can be written like
+this instead:
+</p><p>
+</p><pre class="jdocu_small">void send_alloc(link_t *link, const frags_t *packet) {
+        link-&gt;packet_buffer = frags_extract_alloc(packet);
+        // ... defer delivery to a later time ...
+}
+</pre><p>
+
+</p><p>
+The memory management of the packet buffer in the above code is rather
+straightforward, but in other cases may be more complex and require reference
+counting, etc. The frags library does not attempt to solve any such problem; it
+is only intended to be used for passing data in function calls.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Multithreading">20.6 Multithreading</a></h2>
+<p>
+
+</p><p>
+Since the fragment list and the data it points to are only valid as long as the
+stack frame they live in is live, it is almost never possible to pass
+references to them between threads. It is possible to do it and block until the
+other thread is finished using it before returning, but there are very few
+occasions where this makes sense. Simply copying the data, as described in the
+previous section, is usually the best solution.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Conventions">20.7 Conventions</a></h2>
+<p>
+
+</p><p>
+This is a summary of the rules and conventions that should be adhered to when
+using this library. Any exception to these rules should be clearly marked in
+the code.
+</p><p>
+</p><ol>
+
+<li>A <code>frags_t</code> pointer passed to a function is read-only. This
+   means that you should always declare them as <code>const frags_t *</code> in
+   function prototypes.</li>
+
+<li>The data references in a <code>frags_t</code> are read-only. They are
+  declared as <code>const uint8 *</code>, and can not be used to modify the
+  data.</li>
+
+<li>A <code>frags_t</code> pointer passed to a function can not be stored and
+   reused after the function returns. Neither can a copy of
+   the <code>frags_t</code> structure be stored and reused.</li>
+
+</ol>
+<p>
+
+</p><h2 class="jdocu"><a name="How-to-use-frags_t-to...">20.8 How to use frags_t to...</a></h2>
+<p>
+
+</p><p>
+There are a few common use cases that often occur, and this section outlines
+some of the more important ones, showing how to best use <code>frags_t</code>
+to handle them.
+</p><p>
+</p><dl><dt id="dt:call-a-function-that-expects-a-frags_t-pointer-when-there-is-only-a-data-pointer-available"><b>Call a function that expects a <code>frags_t</code> pointer, when there is
+  only a data pointer available.</b></dt><dd>This is the simplest case. Just create a <code>frags_t</code> containing a
+single fragment referencing the data.
+<p>
+<a name="frags_init_add4"></a>
+</p><pre class="jdocu_small">frags_t frags;
+frags_init_add(&amp;frags, data, data_len);
+// fn(..., &amp;frags, ...);
+</pre><p>
+
+</p><p>
+</p></dd><dt id="dt:call-a-function-that-expects-a-frags_t-pointer-when-there-is-only-a-dbuffer_t-available"><b>Call a function that expects a <code>frags_t</code> pointer, when there is
+  only a <code>dbuffer_t</code> available.</b></dt><dd>The <code>dbuffer_t</code> type is used by previous network interfaces in
+Simics.  To create a <code>frags_t</code> from a dbuffer, the data needs to be
+extracted from the dbuffer first.
+<p>
+</p><pre class="jdocu_small">uint8 buf[dbuffer_len(dbuf)];
+memcpy(buf, dbuffer_read_all(dbuf), dbuffer_len(dbuf));
+frags_t frags;
+frags_init_add(&amp;frags, buf, dbuffer_len(dbuf));
+// fn(..., &amp;frags, ...);
+</pre><p>
+
+</p><p>
+</p></dd><dt id="dt:add-a-header"><b>Add a header.</b></dt><dd>To add a header to a message, create a new <code>frags_t</code> that
+contains the header and the contents of the old message.
+<p>
+<a name="frags_add_from_frags"></a>
+</p><pre class="jdocu_small">frags_t msg;
+frags_init_add(&amp;msg, header, header_len);
+frags_add_from_frags(&amp;msg, payload, 0, frags_len(payload));
+</pre><p>
+
+</p><p>
+There is a utility function called <b><i><a name="frags_prefix">frags_prefix</a>()</i></b> that
+does exactly this:
+</p><p>
+</p><pre class="jdocu_small">frags_t new_msg = frags_prefix(header, header_len, payload);
+</pre><p>
+
+</p><p>
+Similarly, there is a <b><i><a name="frags_suffix">frags_suffix</a>()</i></b> for adding at the
+end.
+</p><p>
+Remember that any <code>frags_t</code> received in a function call is
+read-only, so the only way to add a header is to create a
+new <code>frags_t</code>.</p></dd><dt id="dt:strip-a-header"><b>Strip a header.</b></dt><dd>To remove a header, use <b><i>frags_add_from_frags()</i></b> to pick the
+non-header part of the old message.
+<p>
+</p><pre class="jdocu_small">frags_t payload;
+frags_init_add_from_frags(&amp;payload, msg,
+                          HEADER_LEN, frags_len(msg) - HEADER_LEN);
+</pre><p>
+
+</p><p>
+</p></dd><dt id="dt:change-a-field-in-a-packet"><b>Change a field in a packet.</b></dt><dd>To change the value of a specific field,
+use <b><i><a name="frags_add_from_frags2">frags_add_from_frags</a>()</i></b> to pick the part of the
+message you want to keep, and <b><i><a name="frags_add3">frags_add</a>()</i></b> to add the new
+value where it should be:
+<p>
+</p><pre class="jdocu_small">frags_t new_packet;
+uint8 new_field[6] = { 0, 1, 2, 3, 4, 5 };
+// copy everything before the field
+frags_init_add_from_frags(&amp;new_packet, msg,
+                          0, OUR_FIELD_OFFSET);
+// add the new field
+frags_add(&amp;new_packet, new_field, 6);
+// copy the rest of the packet
+frags_add_from_frags(&amp;new_packet, msg,
+                     OUR_FIELD_OFFSET + 6,
+                     frags_len(msg) - (OUR_FIELD_OFFSET + 6));
+</pre><p>
+
+</p><p>
+</p></dd><dt id="dt:extract-integer-values"><b>Extract integer values</b></dt><dd>To read a multi-byte integer value from a message, care needs to be taken
+to handle byte order portably. There are macros
+in <code>simics/util/swabber.h</code> that helps with this:
+<p>
+</p><pre class="jdocu_small">uint32 buf[1];
+frags_extract_slice(msg, buf, val_offs, 4);
+uint32 val = LOAD_BE32(buf);
+</pre><p>
+
+</p><p>
+There are a number of utility functions that facilitates this, so the code
+above can be written using <b><i><a name="frags_extract_be32">frags_extract_be32</a>()</i></b>.
+</p><p>
+</p><pre class="jdocu_small">uint32 new_val = frags_extract_be32(msg, val_offs);
+</pre><p>
+
+</p><p>
+</p></dd><dt id="dt:print-the-contents-of-a-packet"><b>Print the contents of a packet</b></dt><dd>A simple loop over the fragments via an iterator will do the job:
+<p>
+<a name="frags_titerator2"></a>
+</p><pre class="jdocu_small">void print_packet(const frags_t *packet)
+{
+        printf("packet: ");
+        for (frags_it_t it = frags_it(packet, 0, frags_len(packet));
+             !frags_it_end(it);
+             it = frags_it_next(it)) {
+                const uint8 *it_data = frags_it_data(it);
+                for (int i=0; i&lt;frags_it_len(it); i++)
+                        printf("%x ", (unsigned)it_data[i]);
+        }
+        printf("\n");
+}
+</pre><p>
+
+</p><p>
+</p></dd></dl><p>
+</p><h2 class="jdocu"><a name="API">20.9 API</a></h2>
+<p>
+
+</p><p>
+The complete API documentation for all <code>frags_t</code>-related functions
+is available in the <em>API Reference Manual</em>, in
+the <em>Device API Functions</em> section.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="modeling-i2c-devices.html">19 Modeling I2C Devices</a>
+<a href="modeling-network-communication.html">21 Modeling Network Communication</a>
+</div>

@@ -1,0 +1,79 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_memory_query</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_memory_operation.html">x86_memory_operation</a>
+<a href="__rm_interface_x86_msr.html">x86_msr</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_memory_query">x86_memory_query</a></h1>
+<p>
+
+<a name="x86_memory_query"></a><a name="x86_memory_query_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>x86_memory_query</code> interface is used to query additional
+   information about an instruction for the x86 architecture and is a complement
+   to the <code>cpu_memory_query</code> interface.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(x86_memory_query) {
+        linear_address_t (*linear_address)(conf_object_t *cpu,
+                                           memory_handle_t *handle);
+        x86_seg_t (*segment)(conf_object_t *cpu, memory_handle_t *handle);
+        x86_access_type_t (*access_type)(conf_object_t *obj,
+                                         memory_handle_t *handle);
+        x86_memory_type_t (*memory_type)(conf_object_t *obj,
+                                         memory_handle_t *handle);
+};
+
+#define X86_MEMORY_QUERY_INTERFACE "x86_memory_query"        
+
+</pre><p>
+</p><p>
+
+   The <b><i>linear_address</i></b> is used to get the linear address of the
+   access.
+</p><p>
+   The <b><i>segment</i></b> function is used to get the segment register used
+   in the access.
+</p><p>
+   The <b><i>access_type</i></b> returns the <code>x86_access_type_t</code> of the
+   access and the <b><i>memory_type</i></b> returns the
+   <code>x86_memory_type_t</code> of the access.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods, but must be called from a callback
+   receiving a handle of type <code>memory_handle_t</code>.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_memory_operation.html">x86_memory_operation</a>
+<a href="__rm_interface_x86_msr.html">x86_msr</a>
+</div>

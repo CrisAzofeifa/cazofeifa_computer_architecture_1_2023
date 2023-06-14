@@ -1,0 +1,365 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>8 Building Required Libraries</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="limitations.html">7 Limitations</a>
+<a href="migration-guide-simics-5-to-simics-6.html">9 Migration Guide Simics 5 to Simics 6</a>
+</div>
+<div class="path">
+<a href="index.html">SystemC* Library</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="building-required-libraries">8 Building Required Libraries</a></h1>
+<p>
+
+<a name="building"></a>
+</p><p>
+The SystemC Library is shipped with source-only. There is no official
+binary package to go with it; the lack of a stable C++ ABI prevents this from
+being efficiently used in Simics. Instead, the user is responsible for making
+sure that the binaries are rebuilt from source every time the <em>Simics Base</em>
+package is upgraded.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The default GCC used by Simics SystemC Library is 6.3.0. For maximum
+  interoperability, it is recommended to use this compiler version. This is the
+  only GCC version tested by Simics regression tests.</div>Standard tools are built as part of each module, and will only work on
+conf-objects from that module.
+<p>
+
+
+In order to build a Simics SystemC device module, a set of required libraries
+must be provided. These libraries must be built in a specific order. The
+libraries also have a fixed Boost version dependency. These things are
+described in more details in the upcoming sections.
+</p><p>
+</p><h2 class="jdocu"><a name="boost">8.1 Boost Dependencies</a></h2>
+<p>
+
+</p><p>
+Simics SystemC Library depends on Boost C++ (www.boost.org). The Simics
+Serialization Library is a fork of Boost version 1.65.1, hence only this
+version will work.
+</p><p>
+The Boost C++ used in Simics SystemC Library is header-only, thus there is no
+need to build and link with any Boost libraries.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Intel internal user may have different Boost dependency, check in
+ <em>Intel SystemC Library Programming Guide</em> for detail.</div>To let Simics know where Boost is installed, <i>BOOST_INC_PATH</i> needs to be
+defined and exported for the <b>make</b> command to succeed. This can, for example,
+be done by setting it in the <code>config-user.mk</code> file in your Simics project
+directory or by passing it on the command line.
+<p>
+</p><div class="note">
+<b>Note:</b>
+Variables set in <code>config-user.mk</code> must also be explicitly exported:
+<pre class="jdocu_small">BOOST_INC_PATH ?= /home/packages/boost/1.65.1/include/
+export BOOST_INC_PATH
+</pre><p>
+</p></div><div class="note">
+<b>Note:</b>
+It is not an error to provide both <i>BOOST_INC_PATH</i> and
+<i>BOOST_PREFIX</i> variables. If both are provided, <i>BOOST_INC_PATH</i> wins.
+</div>
+<h2 class="jdocu"><a name="order">8.2 Library Order</a></h2>
+<p>
+
+<a name="buildingorder"></a>
+</p><p>
+SystemC libraries depend on each other and must be compiled in the
+right order before any SystemC devices may be built. Please build the
+SystemC libraries in the following order:
+</p><p>
+</p><ul>
+<li><code>SystemC Kernel</code></li>
+<li><code>Simics Serialization</code></li>
+<li><code>SystemC Checkpoint</code></li>
+<li><code>SystemC Library</code></li>
+</ul>
+<p>
+The best way to build all binaries in the correct order, is to invoke the build
+script from a Simics project. See <a class="reference" href="#build-script">8.4</a> for more
+details.
+</p><p>
+
+</p><h2 class="jdocu"><a name="build-on-windows">8.3 Building on Windows</a></h2>
+<p>
+
+<a name="buildingwindows"></a>
+</p><p>
+On Windows, SystemC modules can only be built using Visual C++ (provided with
+Visual Studio). In order to build SystemC modules using Visual C++, launch the
+Visual Studio Command Prompt (x64 version), configure the CC environment
+variable to use Visual C++ ('cl'), and build your modules using bin\make.bat.
+</p><p>
+</p><pre class="jdocu_small">project&gt;<b>"&lt;path to Visual Studio's vcvars64.bat"</b>
+project&gt;<b>set CC=cl</b>
+project&gt;<b>bin\make.bat</b>
+</pre><p>
+</p><p>
+The module's makefile will try to detect which Visual C++ version to use by
+inspecting the environment variables, set up by the corresponding Visual Studio
+Command Prompt. The version can be forced by setting MSVC_VERSION:
+</p><p>
+</p><pre class="jdocu_small">project&gt;<b>set MSVC_VERSION=msvc140</b>
+-- or --
+project&gt;<b>set MSVC_VERSION=msvc170</b>  
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Use of Visual Studio 2010 or 2013 is no longer supported, due to their
+lack of C++14 support.</div><div class="note">
+<b>Note:</b>
+Use of Visual Studio 2017 and 2019 is currently not supported, but it
+should be possible to manually convert the solution files and make it work; as
+it does work for Visual Studio 2022.</div><div class="note">
+<b>Note:</b>
+Using MinGW GCC to build SystemC modules on Windows is no longer a
+supported feature and does not work.</div><div class="note">
+<b>Note:</b>
+DML and C modules must use GCC/MinGW, so if there is a mix of DML/C and
+C++/SystemC models in the project, then it is necessary to build the targets
+separately.</div><div class="note">
+<b>Note:</b>
+Currently the host requires the "8.3 short filename"-support to be
+enabled in order for the GNU Make logic to work. See 'fsutil 8dot3name' on
+<a class="jdocu" href="https://docs.microsoft.com" rel="noopener noreferrer" target="_top">https://docs.microsoft.com</a> for more details on how to query and
+enable this.</div>
+<h2 class="jdocu"><a name="build-script">8.4 Build Script</a></h2>
+<p>
+
+<a name="buildingscript"></a>
+Simics provides a build script that makes it easy to compile all the SystemC
+libraries from a Simics project. The script is located in the <code>bin</code>
+subdirectory of the Simics installation, and is invoked like this:
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="Usage">Usage</a></h3>
+<p>
+   
+   </p><dl><dt id="dt:windows"><b>Windows</b></dt><dd><pre class="jdocu_small">project&gt; <b>bin\build-systemc-libraries.bat [<em>options</em>]</b></pre><p>
+     </p></dd><dt id="dt:linux"><b>Linux</b></dt><dd><pre class="jdocu_small">project$ <b>bin/build-systemc-libraries [<em>options</em>]</b></pre><p>
+     </p></dd></dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="Options">Options</a></h3>
+<p>
+   
+   </p><dl><dt id="dt:h-help"><b><code>-h, --help</code></b></dt><dd>Show help message and exit.</dd><dt id="dt:f-force"><b><code>-f, --force</code></b></dt><dd>Force rebuild of all the libraries.</dd><dt id="dt:u-unittests"><b><code>-u, --unittests</code></b></dt><dd>Build and run unit tests.</dd><dt id="dt:j-jobs"><b><code>-j, --jobs</code></b></dt><dd>Run up to N build jobs in parallel.</dd><dt id="dt:m-make"><b><code>-m, --make</code></b></dt><dd>Specify which GNU Make binary to run. Defaults to 'make'</dd><dt id="dt:"><b><code>...</code></b></dt><dd>The rest are parsed as make options for the modules.</dd></dl><p>
+</p><p>
+The script will copy all the required SystemC modules and build them in the
+correct dependency order. The SystemC module makefiles needs CC, CXX and
+BOOST_PREFIX variables defined. For better support of Valgrind additionally
+export the variable SYSTEMC_VALGRIND_CFLAGS.
+The build and support of the SystemC Checkpoint
+Library can be disabled by defining the variable USE_SIMICS_CHECKPOINTING=no.
+The build and support of the SystemC CCI Library can be disabled by defining
+the variable USE_SIMICS_CCI=no.
+The user can either set and export the variables in
+the <code>config-user.mk</code> file, provide them as script parameters or set
+them as shell environment variables. Once the script has completed, the user
+is ready to build other SystemC modules in the project.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The script must be run in the root directory of the Simics project associated
+with a Simics installation.</div><div class="note">
+<b>Note:</b>
+The script must be run once again with --force option every time the
+  <em>Simics Base</em> package is upgraded.</div><div class="note">
+<b>Note:</b>
+The default GCC used by Simics SystemC Library is 6.3.0. For maximum
+  interoperability, it is recommended to use this compiler version.</div>
+<h2 class="jdocu"><a name="build-instructions">8.5 Build Instructions</a></h2>
+<p>
+
+This section contains build instructions for the individual components within
+the SystemC Library solution. The best way to build these is to run the
+build script. See <a class="reference" href="#build-script">8.4</a> for details.
+</p><p>
+Reduce the compilation times of SystemC libraries by setting the
+<i>SYSTEMC_NO_UNITTESTS</i> variable. When set, no unit tests are
+compiled and run for those libraries that contain them.
+</p><p>
+</p><h3 class="jdocu"><a name="building-the-systemc-kernel">8.5.1 Building SystemC Kernel</a></h3>
+<p>
+
+<a name="buildingsystemc-kernel"></a>
+In order to run SystemC models in Simics, the Simics SystemC Kernel
+must be used.
+</p><div class="note">
+<b>Note:</b>
+SystemC Kernel is distributed as source, and must be built along
+  with the other components including the device modules using the same
+  toolchain.</div><div class="note">
+<b>Note:</b>
+Building the kernel using a different GCC toolchain than the one used by
+  Simics, usually also requires building the rest of the
+  Simics SystemC components using the same toolchain. See
+  <a class="reference" href="#build-script">8.4</a> for more details.</div><h4 class="jdocu"><a name="How-To-Build-SystemC-Kernel">8.5.1.1 How To Build SystemC Kernel</a></h4>
+<p>SystemC Kernel is built from a Simics Project.
+When building on Microsoft* Windows*, Microsoft Visual Studio 2015 is
+also required. These are the steps to build SystemC Kernel from
+a Simics Project:
+</p><h5 class="jdocu"><a name="Building-On-Linux">8.5.1.1.1 Building On Linux</a></h5>
+<p>
+
+</p><pre class="jdocu_small">project&gt; <b>bin/project-setup --copy-module=systemc-kernel</b></pre><p>
+</p><pre class="jdocu_small">project&gt; <b>make systemc-kernel</b></pre><p>
+
+</p><h5 class="jdocu"><a name="Building-On-Microsoft-Windows">8.5.1.1.2 Building On Microsoft Windows</a></h5>
+<p>
+
+Start a Visual Studio command prompt and change directory to the project.
+</p><pre class="jdocu_small">project&gt; <b>bin\project-setup --copy-module=systemc-kernel</b></pre><p>
+</p><pre class="jdocu_small">project&gt; <b>bin\make systemc-kernel</b></pre><p>
+You will need to set the CC to point to the Visual C++ compiler. See
+<a class="reference" href="#build-on-windows">8.3</a> for more details.
+
+
+
+</p><h3 class="jdocu"><a name="building-the-serialization-library">8.5.2 Building the Simics Serialization Library</a></h3>
+<p>
+
+<a name="buildingserialization-library"></a>
+Simics Serialization Library is a fork of Boost Serialization, which
+provides extended serialization support to be used with SystemC
+Checkpoint Library.
+</p><p>
+To build Simics Serialization Library from source:
+</p><pre class="jdocu_small">project&gt; <b>bin/project-setup --copy-module=serialization</b></pre><p>
+</p><pre class="jdocu_small">project&gt; <b>make serialization</b></pre><p>
+</p><p>
+Simics Serialization Library requires Boost; see <a class="reference" href="#boost">8.1</a> for
+more details.
+
+</p><h3 class="jdocu"><a name="building-the-systemc-checkpoint-library">8.5.3 Building SystemC Checkpoint Library</a></h3>
+<p>
+
+<a name="buildingcheckpoint-library"></a>
+SystemC Checkpoint Library depends on Simics Serialization Library
+and SystemC Kernel. Please see
+<a class="reference" href="#building-the-serialization-library">8.5.2</a> and
+<a class="reference" href="#building-the-systemc-kernel">8.5.1</a> for more details.
+SystemC Checkpoint Library is used by SystemC Library to
+provide checkpointing support, but it can also be used on its own. See
+the SystemC Checkpoint Library Programming Guide for more details.
+</p><p>
+To build Checkpoint Library from source:
+</p><pre class="jdocu_small">project&gt; <b>bin/project-setup --copy-module=systemc-checkpoint</b></pre><p>
+</p><pre class="jdocu_small">project&gt; <b>make systemc-checkpoint</b></pre><p>
+</p><p>
+See <a class="reference" href="#building-the-systemc-library">8.5.4</a> for using a different compiler,
+and <a class="reference" href="#build-on-windows">8.3</a> for building on Windows.
+</p><p>
+SystemC Checkpoint Library requires Boost, see <a class="reference" href="#boost">8.1</a> for
+more details.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The SystemC libraries must be compiled in a particular
+order. Please advise <a class="reference" href="#order">8.2</a> for more details.</div>
+<h3 class="jdocu"><a name="building-the-systemc-library">8.5.4 Building SystemC Library</a></h3>
+<p>
+
+<a name="buildingsystemc-library"></a>
+<a name="systemc-librarybuilding"></a>
+SystemC Library is distributed as source code, and must be compiled
+together with the other SystemC components including the device modules using
+the same toolchain.
+</p><p>
+To build Simics SystemC Library from source:
+</p><pre class="jdocu_small">project&gt; <b>bin/project-setup --copy-module=systemc-library</b></pre><p>
+</p><pre class="jdocu_small">project&gt; <b>make systemc-library</b></pre><p>
+This will use the default compiler of the system. To use a different compiler, set the CC and CXX flags:
+</p><pre class="jdocu_small">project&gt; <b>CC=/usr/itm/gcc/6.3.0/bin/gcc CXX=/usr/itm/gcc/6.3.0/bin/g++ make systemc-library</b></pre><p>
+It is also possible to set the CC and CXX flags in the config-user.mk file,
+like this:
+</p><pre class="jdocu_small">CC = /usr/itm/gcc/6.3.0/bin/gcc
+CXX = /usr/itm/gcc/6.3.0/bin/g++</pre><p>
+</p><p>
+The SystemC Library unit tests require Boost. See <a class="reference" href="#boost">8.1</a>
+for more details.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The default GCC used by Simics SystemC Library is 6.3.0. For maximum
+  interoperability, it is recommended to use this compiler version.</div><div class="note">
+<b>Note:</b>
+Using a different toolchain requires rebuilding all other archives using
+the same toolchain. Please use the build script described in
+<a class="reference" href="#build-script">8.4</a> to do that.</div><div class="note">
+<b>Note:</b>
+The SystemC libraries must be compiled in a particular
+order. Please advise <a class="reference" href="#order">8.2</a> for more details.</div>
+<h3 class="jdocu"><a name="errors-when-building-the-systemc-libraries">8.5.5 Errors When Building the SystemC Libraries</a></h3>
+<p>
+
+<a name="buildingerror"></a>
+</p><p>
+Many errors when building the SystemC libraries are caused by unresolved
+dependencies like Boost (see <a class="reference" href="#boost">8.1</a>), or not following the
+particular order (see <a class="reference" href="#order">8.2</a>) to build the SystemC libraries. The
+best way to build all binaries in the correct order, is to invoke the build
+script from a Simics project. See <a class="reference" href="#build-script">8.4</a> for more details.
+</p><p>
+The script must be run once again with --force option every time the <em>Simics
+ Base</em> package is upgraded. If you failed to do this, you will probably see an
+undefined symbol error like this when loading your SystemC device module:
+</p><pre class="jdocu_small">Undefined symbol: _ZN6simics7systemc16SCL_VERSION_5108C1Ev</pre><p>
+</p><div class="note">
+<b>Note:</b>
+The number 5108 shown in the error message depends on the SystemC Library
+  version which may differ in real cases.</div>There are also compile-time checks that will take effect when compiling the
+Simics modules using the SystemC libraries. These checks verify that the
+libraries have been build with the same compiler as is used to build the Simics
+module.
+<p>
+
+
+</p><h2 class="jdocu"><a name="library-cache">8.6 Cached libraries</a></h2>
+<p>
+
+</p><p>
+In order to save time when working in multiple Simics projects, building the
+libraries in each project can be avoided by using a cache. The build system
+supports this through the following scheme:
+</p><ol>
+  <li>Build the libraries by running the build script in a project</li>
+  <li>Copy the libraries and the generated headers for the compile-time checks,
+    i.e. everything under <code>&lt;host&gt;/lib/systemc</code>, to a shared location</li>
+  <li>Add the following to config-user.mk:<br> <code>export
+  SYSTEMC_DEPS_CACHE=&lt;path to cache&gt;</code></li>
+  <li>Build SystemC Simics modules using GNU Make as normal</li>
+</ol>
+<p>
+
+</p>
+<div class="chain">
+<a href="limitations.html">7 Limitations</a>
+<a href="migration-guide-simics-5-to-simics-6.html">9 Migration Guide Simics 5 to Simics 6</a>
+</div>

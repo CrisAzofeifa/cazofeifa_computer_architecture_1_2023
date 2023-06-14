@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;image&gt;.load-vmem</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-image.list-files.html">&lt;image&gt;.list-files</a>
+<a href="rm-cmd-image.save.html">&lt;image&gt;.save</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="image.load-vmem"></a>
+<h1 id="image.load-vmem"><a href="#image.load-vmem">&lt;image&gt;.load-vmem</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;image&gt;.load-vmem</b> <i>filename</i> [<i>offset</i>] [<i>word-size</i>] [-b] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Loads the contents of the Verilog VMEM file <i>filename</i> into memory. Simics tries to guess the word size based on the number of digits it sees in the numbers, but this is only a guess. One can specify the word size by passing the <i>word-size</i> argument.
+<p>
+Offsets in the file are interpreted relative to <i>offset</i> and as multiples of <i>word-size</i>.
+</p><p>
+By default, numbers are assumed to be in little endian format. For example, the following Verilog VMEM file contains the data which will be loaded at address 0x1000: </p><pre>@00000400 48656D6C 6F2C2057 6F726C64 0AFFFFFF
+</pre>
+<p>
+Byte of the memory at address 0x1000 will get value 0x6c and byte at address 0x1001 will get value 0x6d. If <tt>-b</tt> is specified, numbers are instead interpreted in big endian format and byte at address 0x1000 will get value 0x48.
+</p><p>
+This command uses Simics's Search Path and path markers (%simics%, %script%) to find the file to load. Refer to <cite>The Command Line Interface</cite> chapter of the <cite>Simics User's Guide</cite> manual for more information on how Simics's Search Path is used to locate files. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-image.save-vmem.html">&lt;image&gt;.save-vmem</a>, 
+<a href="rm-cmd-load-intel-hex.html">&lt;image&gt;.load-intel-hex</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-image.list-files.html">&lt;image&gt;.list-files</a>
+<a href="rm-cmd-image.save.html">&lt;image&gt;.save</a>
+</div>

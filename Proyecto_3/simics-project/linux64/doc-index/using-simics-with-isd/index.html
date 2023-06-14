@@ -1,0 +1,276 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Using the Simics® simulator with Intel® System Debugger</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1 id="using-the-simics-simulator-with-intel-system-debugger"><a href="#using-the-simics-simulator-with-intel-system-debugger">Using the Simics® simulator with Intel® System Debugger</a></h1>
+<p>Intel® System Debugger can be used with the Simics® simulator to provide a debug solution, similar to what is available with hardware assisted connections to real hardware, with a virtual platform.
+The integration also adds Simics simulator specific functionality to the Intel System Debugger tools and user interface. This user's guide describes that functionality.</p>
+<h2 id="how-to-debug-simics"><a href="#how-to-debug-simics">How to debug Simics</a></h2>
+<p>This section describes how to connect Intel System Debugger to Simics. Note that
+this information is also available in Intel System Debugger's built in help.</p>
+<h3 id="prequisites"><a href="#prequisites">Prequisites</a></h3>
+<ul>
+<li>Intel System Debugger has been installed</li>
+<li>Simics Base (6.0.24 or later) and a suitable model has been installed and
+a Simics project has been created for this.</li>
+</ul>
+<p>If planning to debug a binary with source code, the source code and build tree
+should be available on the same host where Intel System Debugger has been installed.</p>
+<h3 id="start-simics"><a href="#start-simics">Start Simics</a></h3>
+<p>Start a terminal in the directory of the Simics Project, and start
+the simulation with the selected target script.
+If the installed model was the Quick-Start Platform (QSP), the launch
+command on Windows would be:</p>
+<pre><code>simics targets\qsp\firststeps.simics
+</code></pre>
+<h3 id="enable-debugging-in-simics"><a href="#enable-debugging-in-simics">Enable Debugging in Simics</a></h3>
+<p>From Simics CLI, enable remote debugging with the <code>start-eclipse-backend</code> command:</p>
+<pre><code>simics&gt; start-eclipse-backend
+Starting TCF on:
+  TCP:localhost:1534
+  TCP:155.72.86.143:1534
+</code></pre>
+<p>This command will open a TCP port to which Intel System Debugger can connect to.
+By default, the port <code>1534</code> will be used. To find this information later in the session,
+re-run <code>start-eclipse-backend</code> or alternatively <code>tcf.status</code>.</p>
+<p>Strings from <code>start-eclipse-backend</code> can be copied and used when connecting
+to Simics from Intel System Debugger (from the example above):</p>
+<ul>
+<li><code>TCP:localhost:1534</code>
+Use this when Simics and Intel System Debugger run on the same machine (localhost).</li>
+<li><code>TCP:155.72.86.143:1534</code>
+Use this when Simics runs on a remote machine (<code>155.72.86.143</code> in this case).</li>
+</ul>
+<p>If both Simics and Intel System Debugger run in the same machine, skip forward
+to the section <em>Connect Intel System Debugger to Simics</em>.</p>
+<h3 id="ensure-tcp-connection-to-tcf-port"><a href="#ensure-tcp-connection-to-tcf-port">Ensure TCP connection to TCF port</a></h3>
+<p>If Simics and Intel System Debugger run on different hosts, and we need to debug
+remotely, Intel System Debugger must be able to connect to the TCF port on the
+remote target running Simics. Typically a firewall would block most ports.</p>
+<p>If a port is known to be open on the remote host, then this can be specified
+the first time <code>start-eclipse-backend</code> is run (see <code>help start-eclipse-backend</code>).</p>
+<p>If no open port can be found, either open a port in the firewall,
+or create an SSH tunnel from the local host to the remote.</p>
+<h3 id="create-an-ssh-tunnel"><a href="#create-an-ssh-tunnel">Create an SSH Tunnel</a></h3>
+<ol>
+<li>Start Simics on the remote target and run <code>start-eclipse-backend</code>.</li>
+<li>Note the address and the port, for example:</li>
+</ol>
+<ul>
+<li>IP Address <code>155.72.86.143</code></li>
+<li>Port <code>4444</code></li>
+</ul>
+<ol start="3">
+<li>On the local host, create an SSH tunnel to the remote host, with the local port <code>3333</code>:</li>
+</ol>
+<ul>
+<li><code>ssh -L 3333:localhost:4444 155.72.86.143</code></li>
+</ul>
+<ol start="4">
+<li>Now ISD can be connected to <code>tcp:localhost:3333</code> which is described in the next section.</li>
+</ol>
+<p>In the above example, different ports were used to clarify the difference between remote
+and local host port. But if the standard TCF port was available on the remote and local
+host, then the SSH tunnel command would be instead be:</p>
+<pre><code>ssh -L 1534:localhost:1534 155.72.86.143
+</code></pre>
+<p>And Intel System Debugger would then connect to <code>tcp:localhost:1534</code>.</p>
+<p>SSH is usually available on most Linux systems, and for Windows, Microsoft
+provides a port of OpenSSL.</p>
+<h3 id="connect-intel-system-debugger-to-simics"><a href="#connect-intel-system-debugger-to-simics">Connect Intel System Debugger to Simics</a></h3>
+<p>Here we create a connection to Simics. The section can be re-used in subsequent debugging sessions.</p>
+<ol>
+<li>
+<p>Start Intel System Debugger.</p>
+</li>
+<li>
+<p>Create a connection by clicking <strong>New Connection</strong> from the
+dropdown menu <img alt="new-connection" src="new-connection.png"></p>
+</li>
+<li>
+<p>Select <strong>Manually select target</strong>, and select any target to reveal the
+<code>Connect Remotely</code> checkbox in the lower corner of the window</p>
+<p><img alt="connect-remotely" src="connect-remotely.png"></p>
+<p>to reveal new choices in the 
+top of the window. <img alt="connection-choices" src="connection-choices.png"></p>
+</li>
+<li>
+<p>Select <code>Connect to remote Simics(R) Simulator</code> and in the <code>Address</code> field
+write the IP address and TCF port of the target to connect to, for
+example <code>155.72.86.143:1534</code>. <img alt="added-address" src="added-address.png"></p>
+</li>
+<li>
+<p>Click <code>Next</code> to show the <code>Connection Summary</code>, and then click <code>Finish</code> to
+close the connection window.</p>
+</li>
+<li>
+<p>Connect to the target by clicking the
+connect button to the right of the connection.</p>
+<p><img alt="click-connect" src="click-connect.png"></p>
+</li>
+<li>
+<p>From the <code>Console</code> view, the Simics CLI is now available.</p>
+<p><img alt="console-available" src="console-available.png"></p>
+</li>
+</ol>
+<h3 id="start-debugging"><a href="#start-debugging">Start Debugging</a></h3>
+<p>Once connected, it is possible to start Debugging.
+Debugging requires a debug configuration of the type <strong>Intel System Debugger</strong>.</p>
+<ol>
+<li>
+<p>Click the the drop-down button right of the green bug icon
+<img alt="drop-down-debug-conf" src="drop-down-debug-conf.png">.</p>
+<p><img alt="create-debug-conf" src="create-debug-conf.png"></p>
+</li>
+<li>
+<p>Double click <strong>Intel System Debugger</strong> to create a debug configuration.</p>
+<p><img alt="ready-to-go-debug-conf" src="ready-to-go-debug-conf.png"></p>
+</li>
+<li>
+<p>A new debug configuration named <strong>New_Configuration</strong> is created.
+Click <strong>Debug</strong> to start debugging.</p>
+<p><img alt="click-debug-button" src="click-debug-button.png"></p>
+</li>
+</ol>
+<p>For more debugging tips see the Intel Simics Debugger built-in documentation.</p>
+<h2 id="reverse-execution"><a href="#reverse-execution">Reverse Execution</a></h2>
+<p>The Simics simulator support in Intel System Debugger integrates with the general support for reverse debugging, included in the standard Eclipse C/C++ Debug Tools.
+This adds the following buttons to the debug toolbar:</p>
+<ul>
+<li><img alt="Reverse Toggle" src="reverse-toggle.png"> - Enable or disable reverse execution.</li>
+<li><img alt="Reverse Resume" src="reverse-resume.png"> - Begin executing in reverse from where you last stopped.</li>
+<li><img alt="Reverse Step Into" src="reverse-step-into.png"> - Reverse step one instruction or line, stepping into function calls.</li>
+<li><img alt="Reverse Step Over" src="reverse-step-over.png"> - Reverse step one instruction or line, stepping over function calls.</li>
+<li><img alt="Uncall" src="uncall.png"> - Reverse until the call of the current function.</li>
+</ul>
+<p>If the selected context is not active when a step is requested, simulation will first run, in the selected direction, until it is.</p>
+<p>Reverse execution has to be enabled before it can be used.
+Some start-up scripts do this automatically, but if the start-up scripts you use do not, you can enable it with the <em>Reverse Toggle</em> button.
+Since reverse execution is based on recording simulation state and inputs received, you will not be able to reverse immediately after it has been enabled. To create a recorded history into which you can reverse, you have to run forward first.</p>
+<p>The cost in terms of performance of having reverse execution enabled is usually quite small, but reverse execution itself is a complex operation and reverse stepping can, in some situations, be considerably slower than stepping forward.</p>
+<p>There are limits to reverse execution. 
+There may be events in the simulation, such as certain configuration changes, that you cannot reverse over. 
+Specific virtual platforms may impose additional limitations.</p>
+<p><strong>Note:</strong> Current versions of Eclipse C/C++ Development Tools feature a drop down menu next to the <img alt="Reverse Toggle" src="reverse-toggle.png"> <em>Reverse Toggle</em> button, with the options <em>Enable Software Reverse Debugging</em> and <em>Enable Hardware Reverse Debugging</em>.
+These options serve no purpose with the Simics simulator and can be ignored.
+Use the button as a plain toggle button to turn reverse execution on and off.</p>
+<h2 id="event-breakpoints"><a href="#event-breakpoints">Event Breakpoints</a></h2>
+<p>The Simics simulator features a rich set of options to stop simulation whenever a certain condition occur.
+This of course includes traditional breakpoints that halt execution on certain instruction or data addresses, but also much more advanced criteria, such as when a certain text is printed on a terminal.
+Of these more advanced break conditions, only those related to software context creation, destruction and execution are currently exposed to the UI for event breakpoints available in Intel System Debugger.
+To use the other forms of break conditions, use the Simics simulator CLI, available in the <em>Console</em> view.
+In particular, the breakpoint manager object (<code>bp</code>) has several useful commands for this.
+Type <code>bp.</code> followed by <em>Tab</em> at the Simics simulator prompt to see the list. </p>
+<p>In Intel System Debugger, there are four Simics simulator specific event breakpoint types:</p>
+<ul>
+<li><em>Context Creation (Simics)</em> - this event is triggered when a new debug context is created, that is when a task or process is created.</li>
+<li><em>Context Destruction (Simics)</em> - this event is triggered when a debug context is destroyed, that is when a task or process is destroyed.</li>
+<li><em>Context Switch In (Simics)</em> - this event is triggered when a debug context starts executing on a processor, that is when a task or process is scheduled in.</li>
+<li><em>Context Switch Out (Simics)</em> - this event is triggered when a debug context stops being executed on a processor, that is when a task or process is scheduled out.</li>
+</ul>
+<p>To set an event breakpoint, select <em>Add Event Breakpoint (C/C++)...</em> from the view menu in the <em>Breakpoints</em> view.
+This opens the <em>Properties for C/C++ Event Breakpoint</em> dialog.
+Select an event type in the <em>Event Type</em> list and then enter, either the name of the task or process you want to intercept the event for, or a <em>Context Query</em> in the <em>Context</em> text field.
+If you leave the context field empty, simulation will stop every time the event occurs.</p>
+<p>For these event breakpoints to work, software tracking has to be enabled in the Simics simulator configuration.
+Since software tracking affects the performance of the simulation, most start-up scripts do not enable it automatically.
+Instead, you can enable it from the Simics simulator CLI in the <em>Console</em> view.
+The details depend on the structure of the virtual platform.</p>
+<p>If the start-up scripts have configured software tracking, but not enabled it, for a simulated machine with a top level simulation component called <code>board</code>, it can be enabled and disabled with the commands:</p>
+<pre><code>board.software.enable-tracker
+board.software.disable-tracker
+</code></pre>
+<p>The details of how to initially configure the software tracking framework and individual trackers is beyond the scope of this document.
+Please refer to the regular Simics simulator user's guides.</p>
+<h3 id="context-queries"><a href="#context-queries">Context Queries</a></h3>
+<p>A context query consists of a sequence of parts separated by a slash character (<code>/</code>).
+This sequence specifies a path in the context tree.</p>
+<p>A context matches the query if the last part of the query matches the properties of the context, and the parent of the context matches the query excluding the last part.
+The properties of a context match a part if each property specified in the part matches the property of the same name in the context, or if the name of the context matches the string specified in the part.</p>
+<p>The contexts are assumed to be placed in a tree. Each context has zero or one parent.
+If it has zero parents it is a child of the root of the tree.</p>
+<p>There are also two wild cards. The part <code>*</code> matches any context.
+The part <code>**</code> matches any sequence of contexts.
+If the query starts with a <code>/</code>, the first part of the query must match a child of the root of the context tree.</p>
+<p><strong>Note:</strong> The <code>*</code> wild card matches an entire node, not part of its name or attribute.
+Thus, a query such as <code>/foo/bar/baz*</code> is invalid, since <code>*</code> can only be used on its own, between <code>/</code>, or at the end of the query after a <code>/</code>.</p>
+<h4 id="syntax"><a href="#syntax">Syntax</a></h4>
+<p>The context query syntax can be described by the following grammar:</p>
+<pre><code>query = [ "/" ], { part, "/" }, part ;
+part = string | "*" | "**" | properties ;
+properties = property, { ",", property } ;
+property = string, "=", value ;
+value = string | number | boolean ;
+string = quoted string | symbol ;
+quoted string = '"', {any-character - ('"' | '\')
+                             | ('\', ('"' | '\'))}, '"' ;
+symbol = letter, { letter | digit } ;
+number = digit, { digit } ;
+boolean = "true" | "false" ;
+letter = ? A-Z, a-z or _ ? ;
+digit = ? 0-9 ? ;
+any-character = ? any character ? ;
+</code></pre>
+<h4 id="examples"><a href="#examples">Examples</a></h4>
+<p>This section illustrates the syntax with some examples and what a user might mean when providing such a query:</p>
+<ul>
+<li><code>httpd</code> - matches all contexts named "httpd".</li>
+<li><code>pid=4711</code> - matches any context with a property called "pid" that has the value 4711.</li>
+<li><code>/server/**</code> - matches all contexts that are descendants of the top level context named "server".</li>
+<li><code>"Linux 2.6.14"/Kernel/*</code> - matches all kernel processes in operating systems named "Linux 2.6.14".</li>
+<li><code>pid=4711/*</code> - matches all threads in processes with the pid 4711.</li>
+<li><code>/client/**/"rule30.elf"</code> - matches the context for program "rule30.elf" running on the machine called client.</li>
+<li><code>/server/**/HasState=true</code> - matches all threads that are descendants of the context "server". Contexts with no state, typically containers, do not match the query.</li>
+</ul>
+<h2 id="memory-devices-view"><a href="#memory-devices-view">Memory Devices View</a></h2>
+<p>The Simics simulator can provide more information about the memory configuration of the virtual platform than what is generally available with real hardware. To present some of this information, the Simics simulator support in Intel System Debugger includes the <img alt="Memory Devices" src="memory_tree.png"> <em>Memory Devices</em> view.</p>
+<p>For any physical memory space selected in the <img alt="Debug" src="debug_view.png"> <em>Debug</em> view, this view shows all devices (memories and peripherals) mapped into that memory space. The information includes the address range into which the device is mapped and the offset into that device of the mapping.</p>
+<p>If you select a mapping in the table, you can view the memory contents at that location in the standard <em>Memory</em> view, either by selecting <img alt="Memory" src="memory_view.png"> <em>View Memory</em> from the context menu of the table, or by using the corresponding button in the view toolbar. The memory contents will be shown in the primary rendering configured in your Intel System Debugger installation.</p>
+<p>Any problems retrieving a memory map will be shown in the status line at the bottom of the Workbench window. Problems resolving an individual entry in the map are indicated with a warning icon in the table and an explanation in the <em>Information</em> column.</p>
+<p>The <em>Memory Devices</em> view is available under <em>Window</em> → <em>Show View</em> in the main menu of the standard <em>Debug</em> perspective, or from the <em>Quick Access</em> search facility at the top right of the Workbench window from any context.</p>
+<h2 id="simics-simulator-command-line-console"><a href="#simics-simulator-command-line-console">Simics Simulator Command Line Console</a></h2>
+<p>The Simics simulator support in Intel System Debugger provides access to the Simics simulator command line interface (CLI) as a page in the normal <em>Console</em> view. 
+A new page is created for each Simics simulator connection you make using the <em>Connection</em> drop down list and the <em>Connect</em> button in the main tool bar.
+Whenever a connection is selected, or an object in a debug session started using that connection is selected, the corresponding Simics simulator CLI page will be brought to front in the <em>Console</em> view.</p>
+<p>The Simics simulator command line in the <em>Console</em> view works very much like it does when used directly from the command line version of the Simics simulator, with the same keyboard shortcuts, command history, and command completion proposals.</p>
+<h3 id="preferences"><a href="#preferences">Preferences</a></h3>
+<h4 id="scrollback-buffer-size"><a href="#scrollback-buffer-size">Scrollback Buffer Size</a></h4>
+<p>In order to limit memory consumption, the maximum number of lines stored in the scrollback buffer of the <em>Console</em> view page for the Simics simulator command line is set in the preferences. To change it, select <em>Window</em> → <em>Preferences</em> from the main menu and navigate to <em>C/C++ / Debug / Simics</em> and set <em>Limit Console Output (number of lines)</em> to the desired value.</p>
+<h4 id="key-bindings"><a href="#key-bindings">Key Bindings</a></h4>
+<p>To be able to provide Simics simulator command line keyboard shortcuts, even when those collide with global standard desktop shortcuts, as <code>Ctrl-a</code> does (go to the beginning of the line / select all text), the Simics simulator support in Intel System Debugger provides two additional key binding schemes. These match their standard counterparts everywhere, except in the Simics simulator CLI Console page:</p>
+<ul>
+<li><em>Simics Default</em> - matches the standard <em>Default</em> scheme</li>
+<li><em>Simics Emacs</em> - matches standard <em>Emacs</em> scheme</li>
+</ul>
+<p>To select either of these key binding schemes, select <em>Window</em> → <em>Preferences</em> from the main menu and navigate to <em>General / Keys</em> and use the <em>Scheme</em> drop down list.</p>
+
+<div class="chain">
+<span></span>
+</div>

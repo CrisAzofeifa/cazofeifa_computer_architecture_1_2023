@@ -1,0 +1,78 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;agent_handle&gt;.upload-dir</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-agent_handle.upload.html">&lt;agent_handle&gt;.upload</a>
+<a href="rm-cmd-agent_handle.wait-for-job.html">&lt;agent_handle&gt;.wait-for-job</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="agent_handle.upload-dir"></a>
+<h1 id="agent_handle.upload-dir"><a href="#agent_handle.upload-dir">&lt;agent_handle&gt;.upload-dir</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;agent_handle&gt;.upload-dir</b> [-follow] [-no-hidden] [-overwrite] [-verbose] <i>from</i> [<i>"to"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Copy a directory tree from the host to the target system, where the Simics Agent connected to this <tt>agent_handle</tt> object is running. Files and directories that the user do not have permission to will be ignored.
+<p>
+The <i>from</i> argument is mandatory and must refer to an existing directory on the host system. The directory and all its contents will be uploaded to the target system.
+</p><p>
+The optional <i>to</i> argument can be used to override the default destination, which is the handle's current working directory on the target system. If provided, the given directory path is taken relative to the handle's current working directory, unless the path is absolute. The destination directory on the target system must exist and allow the user to write to it, or this command will fail.
+</p><p>
+By default the command will copy soft-links "as is" and not the files that they point to, but this behavior can be altered with the <tt>-follow</tt> flag. Note that soft-links to files within the upload tree will cause the files to be duplicated when soft-links are followed. <b>WARNING: Beware of circular soft-links when the flag is used!</b> A circular soft-link will be traversed until the maximum host system recursion is exceeded.
+</p><p>
+Any hidden files (beginning with a dot) in the upload tree will be treated just like regular files, unless the <tt>-no-hidden</tt> flag is given, in which case they are ignored.
+</p><p>
+The <tt>-overwrite</tt> flag is required if the user wants existing target system files to be overwritten. Otherwise, without the flag, all existing target system files will remain untouched and the host files are skipped.
+</p><p>
+The <tt>-verbose</tt> flag, will cause the name of uploaded files and directories to be printed as they have been created or fully uploaded.
+</p><p>
+Note: The Simics Agent must have permissions to create and write files in the destination directory on the target system. The uploaded contents will be given ownership and the access permissions of the <i>user</i> who is running the Simics Agent.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.matic.html">matic</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-agent_handle.upload.html">&lt;agent_handle&gt;.upload</a>, 
+<a href="rm-cmd-agent_handle.download.html">&lt;agent_handle&gt;.download</a>, 
+<a href="rm-cmd-agent_handle.download-dir.html">&lt;agent_handle&gt;.download-dir</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-agent_handle.upload.html">&lt;agent_handle&gt;.upload</a>
+<a href="rm-cmd-agent_handle.wait-for-job.html">&lt;agent_handle&gt;.wait-for-job</a>
+</div>

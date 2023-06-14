@@ -1,0 +1,80 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>nand_flash</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_multi_level_signal.html">multi_level_signal</a>
+<a href="__rm_interface_nios.html">nios</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_nand_flash">nand_flash</a></h1>
+<p>
+
+<a name="nand_flash"></a><a name="nand_flash_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>nand_flash</code> interface is used to perform read and write
+   accesses and control some pins on NAND Flash devices.
+<p>
+   The <b><i>read_access()</i></b> and <b><i>write_access()</i></b> functions perform
+   read and write accesses.
+</p><p>
+   The <b><i>set_command_latch_enable()</i></b>,
+   <b><i>set_address_latch_enable()</i></b>, <b><i>set_write_protect()</i></b> and
+   <b><i>set_spare_area_enable()</i></b> functions set the input level of the pins
+   with the same names. 0 represents low input and 1 represents high input.
+</p><p>
+   The chip enable and ready/busy pins are not modelled. The NAND Flash device
+   assumes that chip enable is always asserted, and the device is never busy.
+</p><p>
+   </p><pre class="jdocu_small">
+#define NAND_FLASH_INTERFACE "nand_flash"
+
+SIM_INTERFACE(nand_flash) {
+        uint16 (*read_access)(conf_object_t *obj);
+        void (*write_access)(conf_object_t *obj, uint16 value);
+
+        void (*set_command_latch_enable)(conf_object_t *obj, int value);
+        void (*set_address_latch_enable)(conf_object_t *obj, int value);
+        void (*set_write_protect)(conf_object_t *obj, int value);
+        void (*set_spare_area_enable)(conf_object_t *obj, int value);
+};
+
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_multi_level_signal.html">multi_level_signal</a>
+<a href="__rm_interface_nios.html">nios</a>
+</div>

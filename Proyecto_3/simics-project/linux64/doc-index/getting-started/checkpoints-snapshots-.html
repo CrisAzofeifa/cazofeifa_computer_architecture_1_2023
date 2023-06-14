@@ -1,0 +1,99 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.4 Checkpoints (snapshots)</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="using-simics-scripts.html">2.3 Using Simics scripts</a>
+<a href="bookmarks-in-memory-snapshots-.html">2.5 Bookmarks (in-memory snapshots)</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="checkpoints-snapshots">2.4 <a href="#checkpoints-snapshots">Checkpoints (snapshots)</a></h1>
+<p>Simics allows to save on disk the state of simulation and, thus, the state of all target machines for later use. We call a saved state a checkpoint. Other simulators may refer to a saved state as a snapshot.</p>
+<p>In this section:</p>
+<ul>
+<li>how to create a checkpoint </li>
+<li>how to restore simulation state from a checkpoint </li>
+<li>links to further information about checkpoints </li>
+</ul>
+<p>We assume that a user knows how to start Simics and how to get access to Simics CLI.</p>
+<p>Creating a checkpoint:</p>
+<ol>
+<li>
+<p>start simulator and create a target machine from Simics CLI by executing the <code>targets/qsp-x86/firststeps.simics</code> script with Simics <code>run-command-file</code> command:</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+</li>
+<li>
+<p>run the machine until Linux is booted:</p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+</code></pre>
+<p><img alt="" src="checkpoints-1.png"></p>
+</li>
+<li>
+<p>stop simulation: </p>
+<pre><code class="language-simics">running&gt; <strong>stop</strong>
+simics&gt;
+</code></pre>
+</li>
+<li>
+<p>create a checkpoint by running the <code>write-configuration</code> Simics command and specifying a destination where to store a checkpoint:</p>
+<pre><code class="language-simics">simics&gt; <strong>write-configuration target-booted.ckpt</strong>
+</code></pre>
+</li>
+<li>
+<p>quit Simics: </p>
+<pre><code class="language-simics">simics&gt; <strong>quit</strong>
+</code></pre>
+</li>
+</ol>
+<p>The <code>target-booted.ckpt</code> directory created on step 5 above contains saved simulation state.</p>
+<p>Restoring from a checkpoint:</p>
+<ol>
+<li>
+<p>start Simics </p>
+</li>
+<li>
+<p>on the Simics CLI enter the <code>read-configuration target-booted.ckpt</code> command: </p>
+<pre><code class="language-simics">simics&gt; <strong>read-configuration target-booted.ckpt</strong>
+</code></pre>
+</li>
+<li>
+<p>simulation state from the <code>target-booted.ckpt</code> checkpoint is restored now. We can see a text terminal window of the target machine with Linux prompt. We can resume simulation with the <code>run</code> command: </p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+running&gt;
+</code></pre>
+</li>
+</ol>
+<p>Useful information about checkpoints can be found in the documentation of the <code>write-configuration</code> and <code>read-configuration</code> commands (the documentation can be obtained from Simics command-line interface by running the <code>help</code> command like this: <code>help write-configuration</code>).</p>
+
+<div class="chain">
+<a href="using-simics-scripts.html">2.3 Using Simics scripts</a>
+<a href="bookmarks-in-memory-snapshots-.html">2.5 Bookmarks (in-memory snapshots)</a>
+</div>

@@ -1,0 +1,106 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ppc</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_port_space.html">port_space</a>
+<a href="__rm_interface_pulse.html">pulse</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ppc">ppc</a></h1>
+<p>
+
+<a name="ppc"></a><a name="ppc_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(ppc) {
+        void (*PYTHON_METHOD clear_atomic_reservation_bit)(conf_object_t *cpu);
+        void (*PYTHON_METHOD raise_machine_check_exception)(conf_object_t *cpu,
+                                                            ppc_mc_exc_t exc);
+
+        /* Timebase */
+        unsigned (*PYTHON_METHOD get_timebase_enabled)(conf_object_t *cpu);
+        void     (*PYTHON_METHOD set_timebase_enabled)(conf_object_t *cpu,
+                                                       unsigned enabled);
+        /* Power mode */
+        ppc_sleep_state_t (*PYTHON_METHOD get_sleep_state)(conf_object_t *cpu);
+        void (*PYTHON_METHOD set_sleep_state)(conf_object_t *cpu,
+                                              ppc_sleep_state_t state);
+};
+
+#define PPC_INTERFACE "ppc"
+</pre><p>
+</p><p>
+
+   The <b><i>clear_atomic_reservation_bit()</i></b> function clears the
+   reservation bit which is set by an <code>lwarx</code> instruction.  Clearing the
+   reservation will cause a following <code>stwcx.</code> instruction to fail.
+   This function is typically used by a cache hierarchy supporting SMP.
+</p><p>
+   The <b><i>raise_machine_check_exception()</i></b> function raises a machine
+   check exception. The <i>exc</i> argument is of the following type:
+</p><p>
+   <a name="ppc_mc_exc_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Sim_PPC_Generic_MC,
+
+        Sim_PPC_MC_TEA,
+        Sim_PPC_MC_MCP,
+        Sim_PPC_Bus_Address_Parity,
+        Sim_PPC_Bus_Data_Parity,
+        Sim_PPC_Instruction_Cache_Parity,
+        Sim_PPC_Data_Cache_Parity,
+        Sim_PPC_L2_Data_Parity,
+        Sim_PPC_L3_Data_Parity,
+        Sim_PPC_L3_Address_Parity,
+        
+        Sim_PPC970_Data_Cache_Parity,
+        Sim_PPC970_Data_Cache_Tag_Parity,
+        Sim_PPC970_D_ERAT_Parity,
+        Sim_PPC970_TLB_Parity,
+        Sim_PPC970_SLB_Parity,
+        Sim_PPC970_L2_Load_ECC_Parity,
+        Sim_PPC970_L2_Page_Table_ECC_Parity,
+        Sim_PPC970_Uncacheable_Load_Parity,
+        Sim_PPC970_MC_External
+} ppc_mc_exc_t;</pre><p>
+
+</p><p>
+   The <b><i>get_timebase_enabled</i></b> and <b><i>set_timebase_enabled</i></b>
+   functions can be used to query and set the enabled state of the timebase.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_port_space.html">port_space</a>
+<a href="__rm_interface_pulse.html">pulse</a>
+</div>

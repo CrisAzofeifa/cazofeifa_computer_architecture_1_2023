@@ -1,0 +1,287 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>17.3 Distributed Simulation</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="multicore-accelerator.html">17.2 Multicore Accelerator</a>
+<a href="accelerator-pagesharing.html">17.4 Page-Sharing</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="scaling-simics.html">17 Scaling Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="distributed-simulation">17.3 Distributed Simulation</a></h1>
+<p>
+
+<a name="Central"></a> <a name="distribution"></a> <a name="distributed-simulation"></a>
+</p><p>
+Distributed simulation is used for connecting multiple Simics processes,
+possibly running on different host machines, to run synchronously and exchange
+data in a reliable and deterministic way.
+</p><p>
+</p><h2 class="jdocu"><a name="Configuration">17.3.1 Configuration</a></h2>
+<p>
+
+<a name="node"></a>
+</p><p>
+The Simics processes taking part in the combined simulation, here called
+<em>nodes</em>, are configured and managed individually. Each node will set up
+and run its own configuration and have its own name space. It will be
+controlled by its own command line or graphical interface.
+</p><p>
+Nodes are strung together by letting the local top-level synchronization domain
+in one node have a domain in another node as parent. Typically, there will be
+one global top-level domain in one node controlling the domains in all other
+nodes:
+</p><p>
+</p><pre class="jdocu_small">       D0                         global top-level domain
+        |
+        +---------+---------+
+        |         |         |
+       D1        D2        D3     local domains
+        |         |         |
+        +-+-+     +-+-+     +-+-+
+        |   |     |   |     |   |
+        C11 C12   C21 C22   C31 C32  cells
+        |--------|---------|--------|
+        node 1    node 2   node 3
+</pre><p>
+</p><p>
+In the above diagram, <b>D0</b>-<b>D3</b> are synchronization domains
+and <b>C11</b>-<b>C32</b> cells. <b>D1</b>, <b>C11</b>
+and <b>C12</b> are all in node 1, and so on. The top-level
+domain <b>D0</b> could be placed either in a node of its own, without any
+cells, or in one of the other nodes. We will here assume it is located in node
+1, the <em>server node</em>; the other nodes are then <em>clients</em>.
+   </p><p>
+Domains in different nodes connect by proxies, which themselves connect over
+the network. The relation between D0 and D3 above is set up like follows:
+</p><p>
+</p><pre class="jdocu_small">           /     D0           sync_domain
+   node 1 |      |
+           \     D3_proxy     remote_sync_node
+                 :
+              (network connection)
+                 :
+           /     D0_proxy     remote_sync_domain
+   node 3 |      |
+           \     D3           sync_domain
+</pre><p>
+</p><p>
+The <b>remote_sync_domain</b> in the client node, <b>D0_proxy</b>, is
+created explicitly in the configuration for that
+node. The <b>remote_sync_node</b> in the server node is created
+automatically by a special server object when <b>D0_proxy</b> connects to
+the server node.
+</p><p>
+<a name="remote-domain"></a> <a name="domainremote"></a> <a name="remote_sync_node"></a> 
+<a name="remote_sync_domain"></a> <a name="remote_sync_server"></a>
+</p><p>
+When a node has finished its configuration, it must inform the server to allow
+other clients to connect. This is done by setting to <code>None</code>
+the <i>finished</i> attribute of the <b>remote_sync_domain</b>
+object, or the <b>remote_sync_server</b> in the server.  As a result, node
+configuration is done in sequence.
+</p><p>
+The default domain used by cells is <b>default_sync_domain</b>, so by using
+this as the local domain name, existing non-distributed configurations can be
+re-used. It is also a good idea to use the same name for
+the <b>remote_sync_domain</b> as for the actual top-level domain it is a
+proxy for. That way, it will matter less in what node the top-level domain is
+placed.
+</p><p>
+The configuration script for a single node could look like the following Python
+fragment:
+</p><p>
+</p><pre class="jdocu_small">srv_host = "serverhost"  # machine the server node runs on
+srv_port = 4567          # TCP port the server listens on
+
+# Start by creating the global and/or local domain objects:
+
+if this_is_the_server_node:
+    topdom = SIM_create_object("sync_domain", "top_domain",
+                               [["min_latency", 0.04]])
+    rss = SIM_create_object("remote_sync_server", "rss",
+                            [["domain", topdom], ["port", srv_port]])
+else:
+    # Client nodes: create a proxy for the top-level domain.
+    # This will initiate a connection to the server.
+    topdom = SIM_create_object("remote_sync_domain", "top_domain",
+                               [["server",
+                                 "%s:%d" % (srv_host, srv_port)]])
+# create a local domain to be a parent for the cells in this node
+SIM_create_object("sync_domain", "default_sync_domain",
+                  [["sync_domain", topdom], ["min_latency", 0.01]])
+
+# --- Here the rest of the node should be configured. ---
+
+if this_is_the_server_node:
+    rss.finished = None     # let clients connect to the server
+else:
+    topdom.finished = None  # let other clients connect to the server
+</pre><p>
+</p><p>
+At the end of this script, the configuration is finished for that node. Note
+that other nodes may not have finished theirs yet—the simulation cannot
+start until the entire system has been set up. The user can just wait for this
+to happen, or write a mechanism to block until the system is ready; see the
+section about global messages below.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Links">17.3.2 Links</a></h2>
+<p>
+
+<a name="linkdistributed"></a>
+</p><p>
+Links work across nodes in the same way as in a single process
+simulation. Using the same global ID for links in two different nodes ensures
+that they are considered as the same link in the distributed simulation. The
+global ID for a link is set using the <i>global_id</i> attribute when the
+link is created.
+</p><p>
+There is one important aspect of link distribution that should be taken into
+account when creating distributed configuration. 
+</p><p>
+When creating single-session configuration, Simics provides only one object
+namespace, which means that all objects have a unique name in that
+session. This property is used to keep link message delivery deterministic when
+no other way of comparing the messages is available. To be more precise,
+messages arriving from different senders to the same receiver at the same cycle
+are sorted according to the pair (sender name, sender port).
+</p><p>
+In distributed sessions however, Simics does not impose a single object
+namespace. This allows several objects with the same name to be connected to
+the same distributed link. As a consequence, the delivery of messages as
+described in the previous paragraph may become indeterministic again, since
+different sender may report the same (sender name, sender port)
+pair. Distributed links report an error if such a configuration is found. 
+</p><p>
+The solution is to name differently the various boards or machines that compose
+the complete distribution configuration.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Deleting a distributed link is not supported.</div>
+<h2 class="jdocu"><a name="Global-Messages">17.3.3 Global Messages</a></h2>
+<p>
+
+</p><p>
+There is a supporting mechanism for sending simple messages to all nodes in the
+combined system: <b><i>VT_global_message(<i>msg</i>)</i></b> will trigger
+the hap <code>Core_Global_Message</code> with that string as parameter in
+each node, including the one sending the message.  A listener of the message
+could look like:
+</p><p>
+</p><pre class="jdocu_small">def global_message_callback(obj, idx, msg):
+    print("got message %s" % msg)
+SIM_hap_add_callback("Core_Global_Message",
+                     global_message_callback, None)
+</pre><p>
+</p><p>
+Global messages will arrive and be processed during a call to
+<b><i>SIM_process_work()</i></b>. This is useful for blocking further execution of
+a script until a certain message has arrived.
+</p><p>
+Global messages can be used to assist in configuration and running a
+distributed system. Possible uses include:
+</p><p>
+</p><ul>
+
+<li>waiting for all nodes to finish their configuration</li>
+
+<li>starting and stopping the simulation on all nodes as the same time</li>
+
+<li>broadcasting commands to all nodes</li>
+
+<li>sending data to a single requesting node</li>
+
+<li>saving the configuration of all nodes</li>
+
+</ul>
+<p>
+This facility is <em>not intended for simulation use</em>; message delivery is
+reliable but not deterministic in timing. It should be regarded as a low-level
+mechanism to be used as a building block for higher-level communication.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Running-the-simulation">17.3.4 Running the simulation</a></h2>
+<p>
+
+</p><p>
+Each node will have to start the simulation for the combined system to make
+progress. If one node stops the simulation—by user intervention or
+because of a coded breakpoint—the remaining nodes will be unable to
+continue, because the top-level synchronization domain keeps cells in different
+nodes from diverging.
+</p><p>
+Each node can only access the objects it has defined locally. This means that
+inspection and interaction with the system must be done separately for each
+node. A combined front-end interface is not available for Simics at this
+time.
+</p><p>
+When one Simics process terminates, the other nodes will automatically exit as
+well.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Saving-and-restoring-checkpoints">17.3.5 Saving and restoring checkpoints</a></h2>
+<p>
+
+</p><p>
+The state of a distributed simulation can be saved by issuing
+<b>write-configuration</b> in each node separately. To restore such a
+checkpoint, start an equal number of (empty) Simics processes and read the
+saved configuration for each node.
+</p><p>
+Note that the server host name and port number are saved in the configuration
+files. These have to be edited if the checkpoint is restored with a different
+server host, or if the port number needs to be changed. Similarly, if SimicsFS
+is mounted to a file system, it will be saved in the checkpoint. Not all
+connections to real network or file systems can be restored at a later time.
+</p><p>
+Note as well that the configurations must be read in sequence again, using
+the <i>finished</i> attribute to control which session is allowed to
+connect. However, the order of read-configuration sequence does not matter, as
+long as the server is started first.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Security">17.3.6 Security</a></h2>
+<p>
+
+</p><p>
+The distributed simulation facility has no authentication mechanism and is not
+security-hardened. It should therefore only be used in a trusted network
+environment.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="multicore-accelerator.html">17.2 Multicore Accelerator</a>
+<a href="accelerator-pagesharing.html">17.4 Page-Sharing</a>
+</div>

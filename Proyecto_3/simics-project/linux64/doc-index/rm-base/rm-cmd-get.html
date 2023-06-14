@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>get</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-frame.html">frame</a>
+<a href="rm-cmd-get-auto-mac-address.html">get-auto-mac-address</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="get"></a>
+<a name="port_space.read"></a>
+<a name="port_space.get"></a>
+<a name="memory_space.get"></a>
+<a name="memory_space.read"></a>
+<h1 id="get"><a href="#get">get</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>get</b> <i>address</i> [<i>size</i>] [-l] [-b] <br><b>&lt;port_space&gt;.read</b> <i>address</i> [<i>size</i>] [-l] [-b] [<i>initiator</i>] <br><b>&lt;port_space&gt;.get</b> <i>address</i> [<i>size</i>] [-l] [-b] [<i>initiator</i>] <br><b>&lt;memory_space&gt;.get</b> <i>address</i> [<i>size</i>] [-l] [-b] [<i>initiator</i>] <br><b>&lt;memory_space&gt;.read</b> <i>address</i> [<i>size</i>] [-l] [-b] [<i>initiator</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Get value of physical memory at location <i>address</i>. The <i>size</i> argument specifies how many bytes should be read. It defaults to 4, but can be any number of bytes between 1 and 8 (inclusive).
+<p>
+If <i>initiator</i> is the object that will be used as the source of the memory access. Supplying an initiator is rarely needed, but some devices may only accept accesses from certain initiating objects.
+</p><p>
+The <tt>-l</tt> and <tt>-b</tt> flags are used to select little-endian or big-endian byte order, respectively used to determine how the bytes in memory should be interpreted as a value. If neither is given, the byte order of the <i>initiator</i> is used if specified and a processor, or else the order of the current frontend processor.
+</p><p>
+The <code>get</code> command variants perform the access in inquiry mode without triggering any side-effects while <code>read</code> and <code>read</code> may trigger side-effects.
+</p><p>
+The non-namespace version of this command operates on the physical memory associated with the current frontend processor.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-x.html">x</a>, 
+<a href="rm-cmd-set.html">set</a>, 
+<a href="rm-cmd-signed.html">signed</a>, 
+<a href="rm-cmd-pselect.html">pselect</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-frame.html">frame</a>
+<a href="rm-cmd-get-auto-mac-address.html">get-auto-mac-address</a>
+</div>

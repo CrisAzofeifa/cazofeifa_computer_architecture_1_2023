@@ -1,0 +1,76 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.3.1 Configure Communications</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="setup-windows-debug.html">2.3 Setting up Windows Target for Debug</a>
+<a href="configure-debug.html">2.3.2 Configure Debug</a>
+</div>
+<div class="path">
+<a href="index.html">Windows Kernel Debugging</a>
+&nbsp;/&nbsp;
+<a href="network-debugging.html">2 Windows Kernel Debugging Over a Network</a>
+&nbsp;/&nbsp;
+<a href="setup-windows-debug.html">2.3 Setting up Windows Target for Debug</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="configure-communications">2.3.1 Configure Communications</a></h1>
+<p>
+  
+</p><p>
+  In an elevated command prompt on the target system, issue the following
+  command to tell the Windows on-target debug agent how to connect
+  to the debugger outside of Simics:
+</p><p>
+  </p><pre class="jdocu_small">&gt; <b>BCDEDIT /DBGSETTINGS NET HOSTIP:&lt;DebugHostIP&gt; BUSPARAMS:&lt;B.D.F&gt;<img alt="Line break" src="nextline.png">
+PORT:&lt;Port&gt; KEY:1.2.3.4</b>
+  </pre><p>
+</p><p>
+  where:
+</p><p>
+  </p><ul>
+    <li><b><code>&lt;DebugHostIP&gt;</code></b> is the service node/gateway IP. It
+      is used to communicate with the the outside world.</li>
+    <li><b><code>&lt;B.D.F&gt;</code></b> is the BDF of the network card, as shown
+      in section <a class="reference" href="check-pcie-address.html">2.1.2</a>.</li>
+    <li><b><code>&lt;Port&gt;</code></b> is a port you need to choose for the
+      connection, typically somewhere above 50000. Say <b>50010</b> as a
+      default.</li>
+    <li>The Key is a value used to secure the connection. Make sure to use the
+      same value everywhere it is required. You can use <b>1.2.3.4</b> to keep
+      things simple.</li>
+  </ul>
+<p>
+  In the setup used for the example:
+</p><p>
+  </p><pre class="jdocu_small">&gt; <b>BCDEDIT /DBGSETTINGS NET HOSTIP:10.10.0.1 BUSPARAMS:0.25.0 PORT:50010<img alt="Line break" src="nextline.png">
+KEY:1.2.3.4</b>
+  </pre><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="setup-windows-debug.html">2.3 Setting up Windows Target for Debug</a>
+<a href="configure-debug.html">2.3.2 Configure Debug</a>
+</div>

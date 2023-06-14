@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pci_upstream_operation</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pci_upstream.html">pci_upstream</a>
+<a href="__rm_interface_pcie_device.html">pcie_device</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pci_upstream_operation">pci_upstream_operation</a></h1>
+<p>
+
+<a name="pci_upstream_operation"></a><a name="pci_upstream_operation_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is implemented by PCI(e) buses to handle upstream
+   transactions (primarily memory or IO) from PCI(e) devices.
+<p>
+   The <i>initiator</i> should be the PCI device object itself. There are
+   currently no requirements on this object in terms of interfaces. It is
+   intended for future use and could be left NULL.
+</p><p>
+   The 16-bit Requester ID is provided by the <i>rid</i> parameter. This is
+   the ID that uniquely identifies the initiator in a PCIe hierarchy, also more
+   commonly known as the BDF (Bus/Device/Function). This ID can be left blank
+   (0) by non-PCIe devices if the BDF is not known.
+</p><p>
+   Return value is of type <code>exception_type_t</code> and maps, just like
+   all other PCI interfaces, onto PCI concepts accordingly:
+   </p><dl><dt id="dt:sim_pe_no_exception"><b>Sim_PE_No_Exception</b></dt><dd>OK</dd><dt id="dt:sim_pe_io_not_taken"><b>Sim_PE_IO_Not_Taken</b></dt><dd>Master Abort</dd><dt id="dt:sim_pe_io_error"><b>Sim_PE_IO_Error</b></dt><dd>Target Abort</dd></dl><p>Other return values are currently unexpected.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(pci_upstream_operation) {
+        exception_type_t (*read)(conf_object_t *obj,
+                                 conf_object_t *initiator,
+                                 uint16 rid,
+                                 addr_space_t space,
+                                 physical_address_t address,
+                                 buffer_t buffer);
+        exception_type_t (*write)(conf_object_t *obj,
+                                  conf_object_t *initiator,
+                                  uint16 rid,
+                                  addr_space_t space,
+                                  physical_address_t address,
+                                  bytes_t buffer);
+};
+#define PCI_UPSTREAM_OPERATION_INTERFACE   "pci_upstream_operation"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pci_upstream.html">pci_upstream</a>
+<a href="__rm_interface_pcie_device.html">pcie_device</a>
+</div>

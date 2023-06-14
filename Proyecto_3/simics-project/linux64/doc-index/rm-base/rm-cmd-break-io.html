@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>break-io – deprecated</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-break-hap.html">break-hap – deprecated</a>
+<a href="rm-cmd-break-line.html">break-line – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="break-io"></a>
+<h1 id="break-io"><a href="#break-io">break-io – deprecated</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>break-io</b> [<i>"device"</i>] [<i>port</i>] [<i>offset</i>] [<i>length</i>] [-r] [-w] [-all] [-list] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Enable breaking simulation on accesses to devices. The simulation will be stopped when an access is made to one or all devices objects through their <tt>io_memory</tt> interface.
+<p>
+The breakpoint is set either on a given <i>device</i>, or on all devices with the <tt>-all</tt> flag.
+</p><p>
+Devices providing multiple banks of registers usually expose them as <tt>io_memory</tt> port interfaces using the bank names. Some devices use the non-port <tt>io_memory</tt> interface with a function number instead.
+</p><p>
+If <i>port</i> is given, argument restricts the monitoring in different ways. If it is a string, only accesses to the <tt>io_memory</tt> port interface by that name are considered. If an integer, only accesses to the non-port <tt>io_memory</tt> interface using that function number are considered.
+</p><p>
+If <i>offset</i> and <i>length</i> are given, the breakpoint is restricted to that address interval within the bank. The default interval length is 1 if <i>offset</i> is given.
+</p><p>
+By default, both reads and writes trigger the breakpoint. With <tt>-r</tt> only reads are considered, and with <tt>-w</tt> only writes are considered.
+</p><p>
+If several breakpoints are set on the same address, Simics will only break once.
+</p><p>
+List all breakpoints and their ID numbers with the <tt>-list</tt> flag. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>bp.bank.break, 
+<a href="rm-cmd-bp-manager.bank.trace.html">&lt;bp-manager.bank&gt;.trace</a>, 
+<a href="rm-cmd-memory-space.map.html">&lt;memory-space&gt;.map</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-break-hap.html">break-hap – deprecated</a>
+<a href="rm-cmd-break-line.html">break-line – deprecated</a>
+</div>

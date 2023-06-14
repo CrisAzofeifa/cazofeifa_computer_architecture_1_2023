@@ -1,0 +1,92 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>13.1 A Simple Example</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="lowlevel-software.html">13 Using Simics for Hardware Bring-Up and Firmware Development</a>
+<a href="going-further.html">13.2 Going Further</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="low-level-debugging.html">III Low-Level Debugging</a>
+&nbsp;/&nbsp;
+<a href="lowlevel-software.html">13 Using Simics for Hardware Bring-Up and Firmware Development</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="A-Simple-Example">13.1 A Simple Example</a></h1>
+<p>It is easy to write a handful of instructions directly to memory, fill
+the registers with any necessary values, and manually single-step
+through this little program:
+</p><p>
+
+
+<a name="load-file"></a>
+<a name="set-pc"></a>
+</p><pre class="jdocu_small">simics&gt; <b>board.mb.cpu0.core[0][0]-&gt;cs[7] = 0</b>
+simics&gt; <b>board.mb.cpu0.core[0][0]-&gt;cs[8] = 0xffffffff</b>
+simics&gt; <b>load-file test.bin 0xf000</b>
+simics&gt; <b>set-pc 0x10001</b>
+simics&gt; <b>%dx = 4711</b>
+simics&gt; <b>si</b>
+[board.mb.cpu0.core[0][0]] cs:0x0000000000010001 p:0x000010001  mov ax,0x1
+simics&gt; <b>si</b>
+[board.mb.cpu0.core[0][0]] cs:0x0000000000010004 p:0x000010004  xor ebx,ebx
+</pre><p>
+</p><p>
+As always in Simics, this can be scripted if you expect
+to run it more than once:
+</p><p>
+<a name="run-command-file"></a>
+<a name="expect"></a>
+</p><dl><dt id="dt:test-simics"><b><code>test.simics</code>:</b></dt><dd><pre class="jdocu_small">run-command-file targets/qsp-x86/firststeps.simics
+board.mb.cpu0.core[0][0]-&gt;cs[7] = 0
+board.mb.cpu0.core[0][0]-&gt;cs[8] = 0xffffffff
+load-file test.bin 0xf000
+set-pc 0x10001
+%dx = 4711
+continue 12
+expect %dx 4713
+expect %pc 0x1001c
+quit
+</pre><p>
+</p><p>
+ 
+</p></dd></dl><p></p><pre class="jdocu_small">$ <b>./simics test.simics</b>
+*** Values differ in expect command: 4711 4713
+$
+</pre><p>
+</p><p>
+Here, we first call another simics script to set up the machine for
+us, then run our test case. The <b>expect</b>s will cause
+Simics to exit with an error code (as shown) if the conditions are not
+met; otherwise, the <b>quit</b> will cause Simics to quit
+successfully.
+</p><p>
+</p>
+<div class="chain">
+<a href="lowlevel-software.html">13 Using Simics for Hardware Bring-Up and Firmware Development</a>
+<a href="going-further.html">13.2 Going Further</a>
+</div>

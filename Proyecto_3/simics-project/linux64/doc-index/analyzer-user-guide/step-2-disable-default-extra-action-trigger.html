@@ -1,0 +1,58 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>B.2 Step 2 - Disable Default Extra Action Trigger</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="step-1-add-extra-action-pecoffextraactionlib-.html">B.1 Step 1 - Add Extra Action (PeCoffExtraActionLib)</a>
+<a href="step-3-add-custom-trigger-read-cr3-.html">B.3 Step 3 - Add Custom Trigger (Read CR3)</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="uefi-fw-trk-uefi-notification-update.html">B Update UEFI For Notification Tracking</a>
+&nbsp;/&nbsp;</div>
+<h1 id="step-2-disable-default-extra-action-trigger">B.2 <a href="#step-2-disable-default-extra-action-trigger">Step 2 - Disable Default Extra Action Trigger</a></h1>
+<p>Next, the default extra action load/unload trigger must be disabled to allow adding a custom trigger, which is to read register <code>CR3</code>. This is done by changing the value of <code>PcdDebugLoadImageMethod</code> when not building with <code>$(SOURCE_DEBUG_ENABLE)</code>. Search for <em>PcdDebugLoadImageMethod</em>, in the platform description file and add this before the <code>!endif</code>:</p>
+<pre><code>
+!else
+  gEfiSourceLevelDebugPkgTokenSpaceGuid.PcdDebugLoadImageMethod|0x0
+  
+</code></pre>
+<p>The end result should be: </p>
+<pre><code>
+!ifdef $(SOURCE_DEBUG_ENABLE)
+  gEfiSourceLevelDebugPkgTokenSpaceGuid.PcdDebugLoadImageMethod|0x2
+!else
+  gEfiSourceLevelDebugPkgTokenSpaceGuid.PcdDebugLoadImageMethod|0x0
+!endif
+  
+</code></pre>
+<p>This will disable the default trigger of <code>PeCoffLoaderExtraActionCommon</code> and allow us to add our own trigger, which is described in the next step. </p>
+
+<div class="chain">
+<a href="step-1-add-extra-action-pecoffextraactionlib-.html">B.1 Step 1 - Add Extra Action (PeCoffExtraActionLib)</a>
+<a href="step-3-add-custom-trigger-read-cr3-.html">B.3 Step 3 - Add Custom Trigger (Read CR3)</a>
+</div>

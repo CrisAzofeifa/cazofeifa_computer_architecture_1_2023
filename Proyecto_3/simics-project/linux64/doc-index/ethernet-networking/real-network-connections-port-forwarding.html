@@ -1,0 +1,512 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.2.1 Port Forwarding</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="real-network-connections.html">4.2 Connection Types</a>
+<a href="real-network-connections-ethernet-bridging.html">4.2.2 Ethernet Bridging</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="real-network.html">4 Connecting to a Real Network</a>
+&nbsp;/&nbsp;
+<a href="real-network-connections.html">4.2 Connection Types</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="real-network-connections-port-forwarding">4.2.1 Port Forwarding</a></h1>
+<p>
+   <a name="port-forwarding"></a>
+</p><p>
+Port forwarding forwards traffic on TCP and UDP ports between the
+simulated network and the real network. It also allows forwarding DNS
+queries from the simulated network to the real network. Port
+forwarding can be used with any kind of IP network on the host, it is
+not limited to Ethernet networks.
+</p><p>
+Port forwarding is probably the easiest way to access the real network
+for simple <a name="TCPIP"></a>TCP or <a name="UDP">UDP</a> connectivity, for
+example, <a name="telnet">telnet</a> or FTP usage. Port forwarding is easy to
+set up. Simics does not need administrative privileges to run port
+forwarding, and neither the simulation host nor any other host needs
+to be configured in any way.
+</p><p>
+Port forwarding is managed by a <a name="service-node"></a> service node
+connected to an Ethernet link. It is the service node that listens for
+traffic on both the real and simulated networks and forwards it to the
+other side.  All port forwarding commands except
+<b>connect-real-network</b> therefore take as argument an Ethernet
+link with a connected service node.
+</p><p>
+There are really four distinct parts to Simics's port forwarding
+solution: <a name="port-forwardingincoming"></a> forwarding of specific
+ports from the real network to the simulated network, <a name="portforwardingoutgoing"></a> forwarding of specific ports from the
+simulated network to the real network, <a name="port-forwardingNAPT"></a>
+<a name="NAPT">NAPT</a> from the simulated network to the real network, and
+forwarding of <a name="DNS">DNS</a> queries to the real network.
+</p><p>
+There is also a convenience command named <a name="portforwardingconnect-real-network"></a>
+<b><a name="connect-real-network">connect-real-network</a></b> that automatically sets up
+NAPT for outgoing traffic, forwarding of DNS queries to the real
+network, and incoming port forwarding for some common services.  If
+there is no Ethernet link object, one is created and set up.
+</p><p>
+The <a name="port-forwardinglist-port-forwarding-setup"></a>
+<b>list-port-forwarding-setup</b> command describes the current
+port forwarding setup: it will list all incoming and outgoing ports,
+as well as the NAPT and DNS forwarding status.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+<a name="Ping"></a>Pinging between the simulated network and the
+real network will not work when using port forwarding, so ping should
+not be used to test if the connection is working. Ping uses the
+<a name="ICMP">ICMP</a> protocol, but only TCP and UDP traffic is supported
+with port forwarding.</div><h2 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crn">The connect-real-network Command</a></h2>
+<p><a name="connect-real-network2"></a> The <b>connect-real-network</b>
+command is a convenience command that sets up <a name="NAPT2">NAPT</a> for
+outgoing traffic, enables forwarding of DNS queries to the real
+network, and opens incoming ports for FTP, HTTP and telnet to a
+simulated machine. This is an easy way to get inbound and outbound
+access for common services on a simulated machine.
+</p><p>
+The command requires a <i>target-ip</i> argument that specifies
+the IP address of the simulated machine that should be targeted by the
+incoming traffic. If there are multiple simulated machines,
+<b>connect-real-network</b> can be run once for each
+machine. Simics will select different ports on the simulation host for
+the incoming services for each simulated machine, and the selected
+ports are printed in the Simics console.
+</p><p>
+The <b>connect-real-network</b> command does not require an
+Ethernet link as argument, unless there is more than one in the
+simulation. If there is no Ethernet link or service node, they will be
+created automatically.
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crn-example">Example</a></h3>
+<p>
+     
+</p><p>
+The <b>connect-real-network</b> allows us to set up all
+connections that are needed for most simple real network uses with one
+simple command. We can start from the checkpoint prepared in section
+<a class="reference" href="real-network-examples.html">4.1</a>, and then run the
+<b>connect-real-network</b> command with the IP address 10.10.0.40, which
+is the default address of <i>QSP-x86</i>:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>connect-real-network 10.10.0.40</b>
+No Ethernet link found, created default_eth_switch0.
+Connected board.mb.sb.eth_slot to default_eth_switch0
+Created instantiated 'service_node_comp' component 'default_service_node0'
+Connecting 'default_service_node0' to 'default_eth_switch0' as 10.10.0.1
+NAPT enabled with gateway 10.10.0.1/24 on link default_eth_switch0.link.
+NAPT enabled with gateway fe80::2220:20ff:fe20:2000/64 on link default_eth_switch0.link.
+Host TCP port 4021 -&gt; 10.10.0.40:21
+Host TCP port 4022 -&gt; 10.10.0.40:22
+Host TCP port 4023 -&gt; 10.10.0.40:23
+Host TCP port 4080 -&gt; 10.10.0.40:80
+Real DNS enabled at 10.10.0.1/24 on link default_eth_switch0.link.
+Real DNS enabled at fe80::2220:20ff:fe20:2000/64 on link default_eth_switch0.link.
+</pre><p>
+</p><p>
+The output shows that an <b>ethernet_switch</b> and a
+<b>service_node_comp</b> components have been automatically
+created and connected to the simulated machine. NAPT, DNS forwarding,
+and incoming port forwarding for FTP, HTTP and telnet have also been
+enabled.
+</p><p>
+Now start the simulation. Since we gave the service node the IP
+address 10.10.0.1, <i>QSP-x86</i> should be configured with
+10.10.0.1 as default gateway:
+</p><p>
+</p><pre class="jdocu_small">~# <b>route add default gw 10.10.0.1</b>
+</pre><p>
+</p><p>
+It should now be possible to telnet from the simulated machine to
+hosts on the real network. In this case, we telnet to a Solaris
+machine with IP address 10.0.0.240; replace this address with any host
+answering to telnet on the network:
+</p><p>
+</p><pre class="jdocu_small">~# <b>telnet 10.0.0.240</b>
+Trying 10.0.0.240...
+Connected to 10.0.0.240.
+Escape character is '^]'.
+
+
+SunOS 5.9
+
+login: joe
+Password:
+Sun Microsystems Inc.    SunOS 5.9       Generic May 2002
+$ exit
+Connection closed by foreign host.
+~#
+</pre><p>
+</p><p>
+<i>QSP-x86</i> can be configured to use the service node as
+DNS server and use it to look up real DNS names. To do that, add the
+line <code>nameserver 10.10.0.1</code> in the file
+<code>/etc/resolv.conf</code> on the simulated machine:
+</p><p>
+</p><pre class="jdocu_small">~# <b>echo nameserver 10.10.0.1 &gt; /etc/resolv.conf</b>
+</pre><p>
+</p><p>
+It should now be possible to look up the addresses of real hosts on
+the simulated machine, for example,
+<a class="jdocu" href="https://gnu.org" rel="noopener noreferrer" target="_top">https://gnu.org</a>. <i>QSP-x86</i> does not have the tools
+to perform DNS lookups. Instead, verify that DNS works by connecting
+to a real server by name:
+</p><p>
+</p><pre class="jdocu_small">~# <b>telnet gnu.org 80</b>
+<b>GET /</b>
+&lt;?xml version="1.0" encoding="ISO-8859-1"?&gt;
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"&gt;
+&lt;head&gt;
+&lt;title&gt;Server error!&lt;/title&gt;
+[...]
+Connection closed by foreign host.
+~#
+</pre><p>
+</p><p>
+FTP, HTTP and telnet servers running on the simulated machine should
+also be accessible. <i>QSP-x86</i> runs both a telnet and a
+HTTP server. Just use port 4023 and 4080 instead of 23 and 80. The
+exact ports of the host these services are mapped to varies if the
+default ports are already in use. Look at the output from the
+<b>connect-real-network</b> above for the port numbers to use.
+</p><p>
+
+</p><p>
+ </p><h2 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crnpi">Incoming Port Forwarding</a></h2>
+<p>
+     
+</p><p>
+<a name="port-forwardingincoming2"></a>
+<a name="connect-real-networkconnect-real-network-port-in"></a> The
+<b>connect-real-network-port-in</b> command sets up port
+forwarding from a port on the host machine to a specific port on a
+simulated machine. It takes three required arguments:
+<i>ethernet-link</i>, <i>target-ip</i> and
+<i>target-port</i>, that specify the Ethernet link, IP address and
+port the traffic should be forwarded to.
+</p><p>
+An IP address and preferred port can be selected for incoming traffic
+on the simulation host using the <i>host-ip</i> and
+<i>host-port</i> arguments. If these arguments are not provided,
+Simics will select a port automatically and print it on the Simics
+console, and receive all IPv4 traffic (i.e., IP 0.0.0.0) from that
+port. In order to forward multicast traffic, specify that multicast
+address (e.g., specify 239.255.255.253 to forward IPv4 SLP traffic).
+</p><p>
+The <b>connect-real-network-port-in</b> command can also take the
+flags <i>-tcp</i> and <i>-udp</i>, which specify whether
+forwarding is set up for a TCP or a UDP port. If neither is provided,
+forwarding will be set up for both the TCP and UDP ports.
+</p><p>
+The service node acts as a proxy for incoming traffic, so to initiate
+a connection to a specific port on the simulated machine, the real
+machine should contact the corresponding open port on the simulation
+host. The simulation host is not a gateway to the simulated network.
+</p><p>
+Any UDP packets sent to a port on the simulation host are forwarded to
+the specified port and IP address on the simulated network. For the
+simulated machine to be able to return UDP packets to the real
+network, a separate forwarding rule must be set up using the
+<a name="connect-real-networkconnect-real-network-port-out"></a>
+<b>connect-real-network-port-out</b> command.
+</p><p>
+Any TCP connections to the port on the simulation host are forwarded
+to the specified port and IP address on the simulated network. Since
+TCP connections are two-ways, once a connection has been established,
+data can be sent in both directions.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+You will probably have to manually add the incoming ports to
+your host based software firewall if you want to access the simulated
+network from another machine. Tracking down network problems when you
+forget to update the firewall is annoying as the packets tend to get
+dropped silently without a log.</div><a name="FTPactive-mode"></a> The FTP protocol needs to open additional
+ports when transferring files. Simics handles this by automatically
+opening outgoing ports for FTP when needed, so FTP will work as long
+as it is in <em>active</em> mode.
+<p>
+</p><h3 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crnpi-example">Example</a></h3>
+<p>
+     
+</p><p>
+<i>QSP-x86</i> runs sshd on port 22. We can now set up a
+port forwarding rule that allows us to access the ssh service from
+the real network. Start from the checkpoint, create an Ethernet link
+and service node, connect the simulated machine to the Ethernet link
+and run the <b>connect-real-network-port-in</b> command like this:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module eth-links</b>
+simics&gt; <b>new-ethernet-switch switch0</b>
+Created instantiated 'ethernet_switch' component 'switch0'
+simics&gt; <b>new-service-node-comp sn0</b>
+Created instantiated 'service_node_comp' component 'sn0'
+simics&gt; <b>sn0.connect-to-link switch0 10.10.0.1</b>
+Adding host info for IP 10.10.0.1: simics0.network.sim  MAC: 20:20:20:20:20:00
+simics&gt; <b>connect board.mb.sb.eth_slot switch0.device1</b>
+simics&gt; <b>connect-real-network-port-in ethernet-link = switch0 <img alt="Line break" src="nextline.png">
+target-ip = 10.10.0.40 target-port = 22 host-port = 2022 -tcp</b>
+Host TCP port 2022 -&gt; 10.10.0.40:22
+simics&gt; <b>enable-real-time-mode</b>
+</pre><p>
+</p><p>
+<i>QSP-x86</i> uses the IP address 10.10.0.40 and the ssh
+service runs on TCP port 22. We use port 2022 on the simulation host,
+but any free port can be used. The last command slows down
+<i>QSP-x86</i> to avoid time-outs.
+</p><p>
+Start the simulation, then start a ssh from a real host to the
+ssh service port of the simulated machine by connecting to port 2022 of the
+simulation host. In our case, we do the ssh on the simulation host
+itself; replace <em>localhost</em> with the IP address of the
+simulation host if running ssh from another machine:
+</p><p>
+</p><pre class="jdocu_small">host:~$ <b>ssh -p 2022 -l root localhost</b>
+The authenticity of host '[localhost]:2022 ([127.0.0.1]:2022)' can't be established.
+ECDSA key fingerprint is 62:7e:eb:4d:6d:cb:ae:0f:a0:a9:44:cc:0d:59:ce:52.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '[localhost]:2022' (ECDSA) to the list of known hosts.
+Last login: Mon Jan 18 10:34:08 2016
+~# <b>ls /</b>
+bin  boot  dev  disk2  etc  home  host  lib  lib64  lost+found  media  mnt  proc  run  sbin  sys  tmp  usr  var  www
+~# <b>exit</b>
+logout
+Connection to localhost closed.
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Note that if you restart the simulated machine, you need to
+remove the line starting with '[localhost]:2022' in host file ~/.ssh/known_hosts
+to login with ssh again.</div>
+<p>
+ </p><h2 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crnpo">Outgoing Port Forwarding</a></h2>
+<p>
+     
+</p><p>
+<a name="port-forwardingoutgoing"></a>
+<a name="connect-real-networkconnect-real-network-port-out2"></a> The
+<b>connect-real-network-port-out</b> command sets up port
+forwarding from a port on a service node to a specific port on a host
+on the real network. It takes four required arguments:
+<i>service-node-port</i> <i>ethernet-link</i>,
+<i>target-ip</i> and <i>target-port</i>, that specify the port
+on the <b>service node</b> that will forward traffic to the
+target, the Ethernet link the service node is connected to, and the
+real IP address and port to which the traffic should be forwarded.
+</p><p>
+The command can optionally take the flags <i>-tcp</i> and
+<i>-udp</i>, to specify whether the forwarding should be set up
+for a TCP or UDP port. If neither is provided, forwarding will be set
+up for both the TCP and UDP port.
+</p><p>
+The service node acts as a proxy for outgoing traffic, so to initiate
+a connection to a port on a host on the real network, the simulated
+machine should connect to the corresponding mapped port on the service
+node. The service node is not a gateway to the real network.
+</p><p>
+Any UDP packets sent to a port on the service node are forwarded to
+the specified port and IP address on the real network. For the real
+host to be able to return UDP packets to the simulated network, a
+separate forwarding rule must be set up using the
+<b>connect-real-network-port-in</b> command.
+</p><p>
+Any TCP connections to the port on the service node are forwarded to
+the specified port and IP address on the real network. Since TCP
+connections are two-ways, once a connection has been established data
+can be sent in both directions.
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crnpo-example">Example</a></h3>
+<p>
+     
+</p><p>
+By setting up forwarding from a port on a service node to port 22 of a
+host on the real network, it should be possible to ssh to the real
+host by connecting to the port on the service node from
+<i>QSP-x86</i>.  We can start from the checkpoint we
+prepared in section <a class="reference" href="real-network-examples.html">4.1</a>, and create
+an Ethernet link and a service node, connect the simulated machine to
+the Ethernet link and run the <b>connect-real-network-port-out</b>
+command. Here we use a host on the real network with IP address
+10.0.0.240, replace it with the IP address of a real host on the
+network:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module eth-links</b>
+simics&gt; <b>new-ethernet-switch switch0</b>
+Created instantiated 'ethernet_switch' component 'switch0'
+simics&gt; <b>new-service-node-comp sn0</b>
+Created instantiated 'service_node_comp' component 'sn0'
+simics&gt; <b>sn0.connect-to-link switch0 10.10.0.1</b>
+Adding host info for IP 10.10.0.1: simics0.network.sim  MAC: 20:20:20:20:20:00
+simics&gt; <b>connect board.mb.sb.eth_slot switch0.device1</b>
+simics&gt; <b>connect-real-network-port-out service-node-port = 2222 <img alt="Line break" src="nextline.png">
+ethernet-link = switch0 target-ip = 10.0.0.240 target-port = 22 -tcp</b>
+10.10.0.1 TCP port 2222 on link switch0.link -&gt; host 10.0.0.240:22
+ff02::1:2 TCP port 2222 on link switch0.link -&gt; host 10.0.0.240:22
+simics&gt; <b>enable-real-time-mode</b>
+</pre><p>
+</p><p>
+Now start the simulation. We used the IP address 10.10.0.1 and the
+port 2222 for the service node, so we should be able to ssh to the
+real host by connecting to port 2222 of 10.10.0.1 from
+<i>QSP-x86</i>:
+</p><p>
+</p><pre class="jdocu_small">~# ssh 10.10.0.1 -p 2222
+The authenticity of host '[10.10.0.1]:2222 ([10.10.0.1]:2222)' can't be establis
+hed.
+ECDSA key fingerprint is 39:a4:cb:1c:54:4b:bd:86:9f:d1:1b:6d:a6:43:e9:f4.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '[10.10.0.1]:2222' (ECDSA) to the list of known hosts
+.
+10.10.0.1's password:
+Last login: Thu May 19 09:59:33 2016 from 127.0.0.1
+host:~$ ls /
+bin   dev  home  lib64       media  opt   root  sbin  sys  usr
+boot  etc  lib   lost+found  mnt    proc  run   srv   tmp  var
+</pre><p>
+</p><p>
+
+</p><p>
+ </p><h2 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crnnapt">NAPT</a></h2>
+<p>
+      <a name="NAPT3"></a> <a name="NAT"></a>
+</p><p>
+The <b>connect-real-network-napt</b> command sets up <em>NAPT</em>
+(<em>network address port translation</em>, also known as just
+<em>NAT</em> or <em>network address translation</em>) between the
+simulated network and the real network. With NAPT enabled, the service
+node will act as a gateway on the simulated network and automatically
+mediate TCP connections to the real network.
+</p><p>
+The <b>connect-real-network-napt</b> only has one required
+argument, <i>ethernet-link</i>, that specifies the Ethernet link
+that should be connected to the real network.
+</p><p>
+The simulated machines must be configured to use the service node as
+gateway for the real network, so that it is able to capture the
+outgoing traffic. The simulated machines will then be able to access
+hosts on the real network using their real IP addresses. By combining
+NAPT with DNS forwarding, described in section <a href="#real-network-connections-port-forwarding-crndns">DNS Forwarding</a>, the real
+DNS names of hosts on the real network can be used as well.
+</p><p>
+The NAPT setup is not specific to a simulated machine, so
+<b>connect-real-network-napt</b> needs only to run once for each
+Ethernet link, and all simulated machines on the link get outbound
+access.
+</p><p>
+Since NAPT only allows new TCP connections to be opened from the
+simulated network to the real network, and the FTP protocol need to
+open new ports when transferring files, <em>passive</em> mode FTP
+should be used when connecting to an FTP server on a host on the real
+network from a simulated machine. An alternative is to use the FTP
+server implemented in the Simics service-node and avoid the need to
+connect to a real network.
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crnnapt-example">Example</a></h3>
+<p>
+     
+</p><p>
+To try NAPT, we can start from the checkpoint we prepared in section
+<a class="reference" href="real-network-examples.html">4.1</a>, create an Ethernet link and
+service node, connect the simulated machine to the Ethernet link and
+run the <b>connect-real-network-napt</b> command like this:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module eth-links</b>
+simics&gt; <b>new-ethernet-switch switch0</b>
+Created instantiated 'ethernet_switch' component 'switch0'
+simics&gt; <b>new-service-node-comp sn0</b>
+Created instantiated 'service_node_comp' component 'sn0'
+simics&gt; <b>sn0.connect-to-link switch0 10.10.0.1</b>
+Adding host info for IP 10.10.0.1: simics0.network.sim  MAC: 20:20:20:20:20:00
+simics&gt; <b>connect board.mb.sb.eth_slot switch0.device1</b>
+simics&gt; <b>connect-real-network-napt ethernet-link = switch0</b>
+NAPT enabled with gateway 10.10.0.1 on link switch0.link
+NAPT enabled with gateway fe80::2220:20ff:fe20:2000/16 on link switch0.link
+simics&gt; <b>enable-real-time-mode</b> </pre><p>
+</p><p>
+The simulated machine should be configured to use the service node as
+its default gateway:
+</p><p>
+</p><pre class="jdocu_small">~# <b>route add default gw 10.10.0.1</b>
+</pre><p>
+</p><p>
+
+
+</p><p>
+ </p><h2 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crndns">DNS Forwarding</a></h2>
+<p>
+     <a name="DNS2"></a>
+</p><p>
+The <b>enable-real-dns</b> and <b>disable-real-dns</b>
+commands of the service node enable and disable forwarding of DNS
+requests to the real network by a service node. This allows simulated
+machines to look up names and IP addresses of hosts on the real
+network, using the service node as DNS server.
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="real-network-connections-port-forwarding-crndns-example">Example</a></h3>
+<p>
+     
+</p><p>
+To try DNS forwarding, we can start from the checkpoint we prepared in
+section <a class="reference" href="real-network-examples.html">4.1</a>, and create an Ethernet
+link and a service node, connect the simulated machine to the Ethernet
+link and run the <b>enable-real-dns</b> command like this:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module eth-links</b>
+simics&gt; <b>new-ethernet-switch switch0</b>
+Created instantiated 'ethernet_switch' component 'switch0'
+simics&gt; <b>new-service-node-comp sn0</b>
+Created instantiated 'service_node_comp' component 'sn0'
+simics&gt; <b>sn0.connect-to-link switch0 10.10.0.1</b>
+Adding host info for IP 10.10.0.1: simics0.network.sim  MAC: 20:20:20:20:20:00
+simics&gt; <b>connect board.mb.sb.eth_slot switch0.device1</b>
+simics&gt; <b>sn0.enable-real-dns</b>
+Real DNS enabled
+simics&gt; <b>enable-real-time-mode</b>
+</pre><p>
+</p><p>
+To tell <i>QSP-x86</i> to use the service node as DNS
+server, the line <code>nameserver 10.10.0.1</code> is needed in the file
+<code>/etc/resolv.conf</code>:
+</p><p>
+</p><pre class="jdocu_small">~# <b>echo nameserver 10.10.0.1 &gt; /etc/resolv.conf</b>
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="real-network-connections.html">4.2 Connection Types</a>
+<a href="real-network-connections-ethernet-bridging.html">4.2.2 Ethernet Bridging</a>
+</div>

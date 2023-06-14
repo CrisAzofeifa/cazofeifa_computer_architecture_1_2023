@@ -1,0 +1,56 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Core_Sync_Instruction</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_hap_core_skipto_progress.html">Core_Skipto_Progress</a>
+<a href="__rm_hap_core_time_transition.html">Core_Time_Transition</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="haps-chapter.html">12 Haps</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_hap_Core_Sync_Instruction">Core_Sync_Instruction</a></h1>
+<p>
+
+<a name="Core_Sync_Instruction"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Triggered when an synchronizing instruction is executed. The <i>type</i> parameter describe what kind of instruction is executing. Its encoding is specific to each architecture.
+<p>
+For SH, this hap is triggered when a <code>synco</code> instruction is executed. The type contains 0.
+</p><p>
+For SPARC-V9, this hap is triggered when a <code>membar</code> or <code>stbar</code> instruction is executed. For <code>membar</code>, the type contains the 7-bit field cmask|mmask specified in the instruction. For stbar, the type is 8 (equivalent to <code>membar #StoreStore</code>).
+</p><p>
+For x86, this hap is triggered when a <code>fence</code> instruction is executed. The type is set from the list provided by the <code>x86_sync_instruction_type_t</code> enum.</p></dd>
+<dt class="jdocu_descitem"><b>Callback Type</b></dt><dd class="jdocu_descitem"><pre class="jdocu_small">void (*)(lang_void *callback_data, 
+         conf_object_t *trigger_obj, int64 type);</pre><p>
+</p></dd>
+<dt class="jdocu_descitem"><b>Index</b></dt><dd class="jdocu_descitem">type</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_hap_core_skipto_progress.html">Core_Skipto_Progress</a>
+<a href="__rm_hap_core_time_transition.html">Core_Time_Transition</a>
+</div>

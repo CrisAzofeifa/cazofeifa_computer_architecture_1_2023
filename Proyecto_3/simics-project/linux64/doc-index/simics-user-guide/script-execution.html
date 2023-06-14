@@ -1,0 +1,92 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>18.8 Script Execution</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="parameter-groups.html">18.7 Parameter Groups</a>
+<a href="example.html">18.9 Example</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="appendix.html">V Appendix</a>
+&nbsp;/&nbsp;
+<a href="script-decls.html">18 Old Script Parameters</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Script-Execution">18.8 Script Execution</a></h1>
+<p>
+  
+</p><p>
+  When a script with a declaration block is run, interactively or
+  from another script, this is what happens in detail:
+  </p><ol>
+    <li>
+      The script declaration is read and checked for errors.
+      Imported parameters ("<code>params from</code>") are resolved
+      recursively.
+    </li>
+    <li>
+      Actual parameter values are taken from, in order:
+      <ol>
+	<li>
+	  The supplied arguments, if the script was started from a
+	  shell command, or from <b>run-command-file</b>.
+	</li>
+	<li>
+	  CLI variables.
+	</li>
+	<li>
+	  Default values from the script declaration.
+	</li>
+      </ol>
+      An error is signalled if a parameter value is missing or has the
+      wrong type.
+    </li>
+    <li>
+      The current CLI variables, if any, are saved away and replaced with
+      the script parameters having their initial values as described above.
+    </li>
+    <li>
+      The command part of the script (below the declaration) is executed.
+      If the script runs another script, this entire algorithm is used
+      again.
+    </li>
+    <li>
+      CLI variables corresponding to declared result names are
+      retrieved. An error is signalled for missing results or ones
+      with the wrong type.
+    </li>
+    <li>
+      The saved CLI variables are restored, throwing away all current
+      variables except for the declared results, which retain their
+      values from the executed script.
+    </li>
+  </ol>
+
+<div class="chain">
+<a href="parameter-groups.html">18.7 Parameter Groups</a>
+<a href="example.html">18.9 Example</a>
+</div>

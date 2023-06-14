@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;linux_tracker&gt;.list-kernel-modules</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-linux_tracker.info.html">&lt;linux_tracker&gt;.info</a>
+<a href="rm-cmd-linux_tracker.set-kernel-modules-path.html">&lt;linux_tracker&gt;.set-kernel-modules-path</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="linux_tracker.list-kernel-modules"></a>
+<h1 id="linux_tracker.list-kernel-modules"><a href="#linux_tracker.list-kernel-modules">&lt;linux_tracker&gt;.list-kernel-modules</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;linux_tracker&gt;.list-kernel-modules</b> [<i>"module"</i>] [-exclude-sections|-only-executable-sections] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Lists kernel modules found by the tracker.
+<p>
+By default the sections of the modules will also be outputted, use the <tt>-exclude-sections</tt> flag to not include sections in the output.
+</p><p>
+The <tt>-only-executable-sections</tt> flag can be used to only display sections that are currently found to be executable. Note that the init sections will only be executable for a short time when init code is run. After that init sections will no longer be present in memory and will be excluded from output when using this flag.
+</p><p>
+The <i>module</i> argument can be used to just lite one module, to see it's address and/or sections.
+</p><p>
+Returned value is a list of sections on the format: </p><pre>[[module address, module name, [section address, section name]*]*]</pre>
+<p>
+If kernel modules are not handled, likely due to kernel modules parameters not being found when detecting parameters, this function will return NIL and print a message.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.linux-tracker.html">linux-tracker</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-linux_tracker.info.html">&lt;linux_tracker&gt;.info</a>
+<a href="rm-cmd-linux_tracker.set-kernel-modules-path.html">&lt;linux_tracker&gt;.set-kernel-modules-path</a>
+</div>

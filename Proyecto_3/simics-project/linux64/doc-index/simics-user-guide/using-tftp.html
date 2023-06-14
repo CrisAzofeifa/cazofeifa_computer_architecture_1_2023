@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7.6 Using TFTP</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simicsfs.html">7.5 Using SimicsFS with FUSE</a>
+<a href="using-ftp-service.html">7.7 Using FTP service</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Using-TFTP">7.6 Using TFTP</a></h1>
+<p>
+
+<a name="TFTP"></a>
+</p><p>
+It is possible to transfer
+files from the host environment to the target (simulated) machine by
+using the TFTP feature provided by the
+<b>service-node</b>. Since TFTP executes in lockstep, with
+only one packet acknowledged at a time, it is slower than for example
+FTP, but it reliably transports files between the host and target
+machines.
+</p><p>
+It is assumed that a service node has been created and connected to the
+Ethernet device through an Ethernet link. The following example presents how
+TFTP is used on a target machine which is running Linux and has the
+<code>tftp</code> program installed. Furthermore, the target machine in this
+example is using the IP address 10.10.0.10 and the service node uses 10.10.0.1.
+</p><p>
+Creating a service node and connecting it to the target machine can be
+done with the <b>connect-real-network</b> command. This will also
+set up port forwarding to the real network, even though this is not a
+requirement for using TFTP:
+</p><pre class="jdocu_small">simics&gt;<b> connect-real-network 10.10.0.10</b>
+</pre><p>
+</p><p>
+After booting the target machine into Linux the first step is to bring up the
+network interface that is connected to the service node. At the target prompt,
+issue:
+</p><pre class="jdocu_small">joe@computer: ~#<b> ifconfig eth0 10.10.0.10 up</b>
+</pre><p>
+</p><p>
+To transfer the file <code>myfile.txt</code> from the host machine,
+issue:
+</p><pre class="jdocu_small">joe@computer: ~#<b> tftp -l myfile.txt -g 10.10.0.1</b>
+</pre><p>
+</p><p>
+The directory that the service node uses to find files downloaded by
+the target can be changed with
+the <b>&lt;service-node&gt;.set-tftp-directory</b>
+command. This also controls where uploaded files are saved. The
+default is to search the Simics path, starting with the current
+working directory of the Simics process. The search path can be
+changed with the <b>add-directory</b> command and can be viewed
+with the <b>list-directories</b> command.
+</p>
+<div class="chain">
+<a href="simicsfs.html">7.5 Using SimicsFS with FUSE</a>
+<a href="using-ftp-service.html">7.7 Using FTP service</a>
+</div>

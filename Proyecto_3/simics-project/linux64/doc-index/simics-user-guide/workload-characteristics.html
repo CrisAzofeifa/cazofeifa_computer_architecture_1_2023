@@ -1,0 +1,116 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>16.4 Workload Characteristics</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="platform-effects.html">16.3 Platform Effects</a>
+<a href="hypersimulation.html">16.5 Hypersimulation</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="simulation-performance.html">16 Simulation Performance</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Workload-Characteristics">16.4 Workload Characteristics</a></h1>
+<p>
+ 
+The performance of Simics
+sometimes depends on the kind of software that runs inside the target
+machine being simulated. Thus, the slowdown can vary a lot depending
+on what the target software is currently executing.  Here are some
+general tips for understanding what decreases simulation speed.
+</p><dl><dt id="dt:floating-point-intense-workloads"><b>Floating-point intense workloads</b></dt><dd>If the target software runs
+floating-point arithmetic instructions frequently, the performance is likely
+lower compared to running integer based workloads. The same is usually true
+for workloads with frequent use of SIMD-style media instructions.</dd><dt id="dt:supervisor-code"><b>Supervisor code</b></dt><dd>If a workload runs much of the code in supervisor mode
+such as frequently causing exceptions, this type of code normally runs slower
+than regular user-level code.</dd><dt id="dt:i-o-workloads"><b>I/O workloads</b></dt><dd>If the code does frequent accesses to devices,
+compared to accessing RAM, Simics needs to do more work to simulate this, which
+slows down simulation. Note that this type of workload is an excellent candidate
+for a lower IPC setting.</dd><dt id="dt:memory-usage"><b>Memory usage</b></dt><dd>If the target software is using more memory than available on the host.
+This is typically a problem when the simulated machine has equal or more
+memory than the host it executes on <b>and</b> the software also uses it.
+This will cause Simics to swap out pages on disk, which decreases performance.</dd><dt id="dt:event-usage"><b>Event usage</b></dt><dd>Simics modules which frequently post events with short time quanta.
+For example, if a device posts an event every 10th cycle, to keep a counter
+register updated, this will severely affect performance.</dd></dl><p>Typically, target code which runs with low performance on real hardware due
+to bad cache behavior, bad memory locality etc. will also cause Simics to run
+with poor performance.
+</p><h2 class="jdocu"><a name="idle-loop-performance">16.4.1 Idle Loops and Performance</a></h2>
+<p>
+
+<a name="hypersimulation"></a>
+</p><p>
+When an operating system does not have any processes to schedule,
+it typically runs some tight loop waiting for an interrupt to occur.
+This is referred to as the <i>idle loop</i>. The way the idle loop is
+implemented varies between operating systems and the capabilities
+in the underlying hardware.
+</p><p>
+For example, the most simple idle loop would be a "branch to itself"
+instruction. When the processor reaches this instruction, nothing
+but an interrupt will cause the execution to proceed somewhere else.
+Another example is when the operating system uses some kind of
+power-down mode on the processor, causing the processor to stop
+executing any more instructions (and consequently consume less power).
+Some processors also have dedicated instructions causing the
+processor to stop until something interesting happens, such as the
+x86 <code>HLT</code> instruction.
+Processor idling in Simics is defined by what the simulator can detect and
+usually includes architectural states such as halt or power-down,
+but can also be loops normally executed by the processor.
+</p><p>
+A fast simulation of the idle loop, is very important in some cases.
+For example, when simulating multiple processors, we want to use as
+much of the host CPU cycles as possible for simulating the processor
+that actually performs useful tasks. Rather than wasting cycles on
+the idle loop.
+</p><p>
+Even when simulating a single CPU, fast idle loops can be important,
+since all of the active processes might be stalling on disk or some
+other peripheral. Execution of the processes will not continue unless,
+for example, a disk issues an interrupt.
+</p><p>
+Simics processor models can sometimes detect idle conditions.
+When the processor model detects a branch to itself, there is no point
+in simulating the instruction, if it branches to itself repeatedly.
+</p><p>
+Instead, Simics is capable of fast-forwarding time until an event that
+can generate an interrupt is about to be executed. Hence, this model
+is equivalent to running the branch millions of times, but is much faster.
+</p><p>
+In some cases, the idle loop in the operating system is more than a
+single instruction, e.g., it might be a loop checking a variable in memory
+for the next process to schedule. These more
+difficult cases can be handled with hypersimulation (see chapter
+<a class="reference" href="hypersimulation.html">16.5</a>).
+
+</p>
+<div class="chain">
+<a href="platform-effects.html">16.3 Platform Effects</a>
+<a href="hypersimulation.html">16.5 Hypersimulation</a>
+</div>

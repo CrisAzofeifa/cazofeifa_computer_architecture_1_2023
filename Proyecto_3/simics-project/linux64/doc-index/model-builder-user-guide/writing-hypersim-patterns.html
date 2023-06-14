@@ -1,0 +1,498 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>47 Writing Hypersim Patterns</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="other-applications.html">46 Integrating with Other Applications</a>
+<a href="writing-os-awareness-software-trackers.html">48 Writing OS Awareness Software Trackers</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="extension-builder.html">VII Extending Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Writing-Hypersim-Patterns">47 Writing Hypersim Patterns</a></h1>
+<p>
+
+<a name="hypersim"></a>
+<a name="hypersim-pattern-matcher"></a>
+</p><p>
+For an introduction on what <em>hypersimulation</em> is, see
+<em>Simics User Guide</em>, in Performance chapter.
+</p><p>
+Simics has a module called <b>hypersim-pattern-matcher</b>,
+that manages a number of specific idle-loop machine code
+patterns, <em>hypersim-patterns</em>. The theory of operation is that
+each pattern registers itself into a global database, from where the
+matcher selects the patterns that matches the simulated
+architecture. The matcher then insert hooks into those processors to
+detect when the binary code matches any of the patterns. If a match is
+found, an execute breakpoint is set at this address to allow the
+pattern to fast-forward the simulation every time the CPU reaches the
+pattern.
+</p><p>
+The <em>Automatic Hypersimulation</em> feature in Simics 6
+reduces the need to write manual patterns. The ability to detect loops
+which can be hypersimulated is part of the JIT compiler for PPC, ARM
+and MIPS processor models. Loops that can be detected must fit into
+one compilation unit and may not contain any store instruction in the
+loop path. Automatically detected loops have lower insertion overhead
+and simulates faster compared to using the
+hypersim-pattern-matcher. Consequently, old manual written patterns,
+describing simple loops, might now be detected automatically with
+increased performance. These manual patterns should therefore
+be removed.
+</p><p>
+</p><h2 class="jdocu"><a name="Overview">47.1 Overview</a></h2>
+<p>
+
+</p><h3 class="jdocu"><a name="finding-loop">47.1.1 Locating Idle Loops</a></h3>
+<p>
+
+</p><p>
+With <em>idle loops</em> we mean any kind of loop that does not
+calculate any value; this include spin-locks, busy-wait loops,
+variable polling, and timing loops. 
+</p><p>
+The easiest way to locate the idle loop is simply to pause the
+simulation when it appears to do nothing but still takes time to
+simulate. Chances are high that the CPU is stopped somewhere in the
+idle loop. You can then use the <b>step-instruction</b> command to
+single step and inspect the instructions being executed. If you see a
+repetitive pattern here, there is a small loop that could possibly be
+optimized. The <code>-r</code> flag to <b>step-instruction</b> will
+print register updates, it is helpful to understand if there is a
+counter involved in the loop.
+</p><p>
+The next step is to verify that it only accesses RAM on predictable
+addresses. Loops that polls a device is not possible to hypersimulate,
+unless the device accesses are free from side-effects. To inspect
+this, you can insert a tracer using <b>new-tracer</b>
+and <b>trace-io</b>.
+
+</p><h3 class="jdocu"><a name="create-pattern">47.1.2 Creating Pattern Classes</a></h3>
+<p>
+
+</p><p>
+Each pattern should register itself as a Simics Class with certain
+interfaces and attributes. Please see section
+<a class="reference" href="#object-structure">47.2.4</a> for detailed information.
+</p><p>
+The pattern matcher accept patterns in two different formats. The
+generic format is as a hexadecimal or binary string. However, since
+architectures with constant-width instructions of 4 bytes are common,
+there is a simpler format as a list of (value, mask) pairs. This form
+specifies the instruction opcodes and masks to match in 32-bit big
+endian format.
+</p><p>
+The simplest option is to convert the loop into a pattern that should
+match exactly, but more general patterns are also possible, for
+example by using any register, and the instructions that are not part
+of the loop could be left out. However, we recommend keeping the
+pattern exact until you actually face another loop which could have
+matched too. See section <a class="reference" href="#small-variations">47.2.1</a> how to match
+with wildcards.
+</p><p>
+If the two parts of the loop are separated, one could use a
+main pattern and a <em>sub-pattern</em>. See section
+<a class="reference" href="#subpatterns">47.2.2</a> for more information on how to match
+sub-patterns.
+</p><p>
+
+</p><h3 class="jdocu"><a name="determine-conditions">47.1.3 Determine Conditions</a></h3>
+<p>
+
+</p><p>
+Next step is to determine what should happen every time the identified
+loop is entered. First, the necessary <em>pre-conditions</em> should
+be checked.
+</p><p>
+When all pre-conditions are fulfilled, the simulation can be
+fast-forwarded. To make it easier to update the state after
+fast-forwarding, we only fast-forward an even number of iteration, and
+let the processor simulate the last iteration. Then the pattern don't
+need to do any state updates by itself.
+</p><p>
+If the pattern gave no limit on how far a processor can be fast-forwarded,
+the pattern matcher will fast-forward it to the next event posted. The
+<b><i>advance()</i></b> function in the <code>step</code> interface is
+used to let the CPU actually fast-forward.
+</p><p>
+If the pattern need to do side-effects, it gets the actual number of
+steps forwarded as a return value from the <b><i>ffwd_time()</i></b>
+function. Here is an example that needs to update a loop register:
+</p><p>
+</p><pre class="jdocu_small">static bool
+pattern_triggered(conf_object_t *obj, pattern_t *handle, void *loop_data,
+                  conf_object_t *cpu, physical_address_t paddr)
+{
+        test_pattern_t *tp = (test_pattern_t *)obj;
+        struct per_loop_data *loop = loop_data;
+
+        if (SIM_object_class(cpu) != loop-&gt;cached_class) {
+                /* Either there is no cached interface pointer or it was cached
+                   for another cpu class, so read them out again. */
+                if (cache_interfaces(obj, loop, cpu) == 0)
+                        return false;
+        }
+
+        int steps = tp-&gt;matcher.iface-&gt;ffwd_time(
+                tp-&gt;matcher.obj,
+                handle,
+                cpu,
+                LOOP_INSTR,
+                0,
+                0,
+                COUNT_AS_IDLE);
+
+        int regno = loop-&gt;cpuclass_regno;
+        loop-&gt;reg_iface-&gt;write(cpu, regno,
+                               loop-&gt;reg_iface-&gt;read(cpu, regno)
+                               + steps / LOOP_INSTR);
+        return true;
+}
+</pre><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="test-correctness">47.1.4 Test Correctness</a></h3>
+<p>
+
+</p><p>
+The quickest way to test that patterns are deterministic is to try
+running your machine with and without hypersim-patterns installed, and
+see if the state differs.
+</p><p>
+
+</p><h3 class="jdocu"><a name="measure-improvements">47.1.5 Measure Performance Improvements</a></h3>
+<p>
+
+</p><p>
+The impact of hypersimulating idle-patterns can be measured by
+the <b>system-perfmeter</b> tool. The <b>hypersim-status</b>
+command also have some information about how many steps that have been
+skipped.
+</p><p>
+If the performance did not improve as much as expected, it might be
+that either the pattern matched too often but the examine_pattern()
+method rejected it, or that the preconditions was not fulfilled often
+enough in the pattern_triggered() call. The percentage of successful
+calls can be listed with the <b>hypersim-status -v</b> command.
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Advanced-Topics">47.2 Advanced Topics</a></h2>
+<p>
+
+</p><h3 class="jdocu"><a name="small-variations">47.2.1 Handling Small Variations in Patterns</a></h3>
+<p>
+
+</p><p>
+Often, a recompilation of the software can lead to small differences
+in the bit pattern of the idle loop. A pattern can be made to match
+many variants by placing <em>wildcards</em> in a pattern. Wildcards
+are done by replacing a digit in the pattern by a + sign, or, in the
+specialized pattern style, with zeros in the mask. One of our test
+patterns has wildcards on register values.
+</p><p>
+</p><pre class="jdocu_small">static const char * const pattern[] = {
+        "0x60000000",                    /* A. nop */
+        "0b0011_10++_++++_++++ 0x0001",  /* B. addi rX,rY,1 */
+        "0x4bfffff8",                    /* C. b A */
+        NULL
+};
+</pre><p>
+
+</p><p>
+If there are constraints on the wildcards, they need to be checked in
+the examine function. To continue the previous example, here is how it
+verifies that the same register is used as source and destination in
+the <code>addi</code> instruction.
+</p><p>
+</p><pre class="jdocu_small">static void *
+examine_pattern(conf_object_t *obj, pattern_t *handle, conf_object_t *cpu,
+                logical_address_t vaddr, physical_address_t paddr)
+{
+        uint32 addi_insn = SIM_read_phys_memory(cpu, paddr + 4, 4);
+        if (SIM_clear_exception() != SimExc_No_Exception)
+                return NULL;
+
+        int reg = (addi_insn &gt;&gt; 16) &amp; 31;
+        if (((addi_insn &gt;&gt; 21) &amp; 31) != reg) {
+                /* addi rX,rY,1 where X != Y means no match */
+                return NULL;
+        }
+
+        struct per_loop_data *loop = MM_ZALLOC(1, struct per_loop_data);
+        loop-&gt;incremented_register = reg;
+        return loop;
+}
+</pre><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="subpatterns">47.2.2 Subpatterns</a></h3>
+<p>
+
+</p><p>
+If the idle loop contains subroutine calls, the subroutine needs to be
+checked against a pattern too. This is done in the <em>examine</em>
+function. An example from
+the <b>mpc-u-boot-hypersim-patterns</b> module is given
+below.
+</p><p>
+</p><pre class="jdocu_small">/* This loop busy polls the timebase, waiting for it to reach a certain value */
+
+static const char * const pattern[] = {
+        "0b010010++ 0x++++ 0b++++++01", // 0: @ bl (get_ticks)
+        "0x7c84 0b+++++000 0x10",       // 1: @ subfc  r4,r4,rX
+        "0x7c63 0b+++++001 0x11",       // 2: @ subfe. r3,r3,rY
+        "0x4080fff4",                   // 3: @ bge
+        NULL
+};
+
+/* Function used by main loop - reads the timebase */
+static const char * const sub_pattern[] = {
+        "0x7c6d42 0b1+100110", // 0: @ mfspr r3,269  # utbu
+        "0x7c8c42 0b1+100110", // 1: @ mfspr r4,268  # utbl
+        "0x7cad42 0b1+100110", // 2: @ mfspr r5,268  # utbu
+        "0x7c032800", // 3: @ cmpw  r3,r5
+        "0x4082fff0", // 4: @ bne
+        "0x4e800020", // 5: @ blr
+        NULL
+};
+</pre><p>
+
+</p><pre class="jdocu_small">static void *
+examine_pattern(conf_object_t *obj, pattern_t *handle, conf_object_t *cpu,
+                logical_address_t vaddr, physical_address_t paddr)
+{
+        wait_ticks_pattern_t *pat = SIM_object_data(obj);
+
+        /* Extract address of sub-pattern */
+        uint32 insn = SIM_read_phys_memory(cpu, paddr + (BL_IDX * 4), 4);
+        if (SIM_clear_exception() != SimExc_No_Exception) {
+                SIM_LOG_ERROR(pat-&gt;obj, 0,
+                              "failed to load branch-and-link opcode");
+                return 0;
+        }
+
+        int32 li = (int32)((insn &amp; 0x3ffffffc) &lt;&lt; 6) &gt;&gt; 6; // sign-extend
+        uint32 bl_addr = vaddr + BL_IDX * 4 + li;
+
+        /* Match sub pattern and get physical address of it */
+        physical_address_t sub_pattern_paddr;
+        if (!pat-&gt;matcher.iface-&gt;check_pattern(pat-&gt;matcher.obj,
+                                               cpu,
+                                               bl_addr,
+                                               pat-&gt;sub_pattern,
+                                               &amp;sub_pattern_paddr)) {
+                SIM_LOG_INFO(2, pat-&gt;obj, 0,
+                             "sub-pattern mismatch at v:0x%x", bl_addr);
+                return 0;
+        }
+
+        pat-&gt;matcher.iface-&gt;protect_region(pat-&gt;matcher.obj,
+                                           handle,
+                                           paddr,
+                                           sub_pattern_paddr,
+                                           SUB_LOOP_INSTR);
+
+        /* Get input parameter register numbers */
+        uint32 subfe = SIM_read_phys_memory(cpu, paddr + (SUBFE_IDX * 4), 4);
+        if (SIM_clear_exception() != SimExc_No_Exception) {
+                SIM_LOG_ERROR(pat-&gt;obj, 0, "failed to load subfe opcode");
+                return 0;
+        }
+        int subfe_rb = get_rb_from_xo_form(subfe);
+
+        uint32 subfc = SIM_read_phys_memory(cpu, paddr + (SUBFC_IDX * 4), 4);
+        if (SIM_clear_exception() != SimExc_No_Exception) {
+                SIM_LOG_ERROR(pat-&gt;obj, 0, "failed to load subfc opcode");
+                return 0;
+        }
+        int subfc_rb = get_rb_from_xo_form(subfc);
+
+        SIM_LOG_INFO(2, pat-&gt;obj, 0,
+                     "Examine pattern:\n"
+                     "  Pattern        @ 0x%llx\n"
+                     "  Sub-pattern    @ 0x%llx\n"
+                     "  input-params in r%d/r%d",
+                     paddr, sub_pattern_paddr, subfe_rb, subfc_rb);
+        return add_pattern_info(pat, paddr, subfe_rb, subfc_rb);
+}
+</pre><p>
+
+</p><p>
+Subpatterns needs to be registered with the hypersim-pattern-matcher
+before they can be matched against. This call will parse the opcode
+strings and create a more efficient internal format. Do this in the
+<b><i>finalize</i></b> function.
+</p><p>
+</p><pre class="jdocu_small">static void
+finalize_instance(conf_object_t *obj)
+{
+        wait_ticks_pattern_t *pat = SIM_object_data(obj);
+        pat-&gt;handle = pat-&gt;matcher.iface-&gt;
+                install_pattern(pat-&gt;matcher.obj,
+                                obj,
+                                "mpc-u-boot-wait-ticks",
+                                pattern,
+                                4 * MAIN_LOOP_INSTR);
+        pat-&gt;sub_pattern = pat-&gt;matcher.iface-&gt;
+                register_sub_pattern(pat-&gt;matcher.obj,
+                                     pat-&gt;handle,
+                                     sub_pattern);
+
+}
+</pre><p>
+
+</p><p>
+Subpatterns needs to be unregistered when the objects is deleted.
+</p><p>
+</p><pre class="jdocu_small">static void
+pre_delete_instance(conf_object_t *obj)
+{
+        wait_ticks_pattern_t *pat = SIM_object_data(obj);
+        pat-&gt;matcher.iface-&gt;uninstall_pattern(pat-&gt;matcher.obj, pat-&gt;handle);
+}
+</pre><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="timing-dependent">47.2.3 Handling Time-Dependent Loops</a></h3>
+<p>
+
+</p><p>
+A loop which polls a cycle counter is called a time-dependent loop. An
+example that reads the timebase register on a PPC processor, whose
+pattern is given in section <a class="reference" href="#subpatterns">47.2.2</a>. Since steps and
+cycles does not correspond 1-to-1 in Simics, we need to take into
+account the conversion factor. In the case of timebase, the conversion
+is given by the equation:
+</p><p>
+steps = timebase cycles × cpu frequency × step-rate / timebase frequency
+</p><p>
+Below is an example from
+<code></code><em>[simics]</em><code>/src/extensions/mpc-u-boot-hypersim-patterns/wait-ticks.c</code>.
+In this example, the step-rate is not taken into account, so it only works for an
+1:1 step-rate.
+</p><p>
+</p><pre class="jdocu_small">static bool
+pattern_triggered(conf_object_t *obj, pattern_t *handle, void *loop_data,
+                  conf_object_t *cpu, physical_address_t paddr)
+{
+        wait_ticks_pattern_t *pat = SIM_object_data(obj);
+        cpu_info_t *c = get_cpu_info(pat, cpu);
+        pattern_info_t *p = loop_data;
+        const int_register_interface_t *int_reg_iface = c-&gt;int_iface;
+
+        /* Get stop value of timebase */
+        uint32 tb_high = int_reg_iface-&gt;read(cpu, c-&gt;r0 + p-&gt;input_high);
+        uint32 tb_low = int_reg_iface-&gt;read(cpu, c-&gt;r0 + p-&gt;input_low);
+        cycles_t tb_stop = (cycles_t)tb_high &lt;&lt; 32 | tb_low;
+
+        /* Get current timebase value */
+        uint32 tbu = int_reg_iface-&gt;read(cpu, c-&gt;tbu);
+        uint32 tbl = int_reg_iface-&gt;read(cpu, c-&gt;tbl);
+        cycles_t tb_start = (cycles_t)tbu &lt;&lt; 32 | tbl;
+
+        if (tb_stop == tb_start)
+                return true;
+
+        /* Remove one tb-tick since we might have partially executed the next
+           next timebase cycle (tb.remainder != 0) */
+        uint64 tb_diff = tb_stop - tb_start - 1;
+        uint64 c_cycles_low, c_cycles_high;
+        uint64 cpu_ticks = 0, rem;
+        unsigned_multiply_64_by_64(tb_diff, c-&gt;cpu_freq,
+                                   &amp;c_cycles_high, &amp;c_cycles_low);
+        unsigned_divide_128_by_64(c_cycles_high, c_cycles_low, c-&gt;tb_freq,
+                                  &amp;cpu_ticks, &amp;rem);
+
+        if (cpu_ticks == 0)
+                return true;
+
+        pat-&gt;matcher.iface-&gt;ffwd_time(
+                pat-&gt;matcher.obj,
+                handle,
+                cpu,
+                TOTAL_LOOP_INSTR,  /* Minimal step count */
+                cpu_ticks,         /* Maximum step count */
+                TOTAL_LOOP_INSTR,  /* Steps to keep (run last iter for real) */
+                0);                /* Not an idle loop */
+
+        return true;
+}
+</pre><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="object-structure">47.2.4 Object Structure</a></h3>
+<p>
+
+</p><p>
+When Simics is started, the individual pattern modules announces their
+existence by calling the Python
+function <b><i>hypersim_patterns.add()</i></b>, from
+their <code>simics_start.py</code> files.
+</p><p>
+When a machine configuration is later loaded, its CPU architectures
+are checked against the registered patterns.
+</p><p>
+If there are patterns matching an architecture, an object of
+type <b>hypersim-pattern-matcher</b> is created and attached
+to the physical memory-space of that processor. This matcher object
+will, in turn, create one object for each registered pattern.
+</p><p>
+The reason why a pattern both need to register in Python code and
+later in C code is to avoid loading modules for hypersim patterns
+unrelated to the architecture being simulated.
+</p><p>
+The <b>hypersim-pattern-matcher</b> creates patterns with the
+SIM_create_object() call and sets the "matcher" attribute to point
+back to itself. That means there will be one pattern instance for each
+physical memory-space in the system.
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="References">47.3 References</a></h2>
+<p>
+
+For more complete documentation on related classes and commands such as
+<b>enable-hypersim</b>, <b>disable-hypersim</b>,
+<b>hypersim-status</b> and <b>list-hypersim-patterns</b>,
+Please refer to the <em>Reference Manual</em>.
+</p><p>
+The <code>hypersim_pattern_matcher</code> and <code>hypersim_pattern</code>
+interfaces are documented in the <em>API Reference Manual</em>.
+</p><p>
+
+</p>
+<div class="chain">
+<a href="other-applications.html">46 Integrating with Other Applications</a>
+<a href="writing-os-awareness-software-trackers.html">48 Writing OS Awareness Software Trackers</a>
+</div>

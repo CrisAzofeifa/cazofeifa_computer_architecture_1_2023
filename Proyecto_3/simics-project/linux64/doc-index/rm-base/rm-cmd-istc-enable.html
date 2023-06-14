@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>istc-enable</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-interrupt-script-branch.html">interrupt-script-branch</a>
+<a href="rm-cmd-l.html">l</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="istc-enable"></a>
+<a name="dstc-enable"></a>
+<a name="iostc-enable"></a>
+<a name="stc-status"></a>
+<a name="istc-disable"></a>
+<a name="dstc-disable"></a>
+<a name="iostc-disable"></a>
+<h1 id="istc-enable"><a href="#istc-enable">istc-enable</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>istc-enable</b><br><b>dstc-enable</b><br><b>iostc-enable</b><br><b>stc-status</b><br><b>istc-disable</b><br><b>dstc-disable</b><br><b>iostc-disable</b><br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ These commands are for advanced usage only. They allow the user to control the usage of Simics-internal caches.
+<p>
+The Simulator Translation Caches (STCs) are designed to increase execution performance. The D-STC caches data translations (logical to physical to real (host) address). The I-STC caches instruction translations of taken jumps. Finally, the IO-STC caches logical to physical address translation for device accesses.
+</p><p>
+By default the STCs are <b>on</b>.
+</p><p>
+When a memory hierarchy is connected (such as a cache module) it must have been designed to work along with the STCs, or it may not be called for all the memory transactions it is interested in. These commands can be used to detect if too many translations are kept in the STCs, causing the simulation to be incorrect.
+</p><p>
+Turning the STCs off means that current contents will be flushed and no more entries will be inserted into the STCs. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-interrupt-script-branch.html">interrupt-script-branch</a>
+<a href="rm-cmd-l.html">l</a>
+</div>

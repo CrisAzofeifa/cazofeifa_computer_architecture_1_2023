@@ -1,0 +1,143 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>translate</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_transaction_translator.html">transaction_translator</a>
+<a href="__rm_interface_translation_flush.html">translation_flush</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_translate">translate</a></h1>
+<p>
+
+<a name="translate"></a><a name="translate_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>translate</code> interface is implemented by objects
+   that bridge between memory spaces.
+<p>
+   </p><div class="note">
+<b>Note:</b>
+There is the <code>translator</code> interface
+   which is a more restricted version
+   of the <code>translate</code> interface and should be used when possible.
+   It allows for better control of memory operations in the Simics core and can
+   therefore allow optimizations in the memory handling.  </div>The return value of the <b><i>translate</i></b> method should be
+   a memory space, to which the
+   access is translated at the offset given by the physical address of
+   <i>mem_op</i>. If the return value is <code>NULL</code>, then the access
+   is translated to the <em>default target</em> provided in the configuration
+   (in a <b>memory-space</b> object, this is the 6th index,
+   <em>target</em>, of an entry in the <i>map</i> attribute).
+<p>
+   If the translator marks <i>mem_op</i> as ignored before returning
+   <code>NULL</code> (using the function <b><i>SIM_set_mem_op_ignore</i></b>), then
+   the return value is ignored, and the transaction is instead terminated in
+   the translator and handled as an ordinary I/O access.
+</p><p>
+   During a translation, the translator may modify the physical address of
+   <i>mem_op</i>, but may have no other side-effects. This is because
+   the caller can choose to cache the translation, in which case the translator
+   is bypassed in subsequent accesses.
+</p><p>
+   The translator can use <b><i>SIM_mem_op_ensure_future_visibility</i></b> to
+   inhibit caching. Inhibiting caching can be useful for debugging, but
+   typically comes with a significant performance cost if there is RAM behind
+   the translator.
+</p><p>
+   The addition of the <code>direct_memory</code> interface in Simics 5
+   results in new typical access patterns for the <code>translate</code>
+   interface. Where previously non-inquiry accesses of any size would result in
+   caching in initiating CPU objects, with the use of
+   <code>direct_memory</code> no such implicit caching ever takes
+   place. Instead, caching requests are separate and fed through the
+   <b><i>translate</i></b> method as inquiry accesses of the size that is intended
+   to be cached. This means that for a <code>translate</code> object to work
+   properly in a configuration with CPUs using <code>direct_memory</code>,
+   inquiry accesses must be properly handled. Routing such inquiry accesses to
+   non-memory, terminating them in the translator (which is not an allowed
+   behavior for a <code>translate</code> object), or calling
+   <b><i>SIM_mem_op_ensure_future_visibility</i></b> on them results in the
+   requesting CPU not being able to cache the requested memory region.
+</p><p>
+   Using the <code>translate</code> interface in models is error prone
+   and usually not recommended unless all alternatives have been
+   exhausted. Explicit map and demap operations in a memory space avoid the
+   problems with <code>translate</code> interface implementation
+   correctness.
+</p><p>
+   The usage of the <code>translate</code> interface is by necessity
+   less optimal than the usage of the <b>memory-space</b> class as
+   a call out from the simulation kernel should be made. That said when
+   the <b><i>translate()</i></b> method is called the transaction may be cached
+   in the STC if the user code does not explicitly block such caching, though
+   depending on a number of factors it may not always be cached. If the
+   translation is cached in the STC then performance is the same as with a
+   memory-space.
+</p><p>
+   There are two reasons to use the translate interface rather than a simple 
+   memory-space: 1) To implement something that the memory-space does not
+   support, such as different read and write translations, or manipulation of
+   the transaction, or 2) the translation is accessed infrequently, but updated
+   on most accesses.
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+Up to and including Simics 4.8, inhibiting caching for the instruction
+   stream did not prevent Simics-provided CPU models from caching. Models
+   therefore had to use <b><i>flush</i></b> or <b><i>SIM_flush_cell_caches</i></b> on
+   mapping changes to get the desired effect. This is no longer needed since
+   Simics 5.</div>Up to and including Simics 4.8, CPU models would cache memory for
+   transactions that pass through a translator in blocks that are larger than
+   the size provided in the transaction. This meant that a translator needed to
+   invalidate caches even if a translation changed that had strictly not passed
+   through the interface. For correctness, when any state that had an effect on
+   the translation logic changed, the translator would therefore invalidate all
+   mappings in all initiators, even for mappings that are outside of what has
+   passed through the translator. These types of workarounds are no longer
+   required since Simics 5.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(translate) {
+        conf_object_t *(*translate)(conf_object_t *NOTNULL obj,
+                                    generic_transaction_t *NOTNULL mem_op,
+                                    map_info_t mapinfo);
+};
+
+#define TRANSLATE_INTERFACE "translate"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_transaction_translator.html">transaction_translator</a>
+<a href="__rm_interface_translation_flush.html">translation_flush</a>
+</div>

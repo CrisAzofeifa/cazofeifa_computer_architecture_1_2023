@@ -1,0 +1,99 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>trans-splitter</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-trans-sorter.html">trans-sorter</a>
+<a href="rm-class-trans-staller.html">trans-staller</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="trans-splitter"><a href="#trans-splitter">trans-splitter</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+A trans-splitter object should be inserted between two caches if the higher-level cache has a larger cache line size than the lower-level cache, or between the processor and the id-splitter object if you have a processor that can do unaligned accesses or accesses larger than one cache line. It splits cacheable transactions that span more than one naturally aligned next-cache-line-size bytes big lines into multiple transactions that each fit within one line.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, timing_model
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:cache">
+<i>cache</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Cache to which the splitter is connected.</dd>
+<dt id="dt:next_cache_line_size">
+<i>next_cache_line_size</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Cache line size used for splitting transactions.</dd>
+<dt id="dt:transactions">
+<i>transactions</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total number of transactions processed.</dd>
+<dt id="dt:split_transactions">
+<i>split_transactions</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of split transactions.</dd>
+<dt id="dt:timing_model">
+<i>timing_model</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Object listening on transactions coming from the splitter.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.g-cache.html">g-cache</a>
+</section>
+<div class="chain">
+<a href="rm-class-trans-sorter.html">trans-sorter</a>
+<a href="rm-class-trans-staller.html">trans-staller</a>
+</div>

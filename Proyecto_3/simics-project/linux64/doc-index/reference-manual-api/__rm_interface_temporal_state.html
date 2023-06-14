@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>temporal_state</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_synchronous_mode.html">synchronous_mode</a>
+<a href="__rm_interface_timing_model.html">timing_model</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_temporal_state">temporal_state</a></h1>
+<p>
+
+<a name="temporal_state"></a><a name="temporal_state_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is used in conjunction with object attributes to
+   save an in-memory snapshot of the object state and to restore this
+   state at a later point in time. Note that this interface is only
+   used for reverse execution; it is not used for checkpointing to disk.
+<p>
+   All functions in this interface are optional.
+</p><p>
+   Object state not handled by the attributes can be saved through
+   the <b><i>save</i></b> function. The return value is a pointer
+   to state information. It should be noted that the state can be
+   represented in an incremental manner as changes since the last
+   call to <b><i>save</i></b>.
+</p><p>
+   State information is released by the <b><i>merge</i></b> function. If the
+   pointer returned by <b><i>save</i></b> represents incremental state changes,
+   then the data in the <i>killed</i> argument should be appended to
+   <i>prev</i> before the state pointed to be <i>killed</i>
+   is released.
+</p><p>
+   The function <b><i>prepare_restore</i></b> is called when a saved state
+   is about to be loaded, before any attributes have been set.
+</p><p>
+   The <b><i>finish_restore</i></b> function is invoked when all
+   attributes have been set. The <i>state</i> argument is the
+   pointer previously returned by <b><i>save</i></b> (or NULL if that function
+   is not implemented). The passed state information should not be modified
+   or released by this function.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(temporal_state) {
+        lang_void *(*save)(conf_object_t *obj);
+        void (*merge)(conf_object_t *obj, lang_void *prev, lang_void *killed);
+        void (*prepare_restore)(conf_object_t *obj);
+        void (*finish_restore)(conf_object_t *obj, lang_void *state);
+};
+
+#define TEMPORAL_STATE_INTERFACE "temporal_state"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_synchronous_mode.html">synchronous_mode</a>
+<a href="__rm_interface_timing_model.html">timing_model</a>
+</div>

@@ -1,0 +1,400 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>11 Defining New Interface Types</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="example-models.html">10 Example Models</a>
+<a href="python-in-modules.html">12 Using Python in a Simics module</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="define-new-interface-type">11 Defining New Interface Types</a></h1>
+<p>
+
+<a name="interfacedefining-new"></a>
+</p><p>
+The Simics API defines a number of useful interface types, but sometimes they
+are not enough, for example if you are using a bus type that is not supported
+by the predefined interface types.
+</p><p>
+In order for a new interface type to be used from Python, Python
+bindings for the interface must be compiled into a Simics module,
+using the Makefile variable <code>IFACE_FILES</code>; this is
+further documented in section <a class="reference" href="build-environment.html#makefile-details">3.5.3</a>. The
+easiest way to create a new interface type is to use the interface
+template module provided by Simics:
+</p><p>
+</p><dl><dt id="dt:windows"><b>Windows</b></dt><dd><code>project&gt; <b>bin\project-setup.bat --interface my-bus</b></code></dd><dt id="dt:linux"><b>Linux</b></dt><dd><code>project$ <b>./bin/project-setup --interface my-bus</b></code></dd></dl><p>This creates a module directory
+in <code>[project]/modules/my-bus-interface</code> (note the
+added <code>-interface</code> suffix), containing the following files:
+</p><dl><dt id="dt:my-bus-interface-dml"><b>my-bus-interface.dml</b></dt><dd>This file is a skeleton for the DML definition of your new interface type.
+You will need to edit this file to contain the correct method definitions. See
+below for more details.</dd><dt id="dt:my-bus-interface-h"><b>my-bus-interface.h</b></dt><dd>This file is a skeleton for the C definition of your new interface type. It
+will also need to be edited, to match the changes you make to
+the <code>.dml</code> file.</dd><dt id="dt:makefile"><b>Makefile</b></dt><dd>The module needs to be compiled if the new interface shall be supported
+from Python. If your interface shall not be accessible from Python, you should
+remove this makefile. You need to edit the makefile if you want the module to
+contain Python bindings from more than one header file.
+</dd></dl><p>Now, you will have to enter the DML and C definitions of your interface into
+the generated <code>.dml</code> and <code>.h</code> files.
+</p><p>
+</p><h2 class="jdocu"><a name="Example">11.1 Example</a></h2>
+<p>
+
+</p><p>
+Assume that we, for example, want to create an interface that supports
+a new, simple bus type. It is a very simple bus using 32-bit addresses
+and 64-bit data, and it only allows read and write operations.
+</p><p>
+Create the <code>my-bus-interface</code> module as described above:
+</p><pre class="jdocu_small">    project-setup --interface my-bus
+</pre><p>
+</p><p>
+Edit <code>my-bus-interface.dml</code> to contain the following code:
+</p><p>
+<span class="jdocu_small">
+   </span></p><pre class="jdocu_small">    dml 1.2;
+
+    header %{
+    #include "my-bus-interface.h"
+    %}
+
+    extern typedef struct {
+        uint64 (*read)(conf_object_t *obj, uint32 address);
+        void (*write)(conf_object_t *obj, uint32 address, uint64 value);
+    } my_bus_interface_t;
+</pre><p>
+</p><p>
+   
+</p><p>
+Edit <code>my-bus-interface.h</code> to match the DML file:
+</p><p>
+<span class="jdocu_small">
+   </span></p><pre class="jdocu_small">    #ifndef MY_BUS_INTERFACE_H
+    #define MY_BUS_INTERFACE_H
+
+    #include &lt;simics/device-api.h&gt;
+
+    SIM_INTERFACE(my_bus) {
+            uint64 (*read)(conf_object_t *obj, uint32 address);
+            void (*write)(conf_object_t *obj, uint32 address,
+                          uint64 value);
+    };
+    #define MY_BUS_INTERFACE "my_bus"
+
+    #endif /* ! MY_BUS_INTERFACE_H */
+</pre><p>
+</p><p>
+   
+</p><p>
+Then, compile the <b>my-bus-interface</b> module, which will provide
+Simics with the necessary Python support for using the <code>my_bus</code>
+interface:
+</p><pre class="jdocu_small">  project&gt; <b>make my-bus-interface</b>
+</pre><p>
+</p><p>
+You can now use your new interface from DML, Python, and C. For example, to use
+the new interface from a DML device, create a new module
+called <b>my_bus_device</b> using <code>project-setup --device
+my_bus_device</code>. Then,
+edit <code>modules/my_bus_device/my_bus_device.dml</code> to contain the
+following:
+</p><p>
+
+   </p><pre class="jdocu_small">    dml 1.2;
+
+    device my_bus_device;
+    parameter desc = "example bus device";
+
+    import "utility.dml";
+
+    import "my-bus-interface.dml";
+
+    implement my_bus {
+        method read(uint32 address) -&gt; (uint64 result) {
+            log "info", 1: "read from 0x%x", address;
+            result = 4711;
+        }
+        method write(uint32 address, uint64 value) {
+            log "info", 1:"write 0x%x to 0x%x", value, address;
+        }
+    }
+</pre><p>
+</p><p>
+   
+</p><p>
+To compile such a DML device, you need to tell it where to find the definition
+of the interface. Do that by adding the following to its <code>Makefile</code>:
+</p><pre class="jdocu_small">    <a name="EXTRA_MODULE_VPATH">EXTRA_MODULE_VPATH</a> += my-bus-interface
+</pre><p>
+From Python, you can now use the <code>my_bus</code> interface:
+</p><pre class="jdocu_small">    simics&gt;  <b>@SIM_create_object("my_bus_device", "mydev")</b>
+    &lt;the my_bus_device 'mydev'&gt;
+    simics&gt;  <b>@conf.mydev.iface.my_bus.write(0x1020, 0x4321)</b>
+    [mydev info] write 0x4321 to 0x1020
+</pre><p>
+</p><p>
+Note that when you did this, the <b>my-bus-interface</b>
+module was automatically loaded, providing the Python support for the
+new interface.
+</p><p>
+If you want to create new instances of the interface, you will need to
+use the <b><i>SIM_get_python_interface_type</i></b> to look up the Python data
+type corresponding to the interface. This function will, if necessary,
+load the Simics module that provides the Python support for your new
+interface.
+</p><p>
+The return value from <b><i>SIM_get_python_interface_type</i></b> is a
+regular Python data type, which can be instantiated by calling it as a
+function. Using the example as above, this is how you could define its
+interface from Python instead:
+</p><p>
+</p><pre class="jdocu_small">    simics&gt;  <b>def read_fn(obj, address):</b>
+    ........<b>    print('read from address 0x%x' % address)</b>
+    ........<b>    return 1234</b>
+    ........
+    simics&gt;  <b>def write_fn(obj, address, value):</b>
+    ........<b>    print('write 0x%x to address 0x%x' % (value, address))</b>
+    ........
+    simics&gt;  <b>@myiface_type = SIM_get_python_interface_type('my_bus')</b>
+    simics&gt;  <b>@myiface = myiface_type(read = read_fn, write = write_fn)</b>
+    simics&gt;  <b>@SIM_register_interface('mydev', 'my_bus', myiface)</b>
+    simics&gt;  <b>@conf.mydev.iface.my_bus.read(0x4321)</b>
+    read from address 0x4321
+    1234
+</pre><p>
+</p><p>
+To use the newly defined interface type from C, you just need to
+include <code>my-bus-interface.h</code>. Set <code>EXTRA_MODULE_VPATH</code> in the
+C module's makefile the same way as described above, and you will not have to
+give a path to the file.
+</p><p>
+See section <a class="reference" href="writing-module-with-c.html#c-iface">14.5</a> for more information about using
+interfaces from Python and C.
+</p><p>
+
+</p><h2 class="jdocu"><a name="spc-create-iface-limitations">11.2 Restrictions</a></h2>
+<p>
+
+An interface must be a struct (in the DML or C sense) of function
+pointers, or <i>methods</i>. Each of the methods should have
+a <code>conf_object_t *obj</code> as its first argument, which is used to
+pass the called object to the implementing function.
+</p><p>
+When you call an interface method from DML, you should not specify
+the <i>obj</i> argument, as it is provided automatically.
+</p><p>
+In C, you must use the <code><a name="SIM_INTERFACE">SIM_INTERFACE</a>(</code><em>name</em><code>)</code>
+macro to declare the interface. You must also define a macro
+called <code></code><i>NAME</i><code>_INTERFACE</code> to be equal to the
+string <code>"</code><em>name</em><code>"</code>. For example:
+</p><pre class="jdocu_small">  SIM_INTERFACE(test) {
+          void (*method)(conf_object_t *obj, int arg);
+  };
+  #define TEST_INTERFACE "test"
+</pre><p>
+This defines a C data type called <code>test_interface_t</code>, which is
+a <code>struct test_interface</code>, containing one function pointer
+member, <code>method</code>. The <code>TEST_INTERFACE</code> macro should be
+used whenever you need to refer to the name of the interface from C,
+as it helps avoiding typos in the interface name:
+</p><pre class="jdocu_small">  test_interface_t *iface = SIM_get_interface(obj, TEST_INTERFACE);
+</pre><p>
+If you forget to define the <code>TEST_INTERFACE</code> macro, you will
+get a C compiler error. If the value of <code>TEST_INTERFACE</code>
+isn't <code>"test"</code>, you will get a runtime (assertion) error when
+your module is loaded.
+</p><div class="note">
+<b>Note:</b>
+The <code>TEST_INTERFACE</code> macro is mostly applicable for C
+models. In DML models the <code>connect</code> construct should be used
+instead.</div>The code that handles the Python conversion is created by first
+running the C preprocessor, <i>CPP</i>, on the interface's C header
+file. The preprocessed file is then fed to a
+tool, <code><a name="pywrapgen">pywrapgen</a></code>, which creates the necessary
+wrapper code.
+<p>
+Not all data types are allowed when exporting an interface to Python.
+In essence, only the following data types are allowed:
+</p><dl><dt id="dt:integral-types"><b>Integral types</b></dt><dd>These include <code>bool</code>, signed and
+unsigned variants of <code>char</code>,
+<code>short</code>, <code>int</code>, <code>long</code>, <code>long long</code>, the
+Simics-defined <code>int</code><em>N</em><code>_t</code> types (where <em>N</em> is a size
+in bits), <code>intptr_t</code>, <code>uintptr_t</code>, and enumerations.</dd><dt id="dt:floating-point-types"><b>Floating-point types</b></dt><dd><code>float</code> and <code>double</code>.</dd><dt id="dt:strings"><b>Strings</b></dt><dd>The C types <code>char *</code> and <code>const char *</code> are
+automatically converted to and from Python strings.</dd><dt id="dt:structs"><b>Structs</b></dt><dd>Most structs that are part of the Simics API are available in
+Python. Within those structs, only fields that are of supported types
+are available.
+<p>
+User-defined structs can also be made available. These should then be
+defined in, or included from, the same header file as where the C
+interface definition is.</p></dd><dt id="dt:simics-specific-types"><b>Simics-specific types</b></dt><dd>For example, <code>conf_object_t</code> and <code>attr_value_t</code>. The
+complete list of supported types can be found in
+<code>[simics]/</code><em>host</em><code>/bin/pywrap/<a name="py-typemaps.c">py-typemaps.c</a></code>.
+That file contains all data types known to <code>pywrapgen</code>, as well
+as <code>%typemap</code> entries for the Simics-specific types. This file
+must not be edited by the user.</dd></dl><p>If your interface (or a user-defined struct) uses a type not supported
+in Python, you will need to prevent that argument or field from being
+processed by the Python wrapper generator. This is done using
+the <code>PYWRAP<a name="PYWRAPCPP-define"></a></code> CPP define, which only
+is defined when creating the indata for <code>pywrapgen</code>.
+</p><p>
+For example, this is how you can prevent <code>pywrapgen</code> from processing
+the <b><i>bar</i></b> method, which has an unsupported
+<code>int *</code> argument:
+</p><pre class="jdocu_small">  SIM_INTERFACE(test) {
+          void (*foo)(conf_object_t *obj, int a);
+  #ifndef PYWRAP
+          void (*bar)(conf_object_t *obj, int *result);
+  #endif
+  };</pre><p>
+</p><p>
+If you do not do this, you may get somewhat cryptic error messages
+from <code>pywrapgen</code>, as it has limited knowledge about types
+defined outside the Simics header files.
+</p><p>
+You can also let users create new instances of user-defined structs
+from Python (this is automatically allowed for interfaces), by using
+the <code><a name="SIM_PY_ALLOCATABLE">SIM_PY_ALLOCATABLE</a>(</code><em>type</em><code>)</code> macro,
+where <em>type</em> needs to be a typedef. For example, you might add the
+following to the <code>my-bus-interface</code> example above:
+</p><pre class="jdocu_small">  typedef struct {
+          char *name;
+          unsigned count;
+  } mytype_t;
+  SIM_PY_ALLOCATABLE(mytype_t);
+</pre><p>
+The Python wrappings of each header file in an interface module appear
+as a Python module in the <code>simmod</code> package of the corresponding
+Simics module; in this example, the Python bindings
+for <code>mytype_t</code> appear in the
+module <code>simmod.my_bus_interface.my_bus_interface</code>. This can be
+used to create new instances of <code>mytype_t</code> from Python:
+</p><pre class="jdocu_small">  simics&gt;  <b>load-module my-bus-interface</b>      # load Simics module
+  simics&gt;  <b>@from simmod.my_bus_interface import my_bus_interface</b>
+  simics&gt;  <b>@x = my_bus_interface.mytype_t()</b>  # create struct
+  simics&gt;  <b>@x.count = 4711</b>                   # assign to field
+  simics&gt;  <b>@print('0x%x' % x.count)</b>          # read from field
+  0x1267
+</pre><p>
+You can also initiate the fields in the constructor:
+</p><pre class="jdocu_small">  simics&gt;  <b>x = my_bus_interface.mytype_t(name = "Arthur", count = 42)</b>
+</pre><p>
+</p><p>
+An enumeration type can be used as argument to interface methods and
+its members will be wrapped to Python as integers. In Python each
+member of an enumeration can be accessed as an attribute of the 
+interface module, named as the member. The type of an enumeration will
+not be wrapped by name, only the members. <code>SIM_PY_ALLOCATABLE</code>
+should not be used for enumeration types. 
+</p><p>
+If you add an enumeration to the previous example:
+</p><pre class="jdocu_small">  typedef enum {
+          First = 1,
+          Second,
+          Last = 100,
+  } my_enum_t;</pre><p>
+</p><p>
+The members <code>First</code>, <code>Second</code> and <code>Last</code> will be
+accessible from Python as integers, but the enumerator type
+<code>my_enum_t</code> will not be wrapped. After creating
+<code>my_bus_interface</code> in the same way as in the previous
+example, enumeration members can be accessed as follows: 
+</p><pre class="jdocu_small">  simics&gt;  <b>@my_bus_interface.First</b>   # read enum member First
+  1
+  simics&gt;  <b>@my_bus_interface.Second</b>  # read enum member Second
+  2
+  simics&gt;  <b>@my_bus_interface.Last</b>    # read enum member Last
+  100</pre><p>
+</p><p>
+
+</p><h2 class="jdocu"><a name="Callback-Functions-in-Interfaces">11.3 Callback Functions in Interfaces</a></h2>
+<p>
+
+</p><p>
+<a name="callback-functions"></a>If you have an interface method that takes a
+callback function as an argument, it is often very useful to also have generic
+user-supplied data that is passed unmodified to the callback function.
+</p><p>
+In C, the traditional way to do this is to use a <code>void *</code> parameter
+for this. However, this does not work well enough for interfaces. Interfaces
+are available to be called or implemented by Python functions, and therefore
+need to handle Python objects in the place of the <code>void *</code>
+parameter. As Python objects need to be explicitly reference counted, some
+additional work is required.
+</p><p>
+The solution is to use <code><a name="cbdata_t">cbdata_t</a></code> objects as arguments
+instead of <code>void *</code>. These are typed and have a deallocation
+function that is used to free the object when the last reference is used.
+</p><p>
+The types <code><a name="cbdata_register_t">cbdata_register_t</a></code>
+and <code><a name="cbdata_call_t">cbdata_call_t</a></code> are only aliases
+for <code>cbdata_t</code>, used to annotate whether the object is passed to a
+registration function or a callback function. This is used by the automatic
+Python wrapping to ensure that the callback data is freed correctly.
+</p><p>
+These are the rules that must be followed when defining an interface method
+that takes a callback function as argument:
+</p><p>
+</p><ol>
+
+<li>The interface method takes a callback function and
+a <code>cbdata_register_t</code> as arguments.</li>
+
+<li>The callback function must take a <code>cbdata_call_t</code> argument.</li>
+
+<li>The interface method may call the callback function zero or more
+times.</li>
+
+<li>When the callback function will not be called again, a C interface
+implementation must free the callback data by
+calling <b><i>SIM_free_cbdata</i></b>.</li>
+
+<li>The interface user must make no assumptions about when or whether the
+callback data is deallocated.</li>
+
+</ol>
+<p>
+When the interface method is implemented in or called from Python, the Python
+reference counter dictates when the deallocation function is called.
+</p><p>
+The <code>cbdata_t</code> feature was added in Simics 4.4 and legacy
+interfaces do typically not use it; instead they rely on
+using <code><a name="lang_void">lang_void</a></code> arguments. While those support being
+called from Python, they do not support implementing the interface in Python.
+</p><p>
+For detailed documentation on <code>cbdata_t</code>, its related data types,
+and API functions, see its entry in the <em>API Reference Manual</em>.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="example-models.html">10 Example Models</a>
+<a href="python-in-modules.html">12 Using Python in a Simics module</a>
+</div>

@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pci_upstream</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pci_multi_function_device.html">pci_multi_function_device</a>
+<a href="__rm_interface_pci_upstream_operation.html">pci_upstream_operation</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pci_upstream">pci_upstream</a></h1>
+<p>
+
+<a name="pci_upstream"></a><a name="pci_upstream_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is implemented by PCI(e) buses and
+   bridges to handle upstream transactions (primarily
+   memory or IO).
+<p>
+   A PCI(e) bus typically forwards all transactions to
+   an upstream bridge.
+</p><p>
+   PCI(e) bridges either forward a transaction to its primary
+   side bus or initiate a downstream operation
+   on the secondary bus using the <code>pci_downstream</code>
+   interface.
+</p><p>
+   It should be noted that a PCI bridge using
+   this interface will see peer-to-peer traffic
+   from its secondary interface; this is a difference
+   compared to real hardware where such transactions
+   never involve the bridge. To behave like real
+   hardware, PCI bridges should send all peer-to-peer
+   traffic downstream.
+   </p><pre class="jdocu_small">SIM_INTERFACE(pci_upstream) {
+        exception_type_t (*operation)(conf_object_t *obj,
+                                      generic_transaction_t *mem_op,
+                                      addr_space_t space);
+};
+#define PCI_UPSTREAM_INTERFACE   "pci_upstream"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pci_multi_function_device.html">pci_multi_function_device</a>
+<a href="__rm_interface_pci_upstream_operation.html">pci_upstream_operation</a>
+</div>

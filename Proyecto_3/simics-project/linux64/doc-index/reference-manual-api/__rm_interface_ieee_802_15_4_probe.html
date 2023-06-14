@@ -1,0 +1,99 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ieee_802_15_4_probe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ieee_802_15_4_link.html">ieee_802_15_4_link</a>
+<a href="__rm_interface_ieee_802_15_4_receiver.html">ieee_802_15_4_receiver</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ieee_802_15_4_probe">ieee_802_15_4_probe</a></h1>
+<p>
+
+<a name="ieee_802_15_4_probe"></a><a name="ieee_802_15_4_probe_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">typedef void (*ieee_802_15_4_probe_snoop_t)(
+                                lang_void *user_data,
+                                conf_object_t *probe,
+                                ieee_802_15_4_probe_side_t to_side,
+                                const frags_t *frame,
+                                uint32 rssi,
+                                uint16 channel_page,
+                                uint16 channel_number,
+                                ieee_802_15_4_frame_crc_status_t crc_status);</pre><p>
+
+   
+   </p><ul>
+     <li><code>IEEE_802_15_4_Probe_Port_A</code> means that the frame is
+     from device to link.</li>
+
+     <li><code>IEEE_802_15_4_Probe_Port_B</code> means that the frame is
+     from link to device.</li>
+   </ul>
+   
+<pre class="jdocu_small">typedef enum {
+        IEEE_802_15_4_Probe_Port_A = 0,
+        IEEE_802_15_4_Probe_Port_B = 1
+} ieee_802_15_4_probe_side_t;</pre><p>
+
+   </p><pre class="jdocu_small">SIM_INTERFACE(ieee_802_15_4_probe) {
+        void (*attach_snooper)(conf_object_t *NOTNULL probe,
+                               ieee_802_15_4_probe_snoop_t snoop_fun,
+                               lang_void *user_data);
+        void (*detach)(conf_object_t *NOTNULL probe);
+};
+#define IEEE_802_15_4_PROBE_INTERFACE "ieee_802_15_4_probe"
+</pre><p>
+</p><p>
+
+   The <code>ieee_802_15_4_probe</code> interface is implemented by the
+   IEEE 802.15.4 probe devices that provide an interface for Simics users to
+   register their own callback to listen to the traffic going-on in the probe.
+   The <b><i>attach_snooper</i></b> attaches a snooper function. The probe will
+   pass each frame to the snooper function, then forward it unchanged where it
+   should be going.
+   The <b><i>detach</i></b> detaches the currently registered callback from
+   the probe.
+</p><p>
+   This interface should only be used for inspection, and never as part of
+   the actual simulation. The snoop functions must not affect the simulation
+   in any way.
+   The user_data parameter is passed to the snoop function every time
+   it is called.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ieee_802_15_4_link.html">ieee_802_15_4_link</a>
+<a href="__rm_interface_ieee_802_15_4_receiver.html">ieee_802_15_4_receiver</a>
+</div>

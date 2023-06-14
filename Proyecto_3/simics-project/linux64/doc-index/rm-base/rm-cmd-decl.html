@@ -1,0 +1,106 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>decl</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-dec.html">dec</a>
+<a href="rm-cmd-default-port-forward-target.html">default-port-forward-target</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="decl"></a>
+<h1 id="decl"><a href="#decl">decl</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>decl</b> <b>{</b><b> </b><i>declarations</i><b> </b><b>}</b><br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ A Simics script may have an optional script declaration block first in the file. The block declares parameter that the user can specify on the command line when launching Simics, or from the GUI, to alter the behavior of the script.
+<p>
+Possible declarations are: </p><ul> <li>Script documentation</li> <li>Parameter groups</li> <li>Parameters</li> <li>Imported parameters</li> <li>Results</li> </ul>
+<p>
+Scripts may be documented by adding one or more lines starting with <tt>!</tt> first in the <code>decl</code> block.
+</p><p>
+A parameter declaration includes the name and the type of a script parameter and an optional default value. It can also be followed by one or more lines of documentation, each starting with <tt>!</tt>. <br>
+ </p><pre><b>param</b> <i>name</i> <b>:</b> <i>type</i> [ <b>=</b> <i>default-value</i>]
+<b>!</b> <i>documentation line</i>
+</pre>
+<p>
+Example:<br>
+ </p><pre>param ram_size : int = 8
+! Size of RAM in MiB
+</pre>
+<p>
+This means that the variable <tt>$ram_size</tt> will be set when the script is executed, that it must be an integer, and that it will be 8 if not specified in any other way. If there is no default value, then the parameter must be specified when the script is started; otherwise it is optional.
+</p><p>
+A script with a declaration block will only see the variables that have been declared as parameters. Other variables are hidden during the script's execution and will re-appear when the script terminates.
+</p><p>
+Several parameter declarations may be collected together by declaring a group. All parameters after a group declaration will belong to it, until a new group is declared. Example: <br>
+ </p><pre>group "Disks"
+</pre>
+<p>
+Script parameters may be imported from another script, typically one included in the command section using <code>run-command-file</code>. Example:<br>
+ </p><pre>params from "qsp-system.include"
+ except mac_address, system
+ default num_cpus = 8
+</pre>
+<p>
+The <tt>except</tt> statement is used to skip the import of some named parameters, while <tt>default</tt> provides a way to assign a default value to a parameter in the imported script.
+</p><p>
+A script can return variables that it has set by declaring results in the following way:<br>
+ </p><pre><b>result</b> <i>param</i> : <i>type</i>
+</pre>
+<p>
+Example:<br>
+ </p><pre>result mac_address : string
+</pre>
+<p>
+It means that the script must set <tt>$mac_address</tt> before terminating, that it must be a string value, and that this variable is available to the caller. All other variables assigned to by the script are lost. The same name can be used for both a parameter and a result.
+</p><p>
+The automatically generated script trampolines in project directories use a single <b>substitute</b> line in the <code>decl</code> block to inherit all parameters and return values from another script. This keyword is not supposed to be used in user written scripts.
+</p><p>
+Whitespace (spaces, tabs, line breaks) are in general not significant in script declaration blocks unless specifically noted. Comments are allowed, starting with # and running to the end of the line. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-run-command-file.html">run-command-file</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-dec.html">dec</a>
+<a href="rm-cmd-default-port-forward-target.html">default-port-forward-target</a>
+</div>

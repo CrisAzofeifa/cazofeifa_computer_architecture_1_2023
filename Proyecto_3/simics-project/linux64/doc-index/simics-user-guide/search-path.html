@@ -1,0 +1,155 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.4 Simics's Search Path</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="help-system.html">4.3 Help System</a>
+<a href="using-the-pipe-command.html">4.5 Using the Pipe Command</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="cli.html">4 The Command Line Interface</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="search-path">4.4 Simics's Search Path</a></h1>
+<p>
+
+</p><p>
+Many Simics commands will look up files based on the current
+directory. When Simics is launched from the command line, the current
+directory is the current directory of the shell Simics was launched
+from. When Simics is launched by double clicking its icon, the current
+directory is the project
+directory. This may be impractical when writing scripts or building
+new configurations, so Simics provides two features to ease directory
+handling:
+</p><p>
+</p><ul>
+
+<li>Simics recognizes some special path markers that are translated before
+being used:
+<p>
+</p><dl><dt id="dt:simics"><b><code>%simics%</code></b></dt><dd>This path marker causes Simics to
+locate the file (following the marker) in the project directory or in any of
+the installed packages. If not found in the project directory, Simics will
+start searching in the newest package, i.e. the one with the highest build-id
+number.
+<p>
+For example, <code>%simics%/scripts/foo.simics</code> could be translated to:
+</p><dl><dt id="dt:windows"><b>Windows:</b></dt><dd><code>C:\Program
+    Files\Simics\Simics 6\Simics
+    6.0.1\scripts\foo.simics</code></dd><dt id="dt:linux"><b>Linux:</b></dt><dd><code>
+    /opt/simics/simics-6/simics-6.0.1/scripts/foo.simics
+    </code></dd></dl><p>Note that if you change the version of Simics,
+<code>%simics%</code> will change as well, so you should use it to refer only
+to files that you know are present in all Simics versions. Notice also that
+<code>%simics%</code> has no meaning if no file can be found. You can use the
+command <b>lookup-file</b> to find out how the path will be
+translated.</p></dd><dt id="dt:script"><b><code>%script%</code></b></dt><dd>Translated to the directory where the
+currently running script is located. A possible usage is to let a script call
+another one in the same directory, independently of what the current directory
+is.
+<p>
+For example, if the directory <code>baz</code> contains the scripts
+<nobr><code>foo.simics</code></nobr> and <nobr><code>bar.simics</code></nobr>,
+even if the user uses
+Simics with another current directory, it will be possible for
+<code>foo.simics</code> to call <code>bar.simics</code> by issuing the command:
+</p><p>
+</p><pre class="jdocu_small">run-command-file %script%/bar.simics</pre><p></p></dd></dl><p><code>%simics%</code> and <code>%script%</code> are always translated to
+absolute paths, so they never interact with the next feature, called
+<em>Simics's search path</em>. One consequence is that they must
+always be used in double
+quotes <code>"%simics%/targets/qsp-x86/images"</code> to ensure
+that escaped characters such as spaces are used correctly.</p></li>
+
+<li>Simics has a list of paths called <em>Simics's search path</em> where files
+will be looked up when using some specific commands (among others,
+<b>load-binary</b>, <b>load-file</b>, <b>run-command-file</b>, and
+<b>run-python-file</b>) and a number of classes (such as the
+<b>image</b> class and the tftp server implementation in the
+<b>service-node</b>). The file is first looked up in the current
+directory, then in all entries of Simics's search path, in order.
+<p>
+</p><dl><dt id="dt:windows-2"><b>Windows:</b></dt><dd>Let us assume for example that Simics's search path contains<br>
+<code>C:\Users\joe\scripts\</code><br>
+and that the current directory is<br>
+<code>C:\Users\joe\project\</code><br>
+If the command:
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>run-command-file test/start-test.simics</b></pre><p>
+</p><p>
+is issued, Simics will look for the following files to run:
+</p><p>
+</p><ol>
+<li><code>C:\Users\joe\project\test\start-test.simics</code></li>
+<li><code>C:\Users\joe\scripts\test\start-test.simics</code></li>
+</ol>
+</dd><dt id="dt:linux-2"><b>Linux:</b></dt><dd>Let us assume for example that Simics's search path contains<br>
+<code>/home/joe/scripts/</code> and that the current directory is
+<code>/home/joe/project</code>. If the command:
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>run-command-file test/start-test.simics</b></pre><p>
+</p><p>
+is issued, Simics will look for the following files to run:
+</p><p>
+</p><ol>
+<li><code>/home/joe/project/test/start-test.simics</code></li>
+<li><code>/home/joe/scripts/test/start-test.simics</code></li>
+</ol>
+</dd></dl><p></p></li>
+</ul>
+<p>
+Simics's search path can be manipulated using the <b>add-directory</b>,
+<b>clear-directories</b> and <b>list-directories</b> commands. Simics's
+search path is also used when looking for image files belonging to checkpoints
+or new configurations. This is described in section <a href="checkpointing.html#checkpoint-path">Image Search Path</a>.
+</p><p>
+Remember that setting a CLI variable to a path with %simics% or %script% does
+not in itself evaluate the path marker. This means that the path marker may
+evaluate to another directory than is anticipated.
+The following two lines evaluate quite differently:
+</p><pre class="jdocu_small">$just_a_string = "%script%/images/my_image"
+$absolute_path = (lookup-file "%script%/images/my_image")
+</pre><p>
+The first CLI variable reads the given text and may evaluate to wherever.
+The second variable is evaluated locally and reads the absolute path for the
+<code>my_image</code> file that is located nearby the script.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Although the Simics search path is saved in the <code>sim</code> object in
+checkpoints, allowing image files that were found through it to be opened again
+by the checkpoint, it is not available until the object creation phase. Module
+initialization code should not rely on the Simics path since that code is run
+before the <code>sim</code> object from the checkpoint has been created.
+</div>
+<div class="chain">
+<a href="help-system.html">4.3 Help System</a>
+<a href="using-the-pipe-command.html">4.5 Using the Pipe Command</a>
+</div>

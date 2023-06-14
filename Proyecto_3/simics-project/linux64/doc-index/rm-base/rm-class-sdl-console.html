@@ -1,0 +1,396 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>sdl-console</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-sd_card.html">sd_card</a>
+<a href="rm-class-selfprof.html">selfprof</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="sdl-console"><a href="#sdl-console">sdl-console</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The <tt>sdl-console</tt> class implements a graphical console, representing a computer screen. Several consoles may be present at any time. It also supports input of keyboard and mouse events. The objects of the <tt>sdl-console</tt> class should be connected to a graphics card device and a keyboard/mouse device. The console shows its content in gray-scale when the simulation is stopped. The method to provide mouse input is specified with the <tt>grab_button</tt> and <tt>grab_modifier</tt> attributes.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, gfx_console, keyboard_console, abs_pointer_activate, clipboard_peer, checkpoint, recorded
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-sdl-console.auto-release.html">auto-release</a>
+ – get/set auto-release flag</li>
+<li>
+<a href="rm-cmd-sdl-console.break.html">break</a>
+ – break on a graphics event specified by filename</li>
+<li>
+<a href="rm-cmd-sdl-console.close.html">close</a>
+ – close console window</li>
+<li>
+<a href="rm-cmd-sdl-console.delete.html">delete</a>
+ – delete breakpoint</li>
+<li>
+<a href="rm-cmd-sdl-console.disable-input.html">disable-input</a>
+ – ignore console input</li>
+<li>
+<a href="rm-cmd-sdl-console.disable-visual-feedback.html">disable-visual-feedback</a>
+ – disable visual feedback</li>
+<li>
+<a href="rm-cmd-sdl-console.enable-input.html">enable-input</a>
+ – enable console input</li>
+<li>
+<a href="rm-cmd-sdl-console.enable-visual-feedback.html">enable-visual-feedback</a>
+ – enable visual feedback</li>
+<li>
+<a href="rm-cmd-sdl-console.fullscreen-off.html">fullscreen-off</a>
+ – disable fullscreen mode</li>
+<li>
+<a href="rm-cmd-sdl-console.fullscreen-on.html">fullscreen-on</a>
+ – enable fullscreen mode</li>
+<li>
+<a href="rm-cmd-sdl-console.grab-setup.html">grab-setup</a>
+ – set grab button and modifier</li>
+<li>
+<a href="rm-cmd-sdl-console.input.html">input</a>
+ – send string to a console</li>
+<li>
+<a href="rm-cmd-sdl-console.open.html">open</a>
+ – open console window</li>
+<li>
+<a href="rm-cmd-sdl-console.refresh.html">refresh</a>
+ – refresh console</li>
+<li>
+<a href="rm-cmd-sdl-console.restore-window-size.html">restore-window-size</a>
+ – restore window size</li>
+<li>
+<a href="rm-cmd-sdl-console.rotate-ccw.html">rotate-ccw</a>
+ – rotate console counterclockwise</li>
+<li>
+<a href="rm-cmd-sdl-console.rotate-cw.html">rotate-cw</a>
+ – rotate console clockwise</li>
+<li>
+<a href="rm-cmd-sdl-console.save-bmp.html">save-bmp</a>
+ – save BMP image</li>
+<li>
+<a href="rm-cmd-sdl-console.save-break-xy.html">save-break-xy</a>
+ – specify and save a graphical breakpoint</li>
+<li>
+<a href="rm-cmd-sdl-console.save-png.html">save-png</a>
+ – save PNG image</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:x_size">
+<i>x_size</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The width of the console.</dd>
+<dt id="dt:y_size">
+<i>y_size</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The height of the console.</dd>
+<dt id="dt:recorder">
+<i>recorder</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Recorder device for recording and playback of serial input.</dd>
+<dt id="dt:depth">
+<i>depth</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The simulated depth in bits per pixel (8, 16, 24 or 32).</dd>
+<dt id="dt:keyboard">
+<i>keyboard</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The console's keyboard device. Must implement the keyboard interface.</dd>
+<dt id="dt:mouse">
+<i>mouse</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The console's mouse device. Must implement the mouse interface</dd>
+<dt id="dt:double_x_limit">
+<i>double_x_limit</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If the width of the console is less than or equal to this value, the width of every pixel will be doubled.</dd>
+<dt id="dt:double_y_limit">
+<i>double_y_limit</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If the height of the console is less than or equal to this value, the height of every pixel will be doubled.</dd>
+<dt id="dt:try_open">
+<i>try_open</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If set to 1, the window will be opened. Close with 0.</dd>
+<dt id="dt:rgb_colors">
+<i>rgb_colors</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iii]{256}]</code>
+<br><tt>((<i>r</i>, <i>g</i>, <i>b</i>){256})</tt> The color palette. 256 colors.</dd>
+<dt id="dt:input_enable">
+<i>input_enable</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Enable keyboard and mouse input to the console.</dd>
+<dt id="dt:refresh">
+<i>refresh</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>a</code>
+<br>If set the console will be completely redrawn.</dd>
+<dt id="dt:auto_release">
+<i>auto_release</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flag whether the graphics console automatically shall send a release event when the window focus is lost and keys still are pressed</dd>
+<dt id="dt:microm_x">
+<i>microm_x</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Micrometers per horizontal pixel.</dd>
+<dt id="dt:microm_y">
+<i>microm_y</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Micrometers per vertical pixel.</dd>
+<dt id="dt:video">
+<i>video</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The console's video device. Used to import video breakpoint functions. Must implement the video interface.</dd>
+<dt id="dt:save_break">
+<i>save_break</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[siiiis]</code>
+<br><tt>(<i>source_obj</i>, <i>filename</i>, <i>left</i>, <i>top</i>, <i>right</i>, <i>bottom</i>, <i>comment</i>) </tt>. Saves a graphical breakpoint rectangle (top,left)-&gt;(bottom,right) to <tt>filename</tt>.</dd>
+<dt id="dt:break">
+<i>break</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>Unknown</code>
+<br><tt>(<i>source_obj</i>, <i>filename</i>)</tt>. Activate a graphical breakpoint previously saved to <tt>filename</tt>. Returns a breakpoint ID.</dd>
+<dt id="dt:delete">
+<i>delete</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>Delete breakpoint with given ID.</dd>
+<dt id="dt:fullscreen">
+<i>fullscreen</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set fullscreen mode. The console will only run in fullscreen while input grabbing is active. Note that not all graphics console implementations support fullscreen.</dd>
+<dt id="dt:save_bmp">
+<i>save_bmp</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s</code>
+<br>Save current console bitmap as a BMP file.</dd>
+<dt id="dt:save_png">
+<i>save_png</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[sii]</code>
+<br>Save current console bitmap as a PNG file. For additional integers are the width and height of the resulting image. They cannot be larger than the original image. If specified as 0, then the original image size is used.</dd>
+<dt id="dt:grab_modifier">
+<i>grab_modifier</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>One of control, shift, alt and none. The modifier key used for grabbing and ungrabbing input for the console. When a modifier is selected, pressing only the middle mouse button cause the console to send this button event to the simulator. Currently only the left side modifier are interpreted.</dd>
+<dt id="dt:grab_button">
+<i>grab_button</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>One of left, middle and right The grab button specifies which mouse button that is used to grab and ungrab input for the console.</dd>
+<dt id="dt:title">
+<i>title</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>The console window title.</dd>
+<dt id="dt:input_key_event">
+<i>input_key_event</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[ii]</code>
+<br>Set to a enter a key event. The first list element is 0 for key down, 1 for key up. The second list element is the key code.</dd>
+<dt id="dt:kbd_event_queue">
+<i>kbd_event_queue</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ii]*]</code>
+<br>Keyboard event queue.</dd>
+<dt id="dt:abs_pointer">
+<i>abs_pointer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Absolute positioning pointer device connected to the console. Must implement the abs_pointer interface</dd>
+<dt id="dt:abs_pointer_enabled">
+<i>abs_pointer_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>True if the absolute positioning pointer is enabled. The pointer can either be enabled statically in the script or from the device itself.</dd>
+<dt id="dt:visual_feedback">
+<i>visual_feedback</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Enable or disable visual feedback.</dd>
+<dt id="dt:clipboard_peer">
+<i>clipboard_peer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Clipboard peer object.</dd>
+<dt id="dt:raise_window">
+<i>raise_window</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>b</code>
+<br>By writing any value to this attribute, the graphics console window moved in front of other windows on the display.</dd>
+<dt id="dt:minimize_window">
+<i>minimize_window</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>b</code>
+<br>By writing TRUE to this attribute, the graphics console window is minimized. A write of FALSE restores it again.</dd>
+<dt id="dt:restore_window_size">
+<i>restore_window_size</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>b</code>
+<br>By writing any value to this attribute, the graphics console window size will be restored to the size set by the simulation.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.sdl-console.html">sdl-console</a>
+</section>
+<div class="chain">
+<a href="rm-class-sd_card.html">sd_card</a>
+<a href="rm-class-selfprof.html">selfprof</a>
+</div>

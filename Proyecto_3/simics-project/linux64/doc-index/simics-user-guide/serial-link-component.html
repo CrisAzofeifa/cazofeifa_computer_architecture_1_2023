@@ -1,0 +1,103 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>8.1 Serial Link Component</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="serial-links.html">8 Serial Links</a>
+<a href="host-serial-console.html">8.2 Host Serial Console</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="serial-links.html">8 Serial Links</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Serial-Link-Component">8.1 Serial Link Component</a></h1>
+<p>
+
+</p><p>
+Connecting simulated machines over a simulated <a name="serial">serial</a>
+connection is done by creating a <b>ser-link</b> component
+that connects to the serial devices in the machines. The link object
+can be thought of as modeling a serial cable that is plugged into the
+connectors on the devices—and just like a real cable, it is a
+point-to-point connection that connects exactly two devices.
+</p><p>
+The <a name="link">link</a> object models serial communication at the character level
+in a simplified way. The bandwidth for the connection is configured in the link
+object, which means that the serial devices do not need to be explicitly
+configured by software.
+</p><p>
+New <b>ser-link</b> components can be added with the
+<b>new-ser-link</b> command:
+</p><p>
+</p><pre class="jdocu_small"> 
+simics&gt; <b>load-module ser-link</b>
+simics&gt; <b>new-ser-link</b>
+Created instantiated 'ser_link' component 'serial_link0'
+</pre><p>
+</p><p>
+Serial connectors of other components can then connect to that
+link. The serial link has two connectors, <b>device0</b>
+and <b>device1</b>, representing the two endpoints of the
+cable. For an <i>QSP-x86</i> machine, the second
+UART can be connected to the link the following way:
+</p><p>
+</p><pre class="jdocu_small"> 
+simics&gt; <b>connect serial_link0.device0 board.mb.sb.serial[2]</b>
+</pre><p>
+</p><p>
+</p><h2 class="jdocu"><a name="Text-and-Telnet-Consoles">8.1.1 Text and Telnet Consoles</a></h2>
+<p>
+</p><p>
+In addition to simulated serial devices, either endpoint of a serial
+link can be hooked up to a text console. (And just
+as with serial devices, you have the option of connecting the two
+endpoints directly without having a link in between—though this
+is generally much more useful with consoles.)
+</p><p>
+A text console can open GUI windows on the host computer, and let
+the user talk to the connected serial device. The text console also
+has the ability to start a telnet server; the user can then use any
+telnet program to connect to this server, and talk to the connected
+serial device.
+</p><p>
+You create text consoles by instantiating
+<b>txt_console_comp</b> components, and connecting them to
+the link or device you want them to talk to, as in the following example:
+</p><p>
+</p><pre class="jdocu_small"> 
+simics&gt; <b>new-txt-console-comp con visible=TRUE</b>
+simics&gt; <b>connect con.serial board.mb.sb.serial[2]</b>
+</pre><p>
+</p><p>
+
+</p>
+<div class="chain">
+<a href="serial-links.html">8 Serial Links</a>
+<a href="host-serial-console.html">8.2 Host Serial Console</a>
+</div>

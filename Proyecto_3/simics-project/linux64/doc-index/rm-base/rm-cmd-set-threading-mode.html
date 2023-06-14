@@ -1,0 +1,78 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>set-threading-mode</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-set-thread-limit.html">set-thread-limit</a>
+<a href="rm-cmd-set-time-quantum.html">set-time-quantum</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="set-threading-mode"></a>
+<h1 id="set-threading-mode"><a href="#set-threading-mode">set-threading-mode</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>set-threading-mode</b> [<i>mode</i>] [<i>cell</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Set the threading mode to be used by Simics. The following values for <i>mode</i> are supported:
+<p>
+<tt>multicore</tt> - run in multicore-threaded mode. This is an nondeterministic mode where individual CPU cores are simulated in parallel, for models supporting it.
+</p><p>
+<tt>subsystem</tt> - run in subsystem-threaded mode. In this mode, groups of tightly coupled CPU cores can be simulated in parallel, but tightly coupled cores are simulated in sequence. This is also an nondeterministic mode.
+</p><p>
+<tt>serialized</tt> - run in serialized mode, which usually is deterministic. All CPUs belonging to a particular cell are simulated in sequence.
+</p><p>
+Regardless of the selected threading modes, models belonging to different cells can always be simulated in parallel unless all multithreading has been disabled with the <code>disable-multithreading</code> command.
+</p><p>
+If a <i>cell</i> argument is specified, then the threading mode is only applied to that particular cell.
+</p><p>
+If the command is given without a <i>mode</i> argument, then the current threading configuration is displayed together with various latency settings affecting the simulation. Settings which do not apply to the current mode or configuration are printed in parentheses. The number of concurrent threads that can be used to simulate the workload of a particular cell is listed in the <tt>#td</tt> column (the number of distinct thread domains in the cell containing CPUs). 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-set-max-time-span.html">set-max-time-span</a>, 
+<a href="rm-cmd-set-time-quantum.html">set-time-quantum</a>, 
+<a href="rm-cmd-set-min-latency.html">set-min-latency</a>, 
+<a href="rm-cmd-set-thread-limit.html">set-thread-limit</a>, 
+<a href="rm-cmd-list-thread-domains.html">list-thread-domains</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-set-thread-limit.html">set-thread-limit</a>
+<a href="rm-cmd-set-time-quantum.html">set-time-quantum</a>
+</div>

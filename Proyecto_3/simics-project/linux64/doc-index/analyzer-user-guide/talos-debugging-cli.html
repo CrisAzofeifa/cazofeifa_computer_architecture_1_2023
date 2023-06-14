@@ -1,0 +1,162 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.1 The Command Line Debugger</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="debugging-target-code.html">3 Debugging Target Code</a>
+<a href="talos-debugging-queries.html">3.2 Using Context Queries</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="debugging-target-code.html">3 Debugging Target Code</a>
+&nbsp;/&nbsp;</div>
+<h1 id="the-command-line-debugger">3.1 <a href="#the-command-line-debugger">The Command Line Debugger</a></h1>
+<p>This section provides an overview of the Simics command-line debugger and describes how its pieces work together. The tutorial in <em>Getting Started With Simics</em> describes how to use these commands in a complete workflow. For details about the commands, see the <em>Simics Reference Manual</em>.</p>
+<p>Simics is a full-system simulator; in addition to the thing you are trying to debug, it probably runs a complete operating system (or several, under a hypervisor). To limit the scope of your debugging to just one process (or task, or kernel thread, etc.), you use an appropriate debug context. Each debug context corresponds to some part of the target system. It can be a processor or the memory space of a processor, or a software abstraction like a process or thread. There are also debug contexts that group other contexts. Section <a class="reference" href="#debug-contexts">3.1.1</a> describes debug contexts in more detail.</p>
+<p>The debugger will only create debug contexts for the software in the system if you have configured OS awareness and enabled it. How to set up OS awareness is described in chapter <a class="reference" href="target-software-tracking.html">2</a>. If you do not use OS awareness you can debug directly on the processors instead, but then the debugger will not track when the operating system on the target switches between different processes or tasks.</p>
+<p>To do source level debugging you need to tell the debugger about the binaries (executable files and shared libraries) that the part of the system you want to debug is using. This is described in section <a class="reference" href="#configuration">3.1.2</a>. That section also explains how to tell the debugger where to find the source code for your program, if needed.</p>
+<p>Section <a class="reference" href="#breakpoints">3.1.3</a> describes how to manage break- and watch-points with the command line frontend.</p>
+<div class="note">
+<p>This section only describes the C/C++ debugger specific concepts. You can still use any other Simics commands to help you debug your code. </p>
+</div>
+<h2 id="debug-contexts">3.1.1 <a href="#debug-contexts">Debug Contexts</a></h2>
+<p>The debugger presents the target system as a set of debug contexts. Each debug context represents one interesting part of the system. It can be a software concept, like a process, a thread or a task, or a processor core or the physical memory space of a processor. To provide context there are also debug contexts that provide grouping, like a machine, or a group of all user space programs on a Linux system.</p>
+<p>When you interact with debug contexts directly you usually interact with a context running code, such as a thread or a processor core. In this text we call such a debug context a <em>thread</em>. A thread allows you to step through the code and to inspect variables scoped to the current location in the code.</p>
+<p>By default Simics does not activate the debugger; global stepping commands, etc will be directed at the current processor in Simics, and not to a debug context. There are two ways to activate the debugger and get access to debug contexts. The first is to enable the debugger with the <code>enable-debugger</code> command. This will make Simics track debug contexts and automatically selects an initial debug context if possible. The second way is to explicitly select a debug context with the <code>debug-context</code> command. This will set a current debug context and will also activate the debugger.</p>
+<p>You can disable the debugger with the <code>disable-debugger</code> command. This disable the debugger and Simics returns to the default behavior of the global stepping commands, etc.</p>
+<p>Once Simics tracks debug contexts, Simics will update the current debug context to the currently running thread every time the simulation stops. The current debug context is the debug context that all global step and inspection commands will interact with. This means that when you have hit a breakpoint or completed a step you can use the global commands to investigate the state of your software and to continue stepping through the code.</p>
+<p>Once you have a debug context you can use it to step through the code and inspect its state. When the debugger is enabled and you have a current debug context you can use the global versions of these commands. The commands are also implemented directly by the debug context, which means that you can use them on debug contexts that are not the current debug context. You can do this even if the debugger is disabled.</p>
+<p>Here is a summary of the commands you can use:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:step-line-reverse-step-line">step-line, reverse-step-line</span><br>
+Run forward or in reverse until the debug context reaches another line in the program.</li>
+<li><span class="term" id="dt:next-line-reverse-next-line">next-line, reverse-next-line</span><br>
+Run forward or in reverse until the debug context reaches another line, but skip over calls made by the current function.</li>
+<li><span class="term" id="dt:finish-function-uncall-function">finish-function, uncall-function</span><br>
+Run forward until the current function returns or in reverse until right before the current function is called.</li>
+<li><span class="term" id="dt:step-instruction-reverse-step-instruction">step-instruction, reverse-step-instruction</span><br>
+Run forward or in reverse until the debug context reaches another instruction.</li>
+<li><span class="term" id="dt:next-instruction-reverse-next-instruction">next-instruction, reverse-next-instruction</span><br>
+Run forward or in reverse until the debug context reaches another instruction, but skip over calls made by the current function.</li>
+<li><span class="term" id="dt:sym-value">sym-value</span><br>
+Get the value of a symbol or a C expression.</li>
+<li><span class="term" id="dt:sym-write">sym-write</span><br>
+Write a new value to a variable.</li>
+<li><span class="term" id="dt:sym-type">sym-type</span><br>
+Get the type of a C expression.</li>
+<li><span class="term" id="dt:sym-address">sym-address</span><br>
+Get the address of a C lvalue expression.</li>
+<li><span class="term" id="dt:sym-string">sym-string</span><br>
+Get the contents of a C string identified by a C expression.</li>
+<li><span class="term" id="dt:list">list</span><br>
+List source code.</li>
+<li><span class="term" id="dt:sym-source-sym-file">sym-source, sym-file</span><br>
+Show where an address or function can be found in the source code.</li>
+</ul>
+</div>
+<p>An active thread also has a stack of call frames, or just frames. Simics provides commands to show the stack and to select which frame other commands should use to find local variables. The stack goes from the innermost frame up towards the outermost frame. The current stack frame is reset to the innermost frame every time Simics stops executing.</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:stack-trace">stack-trace</span><br>
+Show the stack.</li>
+<li><span class="term" id="dt:frame">frame</span><br>
+Select the frame with the given number. The currently executing function has frame 0, its caller has frame 1, and so on.</li>
+<li><span class="term" id="dt:up">up</span><br>
+Select the frame with the next higher number.</li>
+<li><span class="term" id="dt:down">down</span><br>
+Select the frame with the next lower number.</li>
+</ul>
+</div>
+<h2 id="configuration">3.1.2 <a href="#configuration">Configuration</a></h2>
+<p>To perform source level debugging you need to tell the debugger about the binaries that the debug contexts you want to debug are running. These binaries must be in ELF format and should contain debug information in Dwarf format. Once this is done you can set breakpoints, step through your program, and inspect the value of variables in it.</p>
+<div class="note">
+<p>If you try to debug optimized code you may not be able to view all variables, and the mapping between line information and addresses in memory may be confusing. </p>
+</div>
+<p>The debugger keeps a memory map to locate functions, variables, etc in memory and to find debug information for target code. You add entries to the memory map using the <code>add-symbol-file</code> command. The command uses <em>context queries</em> to limit which debug contexts the information applies to. You can read more about context queries in section <a class="reference" href="talos-debugging-queries.html">3.2</a>. Here is a summary of the commands to manage the memory map:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:add-symbol-file">add-symbol-file</span><br>
+Add a symbol file or a section or segment from a symbol file to the memory map.</li>
+<li><span class="term" id="dt:clear-memorymap">clear-memorymap</span><br>
+Clear all memory map entries set from the Simics command line.</li>
+<li><span class="term" id="dt:show-memorymap">show-memorymap</span><br>
+Show all memory map entries set from the Simics command line.</li>
+<li><span class="term" id="dt:list-segments-list-sections">list-segments, list-sections</span><br>
+List segments or sections in an ELF file.</li>
+</ul>
+</div>
+<p>For simple programs you just have to provide the main binary, but for more complex cases, with shared libraries or dynamically loaded modules, you may need to add several symbol files for your program.</p>
+<p>If the source code paths in the debug information in the binaries do not match the location of the source code on your host system, you also need to tell the debugger how to find the source code if you want the debugger to be able to show you the actual source code.</p>
+<p>Tell the debugger where to find the source code for your program using the <code>add-pathmap-entry</code> command. As with the <code>add-symbol-file</code> command, you can use context queries to limit which debug contexts the information applies to. Here are the commands you can use to manage the path translation:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:add-pathmap-entry">add-pathmap-entry</span><br>
+Add a translation from a path in the debug information to a path on the host.</li>
+<li><span class="term" id="dt:clear-pathmap">clear-pathmap</span><br>
+Remove all translations of paths set from the command line.</li>
+<li><span class="term" id="dt:show-pathmap">show-pathmap</span><br>
+Show all translations of paths set from the command line.</li>
+</ul>
+</div>
+<h2 id="breakpoints">3.1.3 <a href="#breakpoints">Breakpoints</a></h2>
+<p>The C/C++ Debugger allows you to set breakpoints on source code lines and on variables and expressions.</p>
+<div class="note">
+<p>Read and write breakpoints are commonly called "watchpoints", and "breakpoints" is often taken to refer exclusively to execution breakpoints. In Simics speak, however, we use "read breakpoint", "write breakpoint", and "execution breakpoint" for the specific types, and just "breakpoint" when we wish to leave the type unspecified.</p>
+</div>
+<p>Breakpoints are set with two simple commands:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:bp-source_line-break">bp.source_line.break</span><br>
+Add a breakpoint or watchpoint on a source line.</li>
+<li><span class="term" id="dt:bp-source_location-break">bp.source_location.break</span><br>
+Add a breakpoint or watchpoint on a location given as an address or as a C expression.</li>
+</ul>
+</div>
+<p>Both commands take flags to specify if they should trigger for <em>reads</em>, <em>writes</em>, and/or <em>execution</em>. A watchpoint is simply a breakpoint with the <em>read</em> or <em>write</em> flag set. In this section we use the term breakpoint to mean both watchpoints and breakpoints.</p>
+<p>Breakpoints can be set on all contexts matching a context query. This allows you to set breakpoints that will trigger in threads or processes that do not exist yet. The default context query matches all debug contexts.</p>
+<p>You can also set breakpoints for a specific debug context by using the <code>bp-break-source-location</code> and <code>bp-break-source-line</code> commands that are namespaced on debug contexts. This allows you to limit the breakpoint to a particular debug context, but this can only be done for debug contexts that already exist.</p>
+<p>Breakpoints set with <code>bp-break-source-line</code> and <code>bp-break-source-location</code> are managed by commands namespaced on the <code>bp</code> object in Simics. Here are the commands you can use to manage such breakpoints:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:bp-list">bp.list</span><br>
+List breakpoints.</li>
+<li><span class="term" id="dt:bp-show">bp.show</span><br>
+Show details about a breakpoint.</li>
+<li><span class="term" id="dt:bp-enabled">bp.enabled</span><br>
+Set or get if the breakpoint should trigger.</li>
+<li><span class="term" id="dt:bp-ignore-count">bp.ignore-count</span><br>
+Set or get the ignore count of a breakpoint.</li>
+<li><span class="term" id="dt:bp-delete">bp.delete</span><br>
+Delete a breakpoint.</li>
+</ul>
+</div>
+
+<div class="chain">
+<a href="debugging-target-code.html">3 Debugging Target Code</a>
+<a href="talos-debugging-queries.html">3.2 Using Context Queries</a>
+</div>

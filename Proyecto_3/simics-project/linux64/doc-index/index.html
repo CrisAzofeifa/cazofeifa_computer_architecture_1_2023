@@ -1,0 +1,294 @@
+<!doctype html>
+<!--
+
+  © 2021 Intel Corporation
+
+  This software and the related documents are Intel copyrighted materials, and
+  your use of them is governed by the express license under which they were
+  provided to you ("License"). Unless the License provides otherwise, you may
+  not use, modify, copy, publish, distribute, disclose or transmit this software
+  or the related documents without Intel's prior written permission.
+
+  This software and the related documents are provided as is, with no express or
+  implied warranties, other than those that are expressly stated in the License.
+-->
+<meta charset=utf-8>
+<title>Simics® Simulator Documentation</title>
+<base href=".">
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        font-family: "IntelOne Text", sans-serif;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        height: 100vh;
+    }
+    .top-bar {
+        font-family: "IntelOne Display", sans-serif;
+        background-color: #00a3f6;
+        color: white;
+        margin: 0;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        flex-grow: 0;
+        flex-wrap: nowrap;
+        align-items: center;
+        padding: 1rem;
+        padding-right: 2rem;
+    }
+    .top-bar h1 {
+        margin: 0;
+        font-weight: normal;
+    }
+    .top-bar a {
+        color: white;
+        text-decoration: none;
+    }
+
+    .side-bar {
+        font-family: "IntelOne Display Light", sans-serif;
+        margin: 0;
+        overflow: auto;
+        width: 25rem;
+    }
+    .side-bar a {
+        color: #0068b5;
+        text-decoration: none;
+    }
+    ul {
+        padding-left: 1em;
+    }
+    .side-bar li {
+        list-style-type: none;
+        margin: 0.25em 0;
+    }
+    .side-bar li:not(.doc-category):not(.top-level):not(.on-path):not(.on-path > ul > li):not(.current > ul > li.same-page-as-parent .same-page-as-parent):not(.opened > ul > li) {
+        display: none;
+    }
+    .closed li {
+        display: none;
+    }
+    .same-page-as-parent .same-page-as-parent {
+        display: inherit !important;
+    }
+    .on-path > a {
+        font-family: "IntelOne Display Medium", sans-serif;
+    }
+    .same-page-as-parent > a {
+        font-size: 0.8em;
+    }
+    li.doc-category {
+        margin-top: 1rem;
+        font-family: "IntelOne Display", sans-serif;
+        font-weight: normal;
+        font-size: 80%;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .fold {
+        width: 1em;
+        height: 1em;
+        display: inline-block;
+        margin-right: -1em;
+        position: relative;
+        left: -1em;
+    }
+    button.fold {
+        background: none;
+        border: 0px;
+        text-align: center;
+        vertical-align: baseline;
+        padding: 0;
+        transition-duration: 0.25s;
+        font-size: 100%;
+        color: lightgrey;
+    }
+    button.fold:before {
+        font-size: 75%;
+        content: "▶";
+    }
+    .opened > button.fold, .on-path:not(.closed) > button.fold {
+        transform: rotate(90deg);
+    }
+    .opened > button.fold {
+        color: grey;
+    }
+    button.fold:active {
+        color: red;        
+    }
+
+    .search-output ul {
+        padding: 0;
+    }
+    .search-output li {
+        list-style: none;
+        margin: 1em;
+        overflow: auto;
+    }
+    .search-output i {
+        margin: 1em;
+    }
+    .search-output a {
+        font-family: "IntelOne Display", sans-serif;
+        text-decoration: none;
+        color: #0068b5;
+    }
+    .search-output a:visited {
+        color: #653171;
+    }
+    div.snippet {
+        font-size: 0.8rem;
+    }
+    div.path {
+        font-size: 0.6rem;
+    }
+    .search-toggles {
+        margin: 1em;
+        font-size: 0.8rem;
+    }
+    .search-pane {
+        position: absolute;
+        top: 0;
+        bottom: 1rem;
+        right: 2rem;
+        overflow: auto;
+        width: 30rem;
+        transition: 0.5s;
+        background: #e9e9e9;
+        box-shadow: 0 0 1rem black;
+    }
+    .load-more {
+        margin: 1em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .load-more div {
+        font-size: 0.8rem;
+    }
+    .main {
+        position: relative;
+        display: flex;
+        flex-direction: row;
+        flex-grow: 1;
+        overflow: hidden;
+    }
+    .contents {
+        width: 100%;
+        border: 0;
+        background-color: white;
+        overflow: auto;
+    }
+    .search-hit {
+        background-color:#ffe17a;
+    }
+    .off-screen {
+        right: -35rem !important;
+    }
+    .hidden {
+        display: none;
+    }
+</style>
+<script id="master-toc-script" defer src="master-toc.js"></script>
+<script id="search-index-script" defer src="search-index.js"></script>
+<script src="search.js"></script>
+<script src="elasticlunr.js"></script>
+<script>
+// These variables will be set by search-index.js and master-toc.js scripts
+let SEARCH_INDEX;
+let MASTER_TOC;
+</script>
+
+<nav class="top-bar">
+    <h1><a href="front.html" target="main-contents">
+        Simics® Simulator Documentation
+    </a></h1>
+    <div class="search">
+        <label for="search_input">Search</label>&nbsp;<input id="search_input"
+               type="search">
+        <button id="toggle-results">Show</button>
+    </div>
+</nav>
+<div class="main">
+    <nav class="side-bar" id="master-toc">Loading Table of Contents...</nav>
+    <iframe name="main-contents" class="contents"
+            title="Main Contents" src="front.html"></iframe>
+    <div id="search_pane" class="search-pane off-screen">
+        <div id="search-toggles" class="search-toggles hidden">
+            <input type="checkbox" id="local-search-toggle" disabled>
+            <label for="local-search-toggle" id="local-search-label">Only search in current document</label>
+        </div>
+        <div id="search_output" class="search-output"></div>
+    </div>
+</div>
+
+<script>
+
+function createElement(n) {
+    return document.createElement(n);
+}
+
+function pushState(state, title, url) {
+    document.title = title;
+    if (window.origin == "null") {
+        // pushState not allowed, nor wanted with file:// urls.
+        // We don't want it since there is no way to find the search page from
+        // documents.
+        return;
+    }
+    return history.replaceState(state, title, url);
+}
+
+const master_toc_controller = get_master_toc_controller(
+    document.baseURI,
+    window.URL,
+    createElement,
+    pushState,
+    document.getElementById("master-toc"),
+);
+
+let current_page;
+
+const search_controller = get_search_controller(
+    document.baseURI,
+    createElement,
+    elasticlunr,
+    document.getElementById("search_input"),
+    document.getElementById("search_pane"),
+    document.getElementById("search_output"),
+    document.getElementById("toggle-results"),
+    document.getElementById("local-search-toggle"),
+    document.getElementById("local-search-label"),
+    document.getElementById("search-toggles"),
+    function() { return current_page; }
+);
+
+let content_frame = document.querySelector("iframe.contents");
+if (window.location.hash != "") {
+    let page_url = window.location.hash.substring(1);
+    content_frame.src = page_url;
+    master_toc_controller.navigate_to(page_url);
+}
+current_page = content_frame.src;
+
+window.onmessage = (m) => {
+    let content_url = m.data.content_url;
+    console.log("Parent got message " + content_url);
+    current_page = content_url;
+    master_toc_controller.navigate_to(content_url);
+    search_controller.page_changed();
+}
+
+document.getElementById("master-toc-script").onload = function() {
+    master_toc_controller.toc_loaded(MASTER_TOC);
+};
+document.getElementById("search-index-script").onload = function() {
+    search_controller.index_loaded(SEARCH_INDEX);
+    master_toc_controller.hrefs_loaded(SEARCH_INDEX.hrefs);
+};
+</script>

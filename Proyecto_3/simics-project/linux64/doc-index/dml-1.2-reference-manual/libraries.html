@@ -1,0 +1,1145 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4 Libraries and Built-ins</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="language.html">3 DML 1.2</a>
+<a href="standard-templates.html">5 Standard Templates</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.2 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="libraries-and-built-ins">4 <a href="#libraries-and-built-ins">Libraries and Built-ins</a></h1>
+<h2 id="standard-parameters">4.1 <a href="#standard-parameters">Standard Parameters</a></h2>
+<p>This section describes the built-in parameters of the different object
+types, together with the expected data types of their values.</p>
+<h3 id="object-parameters">4.1.1 <a href="#object-parameters">Object Parameters</a></h3>
+<p>The following are the standard parameters defined in all DML objects:</p>
+<dl><dt id="dt:this-reference">
+<p>this [reference]</p>
+</dt><dd>
+<p>Always refers to the current object, i.e., the nearest enclosing
+object definition.</p>
+</dd><dt id="dt:parent-reference-undefined">
+<p>parent [reference | undefined]</p>
+</dt><dd>
+<p>Always refers to the parent (containing) object. This has the value
+<code>undefined</code> for the <code>device</code> object.</p>
+</dd><dt id="dt:desc-string-undefined">
+<p>desc [string | undefined]</p>
+</dt><dd>
+<p>A short summary of the object, for documentation and debugging purposes. This is
+<code>undefined</code> by default, and is expected to be supplied by the programmer. It
+should preferably be only a few words. <code>desc</code> may be used by all object types.
+(The short-hand syntax for <code>desc</code> is described in Section
+<a class="reference" href="language.html#object-declarations">3.9</a>.) See also <code>documentation</code>. </p></dd><dt id="dt:documentation-string-undefined"><p></p>
+<p>documentation [string | undefined]</p>
+</dt><dd>
+<p>A longer documentation string describing the object. The default
+value is <code>undefined</code>.
+<code>documentation</code> is intended for those object types which may have
+a longer documentation.
+If undefined, the <code>desc</code> parameter is used instead.
+If defined, it will override the <code>desc</code> parameter for object types
+such as connect, attribute, and register.</p>
+<p>If you have the <em>Documentation and Packaging</em> package and intend to
+generate Simics reference documentation for the device then the
+<code>documentation</code> string must follow the Simics documentation XML format,
+otherwise you will get a syntax error during the documentation build. See the
+<em>Writing Documentation</em> application note.</p>
+</dd><dt id="dt:limitations-string-undefined">
+<p>limitations [string | undefined]</p>
+</dt><dd>
+<p>A description of the limitations in the model, or the value
+<code>undefined</code>. This can be used for generating documentation of the model.</p>
+<p>If you have the <em>Documentation and Packaging</em> package and intend to
+generate Simics reference documentation for the device then the
+<code>limitations</code> string must follow the Simics documentation XML format,
+otherwise you will get a syntax error during the documentation build. See the
+<em>Writing Documentation</em> application note.</p>
+</dd><dt id="dt:name-string-undefined">
+<p>name [string | undefined]</p>
+</dt><dd>
+<p>The name of an object is the identifier used when declaring the
+object. For the <code>device</code> object it is the identifier
+used in the <code>device</code> statement. In an
+anonymous <code>bank</code> object it is <code>undefined</code>, and
+in an implicitly created <code>field</code> object it is the name
+of the parent <code>register</code> object. See
+also <code>qname</code> below.</p>
+</dd><dt id="dt:qname-string">
+<p>qname [string]</p>
+</dt><dd>
+<p>The fully-qualified name of the object, such as
+<code>"bank1.r0"</code>. In the <code>device</code> object, and in all
+objects declared on top level, this has the same value as
+the <code>name</code> parameter. In an anonymous <code>bank</code>
+object it is <code>""</code>, and in an implicitly
+created <code>field</code> object it is the fully-qualified name
+of the parent <code>register</code> object.</p>
+</dd><dt id="dt:objtype-string">
+<p>objtype [string]</p>
+</dt><dd>
+<p>The object type name.</p>
+</dd><dt id="dt:dev-reference">
+<p>dev [reference]</p>
+</dt><dd>
+<p>Normally refers to the device object, i.e., the top-level object
+definition (regardless of the name used for the device); inherited from
+parent object.</p>
+</dd><dt id="dt:bank-reference-undefined">
+<p>bank [reference | undefined]</p>
+</dt><dd>
+<p>Normally refers to the enclosing bank object; inherited from parent
+object. Has the value <code>undefined</code> for objects not within a
+bank.</p>
+</dd><dt id="dt:index-integer-undefined">
+<p>index [integer | undefined]</p>
+</dt><dd>
+<p>For objects that are not array elements, this has the default value
+<code>undefined</code>. For further details, see Array Parameters,
+below.</p>
+</dd><dt id="dt:indexvar-string-undefined">
+<p>indexvar [string | undefined]</p>
+</dt><dd>
+<p>For objects that are not array elements, this has the default value
+<code>undefined</code>. For further details, see Array Parameters,
+below.</p>
+</dd></dl>
+<h3 id="array-parameters">4.1.2 <a href="#array-parameters">Array Parameters</a></h3>
+<p>All objects that can form an array have a few parameters that can be
+used to index the array.  These parameters are a little special
+compared to other parameter in the sense that they are
+<em>variable</em>, and depends on the index argument. Consider a
+register declared in this way:</p>
+<pre><code>register r[4][j in 0..3];
+</code></pre>
+<p>Each individual register in this register array will have different
+values for the <code>index</code> parameter, so <code>$r[1][3].index</code> is
+<code>[1, 3]</code>, and <code>$r[x][y].index</code> is <code>[x, y]</code>.
+The declaration above also specifies that the <code>j</code>
+parameter should work as a synonym for the second element
+of the <code>index</code> parameter. In addition it defines (implicitly)
+that the <code>i</code> parameter should work as a synonym for the first element.</p>
+<p>This is useful when nesting arrays or using multi-dimensional arrays:</p>
+<pre><code>group g[i in 0..3] {
+    register r[j in 0..7] {
+        // $i is the index in g, and $j is the index in r
+    }
+}
+register r[i in 0..3][j in 0..7] {
+    // $i is the first index in r, and $j is the second index in r
+}
+</code></pre>
+<p>These parameters may be used when assigning values to other parameter.
+The most common case is when assigning the <code>offset</code>
+parameter for a register, as in</p>
+<pre><code>register r[i in 0..3] @ 0x1000 + $i * 4;
+</code></pre>
+<dl><dt id="dt:index-integer">
+<p>index [integer]</p>
+</dt><dd>
+<p>This parameter specifies the indices of the object in the
+array. If the object is in a multi-dimensional array, this parameter
+is a list, if the object is in a single-dimensional array it is an integer,
+otherwise it is the constant <code>undefined</code>.
+The first element of an array always has index 0 (or [0][0]...).</p>
+</dd><dt id="dt:i-integer">
+<p><em>i</em> [integer]</p>
+</dt><dd>
+<p>Each array has an <em>individual index parameter</em>, to make it
+possible to refer to both inner and outer indexes when arrays are nested
+(cf. the <code>index</code> parameter, above). The parameter name can be
+specified in the array declaration, as in "<code>register regs[j in 0..10] {...}</code>". The default name is <code>i</code>, if the array is defined
+without an explicit index parameter, as in "<code>register regs[10] {...}</code>" (see also <code>indexvar</code>, below).</p>
+</dd><dt id="dt:indexvar-string">
+<p>indexvar [string]</p>
+</dt><dd>
+<p>This parameter specifies the name of the individual index parameter
+of the array. If the array is multi-dimensional, the value
+of this parameter is the constant <code>undefined</code></p>
+</dd></dl>
+<h3 id="device-parameters">4.1.3 <a href="#device-parameters">Device Parameters</a></h3>
+<dl><dt id="dt:classname-string">
+<p>classname [string]</p>
+</dt><dd>
+<p>The name of the Simics configuration object class defined by the
+device model. Defaults to the name of the device object.</p>
+</dd><dt id="dt:banks-list-of-references">
+<p>banks [list of references]</p>
+</dt><dd>
+<p>A list of references to all the <code>bank</code> objects of the
+device object.</p>
+</dd><dt id="dt:register_size-integer-undefined">
+<p>register_size [integer | undefined]</p>
+</dt><dd>
+<p>The default size (width) in bytes used for <code>register</code>
+objects; inherited by <code>bank</code> objects. The default value is
+<code>undefined</code>.</p>
+</dd><dt id="dt:byte_order-string">
+<p>byte_order [string]</p>
+</dt><dd>
+<p>The default byte order used when accessing registers wider than a
+single byte; inherited by <code>bank</code> objects. Allowed values
+are <code>"little-endian"</code> and <code>"big-endian"</code>. The default
+value is <code>"little-endian"</code>.</p>
+</dd><dt id="dt:log_group-integer-undefined">
+<p>log_group [integer | undefined]</p>
+</dt><dd>
+<p>An additional log group used by registers when logging register
+accesses.  This may be overridden in each bank and each individual
+register or register group.</p>
+</dd><dt id="dt:obj-reference">
+<p>obj [reference]</p>
+</dt><dd>
+<p>A special built-in parameter that can be used to provide a Simics
+API <code>conf_object_t*</code> reference to the device object at the C
+level.</p>
+</dd><dt id="dt:logobj-reference">
+<p>logobj [reference]</p>
+</dt><dd>
+<p>Deprecated alias of the <code>obj</code> parameter.</p>
+</dd><dt id="dt:dml_1_2-true">
+<p>dml_1_2 [true]</p>
+</dt><dd>
+<p>This parameter is always true in DML 1.2, but will be false in
+future versions of the language. The parameter can be useful to
+create conditional common code when migrating a larger system to a
+new language version.</p>
+</dd></dl>
+<h3 id="attribute-parameters">4.1.4 <a href="#attribute-parameters">Attribute Parameters</a></h3>
+<dl><dt id="dt:allocate_type-string-undefined">
+<p>allocate_type [string | undefined]</p>
+</dt><dd>
+<p>Either <code>undefined</code> or the desired type name of the
+attribute value as a string, for example, <code>"uint32"</code>. In the latter
+case, storage will be automatically created for the attribute. For
+simple types of <code>bool</code>, <code>int{8,16,32,64}</code>,
+<code>uint{8,16,32,64}</code>, <code>double</code> and
+<code>string</code>, the corresponding get/set methods will also
+be generated automatically. The default value of this parameter
+is <code>undefined</code>.</p>
+</dd><dt id="dt:type-string-undefined">
+<p>type [string | undefined]</p>
+</dt><dd>
+<p>A Simics configuration-object attribute type description string,
+such as <code>"i"</code> or <code>"[s*]"</code>, specifying the type of the
+attribute. (See the documentation of
+<code>SIM_register_typed_attribute</code> in the <em>Model Builder
+Reference Manual</em> for details.)  This is calculated
+automatically from the
+<code>allocate_type</code> parameter, if that is not
+<code>undefined</code> and falls into one of the simple types that DML
+handles automatically.</p>
+</dd><dt id="dt:configuration-required-optional-pseudo-none">
+<p>configuration [<code>"required"</code> | <code>"optional"</code>
+| <code>"pseudo"</code> | <code>"none"</code>]</p>
+</dt><dd>
+<p>Specifies how Simics treats the attribute. The default value is
+<code>"optional"</code>. A <em>required</em> attribute must be initialized
+to a value when the object is created, while an <em>optional</em>
+attribute can be left undefined. In both cases, the value is saved when
+a checkpoint is created. For a <em>pseudo</em>-attribute, the
+value is <em>not</em> saved when a checkpoint is created (and it is not
+required to be initialized upon object creation). Setting the value to
+<code>"none"</code> suppresses creation of the attribute; this can sometimes
+be useful for implicit attributes that inherit the
+<code>configuration</code> parameter from their parent, as e.g., in
+<code>register</code> objects (cf. Section
+<a class="reference" href="object-model.html#register-attributes">2.7.4</a>).</p>
+</dd><dt id="dt:persistent-bool">
+<p>persistent [bool]</p>
+</dt><dd>
+<p>If this parameter is <code>true</code>, the attribute will be treated
+as persistent, which means that its value will be saved
+when using the <code>save-persistent-state</code> command.  The default
+value is <code>false</code>.</p>
+</dd><dt id="dt:internal-bool">
+<p>internal [bool]</p>
+</dt><dd>
+<p>If this parameter is <code>true</code>, the attribute will be treated
+as internal, meaning that it will be excluded from documentation.
+The default value is <code>true</code> if the <code>documentation</code> parameter
+is defined, and <code>false</code> otherwise.</p>
+</dd><dt id="dt:attr_type-string-undefined">
+<p>attr_type [string | undefined]</p>
+</dt><dd>
+<p>Reserved for internal use. Always has the same value as the
+<code>type</code> parameter.</p>
+</dd></dl>
+<h3 id="bank-parameters">4.1.5 <a href="#bank-parameters">Bank Parameters</a></h3>
+<dl><dt id="dt:mapped_registers-list-of-references">
+<p>mapped_registers [list of references]</p>
+</dt><dd>
+<p>A list of references to all register objects that are mapped into
+the address space of the bank, in an undefined order.</p>
+</dd><dt id="dt:unmapped_registers-list-of-references">
+<p>unmapped_registers [list of references]</p>
+</dt><dd>
+<p>A list of references to all register objects that are <em>not</em>
+mapped into the address space of the bank, in an undefined order.</p>
+</dd><dt id="dt:numbered_registers-list-of-references">
+<p>numbered_registers [list of references]</p>
+</dt><dd>
+<p>A list of references to all register objects that are assigned
+a register number, in an undefined order.</p>
+</dd><dt id="dt:mappable-boolean">
+<p>mappable [boolean]</p>
+</dt><dd>
+<p>Controls whether a bank is visible as an interface port for the
+<code>io_memory</code> interface, which makes it mappable in a memory
+space.  This defaults to true, unless the bank is anonymous.</p>
+</dd><dt id="dt:function-integer-undefined">
+<p>function [integer | undefined]</p>
+</dt><dd>
+<p>The <em>function number</em> of the bank, which can be
+used for mapping the bank into a Simics memory space. Defaults to
+<code>undefined</code>.  Instead of using this parameter, it is usually
+more convenient to map the bank by name instead. Bank arrays
+normally do not use this parameter and are mapped
+into Simics memory spaces by names and indices.</p>
+</dd><dt id="dt:overlapping-bool">
+<p>overlapping [bool]</p>
+</dt><dd>
+<p>Specifies whether this bank allows accesses that cover more than
+one register. (This translates to one or more, possibly partial,
+accesses to adjacent registers.) Defaults to <code>false</code>. Setting
+this to true will make the generated C code larger. This parameter
+must have the same value among all elements in a bank array
+object, i.e., it must not depend on the index of the bank.</p>
+</dd><dt id="dt:partial-bool">
+<p>partial [bool]</p>
+</dt><dd>
+<p>Specifies whether this bank allows accesses that cover only parts
+of a register. A partial read will read the touched register fields
+(or the whole register if there are no fields) and extract the bits
+covered by the read. A partial write will call the <code>get</code>
+method on the touched register fields (or the whole register when
+there are no fields) and replace the written bits with the written
+value and then call the <code>write</code> method on the fields (or the
+register) with the merged value. Defaults to <code>false</code>. Setting
+this to true will make the generated C code larger. This parameter
+must have the same value among all elements in a bank array
+object, i.e., it must not depend on the index of the bank.</p>
+</dd><dt id="dt:signed-bool">
+<p>signed [bool]</p>
+</dt><dd>
+<p>The default for whether register contents should be treated as
+signed integers; inherited by <code>register</code> objects. The
+default value is <code>false</code>.</p>
+</dd><dt id="dt:allocate-bool">
+<p>allocate [bool]</p>
+</dt><dd>
+<p>The default for whether storage for register contents should be
+allocated in the generated C code; inherited by <code>register</code>
+objects. The default value is <code>true</code>.</p>
+</dd><dt id="dt:register_size-integer-undefined-2">
+<p>register_size [integer | undefined]</p>
+</dt><dd>
+<p>Inherited from the <code>device</code> object; provides the
+default value for the <code>size</code> parameter of <code>register</code>
+objects.</p>
+</dd><dt id="dt:byte_order-string-2">
+<p>byte_order [string]</p>
+</dt><dd>
+<p>Specifies the byte order used when accessing registers wider than a
+single byte; inherited from <code>device</code> objects. Allowed values
+are <code>"little-endian"</code> and <code>"big-endian"</code>.
+This parameter must have the same value among all elements in a bank
+array object, i.e., it must not depend on the index of the bank.</p>
+</dd><dt id="dt:log_group-integer-undefined-2">
+<p>log_group [integer | undefined]</p>
+</dt><dd>
+<p>An additional log group used by registers when logging register
+accesses.  This may be overridden in each individual register or
+register group.  The default value is inherited from the
+<code>device</code> object.</p>
+</dd><dt id="dt:miss_bank-reference-undefined">
+<p>miss_bank [reference | undefined]</p>
+</dt><dd>
+<p>Can be set to refer to another bank object, to which accesses are
+forwarded if they cannot be performed in the current bank. Defaults to
+<code>undefined</code>.</p>
+</dd><dt id="dt:miss_bank_offset-integer">
+<p>miss_bank_offset [integer]</p>
+</dt><dd>
+<p>The offset to be added to the address when an access is forwarded
+through the <code>miss_bank</code> parameter. The default value is 0.</p>
+</dd><dt id="dt:miss_pattern-integer-undefined">
+<p>miss_pattern [integer | undefined]</p>
+</dt><dd>
+<p>If set to an integer value in the range of 0-255, any bytes in a
+memory access through the <code>io_memory</code> interface that do
+not map to a register will assume this value for read access; writes
+to those bytes are ignored. This parameter is valid only when
+the <code>overlapping</code> parameter is set to <code>true</code>. The
+default value is <code>undefined</code>. This parameter must have the
+same value among all elements in a bank array
+object, i.e., it must not depend on the index of the bank.</p>
+</dd></dl>
+<h3 id="group-parameters">4.1.6 <a href="#group-parameters">Group Parameters</a></h3>
+<p>Groups have no specific parameters.</p>
+<h3 id="register-parameters">4.1.7 <a href="#register-parameters">Register Parameters</a></h3>
+<dl><dt id="dt:size-integer">
+<p>size integer</p>
+</dt><dd>
+<p>The size (width) of the register, in bytes. This parameter
+can also be specified using the "<code>size <em>n</em></code>" short-hand
+syntax for register objects. The default value is provided by the
+<code>register_size</code> parameter of the enclosing <code>bank</code>
+object.</p>
+</dd><dt id="dt:bitsize-integer">
+<p>bitsize [integer]</p>
+</dt><dd>
+<p>The size (width) of the register, in bits. This is equivalent to the
+value of the <code>size</code> parameter multiplied by 8, and cannot be
+overridden.</p>
+</dd><dt id="dt:offset-integer-undefined">
+<p>offset [integer | undefined]</p>
+</dt><dd>
+<p>The address offset of the register, in bytes relative to the start
+address of the bank that contains it. This parameter can also be
+specified using the "<code>@ <em>n</em></code>" short-hand syntax for register
+objects. There is no default value. If the offset is set to <code>undefined</code>,
+the register is not mapped to an address. This parameter must have the
+same value among all elements in a bank array
+object, i.e., it must not depend on the index of the bank.</p>
+</dd><dt id="dt:regnum-integer-undefined">
+<p>regnum [integer | undefined]</p>
+</dt><dd>
+<p>The <em>register number</em> of the register.  It is a
+number that must be unique within the register bank, and is used by
+the bank implementation of the <code>int_register</code> interface.
+If the value is <code>undefined</code>, the register is not available
+through the <code>int_register</code> interface. This parameter must
+have the same value among all elements in a bank array
+object, i.e., it must not depend on the index of the bank.</p>
+</dd><dt id="dt:signed-bool-2">
+<p>signed [bool]</p>
+</dt><dd>
+<p>Specifies whether the register contents should be treated as a
+signed integer; inherited from <code>bank</code> objects.</p>
+</dd><dt id="dt:allocate-bool-2">
+<p>allocate [bool]</p>
+</dt><dd>
+<p>Specifies whether storage for the register contents should be allocated in
+the generated C code; inherited from <code>bank</code> objects. If set
+to <code>false</code>, the configuration parameter decides whether <code>set</code>
+and <code>get</code> methods must be implemented or not.</p>
+</dd><dt id="dt:fields-list-of-references">
+<p>fields [list of references]</p>
+</dt><dd>
+<p>A list of references to all the <code>field</code> objects of a register
+object. There is always at least one field per register.</p>
+</dd><dt id="dt:hard_reset_value-integer">
+<p>hard_reset_value [integer]</p>
+</dt><dd>
+<p>The value used by the default implementation of the
+<code>hard_reset</code> method to initialize the internal state of a
+register upon hard reset. Defaults to 0.</p>
+</dd><dt id="dt:soft_reset_value-integer">
+<p>soft_reset_value [integer]</p>
+</dt><dd>
+<p>The value used by the default implementation of the
+<code>soft_reset</code> method to initialize the internal state of a
+register upon soft reset. Defaults to the value of the
+<code>hard_reset_value</code> parameter.</p>
+</dd><dt id="dt:logging-bool">
+<p>logging [bool]</p>
+</dt><dd>
+<p>Specifies whether accesses to the register should be logged. The
+default is <code>true</code>. See also <code>read_logging</code> and
+<code>write_logging</code>.</p>
+</dd><dt id="dt:log_group-integer-undefined-3">
+<p>log_group [integer | undefined]</p>
+</dt><dd>
+<p>An additional log group used when logging register accesses.  The
+default value is inherited from the <code>device</code> object.</p>
+</dd><dt id="dt:read_logging-bool">
+<p>read_logging [bool]</p>
+</dt><dd>
+<p>Specifies whether read accesses to the register should be logged.
+Defaults to the value of the <code>logging</code> parameter.</p>
+</dd><dt id="dt:write_logging-bool">
+<p>write_logging [bool]</p>
+</dt><dd>
+<p>Specifies whether write accesses to the register should be logged.
+Defaults to the value of the <code>logging</code> parameter.</p>
+</dd><dt id="dt:configuration-required-optional-pseudo-none-2">
+<p>configuration [<code>"required"</code> | <code>"optional"</code>
+| <code>"pseudo"</code> | <code>"none"</code>]</p>
+</dt><dd>
+<p>Specifies how Simics treats the automatically created attribute
+corresponding to the register. See Section <a class="reference" href="#attribute-parameters">4.1.4</a>
+for details.</p>
+</dd><dt id="dt:persistent-bool-2">
+<p>persistent [bool]</p>
+</dt><dd>
+<p>Specifies whether the register attribute should be persistent. See
+Section <a class="reference" href="#attribute-parameters">4.1.4</a> for details.</p>
+</dd><dt id="dt:internal-bool-2">
+<p>internal [bool]</p>
+</dt><dd>
+<p>Specifies whether the register attribute should be internal. See
+Section <a class="reference" href="#attribute-parameters">4.1.4</a> for details.</p>
+</dd><dt id="dt:attr_type-string-undefined-2">
+<p>attr_type [string | undefined]</p>
+</dt><dd>
+<p>Reserved for internal use. Always has the value <code>"i"</code>.</p>
+</dd></dl>
+<h3 id="field-parameters">4.1.8 <a href="#field-parameters">Field Parameters</a></h3>
+<dl><dt id="dt:reg-reference">
+<p>reg [reference]</p>
+</dt><dd>
+<p>Always refers to the containing register object.</p>
+</dd><dt id="dt:explicit-bool">
+<p>explicit [bool]</p>
+</dt><dd>
+<p>The value of this parameter is <code>true</code> for fields explicitly
+declared in the DML source code, and is <code>false</code> for implicitly
+created fields.</p>
+</dd><dt id="dt:lsb-integer">
+<p>lsb [integer]</p>
+</dt><dd>
+<p>The bit number (<em>in little-endian bit order</em>) of the least
+significant bit of the field, in the containing register; a required
+parameter. <em>This is not affected by any <code>bitorder</code>
+declaration.</em> The preferred way of defining this parameter is to use
+the "<code>[<em>highbit</em>:<em>lowbit</em>]</code>" short-hand syntax for
+field ranges, whose interpretation <em>is</em> dependent on the
+<code>bitorder</code> declaration of the file. Care must be taken when
+referring to this parameter in a big-endian bit numbering system - if
+possible, put such code in a separate file that uses little-endian bit
+order interpretation.</p>
+</dd><dt id="dt:msb-integer">
+<p>msb [integer]</p>
+</dt><dd>
+<p>The bit number (<em>in little-endian bit order</em>) of the most
+significant bit of the field, in the containing register; a required
+parameter. See <code>lsb</code> for details.</p>
+</dd><dt id="dt:bitsize-integer-2">
+<p>bitsize [integer]</p>
+</dt><dd>
+<p>The size (width) of the field, in bits. This is automatically set
+from the <code>lsb</code> and <code>msb</code> parameters and cannot be
+overridden.</p>
+</dd><dt id="dt:signed-bool-3">
+<p>signed [bool]</p>
+</dt><dd>
+<p>Specifies whether the field contents should be treated as a signed
+integer; inherited from the <code>register</code> object.</p>
+</dd><dt id="dt:allocate-bool-3">
+<p>allocate [bool]</p>
+</dt><dd>
+<p>Specifies whether storage for the field contents should be allocated
+in the generated C code; inherited from the <code>register</code>
+object.</p>
+</dd><dt id="dt:hard_reset_value-integer-2">
+<p>hard_reset_value [integer]</p>
+</dt><dd>
+<p>The value used by the default implementation of the
+<code>hard_reset</code> method to initialize the internal state of the
+field upon hard reset. Defaults to <code>undefined</code>. If the value is
+<code>undefined</code>, the corresponding bits of the value of the
+<code>hard_reset_value</code> parameter of the containing register are
+used instead.</p>
+</dd><dt id="dt:soft_reset_value-integer-2">
+<p>soft_reset_value [integer]</p>
+</dt><dd>
+<p>The value used to initialize the internal state of the field upon
+soft reset. Defaults to the value of the <code>hard_reset_value</code>
+parameter. If the value is <code>undefined</code>, the corresponding bits of
+the value of the <code>soft_reset_value</code> parameter of the containing
+register are used instead.</p>
+</dd></dl>
+<h3 id="connect-parameters">4.1.9 <a href="#connect-parameters">Connect Parameters</a></h3>
+<dl><dt id="dt:interfaces-list-of-references">
+<p>interfaces [list of references]</p>
+</dt><dd>
+<p>A list of references to all the <code>interface</code> objects of a
+connect object.</p>
+</dd><dt id="dt:configuration-required-optional-pseudo">
+<p>configuration [<code>"required"</code> | <code>"optional"</code>
+| <code>"pseudo"</code>]</p>
+</dt><dd>
+<p>Specifies how Simics treats the automatically created attribute
+corresponding to the connect object. Note that for array objects,
+setting this parameter to <code>"optional"</code> has the effect that each
+instance of the connect can be individually set to a nil value. See
+Section <a class="reference" href="#attribute-parameters">4.1.4</a> for details.</p>
+</dd><dt id="dt:persistent-bool-3">
+<p>persistent [bool]</p>
+</dt><dd>
+<p>Specifies whether the attribute should be persistent. See
+Section <a class="reference" href="#attribute-parameters">4.1.4</a> for details.</p>
+</dd><dt id="dt:internal-bool-3">
+<p>internal [bool]</p>
+</dt><dd>
+<p>Specifies whether the attribute should be internal. See
+Section <a class="reference" href="#attribute-parameters">4.1.4</a> for details.</p>
+</dd><dt id="dt:attr_type-string-undefined-3">
+<p>attr_type [string | undefined]</p>
+</dt><dd>
+<p>Reserved for internal use.</p>
+</dd></dl>
+<h3 id="interface-parameters">4.1.10 <a href="#interface-parameters">Interface Parameters</a></h3>
+<dl><dt id="dt:required-bool">
+<p>required [bool]</p>
+</dt><dd>
+<p>Specifies whether a connected object must implement the interface.
+If the value is <code>true</code> and the object does not implement the
+interface, a runtime error is generated. The default value is
+<code>true</code>.</p>
+</dd><dt id="dt:c_type-string">
+<p>c_type [string]</p>
+</dt><dd>
+<p>Specifies the C type of the interface (typically a
+<code>typedef</code>:ed name for a struct containing function pointers).
+Defaults to the name of the interface object with the string
+<code>"_interface_t"</code> appended.</p>
+</dd></dl>
+<h3 id="event-parameters">4.1.11 <a href="#event-parameters">Event Parameters</a></h3>
+<dl><dt id="dt:timebase-steps-cycles-seconds-stacked">
+<p>timebase [<code>"steps"</code> | <code>"cycles"</code> | <code>"seconds"</code>
+| <code>"stacked"</code>]</p>
+</dt><dd>
+<p>Specifies the unit for the time value passed to the <code>post</code>
+method. Defaults to <code>"seconds"</code>.</p>
+<p>The special unit <code>"stacked"</code> is deprecated and should not be
+used.  It makes sure that the event callback is always called after
+the current instruction.  Posting on 0 cycles or 0.0 seconds, or
+calling <code>SIM_run_unrestricted</code> instead should be done
+instead.</p>
+</dd><dt id="dt:evclass-pointer">
+<p>evclass [pointer]</p>
+</dt><dd>
+<p>This is a pointer to the <code>event_class_t</code> object used in the
+calls to the Simics API. Most user code doesn't need to access this,
+but it can be used when calling the Simics Event API functions
+directly.</p>
+</dd></dl>
+<h3 id="implement-parameters">4.1.12 <a href="#implement-parameters">Implement Parameters</a></h3>
+<dl><dt id="dt:c_type-string-2">
+<p>c_type [string]</p>
+</dt><dd>
+<p>Specifies the C type of the implemented interface (typically a
+<code>typedef</code>:ed name for a struct containing function pointers).
+Defaults to the name of the implement object with the string
+<code>"_interface_t"</code> appended.</p>
+</dd></dl>
+<h2 id="standard-methods">4.2 <a href="#standard-methods">Standard Methods</a></h2>
+<p>This section describes the built-in methods of the different object
+types. Most methods can be redefined by the user, unless otherwise
+stated.</p>
+<h3 id="device-methods">4.2.1 <a href="#device-methods">Device Methods</a></h3>
+<dl><dt id="dt:init">
+<p>init()</p>
+</dt><dd>
+<p>Called when the device object is loaded, but before its
+configuration-object attributes have been initialized.</p>
+</dd><dt id="dt:post_init">
+<p>post_init()</p>
+</dt><dd>
+<p>Called when the device object is loaded, <em>after</em> its
+configuration-object attributes have been initialized.</p>
+</dd><dt id="dt:destroy">
+<p>destroy()</p>
+</dt><dd>
+<p>Called when the device object is being deleted.</p>
+</dd><dt id="dt:hard_reset">
+<p>hard_reset()</p>
+</dt><dd>
+<p>Called by Simics when a hard reset is performed on the device.
+Invokes the <code>hard_reset</code> method on each <code>bank</code> of
+the device. It is also called once, after the <code>init</code>
+method, when the device object is created.</p>
+</dd><dt id="dt:soft_reset">
+<p>soft_reset()</p>
+</dt><dd>
+<p>Called by Simics when a soft reset is performed on the device.
+Invokes the <code>soft_reset</code> method on each <code>bank</code> of
+the device.</p>
+</dd></dl>
+<h3 id="attribute-methods">4.2.2 <a href="#attribute-methods">Attribute Methods</a></h3>
+<dl><dt id="dt:get-attr_value_t-value">
+<p>get() -&gt; (attr_value_t value)</p>
+</dt><dd>
+<p>Returns the value of the attribute.  This method should be
+redefined for all attributes that do not set the
+<code>allocate_type</code> parameter.</p>
+</dd><dt id="dt:set-attr_value_t-value">
+<p>set(attr_value_t value)</p>
+</dt><dd>
+<p>Sets the value of the attribute.  This method should be redefined
+for all attributes that do not set the <code>allocate_type</code>
+parameter.  If the provided value is not allowed, use a <code>throw</code>
+statement to signal the error.</p>
+</dd><dt id="dt:before_set">
+<p>before_set()</p>
+</dt><dd>
+<p>Called by <code>set_attribute</code> just before the <code>set</code>
+method is called. The default implementation does nothing.</p>
+</dd><dt id="dt:after_set">
+<p>after_set()</p>
+</dt><dd>
+<p>Called by <code>set_attribute</code> just after the <code>set</code> method
+has been called. The default implementation does nothing.</p>
+</dd><dt id="dt:get_attribute-attr_value_t-value">
+<p>get_attribute -&gt; (attr_value_t value)</p>
+</dt><dd>
+<p>Not intended to be used directly. Called by Simics for reading the
+attribute value. Calls the <code>get</code> method to read the value, and
+handles any exceptions that may occur.</p>
+</dd><dt id="dt:set_attribute-attr_value_t-value-set_error_t-err">
+<p>set_attribute(attr_value_t value) -&gt; (set_error_t err)</p>
+</dt><dd>
+<p>Not intended to be used directly. Called by Simics for setting the
+attribute value. It first calls the <code>before_set</code> method,
+followed by the <code>set</code> method to set the value, and afterwards
+calls the <code>after_set</code> method if <code>set</code>
+succeeded. Handles any exceptions that may occur.</p>
+</dd></dl>
+<h3 id="bank-methods">4.2.3 <a href="#bank-methods">Bank Methods</a></h3>
+<dl><dt id="dt:access-generic_transaction_t-memop-uint64-offset-uint64-size">
+<p>access(generic_transaction_t *memop, uint64 offset, uint64 size)</p>
+</dt><dd>
+<p>Called when the bank is accessed via the <code>io_memory</code>
+interface. Depending on the <code>memop</code> contents, the
+<code>read_access</code> or <code>write_access</code> method is called. For a
+write access, the method <code>get_write_value</code> is called to extract
+the value from the memop. If the access succeeded, the corresponding
+<code>finalize_read_access</code> or <code>finalize_write_access</code> method is
+called, updating the <code>memop</code> before the <code>access</code> method
+returns; otherwise, the <code>miss_read_access</code> or
+<code>miss_write_access</code> method, respectively, is called. If this also
+fails to handle the access, the generic <code>miss_access</code> method is
+called, and gets full responsibility for updating the <code>memop</code>.</p>
+<p>To signal a complete failure to handle the access, the <code>access</code>
+method (or any method that it calls, such as <code>miss_access</code>)
+should raise an exception instead of returning. This will be caught and
+handled by the <code>io-memory.dml</code> library.</p>
+</dd><dt id="dt:read_access-generic_transaction_t-memop-uint64-offset-uint64-size-bool-success-uint64-value">
+<p>read_access(generic_transaction_t *memop, uint64 offset, uint64 size)
+-&gt; (bool success, uint64 value)</p>
+</dt><dd>
+<p>Performs a read access by calling the corresponding
+<code>read_access</code> method of the addressed register (or registers,
+for overlapping accesses). Does not update the <code>memop</code>. If the
+access is valid, the <code>success</code> output parameter is set
+to <code>true</code>, otherwise to <code>false</code>. Affected by
+the <code>miss_pattern</code> parameter.</p>
+</dd><dt id="dt:read-generic_transaction_t-memop-uint64-offset-uint64-size-uint64-value">
+<p>read(generic_transaction_t *memop, uint64 offset, uint64 size) -&gt; (uint64 value)</p>
+</dt><dd>
+<p>Utility method; equivalent to calling <code>read_access</code>, but does
+not return a success flag. E.g., can be used to read directly from a bank
+when it is known that the access will always succeed.</p>
+</dd><dt id="dt:write_access-generic_transaction_t-memop-uint64-offset-uint64-size-uint64-value-bool-success">
+<p>write_access(generic_transaction_t *memop, uint64 offset, uint64 size,
+uint64 value) -&gt; (bool success)</p>
+</dt><dd>
+<p>Performs a write access by calling the corresponding
+<code>write_access</code> method of the addressed register (or registers,
+for overlapping accesses). Does not update the <code>memop</code>. If the
+access is valid, the <code>success</code> output parameter is set to
+<code>true</code>, otherwise to <code>false</code>. Affected by
+the <code>miss_pattern</code> parameter.</p>
+</dd><dt id="dt:write-generic_transaction_t-memop-uint64-offset-uint64-size-uint64-value">
+<p>write(generic_transaction_t *memop, uint64 offset, uint64 size, uint64 value)</p>
+</dt><dd>
+<p>Utility method; equivalent to calling <code>write_access</code>, but
+does not return a success flag. E.g., can be used to write directly to a
+bank when it is known that the access will always succeed.</p>
+</dd><dt id="dt:miss_read_access-uint64-offset-uint64-size-bool-success-uint64-value">
+<p>miss_read_access(uint64 offset, uint64 size) -&gt; (bool success,
+uint64 value)</p>
+</dt><dd>
+<p>Called from <code>access</code> upon a missed read access. By default,
+this function only sets the <code>success</code> output parameter to
+<code>false</code> and returns. Provides a simple hook for handling read
+misses.</p>
+</dd><dt id="dt:miss_write_access-uint64-offset-uint64-size-uint64-value-bool-success">
+<p>miss_write_access(uint64 offset, uint64 size, uint64 value)
+-&gt; (bool success)</p>
+</dt><dd>
+<p>Called from <code>access</code> upon a missed write access. By default,
+this function only sets the <code>success</code> output parameter to
+<code>false</code> and returns. Provides a simple hook for handling write
+misses.</p>
+</dd><dt id="dt:miss_access-generic_transaction_t-memop-uint64-offset-uint64-size">
+<p>miss_access(generic_transaction_t *memop, uint64 offset, uint64 size)</p>
+</dt><dd>
+<p>Called from <code>access</code> when the access could not be handled.
+This method takes over the responsibility for either updating the
+<code>memop</code> and returning, or raising an exception; see
+<code>access</code> for further details.</p>
+<p>By default, an info message will be logged. If the parameter
+<code>miss_bank</code> of the bank is not <code>undefined</code>, then the
+access is redirected to the bank referred to by <code>miss_bank</code>,
+adding the value of the parameter <code>miss_bank_offset</code> (default 0)
+to the offset for the access. Otherwise, a specification violation
+message is logged and an exception is raised.</p>
+</dd><dt id="dt:finalize_read_access-generic_transaction_t-memop-uint64-val">
+<p>finalize_read_access(generic_transaction_t *memop, uint64 val)</p>
+</dt><dd>
+<p>Called by <code>access</code> when a read access has succeeded. By
+default, this method calls <code>set_read_value</code> to update the
+<code>memop</code>. This method may also be useful to call when overriding
+<code>miss_access</code>.</p>
+</dd><dt id="dt:finalize_write_access-generic_transaction_t-memop-uint64-val">
+<p>finalize_write_access(generic_transaction_t *memop, uint64 val)</p>
+</dt><dd>
+<p>Called by <code>access</code> when a write access has succeeded. By
+default it has no effect, since the <code>memop</code> normally does not
+need updating after a write; cf. <code>finalize_read_access</code>.</p>
+</dd><dt id="dt:get_write_value-generic_transaction_t-memop-uint64-writeval">
+<p>get_write_value(generic_transaction_t *memop) -&gt; (uint64 writeval)</p>
+</dt><dd>
+<p>Extracts the value to be written from the <code>memop</code>. How this
+is done depends on the <code>byte_order</code> parameter.</p>
+</dd><dt id="dt:set_read_value-generic_transaction_t-memop-uint64-value">
+<p>set_read_value(generic_transaction_t *memop, uint64 value)</p>
+</dt><dd>
+<p>Stores the read value in the <code>memop</code>. How this is done
+depends on the <code>byte_order</code> parameter.</p>
+</dd><dt id="dt:hard_reset-2">
+<p>hard_reset()</p>
+</dt><dd>
+<p>Called automatically from the <code>hard_reset</code> method of the
+device. Invokes the <code>hard_reset</code> method on each
+<code>register</code> of the bank, in an undefined order.</p>
+</dd><dt id="dt:soft_reset-2">
+<p>soft_reset()</p>
+</dt><dd>
+<p>Called automatically from the <code>soft_reset</code> method of the
+device. Invokes the <code>soft_reset</code> method on each
+<code>register</code> of the bank, in an undefined order.</p>
+</dd></dl>
+<h3 id="group-methods">4.2.4 <a href="#group-methods">Group Methods</a></h3>
+<p>Groups have no specific methods.</p>
+<h3 id="register-methods">4.2.5 <a href="#register-methods">Register Methods</a></h3>
+<dl><dt id="dt:get-value">
+<p>get() -&gt; (value)</p>
+</dt><dd>
+<p>Returns the value of the register, without any other effects. If the
+register contains fields, this is done by calling the <code>get</code>
+method on each <code>field</code> of the register and composing the
+results into a single value.</p>
+</dd><dt id="dt:set-value">
+<p>set(value)</p>
+</dt><dd>
+<p>Sets the value of the register, without any other effects. If the
+register contains fields, this is done by calling the <code>set</code>
+method on each <code>field</code> of the register, for the
+corresponding bits of the value.</p>
+</dd><dt id="dt:read_access-generic_transaction_t-memop-msb1-lsb-value">
+<p>read_access(generic_transaction_t *memop, msb1, lsb) -&gt; (value)</p>
+</dt><dd>
+<p>Performs a read access by invoking the <code>read</code> method of
+the register, or if the register contains fields, by invoking the
+<code>read_access</code> method on each of its fields and composing the
+results into a single value. For a partial access, only affected
+fields are read. The input parameters, <code>msb1</code> and <code>lsb</code>,
+specify the most significant bit and the least significant bit
+(in <em>little-endian</em> bit order) of the access if partial access
+is allowed (e.g., the <code>partial</code> parameter in the enclosing bank
+is set to <code>true</code>) but otherwise have the special compile-time
+value <code>undefined</code>. The fields are read in order, starting with
+the field containing the least significant bit of the register and
+ending with the field containing the most significant bit of the
+register. Before any of this is done, however, the
+<code>before_read</code> method is called.  And finally, the
+<code>after_read</code> method of the register is called.</p>
+<p>This method is called from the <code>access</code> method of the
+bank.</p>
+</dd><dt id="dt:write_access-generic_transaction_t-memop-msb1-lsb-value">
+<p>write_access(generic_transaction_t *memop, msb1, lsb, value)</p>
+</dt><dd>
+<p>Performs a write access by invoking the <code>write</code> method of
+the register, or if the register contains fields, by invoking the
+<code>write_access</code> method on each of its fields for the
+corresponding bits of the value. For a partial access, only affected
+fields are written. The input parameters, <code>msb1</code>
+and <code>lsb</code>, specify the most significant bit and the least
+significant bit (in <em>little-endian</em> bit order) of the access if
+partial access is allowed (e.g., the <code>partial</code> parameter in the
+enclosing bank is set to <code>true</code>) but otherwise have the special
+compile-time value <code>undefined</code>. The fields are written in
+order, starting with the field containing the least significant bit of
+the register and ending with the field containing the most significant
+bit of the register. Before any of this is done, however, the
+<code>before_write</code> method is called.  And finally, the
+<code>after_write</code> method of the register is called.</p>
+<p>This method is called from the <code>access</code> method of the
+bank.</p>
+</dd><dt id="dt:read-value">
+<p>read() -&gt; (value)</p>
+</dt><dd>
+<p>Called by <code>read_access</code> for reading the actual value of the
+register. This is not used if the register contains fields.</p>
+</dd><dt id="dt:write-value">
+<p>write(value)</p>
+</dt><dd>
+<p>Called by <code>write_access</code> for performing the actual write to
+the register. This is not used if the register contains fields.</p>
+</dd><dt id="dt:after_read-generic_transaction_t-memop">
+<p>after_read(generic_transaction_t *memop)</p>
+</dt><dd>
+<p>Called at the very end of the <code>read_access</code> method. The
+default implementation does nothing.</p>
+</dd><dt id="dt:before_read-generic_transaction_t-memop">
+<p>before_read(generic_transaction_t *memop)</p>
+</dt><dd>
+<p>Called at the start of the <code>read_access</code> method. The
+default implementation does nothing.</p>
+</dd><dt id="dt:after_write-generic_transaction_t-memop">
+<p>after_write(generic_transaction_t *memop)</p>
+</dt><dd>
+<p>Called at the very end of the <code>write_access</code> method. The
+default implementation does nothing.</p>
+</dd><dt id="dt:before_write-generic_transaction_t-memop-msb1-lsb-value">
+<p>before_write(generic_transaction_t *memop, msb1, lsb, value)</p>
+</dt><dd>
+<p>Called at the start of the <code>write_access</code> method. The
+input parameters have the same meaning as they are in
+the <code>write_access</code> method. The default implementation does
+nothing.</p>
+</dd><dt id="dt:hard_reset-3">
+<p>hard_reset()</p>
+</dt><dd>
+<p>Called automatically from the <code>hard_reset</code> method of the
+bank. The default implementation works differently depending on
+whether the register contains field or not.  If the register contains
+fields, it invokes the <code>hard_reset</code> method on each of its
+fields, otherwise it sets the register to the
+<code>hard_reset_value</code> parameter. Finally, the
+<code>after_hard_reset</code> method of the register is called.</p>
+</dd><dt id="dt:soft_reset-3">
+<p>soft_reset()</p>
+</dt><dd>
+<p>Called automatically from the <code>soft_reset</code> method of the
+bank. The default implementation works differently depending on
+whether the register contains field or not.  If the register contains
+fields, it invokes the <code>soft_reset</code> method on each of its
+fields, otherwise it sets the register to the
+<code>soft_reset_value</code> parameter. Finally, the
+<code>after_soft_reset</code> method of the register is called.</p>
+</dd><dt id="dt:after_hard_reset">
+<p>after_hard_reset()</p>
+</dt><dd>
+<p>Called at the very end of the <code>hard_reset</code> method. The
+default implementation does nothing.</p>
+</dd><dt id="dt:after_soft_reset">
+<p>after_soft_reset()</p>
+</dt><dd>
+<p>Called at the very end of the <code>soft_reset</code> method. The
+default implementation does nothing.</p>
+</dd><dt id="dt:get_attribute-attr_value_t-value-2">
+<p>get_attribute -&gt; (attr_value_t value)</p>
+</dt><dd>
+<p>Not intended to be used directly. Called by Simics for reading the
+value of the register as an attribute. Calls the <code>get</code> method to
+read the value, and handles any exceptions that may occur.</p>
+</dd><dt id="dt:set_attribute-attr_value_t-value-set_error_t-err-2">
+<p>set_attribute(attr_value_t value) -&gt; (set_error_t err)</p>
+</dt><dd>
+<p>Not intended to be used directly. Called by Simics for setting the
+attribute value. It first calls the <code>before_set</code> method,
+followed by the <code>set</code> method to set the value, and afterwards
+calls the <code>after_set</code> method if <code>set</code>
+succeeded. Handles any exceptions that may occur.</p>
+</dd><dt id="dt:before_set-2">
+<p>before_set()</p>
+</dt><dd>
+<p>Called by <code>set_attribute</code> just before the <code>set</code>
+method is called. The default implementation does nothing.</p>
+</dd><dt id="dt:after_set-2">
+<p>after_set()</p>
+</dt><dd>
+<p>Called by <code>set_attribute</code> just after the <code>set</code> method
+has been called, if it succeeded. The default implementation does
+nothing.</p>
+</dd></dl>
+<h3 id="field-methods">4.2.6 <a href="#field-methods">Field Methods</a></h3>
+<dl><dt id="dt:get-value-2">
+<p>get() -&gt; (value)</p>
+</dt><dd>
+<p>Returns the value of the field, without any other effects.</p>
+</dd><dt id="dt:set-value-2">
+<p>set(value)</p>
+</dt><dd>
+<p>Sets the value of the field, without any other effects.</p>
+</dd><dt id="dt:read-value-2">
+<p>read() -&gt; (value)</p>
+</dt><dd>
+<p>Performs an actual read from the field. Called from the
+<code>read_access</code> method.</p>
+</dd><dt id="dt:write-value-2">
+<p>write(value)</p>
+</dt><dd>
+<p>Performs an actual write to the field. Called from the
+<code>write_access</code> method.  The <code>write</code> functions
+for the fields in a register are called in a defined order.
+The field containing the least significant bits of the register are
+called first, and the field containing the most significant bits are
+called last. See the documentation for <code>write_access</code> on a
+register for more information.</p>
+</dd><dt id="dt:read_access-value">
+<p>read_access() -&gt; (value)</p>
+</dt><dd>
+<p>Usually not used directly. Performs a read access on the field by
+calling the <code>read</code> method. Called from the <code>read_access</code>
+method of the containing register.</p>
+</dd><dt id="dt:write_access-value">
+<p>write_access(value)</p>
+</dt><dd>
+<p>Usually not used directly. Performs a write access to the field by
+calling the <code>write</code> method. Called from the <code>write_access</code>
+method of the containing register.</p>
+</dd><dt id="dt:hard_reset-4">
+<p>hard_reset()</p>
+</dt><dd>
+<p>Performs a hard reset on the field. Called from the
+<code>hard_reset</code> method of the containing register.</p>
+</dd><dt id="dt:soft_reset-4">
+<p>soft_reset()</p>
+</dt><dd>
+<p>Performs a soft reset on the field. Called from the
+<code>soft_reset</code> method of the containing register.</p>
+</dd></dl>
+<h3 id="connect-methods">4.2.7 <a href="#connect-methods">Connect Methods</a></h3>
+<dl><dt id="dt:before_set-3">
+<p>before_set()</p>
+</dt><dd>
+<p>Called at the start of the <code>set_attribute</code> method. The
+default implementation does nothing.</p>
+</dd><dt id="dt:after_set-3">
+<p>after_set()</p>
+</dt><dd>
+<p>Called at the very end of the <code>set_attribute</code> method. The
+default implementation does nothing.</p>
+</dd><dt id="dt:validate_port-conf_object_t-obj-const-char-port-bool-valid">
+<p>validate_port(conf_object_t *obj, const char *port) -&gt; (bool valid)</p>
+</dt><dd>
+<p>Called before updating the value. If the return value is false,
+the attribute assignment will fail.</p>
+</dd><dt id="dt:validate-conf_object_t-obj-bool-valid">
+<p>validate(conf_object_t *obj) -&gt; (bool valid)</p>
+</dt><dd>
+<p>Called before updating the value. If the return value is false,
+the attribute assignment will fail.</p>
+<div class="note">
+<p><strong>Note:</strong> New code should
+use <code>validate_port</code> instead, since <code>validate</code> does
+not get a <em>port</em> argument.</p>
+</div>
+</dd><dt id="dt:get_attribute-attr_value_t-value-3">
+<p>get_attribute -&gt; (attr_value_t value)</p>
+</dt><dd>
+<p>Not intended to be used directly. Called by Simics for reading the
+value of the connect as an attribute.</p>
+</dd><dt id="dt:set_attribute-attr_value_t-value-set_error_t-err-3">
+<p>set_attribute(attr_value_t value) -&gt; (set_error_t err)</p>
+</dt><dd>
+<p>Not intended to be used directly. Called by Simics for setting the
+attribute value. It first calls the <code>before_set</code> method,
+followed by the <code>set</code> method to set the value, and afterwards
+calls the <code>after_set</code> method if <code>set</code>
+succeeded. Handles any exceptions that may occur.</p>
+</dd></dl>
+<h3 id="interface-methods">4.2.8 <a href="#interface-methods">Interface Methods</a></h3>
+<p>Interfaces have no documented standard methods.</p>
+<h3 id="event-methods">4.2.9 <a href="#event-methods">Event Methods</a></h3>
+<dl><dt id="dt:event-void-data">
+<p>event(void *data)</p>
+</dt><dd>
+<p>The method called when the event is triggered. The default event
+method logs a short info message noting that the event occurred.</p>
+</dd><dt id="dt:get_event_info-void-data-attr_value_t-info">
+<p>get_event_info(void *data) -&gt; (attr_value_t info)</p>
+</dt><dd>
+<p>This method is called once for each pending event instance when
+saving a checkpoint.  It should create an attribute value that can be
+used to restore the event.  The <code>data</code> parameter is the
+user data provided in the <code>post</code> call.  The default
+implementation always returns a nil value.</p>
+</dd><dt id="dt:set_event_info-attr_value_t-info-void-data">
+<p>set_event_info(attr_value_t info) -&gt; (void *data)</p>
+</dt><dd>
+<p>This method is used to restore event information when loading a
+checkpoint.  It should use the attribute value to create a user data
+pointer, as if it had been provided in a <code>post</code>. The default
+implementation only checks that the checkpointed information is
+nil.</p>
+</dd><dt id="dt:describe_event-void-data-char-description">
+<p>describe_event(void *data) -&gt; (char *description)</p>
+</dt><dd>
+<p>This method is used to provide a descriptive string to be shown in
+listings of the event queue. It must return an allocated string that
+will be deallocated by Simics after use.</p>
+</dd><dt id="dt:destroy-void-data">
+<p>destroy(void *data)</p>
+</dt><dd>
+<p>This method is called when an event is removed from the event
+queue</p>
+</dd><dt id="dt:post-time-void-data">
+<p>post(time, void *data)</p>
+</dt><dd>
+<p>Posts the event on the associated queue of the device, with the
+specified time (relative to the current time, in the unit specified by
+the <code>timebase</code> parameter), and additional data.</p>
+</dd><dt id="dt:post_on_queue-conf_object_t-queue-when-void-data">
+<p>post_on_queue(conf_object_t *queue, when, void *data)</p>
+</dt><dd>
+<p>Like <code>post</code>, but posts the event on the specified queue.
+This is very rarely needed, since the events should usually always be
+posted to the queue that the device belongs to, as configured by the
+<code>queue</code> attribute.</p>
+</dd><dt id="dt:remove-void-data">
+<p>remove(void *data)</p>
+</dt><dd>
+<p>Removes all events of this type with matching data pointer from
+the queue.</p>
+</dd><dt id="dt:posted-void-data-bool-flag">
+<p>posted(void *data) -&gt; (bool flag)</p>
+</dt><dd>
+<p>Returns <code>true</code> if the event is in the queue, and
+<code>false</code> otherwise.</p>
+</dd><dt id="dt:next-void-data-time">
+<p>next(void *data) -&gt; (time)</p>
+</dt><dd>
+<p>Returns the time to the next occurrence of the event in the queue
+(relative to the current time, in the unit specified by the
+<code>timebase</code> parameter). If there is no such event in the queue, a
+negative value is returned.</p>
+</dd></dl>
+<h3 id="implement-methods">4.2.10 <a href="#implement-methods">Implement Methods</a></h3>
+<p>Implements have no documented standard methods.</p>
+
+<div class="chain">
+<a href="language.html">3 DML 1.2</a>
+<a href="standard-templates.html">5 Standard Templates</a>
+</div>

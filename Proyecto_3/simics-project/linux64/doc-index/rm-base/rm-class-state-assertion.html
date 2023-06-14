@@ -1,0 +1,198 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>state-assertion</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-sr_ticks_connection.html">sr_ticks_connection</a>
+<a href="rm-class-static_link_connector.html">static_link_connector</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="state-assertion"><a href="#state-assertion">state-assertion</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The <i>state-assertion</i> extension provides the possibility to record the state of various devices at regular interval, to be able to compare it to a later run. <br>
+ When creating trace assertion information, the general scheme is the following:<br>
+- use state-assertion-create-file to open the file where the data will be saved. This will also create a state-assertion object.<br>
+- use &lt;state-assertion&gt;.add to specify the objects to assert as well as the amount of steps between each assertion.<br>
+- use &lt;state-assertion&gt;.start to begin the assertion. From now on, continuing the simulation will record information into the file.<br>
+- use &lt;state-assertion&gt;.stop to empty the buffers and close the file.<br>
+When using state-assertion information to compare against the current run, you should:<br>
+- use state-assertion-open-file to open the file containing the state information you want to use.<br>
+- use &lt;state-assertion&gt;.start when you want to begin the comparison. The comparison is stopped automatically when no data is available. If states differ, the simulation is stopped and the differences are displayed.<br>
+It is also possible to connect directly two Simics instead of using a file, with the functions state-assertion-receive and state-assertion-connect. The recording/comparison is then executed directly.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, snoop_memory, timing_model
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-state-assertion.add.html">add</a>
+ – add an object to be asserted</li>
+<li>
+<a href="rm-cmd-state-assertion.add-mem-lis.html">add-mem-lis</a>
+ – add a memory listener on the specified memory space</li>
+<li>
+<a href="rm-cmd-state-assertion.fforward.html">fforward</a>
+ – fast-forward a state assertion file when comparing</li>
+<li>
+<a href="rm-cmd-state-assertion.info.html">info</a>
+ – provide information about the state assertion</li>
+<li>
+<a href="rm-cmd-state-assertion.start.html">start</a>
+ – start trace asserting/comparing</li>
+<li>
+<a href="rm-cmd-state-assertion.status.html">status</a>
+ – provide the status of the current state assertion</li>
+<li>
+<a href="rm-cmd-state-assertion.stop.html">stop</a>
+ – stop trace asserting/comparing and close the file</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:create">
+<i>create</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[sisiii]</code>
+<br>This is a pseudo-attribute that should not be used directly. It creates a state assertion file for recording.</dd>
+<dt id="dt:open">
+<i>open</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[siii]</code>
+<br>This is a pseudo-attribute that should not be used directly. It creates a state assertion file for recording.</dd>
+<dt id="dt:add">
+<i>add</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[oiiso|n]</code>
+<br>This is a pseudo-attribute that should not be used directly. It adds an object to the state assertion queue.</dd>
+<dt id="dt:addmemlis">
+<i>addmemlis</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[s]</code>
+<br>This is a pseudo-attribute that should not be used directly. It adds a memory listener in the state-assertion queue.</dd>
+<dt id="dt:start">
+<i>start</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>This is a pseudo-attribute that should not be used directly. It starts the state assertion.</dd>
+<dt id="dt:fforward">
+<i>fforward</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[si]</code>
+<br>This is a pseudo-attribute that should not be used directly. It fast-forwards the assertion process.</dd>
+<dt id="dt:stop">
+<i>stop</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>This is a pseudo-attribute that should not be used directly. It stops the assertion process.</dd>
+<dt id="dt:flush">
+<i>flush</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>Set attribute to flush buffered output (value should be 1).</dd>
+<dt id="dt:info">
+<i>info</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>This is a pseudo-attribute that should not be used directly. It provides information on the objects asserted.</dd>
+<dt id="dt:status">
+<i>status</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>This is a pseudo-attribute that should not be used directly. It provides runtime information on the assertion process.</dd>
+<dt id="dt:lsize">
+<i>lsize</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>This is a fake line size for the memory hierarchy system.</dd>
+<dt id="dt:manual_handler">
+<i>manual_handler</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>o</code>
+<br>When this attribute is set, state-assertion reacts as if an event had occur for a specific object.</dd>
+<dt id="dt:object_remap">
+<i>object_remap</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[so]*]</code>
+<br>This attribute controls remapping of objects. Each sublist contains one string with the name of an object in the trace we are asserting against and the other element is the corresponding object in the current configuration.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.state-assertion.html">state-assertion</a>
+</section>
+<div class="chain">
+<a href="rm-class-sr_ticks_connection.html">sr_ticks_connection</a>
+<a href="rm-class-static_link_connector.html">static_link_connector</a>
+</div>

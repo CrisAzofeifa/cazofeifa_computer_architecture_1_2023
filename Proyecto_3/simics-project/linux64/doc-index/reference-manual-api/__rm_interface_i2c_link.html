@@ -1,0 +1,380 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i2c_link</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_i2c_device.html">i2c_device</a>
+<a href="__rm_interface_i2c_master.html">i2c_master</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_i2c_link">i2c_link</a></h1>
+<p>
+
+<a name="i2c_link"></a><a name="i2c_link_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(i2c_link) {
+        void (*register_slave_address)(conf_object_t *i2c_link,
+                                       conf_object_t *slave,
+                                       uint32 address, uint32 mask);
+        void (*unregister_slave_address)(conf_object_t *i2c_link,
+                                  conf_object_t *slave,
+                                  uint32 address, uint32 mask);
+
+        void (*register_bridge)(conf_object_t *i2c_link,
+                                conf_object_t *bridge);
+
+        void (*disconnect_device)(conf_object_t *i2c_link,
+                                  conf_object_t *device);
+
+        void (*start_request)(conf_object_t *i2c_link, conf_object_t *master,
+                              uint32 address);
+        void (*read_request)(conf_object_t *i2c_link, conf_object_t *master);
+        void (*ack_read_request)(conf_object_t *i2c_link, conf_object_t *master,
+                                 i2c_status_t ack);
+        void (*write_request)(conf_object_t *i2c_link, conf_object_t *master,
+                              uint8 value);
+
+        void (*read_response)(conf_object_t *i2c_link, conf_object_t *slave,
+                                 uint8 value);
+        void (*ack_read_response)(conf_object_t *i2c_link,
+                                  conf_object_t *slave);
+        void (*write_response)(conf_object_t *i2c_link, conf_object_t *slave,
+                                  i2c_status_t status);
+        void (*start_response)(conf_object_t *i2c_link, conf_object_t *slave,
+                                  i2c_status_t status);
+        void (*stop)(conf_object_t *i2c_link, conf_object_t *master);
+};
+
+#define I2C_LINK_INTERFACE "i2c_link"
+</pre><p>
+</p><p>
+
+   The <code>i2c_link</code> interface is implemented by the I2C
+   link. The interface is used by I2C devices to communicate with the
+   I2C link.
+</p><p>
+   An I2C device implements either the <code>i2c_slave</code> or the
+   <code>i2c_master</code> interface, or both. You don't need to do
+   anything to connect an I2C master device to a link.
+</p><p>
+   To connect an I2C slave device to an I2C link, call
+   <b><i>register_slave_address</i></b> with an <em>address pattern</em>
+   consisting of the <i>address</i> and <i>mask</i>
+   parameters. When there is traffic on the I2C link (as initiated by a
+   call to the link interface <b><i>start_request</i></b> function), the
+   target address is matched against each registered device by
+   checking if <code>(target_address ^ device_address) &amp; device_mask
+   == 0</code>; i.e., the bits that are set to 1 in the mask indicates
+   which bits in the address that must match.
+</p><p>
+   There are three different <em>addressing modes</em> defined by this
+   protocol: <em>7-bit addressing</em>, <em>General call</em>, and
+   <em>10-bit addressing</em>. 7-bit addressing is by far the most
+   common addressing mode, and at the moment the only one supported by
+   the official <code>i2c_link</code> device. When 7-bit addressing is
+   used, the address fits into the lower 8 bits of the
+   <i>address</i> parameter; in other addressing modes more
+   than 8 bits can be used, but the addressing mode can always be
+   deduced from the lower 8 address bits.
+</p><p>
+   In 7-bit addressing mode, the address of an I2C device is encoded
+   as an even 8-bit number, in the range <code>0x10</code> -
+   <code>0xef</code>.  In other words, address ranges <code>0x00</code> -
+   <code>0x0f</code> and <code>0xf0</code> - <code>0xff</code> are reserved for
+   other addressing modes, and the 7-bit address is defined by bits 7
+   to 1 (little-endian) of the 8-bit encoded address. Bit 0 is reserved as a
+   read/write bit for the <b><i>start_request</i></b> function, and
+   should be 0 in both <i>address</i> and 0 in
+   <i>mask</i>, while bits 8 to 31 should be 0 in
+   <i>address</i> and 1 in <i>mask</i>.
+</p><p>
+   It is an error to register two I2C slave devices to the same 7-bit
+   address.
+</p><p>
+   Use <b><i>disconnect_device</i></b> to completely disconnect an I2C
+   slave device from the I2C link. If you just intend to disable
+   the I2C functionality of the device (without disconnecting the
+   wire), use <b><i>unregister_slave_address</i></b>, and use the same
+   <i>address</i> and <i>mask</i> attributes as when
+   the device was registered. An I2C slave device can also remove
+   some part of the address match by unregistering itself with a
+   different mask.
+</p><p>
+   An I2C transfer is initiated by a master I2C device. The I2C device
+   responding to the transfer is called slave. The master starts a
+   transfer by calling the <b><i>start_request</i></b> function with
+   <i>address</i> as argument. In 7-bit addressing mode, the
+   <i>address</i> is the 7-bit address plus a read-write bit
+   (read-write = 0 → slave-receive, read-write = 1 →
+   slave-transmit). The read-write bit is the least significant
+   bit. This means that all odd values sent to <b><i>start</i></b>
+   function initiates a transfer where the master is requesting data
+   from the slave.
+</p><p>
+   I2C slave devices implement the <code>i2c_slave</code>
+   interface. The <code>i2c_slave</code> interface and the
+   <code>i2c_link</code> interface have identical
+   <b><i>start_request</i></b>, <b><i>read_request</i></b>,
+   <b><i>ack_read_request</i></b> and <b><i>write_request</i></b> functions
+   to transfer data over the link. See the <code>i2c_slave</code>
+   interface for the definitions of these functions.
+</p><p>
+   I2C master devices implement the <code>i2c_master</code>
+   interface, which has the functions <b><i>start_response</i></b>,
+   <b><i>read_response</i></b>, <b><i>ack_read_response</i></b> and
+   <b><i>write_response</i></b> in common with the
+   <code>i2c_link</code> interface. The only difference in
+   definition is that the <i>I2C_status_bus_busy</i> value is not
+   allowed for the <i>status</i> parameter of
+   <code>start_response</code> in the <code>i2c_link</code>
+   interface, while it is allowed in the <code>i2c_master</code>
+   interface. The definitions of these functions can be found in the
+   documentation of the <code>i2c_master</code> interface.
+</p><p>
+   Here are the steps for a transfer:
+</p><p>
+   </p><ol>
+     <li>The I2C master device calls <b><i>start_request</i></b> in
+     the I2C link with 7-bit address and 1-bit read/write flag.
+     </li>
+
+     <li>The I2C link calls <b><i>start_request</i></b> in the I2C slave
+     device, forwarding the address given by the master. If there is
+     no slave device on the given address, or if the link is busy with
+     another connection, the I2C link instead terminates the connection
+     by calling <b><i>start_response</i></b> in the master device with
+     <i>I2C_status_noack</i> or <i>I2C_status_bus_busy</i>
+     as status code.
+     </li>
+
+     <li>The I2C slave device calls <b><i>start_response</i></b> in
+     the I2C link, with either <i>I2C_status_success</i> or
+     <i>I2C_status_noack</i> as status code.
+     </li>
+
+     <li>The I2C link calls <b><i>start_response</i></b> in the I2C
+     master device. This terminates the transfer if the status wasn't
+     <i>I2C_status_success</i>.
+     </li>
+
+     <li>The I2C master calls the <b><i>read_request</i></b> or
+     <b><i>write_request</i></b> function in the I2C link, depending on
+     the read/write bit given in the start_request message. The I2C
+     link relays the call to the I2C slave <b><i>read_request</i></b> or
+     <b><i>write_request</i></b> function. The slave responds with a call
+     to <b><i>read_response</i></b> or <b><i>write_response</i></b>, which
+     the link relays to the I2C master device.  If it's a read
+     transfer, the master calls the <b><i>ack_read_request</i></b>
+     function in the I2C link, which is relayed to the slave. The
+     slave responds with a call to the <b><i>ack_read_response</i></b> in
+     the I2C link, which is relayed to the master.  This step can be
+     repeated any number of times.
+     </li>
+
+     <li> The I2C master ends the transfer either by calling
+     <b><i>start_request</i></b> again (possibly with a different slave
+     address), or by calling <b><i>stop</i></b> in the I2C link. The link
+     will respond by calling <b><i>stop</i></b> in the slave device (if
+     it wasn't a repeated start with the same device as slave), and if
+     it was a start command, relay it to the slave device as in step 2
+     above.  Before a master device is allowed to call
+     <b><i>start_request</i></b> or <b><i>stop</i></b>, it must wait for any
+     pending <b><i>read_response</i></b> or <b><i>write_response</i></b>
+     call from a slave device.  In a read transfer, the last call to
+     the function <b><i>ack_read_request</i></b> should pass
+     <i>I2C_status_noack</i> in the <i>ack</i> parameter.
+     </li>
+   </ol>
+<p>
+   In total, an I2C link can be in nine different states:
+</p><p>
+   </p><ol>
+
+     <li>Idle, waiting for <b><i>start_request</i></b> call from any master
+     device</li>
+
+     <li>Waiting for a <b><i>start_response</i></b> call from the slave
+     device (write mode)</li>
+
+     <li>Waiting for a <b><i>write_request</i></b> (or <b><i>stop</i></b> or
+     repeated <b><i>start_request</i></b>) call from the current master
+     device</li>
+
+     <li>Waiting for a <b><i>write_response</i></b> call from the slave
+     device</li>
+
+     <li>Waiting for <b><i>start_response</i></b> call from the slave
+     device (read mode)</li>
+
+     <li>Waiting for a <b><i>read_request</i></b> (or <b><i>stop</i></b> or
+     repeated <b><i>start_request</i></b>) call from the current master
+     device</li>
+
+     <li>Waiting for a <b><i>read_response</i></b> call from the slave
+     device</li>
+
+     <li>Waiting for an <b><i>ack_read_request</i></b> call from the
+     current master device</li>
+
+     <li>Waiting for an <b><i>ack_read_response</i></b> call from the slave
+     device</li>
+   </ol>
+<p>
+   During a transfer, the actual data is delivered by the
+   <b><i>write_request</i></b> and <b><i>read_response</i></b> function
+   calls. The data is always delivered one byte at a time.
+</p><p>
+   There are two addressing modes apart from the 7-bit addressing mode
+   described above:
+</p><p>
+   </p><ul>
+
+     <li>General call address: This is a kind of broadcast signal; an
+     I2C master device writes data to the link, that any I2C device
+     can listen to. A General call is issued by calling
+     <b><i>request_start</i></b> with <i>address</i> = 0. To
+     listen to General call, call <b><i>register_slave_address</i></b>
+     with <i>addr</i> = <code>0</code> and <i>mask</i> =
+     <code>0xffffffff</code>. Multiple slave devices can register to the
+     General call address; calls to <b><i>start_request</i></b> and
+     <b><i>write_request</i></b> will be relayed to each registered slave
+     device. The <b><i>start_response</i></b> and
+     <b><i>write_response</i></b> functions in the calling master's
+     <code>i2c_master</code> interface will be called when
+     <em>all</em> slave devices have called the corresponding function
+     in the <code>i2c_link</code> interface.</li>
+
+     <li>10-bit addresses: This is an extension to the protocol, where
+     two bytes are sent as address, of which 10 bits are interpreted
+     as address bits. The address sent to
+     <b><i>register_slave_address</i></b> consists of the two bytes that
+     are sent, with the first sent byte as the least significant
+     byte. This means that the bits of the <i>address</i>
+     parameter are defined as follows:
+<p>
+     </p><ul>
+       <li>Bit 0 = 0</li>
+       <li>Bits 1-2 correspond to bits 8-9 of the 10-bit address.</li>
+       <li>Bits 3 = 0</li>
+       <li>Bits 4-7 = all 1</li>
+       <li>Bits 8-15 correspond to bits 0-7 of the 10-bit address.</li>
+       <li>Bits 16-31 = all 0</li>
+     </ul>
+<p>
+     Similarly, the <i>mask</i> parameter should have bit 0
+     set to 0 and bits 3-7 and 16-31 set to 1.
+</p><p>
+     A transmission from a master to a 10-bit addressed slave must
+     start with a write transaction, which optionally is followed by a
+     read transaction from the same slave. The write transaction is
+     started by a <b><i>start_request</i></b> call, whose
+     <i>address</i> parameter is a 16-bit number, composed in
+     the same way as the <i>address</i> parameter of
+     <b><i>register_slave_address</i></b> described above, with bit 0 set
+     to 0. After writing the desired number of bytes, a repeated start
+     command can be issued to start the read transaction to the same
+     slave device. The repeated start command is issued by calling
+     <b><i>start_request</i></b>, now with an 8-bit
+     <i>address</i> parameter, which consists of the lower 8
+     bits from the <i>address</i> parameter of the previous
+     <b><i>start_request</i></b> call, with bit 0 flipped to 1.  </p></li>
+
+     It is an error to register two I2C slave devices to the same
+     10-bit address.
+   </ul>
+<p>
+   Note that a single call to <b><i>register_slave_address</i></b> may
+   only register addresses from <em>one</em> addressing mode; it is an
+   error to supply an address pattern that matches addresses from
+   different addressing modes.
+</p><p>
+   During write operations, ACK bits are sent in the
+   <i>status</i> parameter of the <b><i>write_response</i></b>
+   functions. During read operations, the master device sends the ACK
+   bit with the <b><i>ack_read_request</i></b> function after the
+   <b><i>read_response</i></b> function has been called by the slave. The
+   slave should respond with a call to the
+   <b><i>ack_read_response</i></b> function, which is relayed to the
+   master.  The value of the ACK bit controls which functions that are
+   allowed as the next operation by the master device: If the ACK bit
+   is <code>0</code> (i.e., <code>I2C_status_success</code>), the next
+   operation must be a <b><i>read_request</i></b>, while ACK = <code>1</code>
+   (<code>I2C_status_noack</code>) means that the next operation
+   must be <b><i>stop</i></b> or a repeated <b><i>start_request</i></b>. It
+   is an error to violate this rule: If the master device's software
+   attempts to issue a STOP or START condition after a read with
+   ACK=0, the master device should catch the error and log a
+   <code>spec_violation</code> message.
+</p><p>
+   The <b><i>register_bridge</i></b> function is used to register a
+   device that implements the <code>i2c_bridge</code> interface. The
+   I2C link device will use the <code>i2c_bridge</code> interface to
+   keep the I2C bridge device updated with which slave addresses on
+   the link that have something registered on them; this is mainly
+   useful when implementing a bridge between i2c links. For more
+   information, see the documentation on the <a class="jdocu" href="__rm_interface_i2c_bridge.html">i2c_bridge</a> interface.
+</p><p>
+   The <b><i>disconnect_device</i></b> function completely disconnects a
+   device (slave, master, bridge or any combination thereof) from the
+   link. The link checks which i2c interfaces the device implements, and
+   cleanly removes all its references to the device. This mainly has
+   following effects:
+</p><p>
+   </p><ul>
+     <li>The link is prevented from issuing pending
+     <b><i>response</i></b>-like calls to a disconnected master or
+     bridge device</li>
+
+     <li>If the device is currently involved in a data transfer, the
+     transfer will be aborted as cleanly as possible.</li>
+
+     <li>If the device was registered with the <b><i>register_bridge</i></b>
+     function, its <b><i>address_removed</i></b> function is called for each
+     currently registered i2c slave address.</li>
+
+     <li>The disconnected device is erased from any internal caches;
+     this prevents certain memory corruption errors which can occur
+     if one device is destroyed and another one is created on exactly
+     the same memory location.</li>
+   </ul>
+<p>
+   Hence, <b><i>disconnect_device</i></b> an I2C device which has had any
+   kind of interaction with an I2C link, must always use
+   <b><i>disconnect_device</i></b> when disconnecting.
+   </p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_i2c_device.html">i2c_device</a>
+<a href="__rm_interface_i2c_master.html">i2c_master</a>
+</div>

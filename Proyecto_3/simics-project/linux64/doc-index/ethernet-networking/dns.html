@@ -1,0 +1,78 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.4.3 DNS</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="dhcp-and-bootp.html">3.4.2 DHCP and BOOTP</a>
+<a href="tftp.html">3.4.4 TFTP</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="simicsnet.html">3 Network Simulation</a>
+&nbsp;/&nbsp;
+<a href="ip-services.html">3.4 IP Services</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="DNS">3.4.3 DNS</a></h1>
+<p>
+<a name="DNS"></a>
+
+</p><p>
+The service node includes the functionality of a simple <i>Domain Name
+Server</i> (DNS), that a simulated client can use to translate a
+host/domain name into an IP address and vice versa. The DNS service is
+based on the same host table as the DHCP service, and only answers
+requests for A and PTR records.
+</p><p>
+For entries in the table that will only be used to answer DNS requests, and not
+for DHCP, the MAC address can be left out.  <a name="DNSadd-host"></a>
+The <b>&lt;service_node_comp&gt;.add-host</b> command can be used to add table
+entries, and the <b>&lt;service_node_comp&gt;.list-host-info</b> command prints
+the current table.  By default, all host entries will use
+the <code>network.sim</code> domain.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>sn0.add-host 10.10.0.1 donut</b>
+Adding host info for IP 10.10.0.1: donut.network.sim
+simics&gt; <b>sn0.add-host 10.11.0.1 foo other.domain</b>
+Adding host info for IP 10.11.0.1: foo.other.domain
+simics&gt; <b>sn0.list-host-info</b>
+IP         name.domain          MAC              
+-------------------------------------------------
+10.10.0.0  simics0.network.sim  20:20:20:20:20:00
+10.10.0.1  donut.network.sim    10:10:10:10:10:01
+10.11.0.1  foo.other.domain                      
+</pre><p>
+</p><p>
+For dynamic DHCP addresses, a DNS name will be added for the new IP number, so
+that any of these addresses can be found by the DNS service. When connected to
+a real network, the DNS service can do external lookups for names it does not
+recognize.
+</p><p>
+</p>
+<div class="chain">
+<a href="dhcp-and-bootp.html">3.4.2 DHCP and BOOTP</a>
+<a href="tftp.html">3.4.4 TFTP</a>
+</div>

@@ -1,0 +1,120 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>signal</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_serial_peripheral_interface_slave.html">serial_peripheral_interface_slave</a>
+<a href="__rm_interface_simple_dispatcher.html">simple_dispatcher</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_signal">signal</a></h1>
+<p>
+
+<a name="signal"></a><a name="signal_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>signal</code> interface is for modeling a logical signal, such
+   as a reset or interrupt. Signals are always active high in Simics with
+   respect to their function. This may not correspond to the actual electrical
+   level in a real system.
+<p>
+   A signal connection has one initiator and one target object, where the
+   initiator calls methods the interface implemented by the target.
+</p><p>
+   The initiator object should have a configuration attribute that pointing to
+   the target object or to an interface port of the target. This attribute,
+   like all other attributes representing object connections, should be of the
+   object kind, or a list of two entries where the first is
+   an object and the second a string representing the name of the port.
+</p><p>
+   The initiator should call <b><i>signal_raise()</i></b> to raise the signal
+   level to its active level in the target. Once raised, the same initiator may
+   not call <b><i>signal_raise()</i></b> again without an intervening call to
+   <b><i>signal_lower()</i></b>. Similarly, an already low signal may not be
+   lowered again by a <b><i>signal_lower()</i></b> call from the same initiator.
+   The two functions represent the rising and the falling edge of the signal.
+</p><p>
+   The target should handle the case where a signal is lowered directly after
+   it has been raised and treat this call sequence as a valid pulse even within
+   a single clock cycle. The target should also allow the signal to remain
+   raised for some time before it is lowered.
+</p><p>
+   While a target is disconnected, the input signal level is assumed to be low.
+   When an initiator connects to a target by hot plugging,
+   <b><i>signal_raise()</i></b> should be called if the output signal from the
+   initiator was high. If the signal was low, then no function in the target
+   should be called.
+</p><p>
+   If the signal level is high on disconnect, then the initiator has to call
+   <b><i>signal_lower()</i></b> before disconnecting from the target. Connect and
+   disconnect is typically done by changing the attribute in the initiator
+   that identifies the target object.
+</p><p>
+   When an initiator is reset, it should call <b><i>signal_lower()</i></b> if the
+   actual hardware also lowers the output signal on a reset. The target, on the
+   other hand, should not reset its remembered value of the input.
+</p><p>
+   When a connection attribute is restored from a checkpoint or during reverse
+   execution, no function should be called in the <code>signal</code>
+   interface of the target since the actual signal level does not change. The
+   attribute setter code can distinguish between hot-plugging and state
+   restoring by using <b><i>SIM_object_is_configured()</i></b> and
+   <b><i>SIM_is_restoring_state</i></b>. See the latter of the two for more
+   documentation.
+</p><p>
+   When an object is first created and the initial signal level is high, the
+   initiator has to call the <b><i>signal_raise()</i></b> function in the target.
+   This can not be done earlier than in <b><i>finalize_instance</i></b> (C/C++) or
+   in <b><i>post_init()</i></b> (DML) since the target has to be fully configured.
+   Again, this should not be done when restoring a checkpoint.
+</p><p>
+   There must only be a single initiator connected to a target, with the
+   exception of the <b>signal-bus</b> that may have several initiators.
+</p><p>
+   A target that needs more than one input signal should use ports to implement
+   several <code>signal</code> interfaces.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(signal) {
+        void (*signal_raise)(conf_object_t *NOTNULL obj);
+        void (*signal_lower)(conf_object_t *NOTNULL obj);
+};
+
+#define SIGNAL_INTERFACE "signal"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_serial_peripheral_interface_slave.html">serial_peripheral_interface_slave</a>
+<a href="__rm_interface_simple_dispatcher.html">simple_dispatcher</a>
+</div>

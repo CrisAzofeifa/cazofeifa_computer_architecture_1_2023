@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.6 Troubleshooting</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="real-network-performance.html">4.5 Performance</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="real-network.html">4 Connecting to a Real Network</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="real-network-troubleshooting">4.6 Troubleshooting</a></h1>
+<p>
+
+</p><p>
+A network monitoring tool such as <em>Wireshark</em> (formerly known
+as <em>Ethereal</em>) is invaluable when debugging problems with the real
+network connections. It is a graphical traffic analyzer that can analyze most
+common network protocols. Wireshark is available
+from <a class="jdocu" href="http://www.wireshark.com" rel="noopener noreferrer" target="_top">http://www.wireshark.com</a>.
+</p><p>
+There are some pitfalls one might encounter when trying to connect a simulated
+network to a real one:
+</p><p>
+</p><dl><dt id="dt:trying-to-access-the-simulation-host"><b>Trying to access the simulation host</b></dt><dd>Accessing the simulation host from the simulated network, or the other
+    way around, is only supported with port forwarding and host connection. It
+    is difficult—sometimes impossible—to access the simulation host
+    from the simulated network when setting up an Ethernet bridging
+    connection.</dd><dt id="dt:simulated-os-has-no-route"><b>Simulated OS has no route</b></dt><dd>When using a NAPT connection and the
+    operating system of the simulated machine does not have a correct route to
+    the real network, the simulated machine will drop the packets or send them
+    to the wrong address. To view the routing setup on the simulated machine,
+    use the command <code>netstat -r</code> on Linux or <code>route
+    print</code> on Windows. Note that these commands should be executed on the
+    <i>simulated</i> machines. The simulated OS should have a default route to
+    the service node.</dd><dt id="dt:simics-uses-the-wrong-host-network-interface"><b>Simics uses the wrong host network interface</b></dt><dd>On a host with multiple network interfaces installed, Simics will only
+    use one of them for a real network connection. If the default selection is
+    incorrect, use the <i>interface</i> argument of the connect command to
+    select the desired network interface. See the <em>Selecting Host
+    Interface</em> part of section <a class="reference" href="real-network-interface.html">4.4</a>.</dd></dl><p></p>
+<div class="chain">
+<a href="real-network-performance.html">4.5 Performance</a>
+</div>

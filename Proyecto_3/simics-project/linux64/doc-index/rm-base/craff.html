@@ -1,0 +1,149 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.3 craff</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="addon-manager.html">2.2 addon-manager</a>
+<a href="install-simics.html">2.4 install-simics</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="command-line-tools-and-programs.html">2 Command-Line Tools and Programs</a>
+&nbsp;/&nbsp;</div>
+<h1 id="craff">2.3 <a href="#craff">craff</a></h1>
+<article class="not-numbered not-in-toc doc-item">
+<h2 id="synopsis"><a href="#synopsis">SYNOPSIS</a></h2>
+<pre><code>craff [options] [input-file ...]
+</code></pre>
+<h2 id="description"><a href="#description">DESCRIPTION</a></h2>
+<p>The compressed random access file format is used by Simics's image module to handle sparse block data. The <code>craff</code> command line utility can be used to create and manipulate craff files.</p>
+<p>The default operation is to merge the input files, each of which can be either in craff format, fixed-type VHD format, VHDX format, or raw files (e.g., disk or memory dumps) and to output the merged result to an output file. The order of the input files is important: data from later input files override earlier files. Since craff files can have holes (gaps) in them, data from earlier files can propagate to the result.</p>
+<p>Each file argument is on the form <em>filename</em>[,<em>start</em>[,<em>size</em>[,<em>offset</em>]]] where <em>start</em>, <em>size</em> and <em>offset</em> are optional numerical parameters as follows:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:start"><em>start</em></span><br>
+Where the input file data should be placed in the output. If omitted, zero is assumed.</li>
+<li><span class="term" id="dt:size"><em>size</em></span><br>
+How much to use from the input file. By default, all data to the end of the file is used.</li>
+<li><span class="term" id="dt:offset"><em>offset</em></span><br>
+Where in the input file to read the data. If omitted, zero is assumed.</li>
+</ul>
+</div>
+<p>For example, the argument <code>myfile.craff,300,100,700</code> will take 100 bytes at offset 700 from <code>myfile.craff</code> and place them at offset 300 in the output.</p>
+<h2 id="options"><a href="#options">OPTIONS</a></h2>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:o-output-file"><code>-o, --output=FILE</code></span><br>
+Specifies the output file name. Without this option, output will go to <code>craff.out</code>. A hyphen (<code>-</code>) means standard output, and implies <code>-q</code>. Writing to standard output is only possible in raw format (<code>-d</code>) or when writing a content map (<code>-l</code>).</p>
+</li>
+<li>
+<p><span class="term" id="dt:d-decompress"><code>-d, --decompress</code></span><br>
+Causes the output to be an ordinary (raw) file. The default is to output in the craff format. When this option is given, any holes in the output are filled with zero bytes.</p>
+</li>
+<li>
+<p><span class="term" id="dt:vhd"><code>--vhd</code></span><br>
+Causes the output to be in VHD (Windows Virtual Hard Disk) format. The generated file is always of the "Fixed hard disk" (non-sparse) type, holes filled with zero bytes.</p>
+</li>
+<li>
+<p><span class="term" id="dt:create-size"><code>--create=SIZE</code></span><br>
+Create a zero filled image of the specified size without using any input files.</p>
+</li>
+<li>
+<p><span class="term" id="dt:l-content-map"><code>-l, --content-map</code></span><br>
+Writes a human-readable map of the input files to the output. Blocks are marked D where data is present, and . (dot) where not.</p>
+</li>
+<li>
+<p><span class="term" id="dt:d-diff"><code>-D, --diff</code></span><br>
+Instead of merging the input files, output the difference between the input files as a craff file. There must be exactly two input files. The output is the file that, when merged with the first file, would result in the second file. The input files may be in craff or raw format.</p>
+</li>
+<li>
+<p><span class="term" id="dt:z-zero-fill-gaps"><code>-z, --zero-fill-gaps</code></span><br>
+Fills gaps with zero bytes and marks them as present. Without this option, a gap in all input files will remain a gap in the output file.</p>
+</li>
+<li>
+<p><span class="term" id="dt:z-omit-zero-blocks"><code>-Z, --omit-zero-blocks</code></span><br>
+Treats blocks that consist entirely of zero bytes as empty in the output (i.e., they will be output as holes).</p>
+</li>
+<li>
+<p><span class="term" id="dt:b-block-size-size"><code>-b, --block-size=SIZE</code></span><br>
+Specifies the output block size in bytes. The size must be a power of 2, and may be specified in kilobytes using 'k' as a suffix. Without this option, the block size will be the smallest of the input files' block sizes.</p>
+<p>This is the smallest unit of storage in a craff file. Larger values compress better, but will waste more space if only part of the block is present. A block size of at least 4k is recommended.</p>
+</li>
+<li>
+<p><span class="term" id="dt:s-sub-block-size-size"><code>-s, --sub-block-size=SIZE</code></span><br>
+Specifies the output sub-block size in bytes. The size must be a power of 2, and may be specified in kilobytes using 'k' as a suffix. Without this option, the block size will be the smallest of the input files' sub-block sizes.</p>
+<p>This is the smallest unit of granularity in a craff file. Smaller values allow more fine-grained control of what data is present, but uses more space. For disk dumps, the sector size is useful (often 512 bytes); for memory dumps, use the page size (such as 4k or 8k).</p>
+</li>
+<li>
+<p><span class="term" id="dt:i-dir-entries-n"><code>-i, --dir-entries=N</code></span><br>
+Specifies the number of entries in each directory node. Must be a power of 2.</p>
+</li>
+<li>
+<p><span class="term" id="dt:c-compression-compression"><code>-c, --compression=COMPRESSION</code></span><br>
+Specifies the compression type: none or zlib. No compression is faster but zlib makes the files smaller.</p>
+</li>
+<li>
+<p><span class="term" id="dt:e-extract-start"><code>-e, --extract=START</code></span><br>
+Extracts a block to the output file. The extracted block starts at file offset <code>START</code> and the size is given by <code>--extract-block-size</code>. The output is in raw format.</p>
+</li>
+<li>
+<p><span class="term" id="dt:w-extract-block-size-size"><code>-w, --extract-block-size=SIZE</code></span><br>
+Size of block to extract with <code>--extract</code>.</p>
+</li>
+<li>
+<p><span class="term" id="dt:r-resize-size"><code>-r, --resize=SIZE</code></span><br>
+Create an output file of the specified size, zero padding it if the input files are shorter than this size or truncating it if they are longer.</p>
+</li>
+<li>
+<p><span class="term" id="dt:verify"><code>--verify</code></span><br>
+Verify the integrity of the input files.</p>
+</li>
+<li>
+<p><span class="term" id="dt:n-info"><code>-n, --info</code></span><br>
+Displays file information for each of the input files to the standard output.</p>
+</li>
+<li>
+<p><span class="term" id="dt:q-quiet"><code>-q, --quiet</code></span><br>
+Suppresses the progress indicator.</p>
+</li>
+<li>
+<p><span class="term" id="dt:v-version"><code>-v, --version</code></span><br>
+Displays version information of the <code>craff</code> utility itself.</p>
+</li>
+<li>
+<p><span class="term" id="dt:h-help"><code>-h, --help</code></span><br>
+Displays a summary of the command line options.</p>
+</li>
+</ul>
+</div>
+</article>
+
+<div class="chain">
+<a href="addon-manager.html">2.2 addon-manager</a>
+<a href="install-simics.html">2.4 install-simics</a>
+</div>

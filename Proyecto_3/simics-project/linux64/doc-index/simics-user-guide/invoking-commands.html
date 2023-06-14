@@ -1,0 +1,353 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.1 Invoking Commands</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="cli.html">4 The Command Line Interface</a>
+<a href="tab-completion.html">4.2 Tab Completion</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="cli.html">4 The Command Line Interface</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Invoking-Commands">4.1 Invoking Commands</a></h1>
+<p>
+   
+</p><p>
+   Commands are invoked by typing them at the command line followed by
+   their arguments. The synopsis part of a command documentation
+   explains how to execute a command (you can see many examples in the
+   reference manuals). Here are two examples:
+</p><p>
+   </p><dl><dt id="dt:synopsis"><b><b>SYNOPSIS</b></b></dt><dd><b>command1</b> <i>-x</i> <i>-y</i> 
+     <i>-small</i>
+     [<i><em>cpu-name</em></i>] <i><em>address</em></i> 
+     (<i><em>size</em></i>|<i><em>name</em></i>)</dd></dl><p></p><dl><dt id="dt:synopsis-2"><b><b>SYNOPSIS</b></b></dt><dd><b>command2</b> <i><em>files</em></i> ... </dd></dl><p>Arguments starting with a hyphen are flags and are always optional. Flags
+   can be more than one character long, so it is <i>not</i> possible to write
+   <i>-xy</i> for <i>-x -y</i>. The order of the flags is not
+   significant and they can appear anywhere in the argument list.
+</p><p>
+   Arguments enclosed within square brackets are optional; in the example
+   above, it is not necessary to specify <i>cpu-name</i>, but
+   <i>address</i> is required. The last argument to
+   <b>command1</b> is either a size or a name, but not both. Such arguments
+   are called <i>polyvalues</i> and can be of different types.  Size and name
+   are called sub-arguments.
+</p><p>
+   If an argument is followed by three dots as the file argument in
+   <b>command2</b> it indicates that the argument can be repeated
+   one or more times.
+</p><p>
+   The type of the arguments; e.g., whether they are integers or strings,
+   should be evident from their names. For example, <i>size</i> should be an
+   integer and <i>name</i> a string if not documented otherwise.
+</p><p>
+   Integers are written as a sequence of digits beginning with an optional
+   minus character for negative numbers. Hexadecimal numbers can be written by
+   prefixing them with <code>0x</code>, octal numbers with <code>0o</code>, and binary
+   numbers with <code>0b</code>. Integers may contain "_" characters to make
+   them easier to read. They are ignored during parsing. For example:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>170_000</b>
+170000
+simics&gt; <b>0xFFFF_C700</b>
+4294952704
+</pre><p>
+</p><p>
+   <a name="CLIstrings"></a>Strings are written as is or within double quotes if
+   they contain spaces or begin with a non-letter. Within double quotes, a
+   backslash (<code>\</code>) is an escape character, which can be used to include
+   special characters in the string.
+</p><p>
+   The supported escape sequences are the usual C ones: <code>\n</code> for
+   newline, <code>\t</code> for tab, <code>\033</code> for the octal ASCII character 33
+   (27 decimal) escape, etc. <code>\</code> followed by one, two or three octal
+   digits, or <code>\x</code> followed by exactly two hexadecimal digits is the
+   corresponding byte value.
+</p><p>
+   <code>\u</code> followed by exactly four hexadecimal digits is the corresponding
+   Unicode character. CLI strings are in the current version of Simics always
+   stored in their UTF-8 encoding, which means that a single <code>\u</code>
+   character can be represented as several bytes in the CLI string. As this is
+   expected to change in a future version of Simics, do not rely on this
+   functionality.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>echo no_quotes_needed</b>
+no_quotes_needed
+simics&gt; <b>echo "first line\nsecond line"</b>
+first line
+second line
+simics&gt; <b>echo "Two As: \101 \x41, and a micro sign: \u00b5"</b>
+Two As: A A, and a micro sign: µ
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+<a name="file-names"></a>
+<a name="command-line-interfacefile-names"></a>
+   On a <b>Windows</b> machine, strings used as paths to files can be written
+   in several different ways. If the path does not contain any blank
+   spaces, it can be written without quotes, using backslashes to
+   separate the directories in the path, like
+   <code><b>C:\temp\file.txt</b></code>.  If the path contains spaces, it
+   has to be written within quote characters, and the directory
+   separators have to be written using double backslashes. This is due
+   to the way that the Simics command line uses backslashes to
+   generate special characters like newline and tab.  Such a path
+   would look like <code><b>"C:\\Users\\joe\\Documents\\file.txt"</b></code>.
+</div>Here are some possible invocations of the commands above:
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>command1 -small board.mb.cpu0.core[0][0] 0x7fff_c000 14 -y</b>
+
+simics&gt; <b>command1 0x7fffc000 foo</b>
+
+simics&gt; <b>command1 -x "Pentium 4" 0x7fff_c000 -8</b>
+
+simics&gt; <b>command2 "/tmp/txt" "../bootdisk" floppy</b>
+</pre><p>
+</p><p>
+   In the first example <code>cpu-name</code> is passed as the string 
+   <code>board.mb.cpu0.core[0][0]</code>
+   and <code>size</code> as the integer 14. In the second invocation
+   <code>cpu-name</code> has been omitted and <code>name</code> is set to the string
+   <code>foo</code>. The third example illustrated the use of a string containing a
+   space. In all <b>command1</b> examples the address is set to the
+   hexadecimal value <code>0x7fffc000</code>. <b>command2</b> takes a list of
+   at least 1 string.
+</p><p>
+   A few commonly used commands have aliases. For example, it is possible to
+   write <b>c</b> for <b>continue</b> and <b>si</b> for
+   <b>step-instruction</b> for example. Command aliases are documented with
+   their corresponding command in the <em>Simics Reference Manual</em>.
+</p><p>
+   Parenthesis can be used to break a command with its arguments across
+   multiple lines. In the console, the prompt will change to <code>.......</code>
+   for code spanning more than one line. The example shows that use case, as
+   well as how parenthesis are used to encompass expressions.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>(echo 10</b>
+....... <b>      + (20 - 5)</b>
+....... <b>      + (max 4 7))</b>
+</pre><p>
+</p><p>
+   </p><h2 class="jdocu"><a name="How-are-Arguments-Resolved">4.1.1 How are Arguments Resolved?</a></h2>
+<p>
+   
+   <a name="command-line-interfaceargument-resolving"></a>
+</p><p>
+   Simics tries to match the provided arguments in same the order as
+   they appear in the synopsis. If the type of the next argument is
+   identical to what is typed at the command line, the argument will
+   match. If there is a mismatch and the argument is optional, the
+   argument will be skipped and the next argument will be matched, and
+   so on. If a mismatching argument is not optional, the interpreter
+   will fail and explain what it expected. For polyvalues, the
+   argument will match if one of its sub-arguments matches.
+</p><p>
+   There are situations when this method is not sufficient.
+   For example, when two arguments both have the same type and are
+   optional, there is no way to know which argument to match if only
+   one is given.  This is resolved by naming the arguments:
+   <code>arg-name=</code><i>value</i><code></code>. For example <b>command1</b> in
+   the example above can be invoked like this:
+</p><p>
+   </p><pre class="jdocu_small">simics&gt; <b>command1 size=32 -y address = 0xf000 -small cpu-name=board.mb.cpu0.core[0][0]</b>
+</pre><p>
+</p><p>
+   Thus there is no ambiguity in what is meant and in fact this is the only way
+   to specify a polyvalue with sub-arguments of the same type. Note also that
+   named arguments can be placed in any order.
+</p><p>
+   </p><h2 class="jdocu"><a name="Referring-to-Simics-Objects">4.1.2 Referring to Simics Objects</a></h2>
+<p>
+
+</p><p>
+Many Simics commands accept configuration object references as
+arguments. An object reference is simply a string which contains the
+fully qualified name of the object. Simics provides a hierarchical
+namespace for objects. The fully qualified name is similar to a file
+system path, but with the parts separated by dots. For example, the
+fully qualified name of
+<code>cpu0</code> in the <code>system0</code> namespace is
+<code>system0.cpu0</code>.
+</p><p>
+</p><h2 class="jdocu"><a name="Namespace-Commands">4.1.3 Namespace Commands</a></h2>
+<p>
+   
+   <a name="commandsnamespace"></a><a name="namespacecommands"></a>
+   <a name="command-line-interfacenamespace-commands"></a>
+</p><p>
+   Configuration objects (such as devices or CPUs) that define user
+   commands usually place them in a separate namespace. The namespace
+   is the fully qualified name of the object. Interfaces may also
+   define commands, in which case all objects implementing these
+   interfaces will inherit the commands in their own namespace.
+</p><p>
+   Namespace commands are invoked by typing the fully qualified name
+   of the object, followed by a dot and the command name:
+   <i>system</i>.<i>component</i>.<i>object</i>.<i>command</i>,
+   e.g.,
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>system0.board0.cache0.print-status</b>
+</pre><p>
+</p><p>
+   All namespace commands are listed in the <em>Simics Reference
+   Manual</em> under the class or interface they belong to.
+</p><p>
+   When using large configurations with a hierarchical structure of
+   components and objects it can be inconvenient to type the fully
+   qualified name all the time when invoking namespace commands. You
+   can than use the <b>change-namespace</b> command
+   (alias <b>cn</b>) to set a current namespace just like
+   navigating in a file system with the cd command. From the current
+   namespace you can refer to objects with a relative name, for
+   example:
+</p><pre class="jdocu_small">simics&gt; <b>cn system0.board0</b>
+simics:system0.board0&gt; <b>cache0.print-status</b>
+</pre><p>
+</p><p>
+   Note that the Simics prompt changes to reflect the new position in
+   the hierarchy.  You can only change the current namespace to other
+   components. It would have been illegal to do:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>cn system0.board0.cache0</b>
+system0.board0.cache0 is not a component
+</pre><p>
+   Cache0 is not a component, it is an object located in the
+   cache0 slot (see <a class="reference" href="configuration-components.html">6.4</a> and <a class="reference" href="conf-object-name.html">6.5</a> 
+   for more information on how objects are named and referenced).
+</p><p>
+   To go "up" one level in the hierarchy you can type <b>cn ..</b>:
+</p><pre class="jdocu_small">simics:system0.board0&gt; <b>cn ..</b>
+simics:system0&gt;
+</pre><p>
+   You can still refer to other components relative to the root by writing
+   a dot before the fully qualified name, e.g.:
+</p><pre class="jdocu_small">simics:system0&gt; <b>.system1.cpu0.ptime</b>
+processor     steps  cycles  time [s]
+system1.cpu0  14545   14545     0.000
+</pre><p>
+  The command <b>current-namespace</b> is provided to get the
+  current namespace and can be used in scripts to save a location in a
+  CLI variable:
+</p><pre class="jdocu_small">simics:system0&gt; <b>current-namespace</b>
+.system0
+simics:system0&gt; <b>$location = (current-namespace)</b>
+simics:system0&gt; <b>cn ..</b>
+simics&gt; <b>cn $location</b>
+simics:system0&gt;
+</pre><p>
+   See section <a class="reference" href="script-support-in-simics.html">5</a> for more
+   information on Simics scripting and CLI variables. 
+   </p><h2 class="jdocu"><a name="Expressions">4.1.4 Expressions</a></h2>
+<p>
+   
+   <a name="command-line-interfaceexpression"></a>
+</p><p>
+   The CLI allows expressions to be evaluated, for example:
+</p><p>
+   </p><pre class="jdocu_small">print -x 2*(0x3e + %cr0) + %dx
+   </pre><p>
+</p><p>
+   The precedence order of the operators is as follows (highest first):
+   <a name="operatorsprecedence"></a><a name="command-line-interfaceoperators"></a>
+</p><p>
+   <table>
+
+   <tbody><tr><td class="jdocu_noborder"><code>$</code></td><td class="jdocu_noborder">variable access</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>%</code></td><td class="jdocu_noborder">register access</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>[]</code></td><td class="jdocu_noborder">list indexing</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>-&gt;</code></td><td class="jdocu_noborder">attribute access</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>pow</code></td><td class="jdocu_noborder">power of</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>~</code></td><td class="jdocu_noborder">bitwise not</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>*, /, %</code></td><td class="jdocu_noborder">multiplication, division, modulo</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>+, -</code></td><td class="jdocu_noborder">addition, subtraction</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>&lt;&lt;, &gt;&gt;</code></td><td class="jdocu_noborder">left, right shift</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>&amp;</code></td><td class="jdocu_noborder">bitwise and</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>^</code></td><td class="jdocu_noborder">bitwise xor</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>|</code></td><td class="jdocu_noborder">bitwise or</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>&lt;, &lt;=, ==, !=, &gt;=, &gt;</code></td><td class="jdocu_noborder">comparison</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>not</code></td><td class="jdocu_noborder">boolean not</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>and</code></td><td class="jdocu_noborder">boolean and</td></tr>
+
+   <tr><td class="jdocu_noborder"><code>or</code></td><td class="jdocu_noborder">boolean or</td></tr>
+
+   </tbody></table>
+</p><p>
+   Parentheses can be used to override the priorities. Commands
+   which return values can also be used in expressions if they are
+   enclosed within parentheses:
+</p><p>
+   </p><pre class="jdocu_small">print -x (board.mb.cpu0.core[0][0].read-reg cr0)</pre><p>
+</p><p>
+   <a name="command-line-interfacevariable"></a> Values can be saved in variables
+   for later use.  You set a variable by simply giving an assignment command
+   such as <b>$var = 15</b>. You can also store a command in a
+   variable such as <b>$my_read_reg =
+   board.mb.cpu0.core[0][0].read-reg</b> which is different from storing
+   the return value from a command <b>$value_cr0 =
+   (board.mb.cpu0.core[0][0].read-reg cr0)</b>.
+</p><p>
+   </p><h2 class="jdocu"><a name="Interrupting-Commands">4.1.5 Interrupting Commands</a></h2>
+<p>
+   
+</p><p>
+   </p><dl><dt id="dt:gui"><b>GUI</b></dt><dd>Use the <b>stop</b> command at the <code>running&gt;</code> prompt or the <i>stop</i> button in <em>Simics Control
+   window</em>.
+   </dd><dt id="dt:cli-without-gui"><b>CLI without GUI</b></dt><dd>Any command which causes the simulation to advance can be interrupted by
+   typing <b>Ctrl-C</b>. 
+   The simulator will gracefully stop and prompt for a new
+   command. If Simics hangs for some reason, possibly due to some internal
+   error, you can usually force a return to the command line by pressing
+   <b>Ctrl-C</b> two or more times in a row.
+<p>
+   </p><div class="note">
+<b>Note:</b>
+Pressing <b>Ctrl-C</b> several times may damage some internal
+   state in the
+   simulator so should be used as a last resort.</div></dd></dl><p>
+   </p>
+<div class="chain">
+<a href="cli.html">4 The Command Line Interface</a>
+<a href="tab-completion.html">4.2 Tab Completion</a>
+</div>

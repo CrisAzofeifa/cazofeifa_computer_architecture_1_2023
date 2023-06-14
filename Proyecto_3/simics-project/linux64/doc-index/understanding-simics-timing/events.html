@@ -1,0 +1,54 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2 Events</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="instruction-execution-timing.html">3 Instruction Execution Timing</a>
+</div>
+<div class="path">
+<a href="index.html">Understanding Simics Timing</a>
+&nbsp;/&nbsp;</div>
+<h1 id="events">2 <a href="#events">Events</a></h1>
+<p>Simics is an <em>event driven simulator</em> with a maximum time resolution of a <em>clock cycle</em>. In a single-processor system, the length (in seconds) of a clock cycle is easily defined as 1 divided by the processor frequency set by the user. As described later in this chapter, Simics can also handle multiprocessor systems with different clock frequencies, but we will focus on single-processor systems for the rest of this section.</p>
+<p>As Simics makes the simulated time progress, cycle by cycle, events are triggered and executed. Events include device interrupts, internal state updates, as well as <em>step</em> executions. A <em>step</em> is the unit in which Simics divides the execution of a flow of instructions going through a processor; it is defined as the execution of an instruction, an instruction resulting in an exception, or an interrupt. Steps are by far the most common events.</p>
+<p>Steps and cycles are fundamental Simics concepts. Simics exposes two types of events to users: events linked to a specific step, and events linked to a specific cycle. Step events are useful for debugging (execute 1 step at a time, stop after executing 3 steps, etc.), whereas time events are rather independent from the flow of execution (sector read operation on the hard disk will finish in 1 ms).</p>
+<p>For each executed cycle, events are triggered in the following order:</p>
+<ol>
+<li>All events posted for this specific <em>cycle</em>, except step execution.</li>
+<li>For each step scheduled for execution on this cycle:
+<ol>
+<li>All events scheduled for that specific <em>step</em>. </li>
+<li>A step execution. </li>
+</ol>
+</li>
+</ol>
+<p>Events belonging to the same category are executed in FIFO order: posted first is executed first.</p>
+
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="instruction-execution-timing.html">3 Instruction Execution Timing</a>
+</div>

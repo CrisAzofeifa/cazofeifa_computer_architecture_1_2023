@@ -1,0 +1,93 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.2 Using Context Queries</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="talos-debugging-cli.html">3.1 The Command Line Debugger</a>
+<a href="debugger-api.html">3.3 The Debugger API</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="debugging-target-code.html">3 Debugging Target Code</a>
+&nbsp;/&nbsp;</div>
+<h1 id="using-context-queries">3.2 <a href="#using-context-queries">Using Context Queries</a></h1>
+<p>Simics implements a query-based system to specify subsets of contexts. The queries specify context properties and what values they must have in order to match. In addition, a query can filter based on a context's ancestors in the context hierarchy.</p>
+<h2 id="about-context-queries">3.2.1 <a href="#about-context-queries">About Context Queries</a></h2>
+<p>A <em>query</em> consists of a sequence of parts separated by a slash character (<code>/</code>). This sequence specifies a path through the context tree.</p>
+<p>A context matches the query if the last part of the query matches the properties of the context, and the parent of the context matches the query excluding the last part. The properties of a context match a part if each property specified in the part matches the property of the same name in the context, or if the name of the context matches the string specified in the part.</p>
+<p>The contexts are assumed to be placed in a tree. Each context has zero or one parent. If it has zero parents it is a child of the root of the tree.</p>
+<p>There are also two wild cards. The part <code>*</code> matches any context. The part <code>**</code> matches any sequence of contexts. If the query starts with a <code>/</code>, the first part of the query must match a child of the root of the context tree.</p>
+<div class="note">
+<p>The <code>*</code> wild card matches an entire node, not part of its name or attribute. Thus, a query such as <code>/foo/bar/baz*</code> is invalid, since <code>*</code> can only be used on its own, between <code>/</code> or at the end of the query after a <code>/</code>.</p>
+</div>
+<h2 id="context-query-syntax">3.2.2 <a href="#context-query-syntax">Context Query Syntax</a></h2>
+<pre><code>query = [ "/" ], { part, "/" }, part ;
+    part = string | "*" | "**" | properties ;
+    properties = property, { ",", property } ;
+    property = string, "=", value ;
+    value = string | number | boolean ;
+    string = quoted string | symbol ;
+    quoted string = '"', {any-character - ('"' | '\')
+                                 | ('\', ('"' | '\'))}, '"' ;
+    symbol = letter, { letter | digit } ;
+    number = digit, { digit } ;
+    boolean = "true" | "false" ;
+    letter = ? A-Z, a-z or _ ? ;
+    digit = ? 0-9 ? ;
+    any-character = ? any character ? ;
+</code></pre>
+<h2 id="examples">3.2.3 <a href="#examples">Examples</a></h2>
+<p>This section illustrates the syntax with some examples, and what a user might mean when providing such a query: </p>
+<ul>
+<li><strong>httpd</strong>: matches all contexts named "httpd".</li>
+<li><strong>pid=4711</strong>: matches any context with a property <strong>pid</strong>, which has the value 4711.</li>
+<li><strong>/server/**</strong>: matches all contexts that are descendants of the top level context named "server".</li>
+<li><strong>"Linux 2.6.14"/Kernel/*</strong>: matches all kernel processes in operating systems named "Linux 2.6.14".</li>
+<li><strong>pid=4711/*</strong>: matches all threads in processes with the pid 4711.</li>
+<li><strong>/client/**/"rule30.elf"</strong>: matches the context for program <em>rule30.elf</em> running on the machine called <code>client</code>.</li>
+<li><strong>/server/**/HasState=true</strong>: matches all threads that are descendants of the context "server". Contexts with no state, typically container, do not match the query.</li>
+</ul>
+<h2 id="context-queries-in-the-command-line-interface">3.2.4 <a href="#context-queries-in-the-command-line-interface">Context Queries in the Command Line Interface</a></h2>
+<p>The Simics debugger is built on top of the <em>target connection framework</em> (TCF) technology, which introduces the context query concept. The above text describes the standard TCF syntax for context queries. It is very similar in principle to the process trackers node path concept.</p>
+<p>To make context queries work better with the CLI syntax, and look closer to node paths, the syntax of TCF context queries in the command line has been modified. The difference is minor, as it impacts only the double quote character (<code>"</code>) used to quote a string with non-alpha-numeric characters. In the command line you must either escape this character or use the single quote character (<code>'</code>) instead.</p>
+<p>Originally the context query to match a context named <em>rule30.elf</em> is written <code>name="rule30.elf"</code>. The corresponding node path is <code>name='rule30.elf'</code>. So for instance in the command line you will use: </p>
+<pre><code>
+simics&gt; add-symbol-file context-query = "name='rule30.elf'"
+or
+simics&gt; add-symbol-file context-query = "name=\"rule30.elf\""
+</code></pre>
+<p>Another example for selecting a cpu context named <em>cpu[0]</em>, the context query is written <code>"cpu[0]"</code> in Eclipse but in Simics command line, the query is written: </p>
+<pre><code>
+simics&gt; break-location 0xfff00000 context-query = "'cpu[0]'"
+or
+simics&gt; break-location 0xfff00000 context-query = "\"cpu[0]\""
+</code></pre>
+
+<div class="chain">
+<a href="talos-debugging-cli.html">3.1 The Command Line Debugger</a>
+<a href="debugger-api.html">3.3 The Debugger API</a>
+</div>

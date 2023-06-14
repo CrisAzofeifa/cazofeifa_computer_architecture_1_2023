@@ -1,0 +1,71 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>run</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-rexec-limit.html">rexec-limit</a>
+<a href="rm-cmd-run-command-file.html">run-command-file</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="run"></a>
+<a name="continue"></a>
+<a name="c"></a>
+<a name="r"></a>
+<h1 id="run"><a href="#run">run</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>run</b> [<i>count</i>] [<i>"unit"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Starts running the simulation. If the <i>count</i> argument is provided, Simics will execute <i>count</i> number of time units on the currently selected frontend processor and then stop. The time unit, provided by the <i>unit</i> argument, can be one of <tt>steps, cycles, s, ms, us, ns, ps</tt>, <tt>m</tt> or <tt>h</tt>. If no time unit is supplied, <i>count</i> is interpreted as steps if supported by the frontend processor, or else as cycles. The command will raise an error if the simulation is already running.
+<p>
+Unlike other commands, the <code>run</code> and <code>run-cycles</code> commands will not block the command line when run interactively.
+</p><p>
+In script branches, the command will not block the script execution when run without the <i>count</i> argument. It will instead continue executing the next command as soon as the simulation has been started. When run with the <i>count</i> argument, the command will block until reaching the specified point in time.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-step-instruction.html">step-instruction</a>, 
+<a href="rm-cmd-run-cycles.html">run-cycles</a>, 
+<a href="rm-cmd-reverse.html">reverse</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-rexec-limit.html">rexec-limit</a>
+<a href="rm-cmd-run-command-file.html">run-command-file</a>
+</div>

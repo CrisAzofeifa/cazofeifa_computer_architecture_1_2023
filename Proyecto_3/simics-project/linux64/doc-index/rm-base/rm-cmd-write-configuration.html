@@ -1,0 +1,78 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>write-configuration</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-wireshark-stop.html">wireshark-stop</a>
+<a href="rm-cmd-write-reg.html">write-reg</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="write-configuration"></a>
+<h1 id="write-configuration"><a href="#write-configuration">write-configuration</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>write-configuration</b> <i>file</i> [-z|-u] [-save-raw|-save-craff] [-independent-checkpoint] [<i>"comment"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Save simulation state to <i>file</i>. We refer to such saved state as a checkpoint. Simulation state can be restored later from a checkpoint with the <code>read-configuration</code> command.
+<p>
+Unless the <tt>-independent-checkpoint</tt> flag is specified, the simulation state is saved incrementally. This allows to save time and disk space but, as result, created checkpoints usually depend on the checkpoints which were created earlier as well as on the files (e.g., disk images) which were used when simulation objects were created. This means that care should be taken when deleting older checkpoints.
+</p><p>
+The <tt>-independent-checkpoint</tt> flag allows to save a completely independent checkpoint which can be freely moved around and will not need any files (e.g., checkpoints created earlier) for its use. Also, checkpoints created later will not depend on such checkpoint.
+</p><p>
+To add a description to the checkpoint, one can use the <i>comment</i> parameter. The comment is saved in the <tt>info</tt> file in the checkpoint bundle.
+</p><p>
+More information about checkpoints can be found in the Configuration and Checkpointing chapter in the <cite>Simics User's Guide</cite> manual.
+</p><p>
+The command flags described below allow to control some subtle aspects related to created checkpoints and are rarely needed.
+</p><p>
+The <tt>-save-raw</tt> flag tells Simics to store images in raw format. The <tt>-save-craff</tt> flag (default) tells Simics to store images in the craff format.
+</p><p>
+The <tt>-u</tt> flag tells Simics to store images in the uncompressed craff format.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-read-configuration.html">read-configuration</a>, 
+<a href="rm-cmd-save-persistent-state.html">save-persistent-state</a>, 
+<a href="rm-cmd-record-session.html">record-session</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-wireshark-stop.html">wireshark-stop</a>
+<a href="rm-cmd-write-reg.html">write-reg</a>
+</div>

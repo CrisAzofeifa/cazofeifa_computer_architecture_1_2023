@@ -1,0 +1,81 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>checkpoint</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_breakpoint_type_provider.html">breakpoint_type_provider</a>
+<a href="__rm_interface_con_input.html">con_input</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_checkpoint">checkpoint</a></h1>
+<p>
+
+<a name="checkpoint"></a><a name="checkpoint_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <b><i>save</i></b> function in this interface is called when a checkpoint
+   is saved, right before the attributes of an object is read. If defined,
+   it should prepare the object for checkpointing, saving any state to
+   <i>path</i> that is not directly included in the attributes.
+   Errors are signalled through exceptions.
+<p>
+   The <i>path</i> argument may be the empty string, which indicates
+   that the checkpoint bundle directory is the same as the current working
+   directory while the checkpoint is being saved.
+</p><p>
+   The <b><i>finish</i></b> function is called after the checkpoint has been
+   saved, for all objects that <b><i>save</i></b> was called for. If
+   <i>success</i> is nonzero, the checkpoint was saved successfully;
+   otherwise there was a failure. This permits the object to clean up temporary
+   data structures and files in either case. In particular, any files written
+   to <i>path</i> in the <b><i>save</i></b> method must be removed in
+   <b><i>finish</i></b> if <i>success</i> is zero.
+</p><p>
+   The function <b><i>has_persistent_data</i></b>, if implemented, should return
+   0 if the object only has volatile attributes, 1 otherwise. This overrides
+   <code>Sim_Attr_Persistent</code> on individual attributes.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(checkpoint) {
+        void (*save)(conf_object_t *obj, const char *NOTNULL path);
+        void (*finish)(conf_object_t *obj, int success);
+        int (*has_persistent_data)(conf_object_t *obj);
+};
+
+#define CHECKPOINT_INTERFACE "checkpoint"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_breakpoint_type_provider.html">breakpoint_type_provider</a>
+<a href="__rm_interface_con_input.html">con_input</a>
+</div>

@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>41 Probes API</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="instrumentation.html">40 Instrumentation</a>
+<a href="inspecting-and-controlling-the-virtual-system.html">42 Inspecting and Controlling the Virtual System</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="extension-builder.html">VII Extending Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="probes-api">41 Probes API</a></h1>
+<p>
+  
+</p><p>
+  Simics probes framework defines a set of interfaces that could be
+  used to <b>implement</b> probes. All interfaces are described in the
+  the <code>simics/simulator-iface/probe-interface.h</code> header
+  file, and also documented as part of the API reference manual.  For
+  simple probes, it is sufficient to just implement
+  the <code>probe</code> or <code>probe_index</code> interfaces,
+  while <code>probe_subscribe</code> and <code>probe_cache</code>
+  are optional interfaces.
+</p><p>
+  Simics' probes framework will automatically create probes when
+  detecting objects implementing certain interfaces. This mechanism
+  does not yet have a programming interface though.
+  </p><p>
+  To programmatically <b>access and read</b> the probes, there are two
+  choices. Either call the probe interfaces implemented directly in
+  the object, or make use of the <code>probes</code> Python package API.
+  </p><p>
+  Simics' Python <code>probe</code> package offers:
+  </p><ul>
+    <li>Knowledge of which probes that currently exists in Simics.
+      This makes it easier to find all objects implementing certain
+      probe names.</li>
+    <li>A more uniform interface where the user does not need to know
+      which interfaces that are actually implemented.</li>
+    <li>Methods for formatting the final probe value according
+      to the probe's properties.</li>
+  </ul>
+<p>
+  The Python probe API is documented in the API reference manual or
+  can be accessed via Python in Simics:
+  </p><pre class="jdocu_small">    simics&gt; <b>@import probes</b>
+    simics&gt; <b>@help(probes)</b>
+  </pre><p>
+  </p><p>
+  Remember that probes are expected to be read out in global-context,
+  that is, if you read out probes while Simics is executing, you must
+  ensure that any executions threads stands still, for example
+  with the <b><i>SIM_run_alone()</i></b> function.
+</p>
+<div class="chain">
+<a href="instrumentation.html">40 Instrumentation</a>
+<a href="inspecting-and-controlling-the-virtual-system.html">42 Inspecting and Controlling the Virtual System</a>
+</div>

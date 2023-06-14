@@ -1,0 +1,2618 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>24 Components</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="memory-space.html">23 Memory Spaces</a>
+<a href="adding-flash-to-a-system.html">25 Adding Flash to a System</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-system-modeling.html">IV Creating Virtual Systems</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="creating-configurations">24 Components</a></h1>
+<p>
+
+</p><p>
+This chapter describes how to write your own Simics components. It
+assumes you have already read the section about components in
+the <em>Simics User's Guide</em>, particularly for the
+definitions.
+</p><p>
+</p><h2 class="jdocu"><a name="Introduction">24.1 Introduction</a></h2>
+<p><a name="component"></a>
+
+</p><p>
+A component represents a piece of hardware which connects to other
+parts of system through standardized interfaces. The primary purpose
+of component in Simics is to manage and encapsulate the complexity
+inherent in composing a system. Frequently, a component represents a
+piece of hardware which can be removed from the system and put back in
+without breaking it or the rest of the system. Some manufacturers
+refer to this sort of hardware as a Field Replaceable Unit or
+FRU. Whether modeling FRUs or not, the definition of components should
+closely follow the structure in the real system. Some examples of real
+hardware that generally modeled using components are motherboards,
+compact flash cards, disks, SOCs, and PCI cards.
+</p><p>
+Components are assembled to construct systems through two primary
+mechanisms: nested namespaces and connectors. A system will usually
+use both mechanisms. Namespaces are used to encapsulate parts of the
+system which from the outside can be considered one unit and
+connectors are used to connect the components to each other similar to
+how the real hardware is connected, for example memory slots, PCI
+slots, Ethernet sockets. When there is a tight coupling between a
+component and a subcomponent, for example between a board and an SOC,
+the component can set up the subcomponent and the connections between
+the two components without using connectors.
+</p><p>
+Consider a system consisting of a compact PCI chassis with a processor
+board and several I/O boards. The system runs a single operating
+system image and is considered a single machine; however, each board
+is clearly a separate entity from the others and from the
+chassis. Here, you would use simple connections between the
+components, with one component for each board and one for the
+chassis.
+</p><p>
+Now consider the processor board consisting of an integrated processor
+SOC, several discrete devices, RAM, and flash. Here, the SOC is
+clearly a reusable system with sufficient complexity that it should be
+encapsulated in a component, but the board is meaningless without the
+SOC. Thus a component should be used to represent the SOC, with the
+board being a component that contains the SOC. Since the board has
+such a strong dependency on the SOC it does not need to use a
+connector to connect to it, instead it can create the SOC component
+itself and set up the connections manually.
+</p><p>
+Namespaces are described in section <a class="reference" href="#cmp-hierarchies">24.2</a>,
+while component hierarchies are described in <a class="reference" href="#cmp-connected-trees">24.3</a>. To summarize, a namespace composition is used to describe
+components that consists of other components, while connectors are
+used to connect components to each other.
+</p><p>
+</p><h3 class="jdocu"><a name="Component-Class">24.1.1 Component Class</a></h3>
+<p>
+<a name="componentclass"></a>
+</p><p>
+A <em>component</em> is a generic Simics class, with the special
+ability to contain class instances. Each instance of a component
+represents a namespace described in section <a class="reference" href="#cmp-hierarchies-namespaces">24.2.1</a>. In this chapter, we will refer to a
+component instance as a <em>component</em>, and the class instances
+within the component as <em>objects</em>.
+</p><p>
+More specifically, a component class is a Simics class written in
+Python that implements the <code>component</code> interface. Details
+of writing components are described in section <a class="reference" href="#cmp-implementing">24.6</a>.  The <code>component</code> interface is documented
+in section <a class="reference" href="#cmp-interfaces">24.8.1</a>.
+</p><p>
+A number of ready to use components are provided with Simics. Some of these are
+standard components that can be used in many kind of systems. Examples of
+standard components are disks, flashes, text consoles, etc. Other
+components are specific to a particular system, such as an evaluation board.
+</p><p>
+</p><h3 class="jdocu"><a name="Component-Module">24.1.2 Component Module</a></h3>
+<p>
+
+</p><p>
+A component module is a Simics module containing the implementation of
+one or more related <em>components</em>. The
+<b>examples-comp</b> module, for example, contains a set of
+example components. It will be used as an example in the following
+sections. It can be found at <code></code><em>[simics]</em><code>/src/components/</code>.
+</p><p>
+Additional examples of flat components that do not support
+hierarchical composition can be found in the
+<code></code><em>[simics]</em><code>/src/extensions</code> directory. These
+components are still supported, but they will not be discussed in this
+chapter.
+</p><p>
+</p><h3 class="jdocu"><a name="Components-in-Project">24.1.3 Components in Project</a></h3>
+<p>
+
+</p><p>
+When adding a component to a project, the component module source
+directory is placed
+in <code></code><em>[project]</em><code>/modules/</code><i>component_module_name</i><code></code>,
+and contains
+one <code></code><i>component_module_name</i><code>.py</code> file,
+one <code>Makefile</code> and optionally one PNG image file for each
+top-level component.
+</p><p>
+The <code>Makefile</code> is essentially identical for all component modules; it
+simply points out the <code>.py</code> file that is part of the
+module. Section <a class="reference" href="#cmp-implementing">24.6</a> describes how to
+create new components.
+</p><p>
+
+</p><h2 class="jdocu"><a name="cmp-hierarchies">24.2 Namespace Hierarchies</a></h2>
+<p>
+
+<a name="componenthierarchical"></a>
+<a name="componentnamespace-hierarchy"></a>
+</p><p>
+All components also define its own namespace for other components and
+objects. Placing a component in another component's namespace is used
+to model systems composed of reusable subsystems that do not
+individually stand alone.
+</p><p>
+</p><div class="figure" id="conf_component_hierarchy_0">
+
+<div style="text-align: center">
+<img alt="" src="conf_component_hierarchy_0.png">
+<div class="caption">Figure 8. Example of a namespace hierarchy</div>
+</div>
+</div>
+
+<p>
+Figure <a class="reference" href="#conf_component_hierarchy_0">8</a> shows an example
+system with one root component called <b>cmp0</b> with two sub
+components,
+<b>cmp1</b> and <b>cmp2</b>. The <b>cmp1</b> component
+contains the <b>obj</b> object. Each component has a separate
+namespace. The namespaces form a tree of
+components. The <b>cmp1</b> component is in the <b>cmp0</b>
+component's namespace.
+</p><p>
+All objects have a name. For objects in the global namespace the name
+is simply a string given at its creation. Objects in other namespaces
+have names that depend on their location in the hierarchy. These names
+depend on which slot in the parent the object is placed in.
+</p><p>
+Slots are something all components have, and which mainly define the
+names of its children. Each slot has a name and a value. The value is
+often just an object reference. Other possible values
+are <code>None</code> or nested lists with objects references
+and <code>None</code>s as elements. A slot with <code>None</code> value is
+called an unoccupied slot.
+</p><p>
+An object in a component has a local name and a full name. The local
+name is called <em>slot name</em> or simply
+slot<a name="componentslot"></a>. An object's slot name is the name of
+the slot it belongs to concatenated with its index in the slot. Assume
+that a component <em>cmp</em> has the slot <em>sub</em> with an object
+reference to the object <em>A</em>. The object <em>A</em> has the slot
+name <em>sub</em> and the full name <em>cmp.sub</em>. Now assume that
+the component <em>cmp</em> has the slot <em>sub</em> with a list of
+two object references to object <em>B</em> and object <em>C</em>. The
+object <em>B</em> has the slot name <em>sub[0]</em> and the full
+name <em>cmp.sub[0]</em>.
+</p><p>
+In figure <a class="reference" href="#conf_component_hierarchy_0">8</a> the sub components
+names are actually the slot names. Both <b>cmp1</b>
+and <b>cmp2</b> are slots in <b>cmp0</b>. The <b>cmp1</b>
+component in figure <a class="reference" href="#conf_component_hierarchy_0">8</a> has the
+full name <b>cmp0.cmp1</b>. All object names in the figures in
+this chapter are local names.
+</p><p>
+A component can be connected to components on the same hierarchical
+level or to a parent or child component; see section <a class="reference" href="#cmp-connecting-components">24.4</a>.
+</p><p>
+</p><h3 class="jdocu"><a name="cmp-hierarchies-namespaces">24.2.1 Namespaces</a></h3>
+<p>
+
+</p><p>
+Component namespaces provide scoping for names in a manner similar to
+syntactic blocks in programming languages. As with programming
+structure, it is easier to understand when a minimal number of names are
+defined in the global scope or namespace. Another good analogy is a
+file system directory structure.
+</p><p>
+A component or object can be added to a component's <a name="namespace">namespace</a> on
+definition, or after creation at run-time using the <b>move-object</b>
+command.
+</p><p>
+</p><pre class="jdocu_small">Ex. move component <em>cmp1</em> to <em>cmp0</em> as <em>"cmp1"</em>:
+simics&gt; <b>move-object src = cmp1 dst = cmp0.cmp1</b>
+</pre><p>
+</p><p>
+Moving an object to a component puts the object in its namespace. This
+is done by putting the object in a slot in the component. The object
+can now be accessed relative to the parent component in CLI, Python,
+or in the Simics API.
+</p><p>
+Moving an object to a different hierarchical location changes its
+full name. The <b>cmp1</b> is now accessed using the hierarchical
+name <b>cmp0.cmp1</b>, the slot name is <em>cmp1</em>.
+</p><p>
+</p><pre class="jdocu_small">Ex. execute <b>info</b> command for <em>cmp1</em> in CLI:
+simics&gt; <b>cmp0.cmp1.info</b></pre><p>
+</p><p>
+</p><pre class="jdocu_small">Ex. access <i>queue</i> attribute for <em>cmp1</em> in CLI:
+simics&gt; <b>cmp0.cmp1-&gt;queue</b></pre><p>
+</p><p>
+</p><pre class="jdocu_small">Ex. access <i>queue</i> attribute for <em>cmp1</em> in Python:
+simics&gt; <b>@conf.cmp0.cmp1.queue</b></pre><p>
+</p><p>
+</p><pre class="jdocu_small">Ex. get <b>cpu</b> object from <em>cmp1</em> in Python:
+simics&gt; <b>@conf.cmp0.cmp1.cpu</b>
+</pre><p>
+</p><p>
+A normal object can only exist in one namespace at a time; only
+connector objects can exist in several namespaces. Connector objects
+are documented in section <a class="reference" href="#cmp-connector-object">24.4.2</a>. Connector objects can be copied to a new namespace using
+the <b>copy-connector</b> command.
+</p><p>
+</p><pre class="jdocu_small">Ex. copy connector object <em>cmp0.cmp1.port0</em> to <em>cmp0</em> as <em>"copy0"</em>:
+simics&gt; <b>copy-connector cmp0.cmp1.port0 cmp0.copy0</b>
+</pre><p>
+</p><p>
+The connector object can now be accessed as <b>cmp0.copy0</b> or
+<b>cmp0.cmp1.port0</b>, and has two parents. The
+owner of the connector object is not changed and is still the
+<b>cmp0.cmp1</b> component.
+</p><p>
+The <code>component</code> interface has functions to add and remove
+objects from a components namespace, which is used by the
+<b>move-object</b> and <b>copy-connector</b> commands.
+</p><p>
+The <b>alias</b> command can be used to avoid having to write the
+complete hierarchical name several times for often-used objects:</p><pre class="jdocu_small">Ex. alias for <em>cmp1</em> in CLI:
+simics&gt; <b>alias short cmp0.cmp1.port0</b>
+simics&gt; <b>short.info</b>
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="cmp-hierarchies-precedence">24.2.2 Precedence</a></h3>
+<p>
+
+</p><p>
+Objects, attributes, and commands sometimes share the same namespace
+name, resulting in conflicts. Consider a root component named
+<b>cmp0</b> with an object in slot <em>cpu</em> and also has a
+command called <b>cpu</b> that prints all processors in the
+components. There will be a conflict when typing <b>cmp0.cpu</b> on
+the command line.
+</p><p>
+You should try to avoid such name conflicts, and Simics will print a warning
+message if any are detected. If there are conflicting names, the
+following precedence describes how the name is interpreted.
+</p><p>
+The order in decreasing precedence is:
+</p><ol>
+<li>slots,</li>
+<li>attributes, and</li>
+<li>commands.</li>
+</ol>
+<p>
+Thus continuing the example above, <b>cmp0.cpu</b> is an object
+reference, not a command.
+</p><p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="cmp-connected-trees">24.3 Component Hierarchies</a></h2>
+<p>
+
+<a name="componentconnected-tree"></a>
+<a name="componentcomponent-hierarchy"></a>
+</p><p>
+To model how the parts of a system are connected to each other
+components are connected to each other using connectors. The
+connectors allow you to build a system that consist of reusable
+components. The connections form a graph separate from the namespace
+hierarchy.
+</p><p>
+Components in the global namespace which represent systems of interest
+to the user should be top-level components. A top-level component's
+main responsibility is to provide informational metadata in some
+standardized attributes which are mainly used by Simics's graphical
+tools; see the details in <a class="reference" href="#cmp-attributes">24.8.3</a>. The user can
+set which components he wants as top-level components when he
+configures the system. For example, a compact PCI form factor single
+board computer can either be the top-level component in a standalone
+system or part of a chassis based system, where the chassis would be
+the top-level component.
+</p><p>
+</p><h2 class="jdocu"><a name="cmp-connecting-components">24.4 Connecting Components</a></h2>
+<p>
+
+</p><p>
+Components can connect to other components via <a name="connector">connector</a>
+objects (described in more detail in section <a class="reference" href="#cmp-connector-object">24.4.2</a>). The connector objects used for
+connecting components must implement the <code>connector</code>
+interface. The <code>connector</code> interface description can be
+found in section <a class="reference" href="#cmp-interfaces">24.8.1</a>.
+</p><p>
+</p><div class="figure" id="conf_component_connector_0">
+
+<div style="text-align: center">
+<img alt="" src="conf_component_connector_0.png">
+<div class="caption">Figure 9. Example component connection</div>
+</div>
+</div>
+
+<p>
+In figure <a class="reference" href="#conf_component_connector_0">9</a>, the
+<b>southbridge</b> component is connected to the
+<b>usb_device</b> component. The <b>southbridge</b> component
+contains the <b>usb_host</b> object, and the <b>usb_device</b>
+component contains the <b>usb_disk</b> object. It is the
+components that set up the connection through their connectors, but it
+is the <b>usb_host</b> and <b>usb_disk</b> objects
+that are connected via interfaces. The <b>usb_host</b> object has a
+<i>usb_devices</i> attribute that connects to
+the <code>usb_device</code> interface on all connected usb device
+objects. The <b>usb_disk</b> object has a <i>usb_host</i>
+attribute that connects to the <code>usb</code> interface of the
+host object. Data exchanged during the connection process sets the
+attributes to appropriate values. A component connection between two
+components can exchange data to set up multiple attributes for several
+objects in the components.
+</p><p>
+</p><h3 class="jdocu"><a name="cmp-connector-properties">24.4.1 Connector Properties</a></h3>
+<p>
+
+</p><p>
+A component connector has several properties that define the type of
+connection. The properties are
+defined in the <code>connector</code> interface, which is implemented
+by all component connectors.
+</p><p>
+
+
+</p><dl><dt id="dt:type"><b>type</b></dt><dd>Components have connectors of different types. Two connectors
+  can only be connected if the types are identical. The most common
+  types are standard hardware connectors such as Ethernet and
+  serial.</dd><dt id="dt:hotpluggable"><b>hotpluggable</b></dt><dd>A connector is hotpluggable if the connector supports connecting
+  and disconnecting after the component has been instantiated. For
+  example, a USB device connector is often hotpluggable, while a
+  processor connector usually is not.</dd><dt id="dt:required"><b>required</b></dt><dd>A connector that is required must be connected when the
+  component is instantiated, otherwise will an error be
+  generated. Processor connectors on board components are often
+  required as the system cannot be setup without processor.</dd><dt id="dt:direction"><b>direction<a name="connectordirection"></a></b></dt><dd>The direction is either <em>up</em>, <em>down</em> or
+  <em>any</em>. It is only possible to connect connectors <b><i>of different
+  directions</i></b>. The direction of a connection determines if the
+  connection defines the two components as part of the same connected
+  tree or not. <em>Up</em> and <em>down</em>
+  <a name="connectorup"></a> <a name="connectordown"></a> <a name="connectorany"></a>
+  connectors imply that the connector defines a tree relationship,
+  while <em>any</em> connectors do not imply any tree
+  relationship. Additionally, the direction defines the order in which
+  components in a component tree are instantiated. The top-level
+  component is visited first, and then all components that are
+  connected to its down connectors. This process is continued
+  recursively until all components in the tree have been visited.
+<p>
+  A top-level component is not allowed to have any <em>up</em>
+  connectors, and its <em>any</em> connectors can only be connected to
+  other <em>up</em> connectors. Top-level components must also be root
+  components of their hierarchies.</p></dd></dl><p>
+</p><h3 class="jdocu"><a name="cmp-connector-object">24.4.2 Connector Objects</a></h3>
+<p>
+
+</p><p>
+Component connector objects are normal Simics objects that implement
+the <code>connector</code> interface. Connector objects contain only the
+functionality needed to set up the connections between objects within
+the components they connect.
+</p><p>
+Connector objects are explicitly defined in the component class. The
+connector objects will be created when an instance of the component
+class is created. Defining a connector will automatically put the
+connector object in its component's namespace, i.e., all connectors will
+exist in a slot in a component.
+</p><p>
+A component can inherit another component's connectors. This can either
+be done using the <b>copy-connector</b> command at run-time,
+as described in section
+<a class="reference" href="#cmp-hierarchies-namespaces">24.2.1</a>, or when defining a component,
+as described in section <a class="reference" href="#cmp-adding-components">24.6.11</a>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-connecting-connectors">24.4.3 Connecting Connectors</a></h3>
+<p>
+
+</p><p>
+Component connectors are connected using the <b>connect</b>
+command, which takes the two component connector objects as
+parameters.
+</p><p>
+</p><pre class="jdocu_small">Ex. connecting cmp0 and cmp1 in figure <a class="reference" href="#conf_connector_level_0">10</a>:
+simics&gt; <b>connect cmp0.cnt0 cmp1.cnt0</b>
+</pre><p>
+</p><p>
+</p><div class="figure" id="conf_connector_level_0">
+
+<div style="text-align: center">
+<img alt="" src="conf_connector_level_0.png">
+<div class="caption">Figure 10. Component connection between components on the same level</div>
+</div>
+</div>
+
+<p>
+</p><div class="figure" id="conf_connector_level_1">
+
+<div style="text-align: center">
+<img alt="" src="conf_connector_level_1.png">
+<div class="caption">Figure 11. Component connection between component parent and child</div>
+</div>
+</div>
+
+<p>
+Two components can only be connected if they are siblings in the
+namespace hierarchy or if they are parent and child.  The former is
+illustrated in figure <a class="reference" href="#conf_connector_level_0">10</a>, the
+latter in figure <a class="reference" href="#conf_connector_level_1">11</a>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-connector-references">24.4.4 Adding Connector References</a></h3>
+<p>
+
+</p><p>
+When making a component into a sub component of another component, it
+is often desirable to expose the sub component connectors as
+connectors of the parent component. This is very simple, as it is
+possible to add a reference to the sub component's connector to the
+parent component.
+</p><p>
+</p><div class="figure" id="conf_connector_reference_0">
+
+<div style="text-align: center">
+<img alt="" src="conf_connector_reference_0.png">
+<div class="caption">Figure 12. Connector reference</div>
+</div>
+</div>
+
+<p>
+Assume we have two components, <b>cmp0</b> and
+<b>cmp1</b>. The <b>cmp1</b> has a connector object
+named <b>cnt0</b>. First add <b>cmp1</b> to <b>cmp0</b>
+and then add a reference:</p><pre class="jdocu_small">simics&gt; <b>move-object src = cmp1 dst = cmp0.cmp1</b>
+simics&gt; <b>copy-connector cmp0.cmp1.cnt0 cmp0.cpy0</b>
+</pre><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-eth-compat">24.4.5 Ethernet Link Connections</a></h3>
+<p>
+
+</p><p>
+The legacy Ethernet link component using
+the <b>std-ethernet-link</b> class is not compatible with the
+new hierarchical components. The new Ethernet link
+components <b>ethernet_cable</b>, <b>ethernet_hub</b>,
+and <b>ethernet_switch</b> should be used with hierarchical
+components.
+</p><p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="cmp-life-of-a-component">24.5 Life of a Component</a></h2>
+<p>
+
+</p><p>
+A component goes through several phases, from creation to fully
+instantiated component connected to other components with a lot of sub
+components and objects.
+</p><p>
+These are the phases:
+</p><p>
+</p><dl><dt id="dt:1-creation-phase"><b>1. Creation Phase</b></dt><dd>The first step to become full-grown component is to be created. A
+component can either be created as a non-instantiated component or as
+an instantiated component. A component can only be created and
+instantiated in one command if it does not contain any required
+connectors. When setting up a system it is most common to create
+non-instantiated components, so we will focus on this in this
+section.</dd><dt id="dt:2-setup-phase"><b>2. Setup Phase</b></dt><dd>Once the component has been created it is time to initialize it. It is
+now possible to set the component attributes that were not set when the
+component was created.</dd><dt id="dt:3-connect-phase"><b>3. Connect Phase</b></dt><dd>Next step in the life of a component is to look at the
+surroundings and connect to other components. All required connectors
+must be connected. It is a good idea to also connect all optional
+connectors.</dd><dt id="dt:4-instantiate-phase"><b>4. Instantiate Phase</b></dt><dd>When all connections are setup it is time to become
+instantiated. In the instantiate phase all objects in the component
+and all connected components are created. This must be
+done atomically, as objects might have attributes pointing to
+objects in other components in the tree.</dd></dl><p></p><h3 class="jdocu"><a name="cmp-phase-create">24.5.1 Creation Phase</a></h3>
+<p>The components are created using
+the <b>create-</b><em>name-of-component</em> command, which will
+create a non-instantiated component.
+</p><p>
+The first argument to the <b>create-</b> command is the name of
+the component. The components default name will be used if the name is
+not provided when creating the component. The default name is defined
+by the <i>basename</i> class attribute. The <i>basename</i>
+attribute is set to <em>component</em> for all components that are
+based on the <b>StandardComponent</b> class, but it can be
+overridden in the inheriting class.
+</p><p>
+The remaining arguments to the <b>create-</b> command are the
+config attributes, see section <a class="reference" href="#cmp-adding-config-attributes">24.6.6</a>. The config attributes are either required or
+optional. All required attributes must be set when the component is
+created.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-phase-setup">24.5.2 Setup Phase</a></h3>
+<p>
+
+</p><p>
+All attributes that were not set during the creation phase, but should be
+set are set in the setup phase. Some attributes might depend on other
+components or one script creates the component and another script
+setup the components.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-phase-connect">24.5.3 Connect Phase</a></h3>
+<p>
+
+</p><p>
+All required connectors must be connected before the component is
+instantiated. Required connectors might for instance be connectors for
+connecting a processor to board. The objects on the board component
+require the processor object in the processor component to function.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-phase-instantiate">24.5.4 Instantiate Phase</a></h3>
+<p>
+
+</p><p>
+The component can be instantiated when all connectors have been
+connected. The instantiation process will collect all pre objects in
+the component and create new real objects to replace the pre objects.
+</p><p>
+The <code>component</code> interface has two functions that will be
+called in the instantiate process. The <b><i>pre_instantiate</i></b>
+function will be called right before the component is
+instantiated. The function returns <code>True</code> if the component is
+allowed to be instantiated. The <b><i>post_instantiate</i></b> function
+will be called right after the component is instantiated. This
+function is a good place to add code that requires real objects from
+the component.
+</p><p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="cmp-implementing">24.6 Implementing Components</a></h2>
+<p>
+
+</p><p>
+This section describes how to implement components. All examples in
+this section are fully functional and are included in
+the <b>examples-comp</b> module. To test the examples, start
+the vacuum target machine and load the <b>examples-comp</b>
+module.
+</p><p>
+The source code for the component examples can be found in
+<code></code><em>[simics]</em><code>/src/components/examples-comp/examples_comp.py</code>.
+</p><p>
+</p><h3 class="jdocu"><a name="cmp-new-component">24.6.1 Creating a New Component</a></h3>
+<p>
+
+</p><p>
+A new component module can be created using the <code>project-setup</code>
+utility:
+</p><dl><dt id="dt:windows"><b>Windows</b></dt><dd><pre class="jdocu_small">project&gt; <b>bin\project-setup.bat --component my-own-component</b></pre><p>
+</p></dd><dt id="dt:linux"><b>Linux</b></dt><dd><pre class="jdocu_small">project$ <b>./bin/project-setup --component my-own-component</b></pre><p>
+</p></dd></dl><p>This will create skeleton code for a new component in the
+<code></code><em>[project]</em><code>/modules/my-own-component/</code> directory,
+with all files needed to build it as a Simics module.
+
+</p><h3 class="jdocu"><a name="The-comp-Python-Module">24.6.2 The comp Python Module</a></h3>
+<p>
+<a name="comp-Python-module"></a>
+</p><p>
+Simics includes the <b>comp</b> Python module that greatly
+simplifies writing components. The module contains all functionality
+needed for creating a component.
+</p><p>
+The <b>comp</b> module and its classes and methods are
+documented in section <a class="reference" href="#cmp-comp-lib">24.11</a>. This help for
+writing components is only available in Python, as Python is the only
+language supported for writing components.
+</p><p>
+To use the <b>comp</b> module, make sure your Python file
+contains:
+</p><pre class="jdocu_small">from comp import *</pre><p>
+</p><p>
+The <b>comp</b> module contains
+the <b>StandardComponent</b> class that should be used as base
+class when creating new components. The class contains a lot of useful
+methods and parameters to define a new
+component. The <b>comp</b> module also contains other classes
+that are based on the <b>StandardComponent</b> class. These
+classes will be described later.
+</p><p>
+Here is an example how to create a simple component:
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">import simics
+from comp import *
+
+class emmett(StandardComponent):
+    """The long description for the Emmett component."""
+    _class_desc = 'short Emmett description'
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+In the example we create the component class <em>emmett</em>. The first
+string in the class is a long description of the component that can be
+several sentences. The <em>_class_desc</em> is a short class description
+beginning with lower case, without trailing dot, and at most 50 characters
+long. The longer description is used in the help commands and reference
+manuals, while the shorter description is used for example in the GUI to
+describe the component.
+</p><p>
+Upon registration, the newly defined component registers itself as a
+common Simics class which allows instances of it to be created like
+for any other Simics object. By inheriting
+the <b>StandardComponent</b>, the component will also get a
+set of predefined attributes that all components should have; see
+section <a class="reference" href="#cmp-attributes">24.8.3</a>. The default value and
+functionality for the attributes can be overridden if needed; see
+section <a class="reference" href="#cmp-overriding-attributes">24.6.7</a>.
+</p><p>
+All components will also automatically define a few default commands.
+<b>new-</b><em>name-of-component</em> will create an
+instantiated component of the type <em>name_of_component</em>.
+<b>create-</b><em>name-of-component</em> will create a
+non-instantiated component. Note that underscores are converted to
+dashes for class name for the <b>new-</b> and <b>create-</b>
+commands. The component will also automatically get <b>info</b>
+and <b>status</b> commands.
+</p><p>
+
+
+</p><pre class="jdocu_small">simics&gt; <b>load-module examples-comp</b>
+simics&gt; <b>new-emmett name = my_emmett</b>
+Created instantiated 'emmett' component 'my_emmett'
+</pre><p>
+</p><p>
+To define a top-level component, override the top_level class
+definition in the <b>StandardComponent</b> class like this:
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class mcfly(StandardComponent):
+    """The McFly component."""
+    _class_desc = 'a McFly component'
+
+    class top_level(StandardComponent.top_level):
+        def _initialize(self):
+            self.val = True
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+In this example, we override the default value for <i>top_level</i>.
+The <i>top_level</i> attribute is by default set
+to <code>False</code>. Section <a class="reference" href="#cmp-overriding-attributes">24.6.7</a>
+says more about how to override the default attribute
+functionality. It is possible to change a non top-level component into a
+top-level component by setting the attribute when creating it or at
+run time.
+</p><p>
+
+</p><h3 class="jdocu"><a name="StandardComponent-Class-Basic-Methods">24.6.3 StandardComponent Class Basic Methods</a></h3>
+<p>
+
+</p><p>
+The <b>StandardComponent</b> class is defined in
+the <b>comp</b> Python module. The class is based on 
+<b>pyobj.ConfObject</b>, from which it inherits some 
+rarely used methods (see section <a class="reference" href="writing-module-with-pyobj.html#pyobj-class-base-methods">15.3</a>).
+</p><p>
+The <b>StandardComponent</b> class adds a method 
+<b><i>setup</i></b>, which is called after all attributes of a
+component object's have been set. This method is often used for adding new
+objects to the component. Objects should only be added if the
+component has not been yet instantiated. This makes
+the <b><i>setup</i></b> methods very similar in all
+components. The <i>instantiated</i> attribute is checked to determine if we
+should add new objects or not. More information about attributes can
+be found in section <a class="reference" href="#cmp-adding-attributes">24.6.5</a>.
+</p><p>
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class tyrell(StandardComponent):
+    """The Tyrell component."""
+    _class_desc = 'a Tyrell component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.olws = 1
+            self.add_tyrell_objects()
+
+    def add_tyrell_objects(self):
+        self.add_pre_obj('mem', 'memory-space')
+
+class sebastian(tyrell):
+    """The Sebastian component."""
+    _class_desc = 'a Sebastian component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_sebastian_objects()
+
+    def add_sebastian_objects(self):
+        self.add_pre_obj('mem', 'memory-space')
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+The <b><i>setup</i></b> method corresponds to the 
+<b><i>finalize</i></b> field in the 
+<code>class_info_t</code> struct that is passed to the 
+<b><i>SIM_create_class</i></b> function, see the <em>Simics
+Reference Manual</em>.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+To prevent name conflicts when using class inheritance, use unique
+names for the methods that add objects. For example, tint the method
+name with the name of its class, such as <b><i>add_banana_objects()</i></b>
+in class "banana". A component that inherits another component class and
+calls its <b><i>setup</i></b> method with <em>self</em> can cause problems
+when the method that adds objects has the same name in both classes.</div>The <b>StandardComponent</b> class defines
+the <b><i>_finalize</i></b> method which also
+the <b>pyobj.ConfObject</b> class defines. Old components
+often implement this method. It is not recommended to implement
+the <b><i>_finalize</i></b> method, the <b><i>setup</i></b> method
+should instead be implemented to get better component error messages
+on component exceptions.
+<p>
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class roy_batty(StandardComponent):
+    """The Roy Batty component."""
+    _class_desc = 'a Roy Batty component'
+
+    def _initialize(self):
+        super()._initialize()
+        self.replicants = 4
+
+    def _finalize(self):
+        super()._finalize()
+        if not self.instantiated.val:
+            self.add_roy_batty_objects()
+
+    def add_roy_batty_objects(self):
+        self.add_pre_obj('mem', 'memory-space')
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+
+</p><h3 class="jdocu"><a name="StandardComponent-Class-Parameters">24.6.4 StandardComponent Class Parameters</a></h3>
+<p>
+
+</p><p>
+The <b>StandardComponent</b> class in
+the <b>comp</b> module includes parameters that can be set to
+control the component behavior. Since the 
+<b>StandardComponent</b> class is based on 
+<b>pyobj.ConfObject</b>, also see the parameters defined in 
+<a class="reference" href="writing-module-with-pyobj.html#pyobj-class-parameters">15.4</a>.
+</p><p>
+</p><dl><dt id="dt:_help_categories"><b>_help_categories<a name="_help_categoriescomponent-parameter"></a><a name="component-parameters_help_categories"></a></b></dt><dd>Set this to a tuple of help category names; the component commands will
+appear under these categories in the <b>help</b> command.
+For example, if you are modeling a
+PCI Ethernet card, you might want to set it to <code>('Ethernet',
+'PCI')</code>.</dd><dt id="dt:_no_new_command"><b>_no_new_command<a name="_no_new_commandcomponentparameter"></a><a name="component-parameters_no_new_command"></a></b></dt><dd>Set it to <code>object()</code> to make sure that the component class
+does not automatically get a <b>new-</b> command registered. This
+is useful for components that require a connection before they can be
+instantiated.</dd><dt id="dt:_no_create_command"><b>_no_create_command<a name="_no_create_commandcomponentparameter"></a><a name="component-parameters_no_create_command"></a></b></dt><dd>Set it to <code>object()</code> to make sure that the component class
+does not automatically get a <b>create-</b> command registered.</dd></dl><p></p><pre class="jdocu_small"> <pre class="jdocu_small">class henry_hill(StandardComponent):
+    """The wiseguy, Henry Hill component."""
+    _class_desc = 'a Henry Hill component'
+    _do_not_init = object()
+
+class frankie_carbone(henry_hill):
+    """The wiseguy, Frankie Carbone component."""
+    _class_desc = 'a Frankie Carbone component'
+    _help_categories = ('Goodfellas',)
+    def _initialize(self):
+        super()._initialize()
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-adding-attributes">24.6.5 Adding Attributes</a></h3>
+<p>
+
+</p><p>
+A component that inherits the <b>StandardComponent</b> class
+creates a new attribute by defining a new class in the component class
+that inherits the <b>Attribute</b> class, which is defined in 
+the <b>pyobj</b> module. See the section 
+<a class="reference" href="writing-module-with-pyobj.html#pyobj-attribute">15.5</a>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-adding-config-attributes">24.6.6 Adding Config Attributes</a></h3>
+<p>
+
+</p><p>
+The <b>comp</b> Python module provides the
+<b>ConfigAttribute</b> class and the <b><i>SimpleConfigAttribute</i></b>
+function for creating parameterized config attributes. Attributes that are used to
+parameterize the component will automatically become arguments to the
+<b>new-</b> and <b>create-</b> commands. This allows for an
+easy way to create a component with the desired parameters.
+</p><p>
+Because config attributes are used as arguments to <b>new-</b>
+and <b>create-</b> commands, they must be documented. Hence the default
+value of the <i>attrattr</i> class member is <code>Sim_Attr_Optional</code>.
+</p><p>
+Config attributes are created like this:
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class ripley(StandardComponent):
+    """The Ripley component."""
+    _class_desc = 'a Ripley component'
+
+    def setup(self):
+        super().setup()
+        print("sequels is", self.sequels.val)
+        print("eggs is", self.eggs.val)
+        print("marine is", self.marine.val)
+
+    class sequels(SimpleConfigAttribute(
+            None, 'i', simics.Sim_Attr_Required, [4])):
+        """Number of sequels."""
+
+    class eggs(ConfigAttribute):
+        """The number of hatched eggs."""
+        attrtype = "i"
+        valid = [821, 1023]
+        def _initialize(self):
+            self.val = 50
+        def getter(self):
+            return self.val
+        def setter(self, val):
+            if val == 0:
+                return simics.Sim_Set_Illegal_Value
+            self.val = val
+
+    class marine(SimpleConfigAttribute(
+            'hudson', 's', val = ['hudson', 'gorman', 'vasquez'])):
+        """The name of the marine."""
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+An optional <em>config</em> attribute such as
+<i>eggs</i> becomes an optional argument to the
+<b>new-</b> and <b>create-</b> commands for the component. A
+required attribute such as the <i>sequels</i> attribute becomes
+a required argument when creating the component.
+
+
+</p><pre class="jdocu_small">simics&gt; <b>load-module examples-comp</b>
+simics&gt; <b>new-ripley name = my_ripley sequels = 3</b>
+sequels is 3
+eggs is 50
+marine is hudson
+Created instantiated 'ripley' component 'my_ripley'
+</pre><p>
+</p><p>
+Use the <b><i>SimpleConfigAttribute</i></b> function when a simple
+attribute without any special functionality is required, just like
+the <b>SimpleAttribute</b> function is used.
+</p><p>
+The <b>ConfigAttribute</b> class contains a <em>valid</em>
+attribute which is a list of valid values. The list gives the user
+a hint about valid values when creating a component. There is no check
+that the value written to the attribute is a value in the list of
+valid values. The list of valid value(s) does not need to contain the
+default initial value for the config attribute, but it usually
+does. The valid list should at least contain one valid value even if
+several values are valid.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-overriding-attributes">24.6.7 Overriding Attributes</a></h3>
+<p>
+
+</p><p>
+The <b>StandardComponent</b> class defines a set of attributes
+that all components should implement. The attributes are described in
+detail in the section <a class="reference" href="#cmp-attributes">24.8.3</a>. All of the
+attributes can be overridden if needed.
+</p><p>
+Here is an example how to override the <i>component_icon</i>
+attribute:
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class nemo(StandardComponent):
+    """The Nemo component."""
+    _class_desc = 'a Nemo component'
+
+    class component_icon(StandardComponent.component_icon):
+        def _initialize(self):
+            self.val = "stanton.png"
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+The new component icon attribute example code only overrides the initial
+value, but it is also possible to override anything in the class
+definition, such as the <b><i>getter</i></b> or <b><i>setter</i></b>
+methods, if required.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-class-in-class">24.6.8 The _up Member</a></h3>
+<p>
+
+</p><p>
+To access a class's containing class the <em>_up</em> member is
+used. See the section <a class="reference" href="writing-module-with-pyobj.html#pyobj-class-in-class">15.7</a>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-adding-objects-to-slots">24.6.9 Adding Objects to Slots</a></h3>
+<p>
+
+</p><p>
+A component can define <em>slots</em>. A slot has a name and a value,
+often a single object. Slots can be defined in the component; however,
+new slots can also be added after a component has been created, but
+that will not be discussed in this section. Slots defined in the
+component are called static slots. Static slots cannot be removed
+after the component has been created. The value in the slot can be
+changed at any time. The name of the slot is used to access an
+object in the slot.
+</p><p>
+</p><h4 class="jdocu"><a name="cmp-objslot-add-single">24.6.9.1 Adding Single Object</a></h4>
+<p>
+
+</p><p>
+Common Simics objects are added to a component using the
+<b><i>add_pre_obj</i></b> method. The method will create pre objects
+that will be converted to real objects when the component is
+instantiated.
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class wall_e(StandardComponent):
+    """The WALL-E component."""
+    _class_desc = 'a WALL-E component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_wall_e_objects()
+
+    def add_wall_e_objects(self):
+        p = self.add_pre_obj('p_mem', 'memory-space')
+        v = self.add_pre_obj('v_mem', 'memory-space')
+        self.add_pre_obj('clock', 'clock', freq_mhz = 10)
+        p.map = [[0x100, v, 0, 0, 0x10]]
+
+    class cpu_list(StandardComponent.cpu_list):
+        def getter(self):
+            return [self._up.get_slot('clock')]
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+The component in the example defines three objects and three slots to
+hold references to them. The <b><i>add_pre_obj</i></b> function has two
+required and two optional arguments. The two required arguments are
+the slot name and the class name. The third argument is optional and
+specifies the name of the object. The name defaults to an empty string
+and will be the object's hierarchical name, it is not shown in the
+example and it should only be used in special cases and then it is
+given as <code>name = "pineapple"</code>. The fourth argument is also
+optional and is attribute values for the object. The
+<b><i>add_pre_obj</i></b> function returns a <code>pre_conf_object</code>
+or an array of <code>pre_conf_objects</code>.
+</p><p>
+The <em>p_mem</em> and <em>v_mem</em> slots contain
+<b>memory-space</b> objects and the <em>clock</em> slot contains a
+<b>clock</b> object. In this example, we save references to
+the added objects in <code>p</code> and <code>v</code> to make it
+easier when setting attributes for the objects.
+</p><p>
+A slot value can be extracted with the <b><i>get_slot</i></b> method in
+the <b>StandardComponent</b> class. The method takes the slot
+name as argument. Note that to access the component class from
+the <i>cpu_list</i> attribute class the <em>_up</em> member is
+required.
+</p><p>
+
+</p><h4 class="jdocu"><a name="cmp-objslot-add-array">24.6.9.2 Adding Array of Objects</a></h4>
+<p>
+
+</p><p>
+The <b><i>add_pre_obj</i></b> function can create nested arrays of
+identical objects. This is done by adding an index suffix to the slot
+name. All created objects are returned as nested array corresponding
+to the suffix. Here is an example that better explains how it works:
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class hal(StandardComponent):
+    """The HAL component."""
+    _class_desc = 'a HAL component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_hal_objects()
+            self.do_hal_stuff()
+
+    def add_hal_objects(self):
+        self.add_pre_obj('clock', 'clock', freq_mhz = 2001)
+
+        self.add_pre_obj('p_mem[4]', 'memory-space')
+        self.add_pre_obj('v_mem[6][10]', 'memory-space')
+
+    def do_hal_stuff(self):
+        c = self.get_slot('clock')
+
+        self.get_slot('p_mem[1]').queue = c
+        self.get_slot('p_mem')[1].queue = c
+
+        self.get_slot('v_mem[2][3]').queue = c
+        self.get_slot('v_mem[2]')[3].queue = c
+        self.get_slot('v_mem')[2][3].queue = c
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+The <em>p_mem</em> and <em>v_mem</em> slots both contain arrays of
+objects. The <em>p_mem</em> slot contains an array of 4 elements where each
+element is a <b>memory-space</b> object. The <em>v_mem</em> slot
+contains an array of 6 elements where each element is an array of 10
+<b>memory-space</b> objects, i.e. totally 60 objects.
+</p><p>
+The <b><i>do_hal_stuff</i></b> method fetches the slots using
+the <b><i>get_slot</i></b> method. The <i>slot</i> argument can
+either be indexed or the indexing can be done after getting the
+slot. The two lines that work on the <em>p_mem</em> slot do the same
+and the three lines that work on the <em>v_mem</em> slot do the same
+thing.
+</p><p>
+Slot arrays are supported and can sometimes help when having many objects. Here
+is the output from using the arrays in the <b>hal</b> component class.
+
+
+</p><pre class="jdocu_small">simics&gt; <b>load-module examples-comp</b>
+simics&gt; <b>new-hal name = my_hal</b>
+Created instantiated 'hal' component 'my_hal'
+simics&gt; <b>my_hal.p_mem</b>
+["my_hal.p_mem[0]", "my_hal.p_mem[1]", "my_hal.p_mem[2]", "my_hal.p_mem[3]"]
+simics&gt; <b>my_hal.p_mem[0]</b>
+"my_hal.p_mem[0]"
+simics&gt; <b>my_hal.v_mem[0]</b>
+[my_hal.v_mem[0][0], my_hal.v_mem[0][1], my_hal.v_mem[0][2], <img alt="Line break" src="nextline.png">
+my_hal.v_mem[0][3], my_hal.v_mem[0][4], my_hal.v_mem[0][5], <img alt="Line break" src="nextline.png">
+my_hal.v_mem[0][6], my_hal.v_mem[0][7], my_hal.v_mem[0][8], my_hal.v_mem[0][9]]
+simics&gt; <b>my_hal.v_mem[0][0]</b>
+my_hal.v_mem[0][0]
+</pre><p>
+</p><p>
+
+</p><h4 class="jdocu"><a name="cmp-objslot-add-anon">24.6.9.3 Lazy Slot Object Assignment</a></h4>
+<p>
+
+</p><p>
+The <b><i>add_pre_obj</i></b> method supports <code>None</code>
+as <i>slot</i> argument. This means that the pre objects will be
+created and returned by the method, but they will not be added to any
+slot. The pre objects can later be added to a slot using
+the <b><i>add_slot</i></b> method.
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class marvin(StandardComponent):
+    """The Marvin component."""
+    _class_desc = 'a Marvin component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_marvin_objects()
+
+    def add_marvin_objects(self):
+        self.add_pre_obj('clock', 'clock', freq_mhz = 2001)
+        p_mem = [None,
+                 self.add_pre_obj(None, 'memory-space'),
+                 self.add_pre_obj(None, 'memory-space'),
+                 None]
+        self.add_slot('p_mem', p_mem)
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+This example shows how to create a slot with an mixed array of
+<code>None</code> and pre objects. The first and the last elements in the
+slot are unoccupied. The two middle elements contain pre
+objects. Here is the output when getting the slot value:
+</p><pre class="jdocu_small">simics&gt; <b>new-marvin name = my_marvin</b>
+Created instantiated 'marvin' component 'my_marvin'
+simics&gt; <b>my_marvin.p_mem</b>
+[0, "my_marvin.p_mem[1]", "my_marvin.p_mem[2]", 0]
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-adding-connectors">24.6.10 Adding Connectors</a></h3>
+<p>
+
+</p><p>
+Connectors are added to components similarly to how objects are added
+to slots, see <a class="reference" href="#cmp-adding-objects-to-slots">24.6.9</a>.  A component
+that has connectors must implement the
+<code>component_connector</code> interface. Below we describe
+how to add connectors either by explicitly implementing
+the <code>component_connector</code> interface in section
+<a class="reference" href="#cmp-add-connector-explicit">24.6.10.1</a>, or using connector classes in
+section <a class="reference" href="#cmp-add-connector-classes">24.6.10.2</a>.
+</p><p>
+</p><h4 class="jdocu"><a name="cmp-add-connector-explicit">24.6.10.1 Defining Connector Explicitly</a></h4>
+<p>
+
+</p><p>
+One way of implementing connectors is to define
+the <code>component_connector</code> interface and implement all the
+functions that are needed for the connectors.
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class elliot(StandardComponent):
+    """The Elliot component."""
+    _class_desc = 'an Elliot component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_elliot_objects()
+
+    def add_elliot_objects(self):
+        self.add_connector(
+             'eth0', 'ethernet-link', True, False, False,
+             simics.Sim_Connector_Direction_Down)
+        self.add_connector(
+             'uart[2]', 'serial', True, False, False,
+             simics.Sim_Connector_Direction_Down)
+        dbg = self.add_connector(
+             None, 'serial', True, False, False,
+             simics.Sim_Connector_Direction_Down)
+        self.add_slot('debug', dbg)
+
+    class component_connector(Interface):
+        def get_check_data(self, cnt):
+            # same as connect_data
+            return self._up.get_connect_data(cnt)
+        def get_connect_data(self, cnt):
+            return self._up.get_connect_data(cnt)
+        def check(self, cnt, attr):
+            return True
+        def connect(self, cnt, attr):
+            self._up.connect(cnt, attr)
+        def disconnect(self, cnt):
+            self._up.disconnect(cnt)
+
+    def get_connect_data(self, cnt):
+        if cnt in self.get_slot('uart'):
+            num = self.get_slot('uart').index(cnt)
+            return [None, self.get_slot('uart_dev%d' % num), 'uart%d' % num]
+        elif cnt == self.get_slot('debug'):
+            return [None, self.get_slot('dbg_dev'), 'debug']
+        elif cnt.type == 'ethernet-link':
+            return []
+
+    def connect(self, cnt, attr):
+        if cnt in self.get_slot('uart'):
+            (link, console) = attr
+            num = self.get_slot('uart').index(cnt)
+            self.get_slot('uart_dev%d' % num).console = console
+        elif cnt == self.get_slot('debug'):
+            (link, console) = attr
+            self.get_slot('dbg_dev').console = console
+        elif cnt == self.get_slot('eth0'):
+            self.get_slot('emac0').link = attr[0]
+
+    def disconnect(self, cnt):
+        if cnt in self.get_slot('uart'):
+            num = self.get_slot('uart').index(cnt)
+            self.get_slot('uart_dev%d' % num).console = None
+        elif cnt == self.get_slot('debug'):
+            self.get_slot('dbg_dev').console = None
+        elif cnt == self.get_slot('eth0'):
+            self.get_slot('emac0').link = None
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+The example component creates one connector in the slot <em>eth0</em>,
+one array of two connectors in the slot <em>uart</em>, and one
+connector in the slot <em>debug</em>.
+</p><p>
+The connector objects are created at once when adding a connector slot
+with the <b><i>add_connector</i></b> method. The function returns the
+objects or nested arrays of objects if the slot was specified, otherwise
+the function returns pre objects or nested arrays of pre objects,
+like the <em>dbg</em> connector in the example.
+In the latter case the objects are created when they
+are assigned to a slot using the <b><i>add_slot</i></b> function. This is
+to avoid creating connectors that are never assigned to any slot and
+therefore are useless.
+</p><p>
+The component implements the <code>component_connector</code>
+interface to handle the connector functionality. The interface is
+documented in the <em>API Reference Manual</em>. The different connector
+types are documented in section <a class="reference" href="#cmp-connector-types">24.10</a>.
+</p><p>
+
+</p><h4 class="jdocu"><a name="cmp-add-connector-classes">24.6.10.2 Connector Classes</a></h4>
+<p>
+
+</p><p>
+Most connectors are simple connectors with standard behavior. This
+makes it possible to use the same code for several
+components. The <b>StandardConnectorComponent</b> class in
+the <b>comp</b> Python module helps with
+this. The <b>StandardConnectorComponent</b> class inherits
+the <b>StandardComponent</b> class and supports the same features as
+that class. In addition the <b>StandardConnectorComponent</b>
+class implements the <code>component_connector</code> interface and
+a new definition of the <b><i>add_connector</i></b> method. The function
+takes a <em>connector class</em> as argument. The <em>connector
+class</em> provides all functionality for handling the connection.
+</p><p>
+The most common standard type of connectors has predefined connector
+classes. They are included in the <b>connector</b> Python
+module. This module is imported by the <b>comp</b> module,
+so there is no need to import it explicitly. The source code for these
+classes can be found in
+<code></code><em>[simics]</em><code>/src/core/common/connectors.py</code>.
+</p><p>
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class gertie(StandardConnectorComponent):
+    """The Gertie PCI component."""
+    _class_desc = "a Gertie PCI component"
+    _help_categories = ('PCI',)
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_gertie_objects()
+        self.add_gertie_connectors()
+
+    def add_gertie_connectors(self):
+        self.add_connector('pci', PciBusUpConnector(0, 'sample_dev'))
+
+    def add_gertie_objects(self):
+        self.add_pre_obj('sample_dev', 'sample_pci_device',
+                         int_attr = 10)
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+Note that connectors instantiating a helper connector class that handles
+the connection must instantiate the connector class even if the
+component has been instantiated. The call
+to <em>add_gertie_connectors</em> in the example is independent of
+the <i>instantiated</i> attribute. This would otherwise result
+in an error when loading a checkpoint as the checkpoint will not
+contain the information about the helper class.
+</p><p>
+This is important to understand when using dynamic connectors (i.e. connectors
+created on demand); the component must be able to recreate the helper connector
+classes when a checkpoint is loaded. If the component did not do this, the
+checkpoint would load (and the system would run), but you would not be able to
+connect or disconnect any connectors. One way to determine which helper
+connectors to recreate is to look at attributes (or attributes of objects in
+the component).
+</p><p>
+One standard connector class is the <b>PciBusUpConnector</b>.
+The class takes <i>fun_num</i> and <i>device</i> as
+arguments. The <i>fun_num</i> is the function number and the
+<i>device</i> is the slot name of the PCI device that should be
+added to the PCI bus. The slot name must be given as a string.
+</p><p>
+It is possible to create own connector classes by inheriting from
+the <b>StandardConnector</b> class.
+</p><p>
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class HarpoonUpConnector(StandardConnector):
+    def __init__(self, device, required = False):
+        if not isinstance(device, str):
+            raise CompException('device must be a string')
+        self.device = device
+        self.type = 'harpoon-bus'
+        self.hotpluggable = False
+        self.required = required
+        self.multi = False
+        self.direction = simics.Sim_Connector_Direction_Up
+
+    def get_check_data(self, cmp, cnt):
+        return []
+    def get_connect_data(self, cmp, cnt):
+        return [cmp.get_slot(self.device)]
+    def check(self, cmp, cnt, attr):
+        return True
+    def connect(self, cmp, cnt, attr):
+        (num,) = attr
+        cmp.get_slot(self.device).int_attr = num
+    def disconnect(self, cmp, cnt):
+        cmp.get_slot(self.device).int_attr = 0
+
+class brody(StandardConnectorComponent):
+    """The Brody component."""
+    _class_desc = 'a Brody component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_brody_objects()
+        self.add_brody_connectors()
+
+    def add_brody_connectors(self):
+        self.add_connector('jaws', HarpoonUpConnector('sample'))
+
+    def add_brody_objects(self):
+        self.add_pre_obj('sample', 'sample_device_dml')
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-adding-components">24.6.11 Adding Components</a></h3>
+<p>
+
+</p><p>
+A component can contain sub components. The sub components are added
+when defining a component. A sub component will be assigned to a slot.
+</p><p>
+</p><h4 class="jdocu"><a name="cmp-adding-sub-component">24.6.11.1 Adding Sub Component</a></h4>
+<p>
+
+</p><p>
+The first example just shows how to add a sub component.
+</p><p>
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class hunt(StandardConnectorComponent):
+    """The Hunt component."""
+    _class_desc = 'a Hunt component'
+
+    class impossible(SimpleAttribute(False, 'b')):
+        """True if impossible, default is False."""
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_hunt_objects()
+        self.add_hunt_connectors()
+
+    def add_hunt_connectors(self):
+        self.add_connector('mission1', HarpoonUpConnector('sample'))
+        self.add_connector('mission2', HarpoonUpConnector('sample'))
+
+    def add_hunt_objects(self):
+        self.add_pre_obj('sample', 'sample_device_dml')
+        self.add_pre_obj('clock', 'clock', freq_mhz = 4711)
+
+class ethan(StandardConnectorComponent):
+    """The Ethan component."""
+    _class_desc = 'an Ethan component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_ethan_objects()
+
+    def add_ethan_objects(self):
+        self.add_component('last', 'hunt', [['impossible', True]])
+        self.copy_connector('copy', 'last.mission1')
+        mem = self.add_pre_obj('mem', 'memory-space')
+        mem.queue = self.get_slot('last.clock')
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+The <b>ethan</b> component in the example creates a sub
+component with the slot name <em>last</em> of the <b>hunt</b>
+class type.
+</p><p>
+The <b>ethan</b> component also copies the <em>mission</em>
+connector from the <em>last</em> component and puts it in the
+slot <em>copy</em>. This kind of copy can only be done for connector
+objects. Note
+that this is a superior solution to the runtime
+command <b>copy-connector</b>, which has the same effect at run
+time but does not update the documentation and requires care when
+checkpointing.
+</p><p>
+Note that the <b><i>get_slot</i></b> and <b><i>copy_connector</i></b> methods
+can get slots not only in the components own
+namespace but in the sub components namespace. In the example this is
+done by the <em>self.get_slot('last.clock')</em> call. It is also
+possible to access slots in a sub component to the sub
+component. There is no limit to the look-up depth.
+</p><p>
+
+</p><h4 class="jdocu"><a name="cmp-connecting-sub-components">24.6.11.2 Adding and Connecting Sub Components</a></h4>
+<p>
+
+</p><p>
+Two sub components can be both instantiated and connected when
+defined.
+</p><p>
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class BessonUpConnector(StandardConnector):
+    def __init__(self):
+        self.type = 'besson'
+        self.hotpluggable = False
+        self.required = False
+        self.multi = False
+        self.direction = simics.Sim_Connector_Direction_Up
+    def get_check_data(self, cmp, cnt):
+        return []
+    def get_connect_data(self, cmp, cnt):
+        return []
+    def check(self, cmp, cnt, attr):
+        return True
+    def connect(self, cmp, cnt, attr):
+        pass
+    def disconnect(self, cmp, cnt):
+        pass
+
+class BessonDownConnector(StandardConnector):
+    def __init__(self):
+        self.type = 'besson'
+        self.hotpluggable = False
+        self.required = False
+        self.multi = False
+        self.direction = simics.Sim_Connector_Direction_Down
+    def get_check_data(self, cmp, cnt):
+        return []
+    def get_connect_data(self, cmp, cnt):
+        return []
+    def check(self, cmp, cnt, attr):
+        return True
+    def connect(self, cmp, cnt, attr):
+        pass
+    def disconnect(self, cmp, cnt):
+        pass
+
+class korben(StandardConnectorComponent):
+    """The Korben component."""
+    _class_desc = 'a Korben component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_korben_objects()
+        self.add_korben_connectors()
+
+    def add_korben_connectors(self):
+        self.add_connector('earth', BessonUpConnector())
+
+    def add_korben_objects(self):
+        pass
+
+class zorg(StandardConnectorComponent):
+    """The Zorg component."""
+    _class_desc = 'a Zorg component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_zorg_objects()
+        self.add_zorg_connectors()
+
+    def add_zorg_connectors(self):
+        self.add_connector('water', BessonDownConnector())
+
+    def add_zorg_objects(self):
+        pass
+
+class leeloo(StandardConnectorComponent):
+    """The Leeloo component."""
+    _class_desc = 'a Leeloo component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_leeloo_objects()
+
+    def add_leeloo_objects(self):
+        self.add_pre_obj('clock', 'clock', freq_mhz = 10)
+        self.add_component('korb_slot', 'korben', [])
+        self.add_component('zorg_slot', 'zorg', [])
+        self.connect(self.get_slot('korb_slot.earth'),
+                     self.get_slot('zorg_slot.water'))
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+The <b>leeloo</b> component creates a <b>korben</b>
+sub component and <b>zorg</b> sub component. The two sub
+components are connected using the <b><i>connect</i></b>
+method. Arguments to the method are the connectors in the sub
+components.
+</p><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="Overriding-Interfaces">24.6.12 Overriding Interfaces</a></h3>
+<p>
+
+</p><p>
+The <b>StandardComponent</b> class implements the
+<code>component</code> interface. The interface implementation can
+be overridden if needed.
+</p><p>
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">class godzilla(StandardComponent):
+    """The Godzilla component."""
+    _class_desc = 'a Godzilla component'
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_godzilla_objects()
+
+    def add_godzilla_objects(self):
+        self.add_pre_obj('mem', 'memory-space')
+        self.add_pre_obj('p_mem', 'memory-space')
+
+    class component(StandardComponent.component):
+        def post_instantiate(self):
+            self._up.get_slot('mem').default_target = [
+                self._up.get_slot('p_mem'), 0, 0, None]
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+In the example we override the <b><i>post_instantiate</i></b> method. A
+component usually does not have to override the <code>component</code>
+interface.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Adding-Dynamic-Connectors">24.6.13 Adding Dynamic Connectors</a></h3>
+<p>
+
+</p><p>
+A connector can support connecting to multiple connectors or just one
+other connector. This is defined by the <em>multi</em> attribute for
+the connector. Connectors that connect to multiple connectors are not
+recommended, it is often better to support dynamic connectors,
+i.e. new connectors that are created when required.
+</p><p>
+Here is an example how to create connectors when needed, the example
+can be found
+in <code></code><em>[simics]</em><code>/src/components/sample-dynamic-connectors</code>:
+
+ </p><pre class="jdocu_small"> <pre class="jdocu_small">import simics
+from comp import *
+
+class sample_dynamic_connectors(StandardComponent):
+    """A sample component dynamically creating connectors."""
+    _class_desc = "sample comp with dynamic connectors"
+
+    def setup(self):
+        super().setup()
+        if not self.instantiated.val:
+            self.add_objects()
+
+    class top_level(StandardComponent.top_level):
+        def _initialize(self):
+            self.val = True
+
+    class num_serials(SimpleAttribute(0, 'i')):
+        """Number of serial connectors"""
+
+    def create_uart_and_connector(self):
+        num = self.num_serials.val
+        self.add_connector(
+            'uart%d' % num, 'serial', True, False, False,
+            simics.Sim_Connector_Direction_Down)
+        if self.instantiated.val:
+            o = simics.SIM_create_object('NS16550', '')
+        else:
+            o = pre_obj('', 'NS16550')
+        self.add_slot('uart_dev%d' % num, o)
+        self.num_serials.val += 1
+
+    def add_objects(self):
+        self.add_pre_obj('clock', 'clock', freq_mhz = 10)
+        self.create_uart_and_connector()
+
+    class component_connector(Interface):
+        def get_check_data(self, cnt):
+            return []
+        def get_connect_data(self, cnt):
+            self._up.create_uart_and_connector()
+            num = int(cnt.name.split('uart')[1])
+            return [None, self._up.get_slot('uart_dev%d' % num), cnt.name]
+        def check(self, cnt, attr):
+            return True
+        def connect(self, cnt, attr):
+            num = int(cnt.name.split('uart')[1])
+            udev = self._up.get_slot('uart_dev%d' % num)
+            (link, console) = attr
+            if link:
+                udev.link = link
+            else:
+                udev.console = console
+        def disconnect(self, cnt):
+            num = int(cnt.name.split('uart')[1])
+            udev = self._up.get_slot('uart_dev%d' % num)
+            udev.link = None
+            udev.console = None
+</pre><p>
+</p><p>
+ </p></pre><p>
+ 
+</p><p>
+The <b><i>create_uart_and_connector</i></b> method in
+the <em>sample_dynamic_connectors</em> component creates a new uart
+connector object and a uart device. The function is called each time
+someone connects to one of the component's connectors and when the
+component is created. This means that the component will have one
+empty connector when the component is created and there will always
+exist at least one empty connector in the component.
+</p><p>
+The example code does not handle disconnecting and removal of unused
+connectors. This means that there might exist more than one empty
+connector. But it is just an example that can be used as reference.
+</p><p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="cmp-example-component">24.7 Example Component</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="cmp-sample-comp">24.7.1 Sample Component</a></h3>
+<p>
+
+</p><p>
+The sample component is a very simple component that can be used as
+reference when writing a component. The source code can be found in
+the <code>src/components/sample-components</code> directory. The
+<b>sample-pci-card</b> can for instance be added to the
+<i>Firststeps</i> machine. This <i>Firststeps</i> 
+machine is in <em>QSP-x86 Package</em>.
+</p><p>
+Here is an example how to add a new PCI card from the command line:
+
+
+</p><p>
+</p><pre class="jdocu_small">simics&gt;  <b>load-module sample-components</b>
+simics&gt;  <b>new-sample-pci-card foo integer_attribute = 99</b>
+Created instantiated 'sample_pci_card' component 'foo'
+simics&gt;  <b>connect foo.pci_bus "board.mb.nb.pci_slot[0]"</b>
+</pre><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-hierarchical-example">24.7.2 Hierarchical Component Example </a></h3>
+<p>
+
+</p><p>
+This section describes a hierarchical system with components. We use
+the simple PC system in figure <a class="reference" href="#conf_component_new_example_0">13</a> as an example.
+</p><p>
+</p><div class="figure" id="conf_component_new_example_0">
+
+<div style="text-align: center">
+<img alt="" src="conf_component_new_example_0.png">
+<div class="caption">Figure 13. Example hierarchical system</div>
+</div>
+</div>
+
+<p>
+The system in figure <a class="reference" href="#conf_component_new_example_0">13</a>
+consists of the <b>pc_system</b>, <b>motherboard</b>,
+<b>northbridge</b>, <b>southbridge</b>, <b>pci_eth</b>,
+<b>usb_device</b>, and two <b>ddr_memory</b> components.
+</p><p>
+The components contains both regular objects (drawn as ellipses in the
+figure), and sub components (drawn as rectangles with drop shadows). An
+object can be a processor, device, or an extension. Remember that an
+extension is something that add simulation functionality, such as a
+trace object.
+</p><p>
+The blue and cyan circular objects on the edge of the components
+are connectors. A blue connector is a connector that is owned by the
+component it is in. A cyan connector is an inherited connector from
+another component. An inherited connector can also be seen as a
+reference connector. The dashed line shows how the connector has been
+inherited. The connector called <em>eth</em> in <b>northbridge</b>
+has been inherited to <b>motherboard</b> as <em>geth</em>, and
+<em>geth</em> has been inherited by <b>pc_system</b> as
+<em>eth0</em>. The <b>pc_system</b> component could inherit
+<em>eth</em> directly from <b>northbridge</b>, but that is not the
+case in this example. We will not distinguish reference connectors
+from real connectors in this section, as they look identical to an
+outside observer. Only the component designer who sets up the
+system needs to be aware of the distinction.
+</p><p>
+Connectors can be connected to other connectors, forming connections.
+The solid blue lines in the figure are
+connections. Two connectors can only be connected if they belong to
+components that are on the same hierarchical level, or if one of the
+components is a sub component of the other. The
+<b>northbridge</b> and <b>southbridge</b> components are on
+the same level, and they can connect to each other through their
+connectors. The <b>ddr_memory</b> and <b>motherboard</b>
+components can be connected because the
+<b>ddr_memory</b> components are sub components of
+<b>motherboard</b>.
+</p><p>
+The <b>pc_system</b> component contains all components in its
+component tree except <b>usb_device</b>. Both
+<b>pc_system</b> and <b>usb_device</b> are on the
+same level—in this case, the so-called root level.
+</p><p>
+The <b>pci_eth</b> and <b>ddr_memory0_1</b> components have a
+different color to indicate that they were not defined in the
+<b>pc_system</b> component, but added at runtime. The
+<b>pc_system.ddr2_3</b> connectors have not been connected to any
+component.
+</p><p>
+</p><div class="figure" id="conf_object_connections_0">
+
+<div style="text-align: center">
+<img alt="" src="conf_object_connections_0.png">
+<div class="caption">Figure 14. Object connections in a hierarchical system</div>
+</div>
+</div>
+
+<p>
+It is actually objects that must be connected (see section
+<a class="reference" href="#cmp-hierarchical-example">24.7.2</a>);
+the component connectors merely provide a way of
+sending the data between components needed for setting up the object
+attributes. Figure <a class="reference" href="#conf_object_connections_0">14</a> shows the
+components and the objects from figure <a class="reference" href="#conf_component_new_example_0">13</a>, but now the actual
+connections between the objects are in focus. The dashed lines between
+the objects show how the objects are connected. A lot of the objects
+are connected to the <b>pci_bus</b> object. This is very common on
+a generic PC system. Even objects that are not in the same component tree are
+connected, e.g., the <b>usb</b> object and the <b>usb_disk</b>
+object.
+</p><p>
+
+
+</p><h3 class="jdocu"><a name="cmp-flat-example">24.7.3 Flat Component Example </a></h3>
+<p>
+
+</p><p>
+This section describes how to create a system consisting of only root
+components in component hierarchies. Although it is better to create
+hierarchical system models as shown in the example in section
+<a class="reference" href="#cmp-hierarchical-example">24.7.2</a>, the creation of flat systems
+is supported. The flat system modeling concept is primarily useful
+when modeling a system that is best described as a "collection of
+peers", such as a rack of computers. Additionally, several standard
+system models provided with Simics are implemented as flat systems,
+since hierarchical components were not supported when these systems
+were built. It is expected that all such systems will be upgraded to
+hierarchical models over time.
+</p><p>
+</p><div class="figure" id="conf_component_old_example_0">
+
+<div style="text-align: center">
+<img alt="" src="conf_component_old_example_0.png">
+<div class="caption">Figure 15. Example of a flat system</div>
+</div>
+</div>
+
+<p>
+Figure <a class="reference" href="#conf_component_old_example_0">15</a> shows a flat
+system representation of the system shown in figure <a class="reference" href="#conf_component_new_example_0">13</a>. The difference is that there
+are no hierarchical components in figure <a class="reference" href="#conf_component_old_example_0">15</a>.
+</p><p>
+The biggest advantage of hierarchical systems over flat
+systems is clarity. In a hierarchical configuration, objects, commands,
+and attributes are only accessible
+via their hierarchical name in the hierarchy, and do not clutter the
+top-level namespace. This is
+particularly important for large systems with many objects. Consider a
+big rack with several boards, each with several devices and
+processors. Simics requires that all objects at the same level of the
+namespace have unique names. Thus, objects of the same type in
+different parts of the system either need long, essentially
+hierarchical, names; or else the user must remember which randomly named
+objects make up which part of the system. Using hierarchy reduces
+complexity by providing a system for naming.
+</p><p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="cmp-reference">24.8 Component Reference</a></h2>
+<p>
+
+</p><p>
+This section describes the interfaces, commands, attributes, and
+classes that are provided by Simics to help implement components.
+</p><p>
+</p><h3 class="jdocu"><a name="cmp-interfaces">24.8.1 Component Interfaces</a></h3>
+<p>
+
+</p><p>
+This section documents the set of interfaces that every component is
+required to implement. These interfaces ensure that the component
+works with Simics commands and the API that operates on components.
+See <a class="reference" href="#cmp-comp-lib">24.11</a> for the default implementations
+provided by the <b>comp</b> Python module.
+</p><p>
+</p><h4 class="jdocu"><a name="component_interface_t">24.8.1.1 component_interface_t</a></h4>
+<p>
+   
+</p><p>
+   All component classes must implement the <code>component</code>
+   interface. All functions in the interface must be implemented.
+</p><p>
+   The <b><i>pre_instantiate</i></b> function is called before the
+   component is instantiated. The function returns <code>true</code> if the
+   component can be instantiated, or <code>false</code> if not.
+</p><p>
+   The component might need to do some extra work after the component
+   has been instantiated. This should be done when called via the
+   <b><i>post_instantiate</i></b> function.
+</p><p>
+   The <b><i>create_cell</i></b> function returns <code>true</code> if the
+   configuration system can create a default cell object for the
+   component, or <code>false</code> if not. Both
+   <b><i>pre_instantiate</i></b> and <b><i>create_cell</i></b> typically
+   return <code>true</code>.
+</p><p>
+   Component has slots. A slot has key and value. The key is the slot
+   name as a string. The value is a conf object, a pre conf object, or
+   None, or nested lists of such types.
+</p><p>
+   Slots are either defined in the component or added after the
+   component has been created. Slots defined in the component are
+   static slots which can not be deleted, but the slot value can be
+   changed. Slots added to the component after creation are
+   dynamic slots and they can be removed when wanted.
+</p><p>
+   The <b><i>get_slots</i></b> function returns a dictionary with slot
+   names as dictionary keys and slot values as dictionary values.
+</p><p>
+   The <b><i>get_slot_objects</i></b> function returns a list of all conf
+   objects and pre conf objects extracted from all slot values.
+</p><p>
+   The <b><i>get_slot_value</i></b> returns the slot value. The slot name
+   is passed as <i>slot</i> argument. A slot value is set using
+   the <b><i>set_slot_value</i></b> function. The <i>value</i>
+   argument should be a conf object, pre conf object, or None, or
+   nested lists of such types. The get function returns NULL on failure.
+   The set function does not return anything to indicate failure.
+</p><p>
+   The <b><i>has_slot</i></b> function returns <code>true</code> if the
+   <i>slot</i> exists, otherwise <code>false</code>. The slot can
+   either be a static slot or a dynamic slot. The <b><i>add_slot</i></b>
+   function adds the slot named <i>slot</i>. Adding a slot can
+   fail if the slot already exist. The added slot will be a dynamic
+   slot. A dynamic slot can be deleted. The <b><i>del_slot</i></b>
+   function deletes a dynamic slot. Deleting a slot will fail if the
+   slot does not exist or if the slot is static. Both
+   <b><i>add_slot</i></b> and <b><i>del_slot</i></b> returns <code>true</code>
+   on success or <code>false</code> on failure.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(component) {
+        bool (*pre_instantiate)(conf_object_t *obj);
+        void (*post_instantiate)(conf_object_t *obj);
+        bool (*create_cell)(conf_object_t *obj);
+
+        attr_value_t (*get_slots)(conf_object_t *obj);
+        attr_value_t (*get_slot_objects)(conf_object_t *obj);
+
+        attr_value_t (*get_slot_value)(conf_object_t *obj,
+                                 const char *NOTNULL slot);
+        void (*set_slot_value)(conf_object_t *obj,
+                         const char *NOTNULL slot,
+                         attr_value_t value);
+
+        bool (*has_slot)(conf_object_t *obj,
+                         const char *NOTNULL slot);
+        bool (*add_slot)(conf_object_t *obj,
+                         const char *NOTNULL slot);
+        bool (*del_slot)(conf_object_t *obj,
+                         const char *NOTNULL slot);
+};
+#define COMPONENT_INTERFACE "component"
+</pre><p>
+</p><p>
+   
+</p><h4 class="jdocu"><a name="component_connector_interface_t">24.8.1.2 component_connector_interface_t</a></h4>
+<p>
+  
+</p><p>
+  The <code>component_connector</code> is implemented by components
+  that use connector objects for handling connections between components.
+</p><p>
+  The connection setup is made in two stages, the check stage and the
+  connect stage. The check stage is often not needed, but it can be
+  used to make sure that the later connect step will not fail. Each
+  connection is handled by a connector object. The connector object
+  will both handle the connection in both direction, i.e. sending
+  connect information and receiving connector information. Two
+  components that should be connected must implement one connector
+  object each.
+</p><p>
+  The <b><i>get_check_data</i></b> and <b><i>get_connect_data</i></b> will
+  be called from the connector object to get connection data to send
+  to the other part of the connection, i.e. to the destination. The
+  data sent must be an <code>attr_value_t</code> type.
+</p><p>
+  The <b><i>check</i></b>, <b><i>connect</i></b>, and <b><i>disconnect</i></b>
+  functions are called from the connector object when another
+  connector wants to connect to this connection. The connection data
+  is passed as the <i>attr</i> argument.
+</p><p>
+  </p><pre class="jdocu_small">SIM_INTERFACE(component_connector) {
+        attr_value_t (*get_check_data)(conf_object_t *obj,
+                                       conf_object_t *NOTNULL connector);
+        attr_value_t (*get_connect_data)(conf_object_t *obj,
+                                         conf_object_t *NOTNULL connector);
+        bool (*check)(conf_object_t *obj, conf_object_t *NOTNULL connector,
+                      attr_value_t attr);
+        void (*connect)(conf_object_t *obj, conf_object_t *NOTNULL connector,
+                        attr_value_t attr);
+        void (*disconnect)(conf_object_t *obj,
+                           conf_object_t *NOTNULL connector);
+};
+
+#define COMPONENT_CONNECTOR_INTERFACE "component_connector"
+</pre><p>
+</p><p>
+  
+</p><p>
+
+</p><h3 class="jdocu"><a name="Component-Commands">24.8.2 Component Commands</a></h3>
+<p>
+
+</p><p>
+All required component commands are either provided by the <b>comp</b> Python
+module or generated by project-setup as described in
+<a class="reference" href="#cmp-new-component">24.6.1</a>. The standard <b>info</b>
+and <b>status</b> commands will need to be extended to be relevant
+to the actual component.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cmp-attributes">24.8.3 Component Attributes</a></h3>
+<p>
+
+</p><p>
+This section documents the set of attributes that every component is
+required to implement. These attributes ensure that the component
+works with Simics commands and the API that operates on components.
+</p><p>
+Note that some attributes are marked as <em>optional</em>. This means
+that the value of the attribute does not need to be specified, not
+that the attribute does not need to be implemented.
+</p><p>
+We draw a distinction between attributes that define the state of a
+given instance of a component, and class attributes that are the same for
+all instances of a given component class.
+</p><p>
+</p><h4 class="jdocu"><a name="Attributes">24.8.3.1 Attributes</a></h4>
+<p>
+
+</p><p>
+</p><dl><dt id="dt:instantiated"><b><i>instantiated</i></b></dt><dd><b>Optional</b> attribute;
+<b>read/write</b> access; type: <b>boolean</b>.</dd><dd>Set to TRUE
+if the component has been instantiated.</dd></dl><p></p><dl><dt id="dt:object_list"><b><i>object_list</i></b></dt><dd><b>Optional</b> attribute;
+<b>read/write</b> access; type: <b>dictionary</b> or <b>nil</b>.</dd><dd>Dictionary with objects that the component consists of. The
+dictionary key is the name of the slot including array index as a
+string and the value is a single object or <code>None</code>.</dd></dl><p></p><dl><dt id="dt:object_prefix"><b><i>object_prefix</i></b></dt><dd><b>Optional</b>
+attribute; <b>read/write</b> access; type: <b>string</b> or
+<b>nil</b>.</dd><dd>Object prefix string used by the component.</dd></dl><p></p><dl><dt id="dt:top_level"><b><i>top_level</i></b></dt><dd><b>Optional</b>
+attribute; <b>read-write</b> access; type: <b>boolean</b> or
+<b>nil</b>.</dd><dd>Set to TRUE for top-level components, i.e. the
+root of a hierarchy.</dd></dl><p></p><dl><dt id="dt:top_component"><b><i>top_component</i></b></dt><dd><b>Optional</b>
+attribute; <b>read/write</b> access; type: <b>object</b> or
+<b>nil</b>.</dd><dd>The top level component. Attribute is not valid
+until the component has been instantiated.</dd></dl><p></p><dl><dt id="dt:components"><b><i>components</i></b></dt><dd><b>Optional</b> attribute;
+<b>read/write</b> access; type: <b>[o*]</b>.</dd><dd>This attribute
+is only valid if the <i>top_level</i> attribute is TRUE. List of
+components below the top-level component. This attribute is not
+valid until the object has been instantiated.</dd></dl><p></p><dl><dt id="dt:cpu_list"><b><i>cpu_list</i></b></dt><dd><b>Optional</b> attribute;
+<b>read/write</b> access; type: <b>[o*]</b>.</dd><dd>This attribute
+is only valid if the <i>top_level</i> attribute is TRUE. List of
+all processors below the top-level component. This attribute is
+not valid until the object has been instantiated.</dd></dl><p></p><dl><dt id="dt:machine_icon"><b><i>machine_icon</i></b></dt><dd><b>Optional</b> attribute;
+<b>read/write</b> access; type: <b>string</b> or <b>nil</b>.</dd><dd>This attribute is only valid if the <i>top_level</i>
+attribute is TRUE. An instance of a top-level component may override the default
+<i>system_icon</i> with its own icon. This attribute is the name
+of an 80x80 pixel large icon in PNG format that should reside in the
+[host]/lib/images directory of the Simics installation or the
+project.</dd></dl><p></p><dl><dt id="dt:system_info"><b><i>system_info</i></b></dt><dd><b>Optional</b> attribute;
+<b>read/write</b> access; type: <b>string</b>.</dd><dd>This attribute is only valid if the <i>top_level</i>
+attribute is TRUE.  A short single-line description of the current
+configuration of the system that the component is a top-level component of. The
+line may include the Linux name of the simulated machine, the installed
+operating system, or similar information. For example "Tango - Fedora
+Core 5 Linux".</dd></dl><p></p><dl><dt id="dt:domain"><b><i>domain</i></b></dt><dd><b>Optional</b>
+attribute; <b>read/write</b> access; type: <b>object</b> or
+<b>nil</b>.</dd><dd>This attribute is only valid if
+the <i>top_level</i> attribute is TRUE. Domain to put the
+component in.</dd></dl><p>
+</p><h4 class="jdocu"><a name="Class-Attributes">24.8.3.2 Class Attributes</a></h4>
+<p>
+
+</p><p>
+</p><dl><dt id="dt:basename"><b><i>basename</i></b></dt><dd><b>Pseudo</b> <b>class</b>
+attribute; <b>read-only</b> access; type: <b>string</b>.</dd><dd>The
+basename of the component.</dd></dl><p></p><dl><dt id="dt:component_icon"><b><i>component_icon</i></b></dt><dd><b>Pseudo</b>
+<b>class</b> attribute; <b>read-only</b> access; type: <b>string</b>
+or <b>nil</b>.</dd><dd>Name of a 24 by 24 pixel icon in PNG
+format used to graphically represent the component in a configuration
+viewer.</dd></dl><p></p><dl><dt id="dt:system_icon"><b><i>system_icon</i></b></dt><dd><b>Pseudo</b> <b>class</b>
+attribute; <b>read-only</b> access; type: <b>string</b> or
+<b>nil</b>.</dd><dd>This attribute is only valid if
+the <i>top_level</i> attribute is TRUE. Name of an 80 by 80
+pixel icon in PNG format used to graphically represent the system that
+the component is a top-level of.</dd></dl><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="Standard-Attributes">24.8.4 Standard Attributes</a></h3>
+<p>
+
+</p><p>
+It is recommended that some standard attribute names are used for
+common component characteristics. Such attributes are used by the
+Simics Control window in the GUI for example to collect
+information. The attributes only need to be readable.
+</p><p>
+</p><dl><dt id="dt:memory_megs"><b><i>memory_megs</i></b></dt><dd>type: <b>integer</b>. Components with memory that should be
+    included in the count of total system memory should have this
+    attribute representing the amount of memory in MiB. This is not
+    needed if the component is connected to memory DIMM components.
+  </dd><dt id="dt:memory_bytes"><b><i>memory_bytes</i></b></dt><dd>type: <b>integer</b>.
+    Similar to <i>memory_megs</i> but used for systems with
+    small memory sizes.
+  </dd></dl><p>
+</p><h3 class="jdocu"><a name="Standard-Interfaces">24.8.5 Standard Interfaces</a></h3>
+<p>
+
+Storage devices should implement the <code>disk_component</code> interface
+that is used by the GUI to present information about the total amount of
+attached disk storage in a system.
+
+</p><p>
+</p><h2 class="jdocu"><a name="cmp-features">24.9 Various Component Features</a></h2>
+<p>
+
+</p><p>
+The following information is not meant to provide coding guidelines
+but to help the programmer gain a better understanding of components.
+</p><p>
+</p><h3 class="jdocu"><a name="Checkpointing">24.9.1 Checkpointing</a></h3>
+<p>
+
+</p><p>
+The majority of a component's state is checkpointed via the attributes
+that are used to configure it. There are also separate attributes that
+are only used for checkpointing, discussed in sections <a class="reference" href="#cmp-adding-attributes">24.6.5</a> and <a class="reference" href="#cmp-attributes">24.8.3</a>.
+</p><p>
+Other data that should be checkpointed includes state calculated or received during the connection
+phase, since it may be needed to support later reconfiguration for hotplugging
+components.
+</p><p>
+All information about connectors and connections is checkpointed automatically
+by the connector objects in the components.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Automatic-Queue-Assignment">24.9.2 Automatic Queue Assignment</a></h3>
+<p>
+
+<a name="automatic-queue-assignment"></a>
+</p><p>
+All Simics configuration objects that handle time in any way must have
+their <i><a name="queue">queue</a></i> attribute set.  A queue makes time
+advance, and makes it possible to post events.  Any object that
+implements the <code>cycle</code> interface can be used as a queue;
+the only objects that currently do this are processors and objects of
+the class <b>clock</b>.  All objects that have the same queue
+are said to be part of the same <em><a name="time-domain">time domain</a></em>.
+</p><p>
+The component system automatically sets the queue attribute for all objects at
+instantiation time, based on the component hierarchy. To override the automatic
+queue assignment, for example on multiprocessor boards where each processor
+should be its own queue, simply assign the queue attribute when adding the
+pre-configuration objects.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+When building a model of an asymmetric multiprocessor board
+which logically consists of multiple systems, create multiple
+sub components rather than spending time manually setting queue
+attributes.</div>
+<h3 class="jdocu"><a name="Automatic-Recorder-Assignment">24.9.3 Automatic Recorder Assignment</a></h3>
+<p>
+
+</p><p>
+Devices that handle input, such as serial and network devices, keyboards, and
+mice, usually implement a connection to a <b>recorder</b> object. All
+their input passes through the recorder so that it may record the input to the
+file and later replay the same input from the file.
+</p><p>
+The component system automatically creates a recorder and connects it
+to all input devices that have a <i>recorder</i> attribute. A
+component can override this automatic assignment by setting the
+<i>recorder</i> attribute itself for its objects.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Inheritance">24.9.4 Inheritance</a></h3>
+<p>
+
+Since components are implemented as Python classes, it is easy
+to create new components that are similar to existing ones by using
+<a name="inheritance">inheritance</a>. Instead of basing the component on the
+<b>StandardComponent</b> base class, another component class
+can be used. The new component class can, for example, remove
+unnecessary connectors, add new connectors, add new objects, and
+override methods.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Hotplugging">24.9.5 Hotplugging</a></h3>
+<p>
+
+</p><p>
+Components may be added and removed from the
+configuration during simulation.  This can be used to simulate the
+effects of changes in the simulated hardware, e.g., plugging in a new
+board into a rack or unplugging a network cable.
+</p><p>
+The connectors to the component must be set to support hotplugging to
+allow connection or disconnection during simulation. You can even
+instantiate an extension to an existing configuration using
+hotplugging.
+</p><p>
+When a connector representing a link is disconnected, all
+in-flight messages on the link are discarded.
+</p><p>
+If a component is disconnected, i.e., all of its connectors are
+disconnected, communication to and from the component is
+stopped. Both the objects within component and the rest of the
+configuration continues to be simulated. Additionally, any
+communication within the component continues. To stop the simulation
+in the component while continuing simulation in the rest of the
+configuration (e.g., simulating power-off of a component), you have to
+explicitly add this functionality to the models. The models should
+remove the events that they have posted on any event queues. The
+<i>queue</i> attributes will be set to Nil by Simics after the
+disconnection.
+</p><p>
+If a component is connected again to some other part of the
+configuration, the <i>queue</i> attributes of the object making up the
+component are automatically set to a queue inside the new
+top-level component. If a specific queue is needed, it should be
+passed along in the connect data and be assigned in the connect
+method. Simics will not touch queue attributes that are set by the
+connect method.
+The component should notify its models about being hotplugged, so that
+they can repost their events on the new queue.
+</p><p>
+
+</p><h2 class="jdocu"><a name="cmp-connector-types">24.10 Standard Connector Types</a></h2>
+<p>
+
+</p><p>
+The following is a list of common connector types found in many of the
+architecture models implemented by Simics. Machine-specific connector
+types are not described in this section. The tables list all connector
+directions and the data that should be passed for connectors of each
+direction, including check data if it is different from the connect
+data.
+</p><p>
+The data listed for each connector type should be returned by
+the <b><i>get_connect_data</i></b> function in
+the <code>component_connector</code> interface, which is implemented by all
+components. The check data should be returned by
+the <b><i>get_check_data</i></b> function in the <code>component</code>
+interface. See the section <a class="reference" href="#cmp-adding-connectors">24.6.10</a> for
+more information how to implement connectors.
+</p><p>
+<table>
+
+<tbody><tr><td class="jdocu_border">one direction</td><td class="jdocu_border">[&lt;first argument&gt;, &lt;second argument&gt;, <i>…</i>]</td></tr>
+
+<tr><td class="jdocu_border">other direction(s)</td><td class="jdocu_border">[&lt;first argument&gt;, <i>…</i>]</td></tr>
+
+</tbody></table>
+</p><p>
+
+</p><dl><dt id="dt:agp-bus"><b><code>agp-bus</code></b></dt><dd>Used to connect AGP based graphics devices.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;AGP slot&gt;, &lt;<b>agp-bus</b> object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[[[&lt;AGP function&gt;, &lt;<b>agp-device</b> object&gt;]*]]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:compact-pci-bus"><b><code>compact-pci-bus</code></b></dt><dd>Used to connect cPCI cards to a backplane component wrapping the standard PCI
+bus. The backplane component, defining the <code>down</code> connector, must make
+sure that the pci-bus pre-configuration object has the <i>pci_devices</i>
+and <i>bridge</i> attributes initialized.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;PCI device number&gt;, &lt;PCI bus object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[[[&lt;PCI function number&gt;, &lt;PCI device object&gt;, &lt;is_bridge&gt;]*]]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:datagram-link"><b><code>datagram-link</code></b></dt><dd>Used to connect datagram_link devices and datagram links. <em>Up and down
+<code>datagram-link</code> connectors cannot be connected. They have
+to be connected to an <code>any</code> connector</em>.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">any</td><td class="jdocu_border">[&lt;datagram link object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;device object&gt;] or [[&lt;device object&gt;, &lt;port&gt;]]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;device object&gt;] or [[&lt;device object&gt;, &lt;port&gt;]]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:ethernet-link"><b><code>ethernet-link</code></b></dt><dd>Used to connect Ethernet devices and Ethernet links. <em>Up and down
+<code>ethernet-link</code> connectors cannot be connected. They have
+to be connected to an <code>any</code> connector</em>.
+<p>
+Note also that when using old-style Ethernet links (of
+class <b>ethernet-link</b>) only, the arguments provided by the up and
+down connectors will be ignored and can be skipped.
+</p><p>
+<table>
+
+<tbody><tr><td class="jdocu_border">any</td><td class="jdocu_border">[&lt;ethernet link object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;device object&gt;] or [[&lt;device object&gt;, &lt;port&gt;]]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;device object&gt;] or [[&lt;device object&gt;, &lt;port&gt;]]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:fc-loop"><b><code>fc-loop</code></b></dt><dd>Simplified Fibre-Channel connection. The controller should have a connect
+function that makes sure that disk IDs on the loop are unique.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;fc-controller object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;fc-device object&gt;, &lt;loop ID&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:graphics-console"><b><code>graphics-console</code></b></dt><dd>Used to connect a graphical console to a graphics device.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;graphics-device object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;graphics-console object&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:keyboard"><b><code>keyboard</code></b></dt><dd>Used to connect a keyboard device to a console for receiving real keyboard
+input.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;keyboard object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;console object&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:i2c-link"><b><code>i2c-link</code></b></dt><dd>Used to connect a i2c-link-v2 device to i2c link. The device is expected to
+have i2c_link_v2 attribute.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;i2c-link-v2 device object&gt;, &lt;port&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;i2c-link-v2 link object&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:ide-slot"><b><code>ide-slot</code></b></dt><dd>Provides connection between an IDE controller and IDE disks and CD-ROMs.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">-</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;IDE device object&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:isa-bus"><b><code>isa-bus</code></b></dt><dd>Used to connect legacy ISA devices to an ISA bus. The connect function in the
+component with the <code>down</code> connector should detect port number
+collisions.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;port-space object&gt;, &lt;memory-space object&gt;, &lt;interrupt object&gt;, &lt;dma object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">-</td></tr>
+
+<tr><td class="jdocu_border">up check</td><td class="jdocu_border">[[&lt;port-number&gt;*]]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:mem-bus"><b><code>mem-bus</code></b></dt><dd>Connection for SDRAM components providing SPD information. The connect function
+should make sure that only SDRAM of the correct type and width is inserted in
+a memory slot.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;i2c-bus object&gt;, &lt;i2c-bus address&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;memory-megs&gt;, &lt;memory-ranks&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up check</td><td class="jdocu_border">[&lt;type&gt;, &lt;memory_megs&gt;, &lt;memory-ranks&gt;, &lt;bit width&gt;, &lt;ECC width&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:mouse"><b><code>mouse</code></b></dt><dd>Used to connect a mouse device to a console for receiving real mouse input.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;mouse object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;console object&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:panel-input-bool-panel-input-number-panel-output-bool-panel-output-number"><b><code>panel-input-bool</code>, <code>panel-input-number</code>,
+  <code>panel-output-bool</code>, <code>panel-output-number</code></b></dt><dd>Used to connect a system panel to a target component.
+<p>
+The <code>input</code> types are used when the component receives input from
+a widget in the panel.
+</p><p>
+The <code>output</code> types are used when the component exposes its state
+to the panel.
+</p><p>
+The <code>bool</code> types transfer boolean state via
+the <code>signal</code> interface.  The <code>number</code> types
+transfer numeric state via the <code>uint64_state</code> interface.
+</p><p>
+The direction of the connector is always <code>up</code> in the panel
+and <code>down</code> in the target component.
+</p><p>
+The connector data is identical for the <code>bool</code>
+and <code>number</code> types, but differs depending on the combination
+of <code>up</code>/<code>down</code> and <code>input</code>/<code>output</code>:
+<table>
+
+<tbody><tr><td class="jdocu_border">down/input or up/output</td><td class="jdocu_border">[&lt;target object&gt;,
+&lt;port&gt;]</td></tr>
+
+<tr><td class="jdocu_border">down/output or up/input</td><td class="jdocu_border">-</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:pci-bus"><b><code>pci-bus</code></b></dt><dd>Used to connect PCI devices to a standard PCI bus. A component defining the
+<code>down</code> connector must make sure that the pci-bus pre-configuration
+object has the <i>pci_devices</i> attribute set.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;PCI device number&gt;, &lt;PCI bus object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[[[&lt;PCI function number&gt;, &lt;PCI device object&gt;]*]]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:pcmcia-slot"><b><code>pcmcia-slot</code></b></dt><dd>Used to connect PCMCIA (PC-CARD) devices into a PCMCIA controller. <em>The
+arguments exported by the up connector is expected to change in a future Simics
+version</em>.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td> <td class="jdocu_border">[&lt;PCMCIA device object&gt;, &lt;slot ID&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td> <td class="jdocu_border">[&lt;<code>attr-space</code> object&gt;, &lt;<code>common-space</code> object&gt;, &lt;<code>io-space</code> object&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:rapidio"><b><code>rapidio</code></b></dt><dd>Used to connect two RapidIO ports together.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;device object&gt;] or [[&lt;device object&gt;, &lt;port&gt;]]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;device object&gt;] or [[&lt;device object&gt;, &lt;port&gt;]]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:sb-interrupt"><b><code>sb-interrupt</code></b></dt><dd>South Bridge interrupt routing connection.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;interrupt object&gt;, &lt;<b>io-apic</b>
+object&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;interrupt object&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:serial"><b><code>serial</code></b></dt><dd>Used to connect serial devices together, and to different kinds
+of serial consoles. When implementing a down connector make sure to
+use the name of the serial device object in the console title. This
+makes it easier to identify the console in a system with several
+consoles. <em>Either the link argument or the console/device must
+be supported, but not both</em>.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">[&lt;link&gt;, &lt;serial-device object&gt;, &lt;console title&gt;]</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;serial-link&gt;, &lt;text-console object&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><dl><dt id="dt:mmc"><b><code>mmc</code></b></dt><dd>Used to connect MMC/SD cards to controllers. The card is required to
+implement the <code>mmc</code> interface.
+<p>
+<table>
+
+<tbody><tr><td class="jdocu_border">down</td><td class="jdocu_border">-</td></tr>
+
+<tr><td class="jdocu_border">up</td><td class="jdocu_border">[&lt;MMC/SD card object&gt;]</td></tr>
+
+</tbody></table>
+</p></dd></dl><p></p><h2 class="jdocu"><a name="cmp-comp-lib">24.11 The comp Component</a></h2>
+<p><a name="comp-Python-module2"></a>
+</p><p>
+The <em>API Reference Manual</em> documents the classes and
+methods implemented in the <b>comp</b> Python module. This
+section documents the default implementation of the methods in
+the <code>component</code> interface in
+the <b>StandardComponent</b> class. This section does not
+duplicate the documentation of <b>StandardComponent</b>
+methods not part of the <code>component</code> interface, for
+example <b><i>get_slot</i></b>, which are documented in the reference
+manual in the Python-specific API section of the API chapter.
+</p><p>
+</p><h3 class="jdocu"><a name="comp.StandardComponent.component-methods">24.11.1 comp.StandardComponent.component methods</a></h3>
+<p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.add_slot">comp.StandardComponent.component.add_slot()</a></h4>
+<p>
+  
+  <a name="add_slot"></a> <a name="comp-Python-moduleStandardComponentcomponent.add_slot"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.add_slot"></a><b>add_slot</b> — add slot</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_slot(self, slot)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Standard implementation, see the <code>component</code>
+interface. The function adds a dynamic slot named <i>slot</i>
+if it does not already exist. It returns <code>True</code> if it could
+add the slot.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+<code>True</code> or <code>False</code></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.create_cell">comp.StandardComponent.component.create_cell()</a></h4>
+<p><a name="create_cell"></a> <a name="comp-Python-moduleStandardComponentcomponent.create_cell"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.create_cell"></a><b>create_cell</b> — create cell for component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">create_cell(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns cell creation status for component. The default behavior
+depends on the <i>automatic_cell_partition</i> attribute in
+the <b>sim</b> object and if the component is a top-level
+component.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Returns <code>True</code> if automatic cell
+partitioning is enabled and the component is a top-level
+component, otherwise it returns <code>False</code>.</dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.del_slot">comp.StandardComponent.component.del_slot()</a></h4>
+<p><a name="del_slot"></a> <a name="comp-Python-moduleStandardComponentcomponent.del_slot"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.del_slot"></a><b>del_slot</b> — delete slot</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">del_slot(self, slot)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Standard implementation, see the <code>component</code>
+interface. The function deletes the dynamic slot named
+<i>slot</i>. The function returns <code>True</code> if it could
+remove the slot, otherwise it returns <code>False</code>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+<code>True</code> or <code>False</code></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.get_slot_objects">comp.StandardComponent.component.get_slot_objects()</a></h4>
+<p><a name="get_slot_objects"></a> <a name="comp-Python-moduleStandardComponentcomponent.get_slot_objects"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.get_slot_objects"></a><b>get_slot_objects</b> — get slot objects</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">get_slot_objects(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Standard implementation, see the <code>component</code>
+interface. The function will return all objects in the static and
+dynamic slots.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+list of objects</dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.get_slot_value">comp.StandardComponent.component.get_slot_value()</a></h4>
+<p><a name="get_slot_value"></a> <a name="comp-Python-moduleStandardComponentcomponent.get_slot_value"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.get_slot_value"></a><b>get_slot_value</b> — get slot</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">get_slot_value(self, slot)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Standard implementation, see the <code>component</code>
+interface. The function will return the slot value for the slot
+named <i>slot</i>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+value in slot</dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.get_slots">comp.StandardComponent.component.get_slots()</a></h4>
+<p><a name="get_slots"></a> <a name="comp-Python-moduleStandardComponentcomponent.get_slots"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.get_slots"></a><b>get_slots</b> — get slot dictionary</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">get_slots(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Standard implementation, see the <code>component</code>
+interface. The function will return all static and dynamic slots as
+a dictionary.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+dictionary with all slots</dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.has_slot">comp.StandardComponent.component.has_slot()</a></h4>
+<p><a name="has_slot"></a> <a name="comp-Python-moduleStandardComponentcomponent.has_slot"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.has_slot"></a><b>has_slot</b> — check if valid slot</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">has_slot(self, slot)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Standard implementation, see the <code>component</code>
+interface. The function returns <code>True</code> if there exists a
+static or dynamic slot named <i>slot</i> in the component,
+otherwise it returns <code>False</code>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+<code>True</code> or <code>False</code></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.post_instantiate">comp.StandardComponent.component.post_instantiate()</a></h4>
+<p><a name="post_instantiate"></a> <a name="comp-Python-moduleStandardComponentcomponent.post_instantiate"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.post_instantiate"></a><b>post_instantiate</b> — post instantiation functionality</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">post_instantiate(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The function will be called when the component has been
+instantiated.
+<p>
+The default behavior is to do nothing.</p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.pre_instantiate">comp.StandardComponent.component.pre_instantiate()</a></h4>
+<p><a name="pre_instantiate"></a> <a name="comp-Python-moduleStandardComponentcomponent.pre_instantiate"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.pre_instantiate"></a><b>pre_instantiate</b> — instantiate component status</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">pre_instantiate(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Should return <code>True</code> if component is allowed to be
+instantiated, <code>False</code> otherwise. The default behavior is to
+return <code>TRUE</code>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+<code>True</code></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.component.set_slot_value">comp.StandardComponent.component.set_slot_value()</a></h4>
+<p><a name="set_slot_value"></a> <a name="comp-Python-moduleStandardComponentcomponent.set_slot_value"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.component.set_slot_value"></a><b>set_slot_value</b> — set slot</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">set_slot_value(self, slot, val)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Standard implementation, see the <code>component</code>
+interface. The function sets the slot named <i>slot</i> to
+<i>val</i>.</dd>
+</dl><p>
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="memory-space.html">23 Memory Spaces</a>
+<a href="adding-flash-to-a-system.html">25 Adding Flash to a System</a>
+</div>

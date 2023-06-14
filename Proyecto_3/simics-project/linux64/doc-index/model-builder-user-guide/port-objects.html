@@ -1,0 +1,251 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>34 Port Objects</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="object-hierarchy.html">33 Object Hierarchy</a>
+<a href="notifiers.html">35 Notifiers</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-simics-programming.html">VI Simics API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="port-objects">34 Port Objects</a></h1>
+<p>
+
+</p><p>
+In Simics 6 there is a concept called Port Objects. A port object is a
+child object which is created automatically together with its parent object.
+The underlying idea is that a class should be able to specify a set of
+child objects, denoted port objects, which will be created automatically
+when the class is instantiated. The end user of the class does not need to
+explicitly create the port objects or even know about them.
+</p><p>
+Port objects are not intended as a replacement for components, but rather
+as a way to allow functionality to be factored out and put in separate
+objects residing in the namespace below the object. As the name implies,
+however, port objects are intended to function as a replacement for
+port interfaces.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Registering-Port-Objects">34.1 Registering Port Objects</a></h2>
+<p>
+
+</p><p>
+Below is an example of how a port object can be registered on a class:
+</p><pre class="jdocu_small"><b>// Define a signal reset function</b>
+static void
+signal_raise_reset(conf_object_t *port_obj)
+{
+        conf_object_t *parent_obj = SIM_port_object_parent(port_obj);
+        ...
+}
+
+<b>// Create the class "myclass"</b>
+cls = SIM_create_class("myclass", &amp;class_info);
+
+<b>// Register the port port.RESET</b>
+port_cls = SIM_register_simple_port(
+        cls, "port.RESET", "Hardware Reset Port");
+
+<b>// Register an interface on the created port object class</b>
+static const signal_interface_t signal_iface = {
+        .signal_raise = signal_raise_reset,
+};
+SIM_REGISTER_INTERFACE(port_cls, signal, &amp;signal_iface);
+</pre><p>
+</p><p>
+In the example above, a port object is registered on <b>myclass</b>
+with the name <b>port.RESET</b>. When the class
+subsequently is instantiated as an object <b>myobj</b>, then the port
+object will be created as <b>myobj.port.RESET</b>. The port object
+will be an instance of the class <b>myclass.RESET</b> with
+a single interface registered on this class in this case. The port object
+class can be more complex than in the simple example above; it can be
+defined to have attributes, multiple interfaces or even port objects
+of its own.
+
+</p><h2 class="jdocu"><a name="Hierarchical-Class-Names">34.2 Hierarchical Class Names</a></h2>
+<p>
+
+</p><p>
+The preceding example defined a class with a hierarchical class name,
+<b>myclass.RESET</b>. The dot in the class name has
+the following meaning:
+</p><ul>
+  <li>
+    When Simics tries to find the module
+    defining <b>myclass.RESET</b> it will look for the module
+    defining the class <b>myclass</b>,
+    and <b>myclass.RESET</b> does not need to be listed in the
+    Makefile for this module.
+  </li>
+  <li>
+    There might be non-public interfaces between <b>myclass.RESET</b>
+    and <b>myclass</b>. That is, it is assumed that the
+    port object may have direct access to the instance data for
+    <b>myclass</b> objects.
+  </li>
+</ul>      
+
+<h2 class="jdocu"><a name="Using-Existing-Classes-as-Port-Objects">34.3 Using Existing Classes as Port Objects</a></h2>
+<p>
+
+It is possible to use pre-defined classes as well when port objects
+are defined, which is illustrated in the following example:
+</p><p>
+</p><pre class="jdocu_small"><b>// Create the class "mydev"</b>
+cls = SIM_create_class("mydev", &amp;class_methods);
+
+<b>// Register the port object 'bus_clock' as a 'cycle-counter' class</b>
+conf_class_t *cycle_counter_cls = SIM_get_class("cycle-counter");
+SIM_register_port(cls, "bus_clock", cycle_counter_cls,
+                  "Clock running at bus frequency");
+</pre><p>
+</p><p>
+When <b>mydev</b> is instantiated, then a <b>cycle-counter</b>
+instance will be created as <b>mydev.bus_clock</b>.
+The <b>cycle-counter</b> class, which is included in the Simics Base
+package, provides a cycle counter that runs at some user-defined frequency and
+allows for event posting. In this example, the counter would typically be
+used by <b>mydev</b> to model functionality that depends on some
+device specific frequency.
+
+</p><h2 class="jdocu"><a name="Setting-Port-Object-State">34.4 Setting Port Object State</a></h2>
+<p>
+
+For port objects that have attributes, it is often useful for the
+parent object to provide default values for certain attributes.
+Below are some examples when this is particularly useful:
+</p><p>
+</p><ul>
+  <li>
+    The port object has a required attribute which takes an object,
+    and this object should be the port object parent itself or
+    some other object the parent knows about.
+  </li>
+  <li>
+    The port object class needs certain parameters to be
+    set in a specific way. One example could be a clock running
+    at a frequency defined by the parent.
+  </li>
+</ul>      
+<p>
+The <b><i>SIM_set_attribute_default</i></b> function provides a way
+for the port object parent to set default values. These default values
+take effect only if the attribute in question is not set explicitly
+when the object is created. Default attributes values can only
+be set from the <b><i>init</i></b> method or from attribute
+setters of objects under construction. The later allows state
+to be propagated from a port object parent to its children.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Setting attribute values directly during object construction,
+  rather than setting attribute defaults, will invariably break checkpointing
+  or not have the intended effect. 
+</div>Below is an example showing an <b><i>init</i></b> method which
+sets a default value for the frequency attribute of its <b>bus_clock</b>
+port object.
+<p>
+</p><pre class="jdocu_small">static lang_void *
+init(conf_object_t *obj)
+{
+    <b>// Configure the bus_clock frequency...</b>
+    conf_object_t *clock = SIM_object_descendant(obj, "bus_clock");
+    attr_value_t freq = SIM_make_attr_floating(1E6);
+    SIM_set_attribute_default(clock, "frequency", freq);
+
+    <b>// Do other initialization as needed...</b>
+    return obj;
+}
+</pre><p>
+</p><p>
+The following is another example, where a bus object is propagated from
+the attribute setter of the parent to a port object child.
+</p><p>
+</p><pre class="jdocu_small">static set_error_t
+attr_set_bus(conf_object_t *obj, attr_value_t *val)
+{
+    <b>// Propagate our configured bus as an</b>
+    <b>// attribute default for the "device" port object</b>
+    if (!SIM_object_is_configured(obj)) {
+        conf_object_t *dev = SIM_object_descendant(obj, "device");
+        SIM_set_attribute_default(dev, "bus", *val);
+    }
+    <b>// Do other things here...</b>
+    return Sim_Set_Ok;
+}
+</pre><p>
+</p><p>
+As a rule of thumb, it should be possible to instantiate a class
+without having to explicitly set attributes for any of its registered port
+objects.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Pre-Conf-Object-Support">34.5 Pre Conf Object Support</a></h2>
+<p>
+
+The port object support extends to the <b>pre_conf_object</b>,
+as is illustrated in the following example, which uses the 'myclass'
+Simics class defined previously:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; @myobj = pre_conf_object('myclass', 'myclass')
+simics&gt; @print(myobj.port.RESET)
+pre conf object myclass.port.RESET of type myclass.RESET
+</pre><p>
+That is, if a class defines port objects, then pre objects corresponding
+to the port objects will be created automatically.
+
+</p><h2 class="jdocu"><a name="Port-Object-Parent">34.6 Port Object Parent</a></h2>
+<p>
+
+A special function <b><i>SIM_port_object_parent</i></b> exists to
+retrieve the port object parent from a port object. The function
+returns <code>NULL</code> if the object is not a port object.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Use <b><i>SIM_port_object_parent</i></b> to retrieve the
+port object parent instead of relying on <b><i>SIM_object_parent</i></b>.
+The main reason for this is that the former will always return the correct
+object, whereas the later will return the hierarchical parent, which
+sometimes is not the desired object. As an example,
+if <b><i>SIM_object_parent</i></b> is applied to the objects
+<b>myobj.port.RESET</b>, <b>myobj.port.signal[2]</b> and
+<b>myobj.bus_clock</b>, then the return value will be
+<b>myobj.port</b>, <b>myobj.port.signal</b> and <b>myobj</b>
+respectively. The <b><i>SIM_port_object_parent</i></b> function, on the other
+hand, consistently returns the wanted <b>myobj</b> object
+in all three cases.
+</div>
+<p>
+</p>
+<div class="chain">
+<a href="object-hierarchy.html">33 Object Hierarchy</a>
+<a href="notifiers.html">35 Notifiers</a>
+</div>

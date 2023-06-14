@@ -1,0 +1,80 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_tracker_state_notification</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_tracker_state_admin.html">osa_tracker_state_admin</a>
+<a href="__rm_interface_osa_tracker_state_query.html">osa_tracker_state_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_tracker_state_notification">osa_tracker_state_notification</a></h1>
+<p>
+
+<a name="osa_tracker_state_notification"></a><a name="osa_tracker_state_notification_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_tracker_state_notification_interface_t2"></a>
+<p>
+   <a name="subscribe_trackerosa_tracker_state_notification-interface-method"></a>
+   <b><i>subscribe_tracker</i></b> is called to make <i>mapper</i> receive
+   updates for entities of <i>tracker</i>. When such an update occurs, the
+   function <b><i>tracker_updated</i></b> in interface
+   <code>osa_mapper_admin</code> will be called.
+</p><p>
+   <a name="unsubscribe_trackerosa_tracker_state_notification-interface-method"></a>
+   <b><i>unsubscribe_tracker</i></b> cancels a subscription of entity
+   updates to <i>mapper&gt;</i> that was started by
+   <b><i>subscribe_tracker</i></b> for the specified <i>tracker</i>. A tracker
+   without guest trackers does not need to call this, as it will be
+   automatically done when the framework is disabled. However, a tracker with
+   guest trackers, must call this function when a guest is removed.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(osa_tracker_state_notification) {
+        void (*subscribe_tracker)(conf_object_t *NOTNULL obj,
+                                  conf_object_t *NOTNULL mapper,
+                                  conf_object_t *NOTNULL tracker);
+        void (*unsubscribe_tracker)(conf_object_t *NOTNULL obj,
+                                    conf_object_t *NOTNULL mapper,
+                                    conf_object_t *NOTNULL tracker);
+};
+
+#define OSA_TRACKER_STATE_NOTIFICATION_INTERFACE \
+        "osa_tracker_state_notification"
+</pre><p>
+</p><p>
+    
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_tracker_state_admin.html">osa_tracker_state_admin</a>
+<a href="__rm_interface_osa_tracker_state_query.html">osa_tracker_state_query</a>
+</div>

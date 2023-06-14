@@ -1,0 +1,239 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Common and Type 0 templates</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="dml-template-reference.html">DML template reference</a>
+<a href="bridge.html">Bridge and Type 1 templates</a>
+</div>
+<div class="path">
+<a href="index.html">PCIe Modeling Library</a>
+&nbsp;/&nbsp;
+<a href="dml-template-reference.html">DML template reference</a>
+&nbsp;/&nbsp;</div>
+<h1>Common and Type 0 templates</h1>
+<h2 id="pcie_endpoint"><a href="#pcie_endpoint">pcie_endpoint</a></h2>
+<p>Used by devices that simulate a single PCIe function with a Type 0
+header. Implements the <code>pcie_device</code> interface, defines a <code>pcie_config</code> bank,
+and an <code>upstream_target</code> connect.</p>
+<h2 id="pcie_multifunction_endpoint"><a href="#pcie_multifunction_endpoint">pcie_multifunction_endpoint</a></h2>
+<p>Similar to <code>pcie_endpoint</code> but doesn't define a <code>pcie_config</code> bank. Can be
+used by devices that simulate multiple functions. A device using this
+template must define at least one bank that is an instance of the
+<code>physical_config_bank</code> template.</p>
+<h2 id="pcie_device"><a href="#pcie_device">pcie_device</a></h2>
+<p>Implements the <code>pcie_device</code> interface, with default methods for connect and
+disconnect that finds all instances of <code>physical_config_bank</code> in this device
+and lets them map/demap themselves and their resources in the upstream
+target.</p>
+<p>Assumes that there is a connect <code>upstream_target</code> which it sets/clears
+when the device is connected/disconnected.</p>
+<h2 id="config_bank"><a href="#config_bank">config_bank</a></h2>
+<p>Base template for register banks that implement a PCIe configuration
+header. Defines the registers that are common to both Type 0 and Type 1
+headers, as well as many utility methods. Typically not used
+directly. Inherit one of the derived templates, e.g. <code>type_0_bank</code> or
+<code>type_1_bank</code> instead.</p>
+<p>Uses the following parameters</p>
+<ul>
+<li><code>function</code>: The PCIe function number that this bank will use, default 0</li>
+</ul>
+<h3 id="common-methods"><a href="#common-methods">Common methods</a></h3>
+<h4 id="update_function-uint16-device_id"><a href="#update_function-uint16-device_id"><code>update_function(uint16 device_id)</code></a></h4>
+<p>Updates the mapping of this function's configuration header in the
+upstream target, using the parameter <strong>device_id</strong>.</p>
+<h4 id="del_function"><a href="#del_function"><code>del_function()</code></a></h4>
+<p>Removes the current mapping (if any) of this function's configuration
+header in the upstream target.</p>
+<h4 id="get_device_id-uint16"><a href="#get_device_id-uint16"><code>get_device_id() -&gt; (uint16)</code></a></h4>
+<p>Returns the Device ID of this function, as known by the upstream target.
+Uses the parameter <strong>pcie_obj</strong> which defaults to <strong>obj</strong>.</p>
+<h4 id="get_pasid-uint32"><a href="#get_pasid-uint32"><code>get_pasid() -&gt; (uint32)</code></a></h4>
+<p>Returns the currently configured PASID, if this device has the PASID
+capability structure.</p>
+<h4 id="del_mappings-pcie_type_t-type"><a href="#del_mappings-pcie_type_t-type"><code>del_mappings(pcie_type_t type)</code></a></h4>
+<p>Deletes all BAR mappings of type <strong>type</strong>, that this function has added.</p>
+<h4 id="update_mappings-pcie_type_t-type"><a href="#update_mappings-pcie_type_t-type"><code>update_mappings(pcie_type_t type)</code></a></h4>
+<p>Updates all BAR mappings of type <strong>type</strong>, that this function has added.</p>
+<h4 id="lock_hwinit_registers"><a href="#lock_hwinit_registers"><code>lock_hwinit_registers()</code></a></h4>
+<p>Locks all registers that use the template <code>hwinit</code></p>
+<h4 id="unlock_hwinit_registers"><a href="#unlock_hwinit_registers"><code>unlock_hwinit_registers()</code></a></h4>
+<p>Unlocks all registers that use the template <code>hwinit</code></p>
+<h4 id="raise_legacy_interrupt"><a href="#raise_legacy_interrupt"><code>raise_legacy_interrupt()</code></a></h4>
+<p>Raises the PCIe Legacy Interrupt pin INTx, as configured in the
+<code>interrupt_pin</code> register and if enabled in the <code>status.ins</code> register
+field.</p>
+<h4 id="lower_legacy_interrupt"><a href="#lower_legacy_interrupt"><code>lower_legacy_interrupt()</code></a></h4>
+<p>Lowers the PCIe Legacy Interrupt pin INTx, as configured in the
+<code>interrupt_pin</code> register</p>
+<h4 id="issue_transaction-transaction_t-t-uint64-addr-pcie_error_t"><a href="#issue_transaction-transaction_t-t-uint64-addr-pcie_error_t"><code>issue_transaction(transaction_t *t, uint64 addr) -&gt; (pcie_error_t)</code></a></h4>
+<p>Low-level method for issuing a transaction into some PCIe address space.
+Prepends required PCIe atoms to a transaction before issuing it to
+<code>upstream_target</code>.</p>
+<h3 id="memory-methods"><a href="#memory-methods">Memory methods</a></h3>
+<p>Utility methods for reading and writing PCIe Memory data. Reads or
+writes PCIe Memory data in <code>upstream_target.map_target</code>.</p>
+<h4 id="memory-read-uint64-addr-uint64-size-pcie_error_t-uint64"><a href="#memory-read-uint64-addr-uint64-size-pcie_error_t-uint64"><code>memory.read(uint64 addr, uint64 size) -&gt; (pcie_error_t, uint64)</code></a></h4>
+<h4 id="memory-read_bytes-uint64-addr-buffer_t-buf-pcie_error_t"><a href="#memory-read_bytes-uint64-addr-buffer_t-buf-pcie_error_t"><code>memory.read_bytes(uint64 addr, buffer_t buf) -&gt; (pcie_error_t)</code></a></h4>
+<h4 id="memory-write-uint64-addr-uint64-value-uint64-size-pcie_error_t"><a href="#memory-write-uint64-addr-uint64-value-uint64-size-pcie_error_t"><code>memory.write(uint64 addr, uint64 value, uint64 size) -&gt; (pcie_error_t)</code></a></h4>
+<h4 id="memory-write_bytes-uint64-addr-bytes_t-bytes-pcie_error_t"><a href="#memory-write_bytes-uint64-addr-bytes_t-bytes-pcie_error_t"><code>memory.write_bytes(uint64 addr, bytes_t bytes) -&gt; (pcie_error_t)</code></a></h4>
+<h3 id="message-methods-sending"><a href="#message-methods-sending">Message methods - sending</a></h3>
+<p>Methods for sending and receiving PCIe messages.</p>
+<p>The following methods handle receiving messages. Their default
+implementations are meant to be overridden by devices that wish to
+handle the particular type of message. Unless otherwise noted, the
+default implementation logs an <strong>unimpl</strong> message and returns
+<code>false</code>, which indicates a 'Completer Abort'.</p>
+<h4 id="message-operation-transaction_t-t-uint64-addr-bool"><a href="#message-operation-transaction_t-t-uint64-addr-bool"><code>message.operation(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<p>Main method for receiving messages. Inspects the message type and
+redirects to the appropriate method for handling that specific
+message.</p>
+<h4 id="message-ats_invalidate-transaction_t-t-uint64-addr-bool"><a href="#message-ats_invalidate-transaction_t-t-uint64-addr-bool"><code>message.ats_invalidate(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<h4 id="message-prs_request-transaction_t-t-uint64-addr-bool"><a href="#message-prs_request-transaction_t-t-uint64-addr-bool"><code>message.prs_request(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<h4 id="message-prs_response-transaction_t-t-uint64-addr-bool"><a href="#message-prs_response-transaction_t-t-uint64-addr-bool"><code>message.prs_response(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<p>These three methods redirect to their <code>*_received</code> counterparts in
+the <code>ats_capability</code> group, if present.</p>
+<h4 id="message-vendor_defined_type_1-transaction_t-t-uint64-addr-bool"><a href="#message-vendor_defined_type_1-transaction_t-t-uint64-addr-bool"><code>message.vendor_defined_type_1(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<p>PCIe demands that Vendor Defined Type 1 messages are silently
+ignored, if not implemented. This method logs <strong>unimpl</strong> on level 2
+and returns <code>true</code>, by default.</p>
+<h4 id="message-pm_active_state_nak-transaction_t-t-uint64-addr-bool"><a href="#message-pm_active_state_nak-transaction_t-t-uint64-addr-bool"><code>message.pm_active_state_nak(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<h4 id="message-pm_turn_off-transaction_t-t-uint64-addr-bool"><a href="#message-pm_turn_off-transaction_t-t-uint64-addr-bool"><code>message.pm_turn_off(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<h4 id="message-unlock-transaction_t-t-uint64-addr-bool"><a href="#message-unlock-transaction_t-t-uint64-addr-bool"><code>message.unlock(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<h4 id="message-set_slot_power_limit-transaction_t-t-uint64-addr-bool"><a href="#message-set_slot_power_limit-transaction_t-t-uint64-addr-bool"><code>message.set_slot_power_limit(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<h4 id="message-vendor_defined_type_0-transaction_t-t-uint64-addr-bool"><a href="#message-vendor_defined_type_0-transaction_t-t-uint64-addr-bool"><code>message.vendor_defined_type_0(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<h4 id="message-hot_plug-transaction_t-t-uint64-addr-bool"><a href="#message-hot_plug-transaction_t-t-uint64-addr-bool"><code>message.hot_plug(transaction_t *t, uint64 addr) -&gt; (bool)</code></a></h4>
+<p>Hot Plug messages are obsolete, according to PCIe, but must be
+silently ignored.  This method logs <strong>unimpl</strong> on level 2 and
+returns 2, by default.</p>
+<h4 id="message-unknown-transaction_t-t-uint64-addr-pcie_message_type_t-code-bool"><a href="#message-unknown-transaction_t-t-uint64-addr-pcie_message_type_t-code-bool"><code>message.unknown(transaction_t *t, uint64 addr, pcie_message_type_t code) -&gt; (bool)</code></a></h4>
+<p>This method handles message types that are unknown to
+<code>message.operation</code>, and gets the message type as a parameter.</p>
+<h3 id="message-methods-receiving"><a href="#message-methods-receiving">Message methods - receiving</a></h3>
+<p>The following methods can be used to send PCIe messages.
+The parameter <strong>map_target_t</strong> indicates the target of the message,
+typically <code>upstream_target.mt</code> or <code>downstream_port.mt</code>. The <strong>addr</strong>
+parameter contains the 8-byte address-field of the message. As in a
+real world TLP, the Device ID is the upper bits (63 through 48) of
+the address, while the lower bits may hold other message-specific
+information. The <strong>type</strong> and <strong>route</strong> parameters indicate the
+message type and the routing information.</p>
+<p>For <code>message.send_bytes</code> the additional parameter <strong>bytes</strong> is used
+for sending data in the message payload.</p>
+<h4 id="message-send-map_target_t-mt-uint64-addr-pcie_message_type_t-type-pcie_msg_route_t-route-pcie_error_t"><a href="#message-send-map_target_t-mt-uint64-addr-pcie_message_type_t-type-pcie_msg_route_t-route-pcie_error_t"><code>message.send(map_target_t *mt, uint64 addr, pcie_message_type_t type, pcie_msg_route_t route) -&gt; (pcie_error_t)</code></a></h4>
+<h4 id="message-send_bytes-map_target_t-mt-uint64-addr-pcie_message_type_t-type-pcie_msg_route_t-route-bytes_"><a href="#message-send_bytes-map_target_t-mt-uint64-addr-pcie_message_type_t-type-pcie_msg_route_t-route-bytes_"><code>message.send_bytes(map_target_t *mt, uint64 addr, pcie_message_type_t type, pcie_msg_route_t route, bytes_</code></a></h4>
+<h4 id="transaction_access-transaction_t-t-uint64-offset-void-aux-exception_type_t"><a href="#transaction_access-transaction_t-t-uint64-offset-void-aux-exception_type_t"><code>transaction_access(transaction_t *t, uint64 offset, void *aux) -&gt; (exception_type_t)</code></a></h4>
+<p>Entrypoint for access into the bank. Redirects to message or default
+bank operation, depending on the type of the transaction. The pointer to
+the transaction is passed as <code>aux</code> to the default operation, allowing
+lower level methods to inspect and set atoms. Sets the <code>pcie_error_ret</code>
+atom if present, and not set by lower level methods.</p>
+<h2 id="physical_config_bank"><a href="#physical_config_bank">physical_config_bank</a></h2>
+<p>Base-template for physical functions, type 0 and 1.
+Inherits <strong>config_bank</strong>.</p>
+<h2 id="type_0_bank"><a href="#type_0_bank">type_0_bank</a></h2>
+<p>Inherits <strong>physical_config_bank</strong> and adds Type 0 specific registers.</p>
+<h2 id="hwinit"><a href="#hwinit">hwinit</a></h2>
+<p>Implements the HwInit access restrictions, as described in the PCIe
+specification.</p>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>writable_after_reset</code>: Is the register or field writable after reset, default false</li>
+<li><code>writable_once_only</code>: Is the register or field writable once only, default true</li>
+</ul>
+<h2 id="abstract_base_address"><a href="#abstract_base_address">abstract_base_address</a></h2>
+<p>Can be used to implement an object that is similar to the Base Address
+Registers in the PCIe configuration header.</p>
+<p>The parameter <strong>type</strong> indicates in which upstream address space the resource
+should be mapped. If the type is <code>PCIE_Type_Memory</code> or <code>PCIE_Type_IO</code> the
+register will be called to update its resources when <code>command.mem</code> and
+<code>command.io</code>, respectively, is written. If this is not desired, <strong>type</strong> can
+be set to <code>PCIE_Type_Other</code> and the parameter <strong>map_type</strong> can be used to
+indicate in which address space the resource should be mapped.</p>
+<p>The parameter <strong>map_obj</strong> indicates which object will be mapped.</p>
+<p>Users of this template must:</p>
+<ul>
+<li>Define the method <code>get_map_info() -&gt; (map_info_t)</code></li>
+<li>Define the method <code>enabled() -&gt; (bool)</code></li>
+<li>Assign the parameter map_type;</li>
+<li>Assign the parameter map_obj;</li>
+</ul>
+<h2 id="pcie_base_address"><a href="#pcie_base_address">pcie_base_address</a></h2>
+<p>Implements the common functionality for Memory and I/O Base Address Registers
+as specified in PCIe. It has a single unsized field <strong>address</strong>.</p>
+<p>The parameter <strong>map_obj</strong> indicates which object will be mapped.</p>
+<p>The parameter <strong>size_bits</strong> defaults to 12 and defines the number of address
+bits that this base address register uses. If a Resizable BAR
+capability is present and indicates that it controls the size of this BAR the
+size from the relevant RBAR Control register will be used instead.</p>
+<p>Users of this template must:</p>
+<ul>
+<li>Define the bit-range for the field <strong>address</strong></li>
+<li>Define the method <code>enabled() -&gt; (bool)</code></li>
+<li>Assign the parameters map_type and map_obj;</li>
+<li>Assign the parameter size_bits, if different from the default '12'.</li>
+</ul>
+<h2 id="memory_base_address"><a href="#memory_base_address">memory_base_address</a></h2>
+<p>Implements a Memory Base Address Register as specified in PCIe.</p>
+<p>The parameter <strong>map_obj</strong> indicates which object will be mapped.</p>
+<p>The parameter <strong>size_bits</strong> defaults to 12 and defines the number of address
+bits that this base address register uses. If a Resizable BAR
+capability is present and indicates that it controls the size of this BAR the
+size from the relevant RBAR Control register will be used instead.</p>
+<p>Users of this template must:</p>
+<ul>
+<li>Assign the parameter map_obj;</li>
+<li>Assign the parameter size_bits, if different from the default '12'.</li>
+</ul>
+<h2 id="io_base_address"><a href="#io_base_address">io_base_address</a></h2>
+<p>Implements an I/O Base Address Register as specified in PCIe.</p>
+<p>The parameter <strong>map_obj</strong> indicates which object will be mapped.</p>
+<p>The parameter <strong>size_bits</strong> defaults to 12 and defines the number of address
+bits that this base address register uses. If a Resizable BAR
+capability is present and indicates that it controls the size of this BAR the
+size from the relevant RBAR Control register will be used instead.</p>
+<p>Users of this template must:</p>
+<ul>
+<li>Assign the parameter map_obj;</li>
+<li>Assign the parameter size_bits, if different from the default '12'.</li>
+</ul>
+<h2 id="defining_expansion_rom"><a href="#defining_expansion_rom">defining_expansion_rom</a></h2>
+<p>Defines a register <code>expansion_rom_base</code>, as defined in PCIe. Additionally,
+creates a group <code>expansion</code> which holds sub objects for a ROM and an image,
+sized according to the parameter <strong>size_bits</strong>, which defaults to 11. The ROM
+will be mapped in PCIe Memory Space, when enabled.</p>
+<p>Users of this template must:</p>
+<ul>
+<li>Assign the parameter size_bits, if different from the default '11'.</li>
+</ul>
+<h2 id="upstream_target"><a href="#upstream_target">upstream_target</a></h2>
+<p>Defines a pseudo-connect <code>upstream_target</code>, used by many other PCIe
+templates.</p>
+
+<div class="chain">
+<a href="dml-template-reference.html">DML template reference</a>
+<a href="bridge.html">Bridge and Type 1 templates</a>
+</div>

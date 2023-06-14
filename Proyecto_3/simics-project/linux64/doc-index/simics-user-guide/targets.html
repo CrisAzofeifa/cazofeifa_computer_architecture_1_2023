@@ -1,0 +1,475 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.3 Targets and parameters</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="script-branches.html">5.2 Script Branches</a>
+<a href="userguide-scripting-python.html">5.4 Scripting Using Python</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="script-support-in-simics.html">5 Simics Scripting Environment</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="targets">5.3 Targets and parameters</a></h1>
+<p>
+  
+  <a name="targets"></a>
+</p><p>
+  This section describes the Simics <b>target parameter</b>
+  framework. For the older <b>script declaration</b> system, see
+  chapter <a class="reference" href="script-decls.html">18</a>.  The target parameter framework
+  introduces a few concepts:
+</p><p>
+  </p><ul>
+    <li>A parameter system for Simics scripts (written in either
+    Python or CLI). Parameters have types, default values,
+    documentation strings <i>etc</i>, and are specified in
+    a <code>YAML</code>-based format. Parameters from other scripts can be
+    imported, which results in a tree structure. At run-time, the
+    resulting parameter tree has write-once semantics, and individual
+    parameters can be accessed from a special singleton Simics object
+    (in CLI), or via a Python object acting as a
+    dictionary, <i>i.e.</i> they are unrelated to CLI variables. In
+    Python one can also pass around handles to parts of the parameter
+    tree as function arguments.</li>
+      
+    <li>A high-level target concept. A <i>target</i> is defined by its
+    top-level parameter definition file, which refers to any necessary
+    script or preset files. When the top-level parameter file name in the
+    package matches <code>targets/*/*.target.yml</code> then it is
+    considered a <i>target</i>. Simics scans all available packages
+    for targets during startup and keeps track of the target list. A
+    target can be run by only specifying the target name, without
+    having to know the full path.</li>
+
+    <li>The concept of parameter <i>presets</i>. A preset is a file
+    specifying arguments to a target. This is also done in
+    the <code>YAML</code>-based format of the parameter system. A preset
+    does not have to specify arguments for all parameters, but can
+    just override some of them and point to another preset for more
+    arguments. The write-once semantics of the parameter system
+    implies that the arguments in the top-level preset takes
+    precedence over any arguments specified in presets that it points
+    to, facilitating easy creation of override presets. When running a
+    target, preset files can also be provided to specify arguments. A
+    preset can also point to a target or script, with the effect that
+    the preset itself can be run as if it was a script. Presets
+    facilitates easy sharing of individual target configurations.</li>
+  </ul>
+<p>
+  The advantages compared with the script declaration system are as follows:
+</p><p>
+  </p><ul>
+    <li>YAML is a standard format that people, text editors, config
+    tools, and format linters already know about.</li>
+    <li>It is not tied to CLI scripts, but can be used directly with
+    Python.</li>
+    <li>The concept of a <i>target</i> elevates it above ad-hoc
+    scripting.</li>
+    <li>Parameters are available in their own Python namespace and not
+    just in the global CLI variable namespace.</li>
+    <li>The parameters values in a session are known after target
+    launch, and can be listed or saved to a file.</li>
+    <li>Parameters from different targets do not conflict when loading
+    multiple targets into a single session.</li>
+    <li>There can be a hierarchy of parameters for large, complex
+    systems with 100s of parameters.</li>
+    <li>Handling parameters when calling scripts from scripts is much
+    simpler.</li>
+    <li>The script-trampoline files in the project directory are not
+    needed anymore.</li>
+    <li>The <i>preset</i> concept makes it easy to have different
+    parameter value sets for the same target.</li>
+  </ul>
+<p>
+  </p><h2 class="jdocu"><a name="Semantics">5.3.1 Semantics</a></h2>
+<p>
+
+</p><p>
+Parameters are write-once, hence the first value provided for a
+parameter is what gets used. I.e. values provided by the
+user when running a script will take precedence over default values
+provided in the script. Scripts can also provide new default values
+for parameters declared by scripts that they include, and those
+defaults will take precedence over the defaults in the declaring
+script. Scripts can also set defaults from their script code, to
+facilitate the provision of default values that require calculations,
+potentially using other parameters.
+</p><p>
+The whole parameter tree is exposed to the user running a script, and
+via the write-once semantics, the user can specify/override arguments
+for all parameters. Arguments can be provided on the command line, but
+the more powerful method is to provide them via <i>preset</i> files.
+</p><p>
+The write-once semantics implies that the "earliest setting
+wins". Arguments can come from
+</p><ol>
+<li> User specification at command line.</li>
+<li> User specification via preset files.</li>
+<li> (Default) values specified in parameter declarations.</li>
+<li> (Default) values specified in script code.</li>
+</ol>
+and the first argument for a specific parameter sticks, e.g. user
+input overrides values in scripts (hence they are only default
+values). Note that this also implies that script code cannot
+unilaterally set arguments, not even input to another script that it
+calls, it can
+only provide default values, which can always be overridden by an
+earlier setting, such as user input.
+
+  <h2 class="jdocu"><a name="File-types">5.3.2 File types</a></h2>
+<p>
+
+</p><p>
+The parameter declarations and the presets are specified in the
+standard <code>YAML</code> format. Usage of a standard format means that
+one can easily process the files outside of Simics, although to resolve
+file paths using <code>%script%</code> or <code>%simics%</code>
+knowledge of the underlying Simics installation is required.
+</p><p>
+We have two types of files: <i>scripts</i> and <i>presets</i>.
+</p><p>
+Script files consist of
+</p><ul>
+<li>a parameter declaration section under the <code>params</code> key,
+  which can import parameters from other scripts, and/or define
+  individual parameters with names, their types, default values,
+  description strings, and flags indicating if the
+  parameter is required and if it is an output parameter, and</li>
+<li>a code section, either Simics CLI or Python code (specified using
+the <code>code-type</code> key). The code section can either be below
+the <code>YAML</code> section, inlined using the <code>cmd</code> key, or in a
+separate file specified by the <code>script</code> key.</li>
+</ul>
+<p>
+See section <a class="reference" href="#script-example">5.3.3</a> for an example of a script.
+</p><p>
+Preset files
+</p><ul>
+<li>specify arguments of parameters (or equivalently, default
+  values) under the <code>args</code> key,</li>
+<li> can include other preset files, which may specify
+  more arguments, and</li>
+<li>have no parameter declarations and no code.</li>
+</ul>
+<p>
+See section <a class="reference" href="#preset-example">5.3.4</a> for an example of a preset.
+</p><p>
+The write-once semantics implies that the arguments
+specified in a preset overrides any arguments specified in included
+presets. This facilitates easily creating more specialized presets
+where only a few arguments are changed.
+</p><p>
+Presets can also specify the script where the corresponding parameter
+declarations are given, using the <code>target</code> key. Such a preset
+is a simple way to describe a Simics configuration, and can be used to
+start Simics, meaning that the specified script is run with the
+arguments from the preset. The script corresponding to the preset can
+also be specified implicitly by including other presets using
+the <code>import</code>.
+</p><p>
+For more details about the syntax, see the <em>Target
+parameters reference</em>.
+
+  </p><h2 class="jdocu"><a name="script-example">5.3.3 Example target</a></h2>
+<p>
+  
+</p><p>
+Here is a small example that illustrates how to write a target with
+parameters:
+</p><p>
+</p><pre class="jdocu_small">%YAML 1.2
+---
+# Declaration section
+params:
+  # A simple parameter
+  sigma:
+    type: str
+    required: true
+    default: sigmoid
+    description: |-
+      A potentially multi-line text
+      describing this parameter.
+  # List parameters can have typed elements
+  resources:
+    type: list[list[int]]
+    default: []
+  # A complex parameter
+  epsilon:
+    mu:
+       type: str
+    nu:
+       type: int
+  tau:
+    # Import parameters from other script
+    import: inner.yml
+    # beta parameter is set by this script, not required
+    provides:
+    - beta
+    # new default value of imported parameter
+    defaults:
+      gamma: true
+# Type of code
+code-type: simics
+# Code inlined in the YAML section
+cmd: |
+  echo `params["sigma"]`
+  echo (params.get "epsilon:mu")
+  echo `params.get("epsilon:nu")`
+  params.setdefault "tau:beta" (params.get "sigma")
+  run-script script = "inner.yml" namespace = "tau"
+...
+</pre><p>
+</p><p>
+And the imported file:
+</p><pre class="jdocu_small">%YAML 1.2
+---  
+params:
+  alpha:
+    type: int
+  beta:
+    type: str
+    required: true
+  gamma:
+    type: bool 
+cmd: |
+  # Use dict syntax to read parameter
+  print(f"beta={params['beta']}")
+...
+</pre><p>
+</p><p>
+As can be seen from the example, the target script code can be inlined
+in the YAML section. One can also place the code in a separate file
+which is referred from the parameter section using the <code>script</code>
+tag. A third option is to place the code below the parameter section,
+but then the file as a whole will typically no longer be valid
+YAML.
+</p><p>
+The example also illustrates how to import parameters from other
+scripts. The result is that the parameter tree defined in the imported
+script becomes a sub-tree in the current script, in this case with the
+root node <code>tau</code>. To refer to parameters further down in the
+tree, the <code>:</code> character is used as separator. Note that
+importing a parameter tree from another script does not mean that the
+imported script has to be run, but all scripts that are run must have
+been imported. When running an imported script, the root node of the
+imported sub-tree must be provided.
+</p><p>
+Notice that in the first file we have to declare the code type to be
+Simics CLI, using the <code>code-type</code> key, since Python is the
+default. The code type defaults to Simics CLI if the file (or the file
+specified by the <code>script</code> key) has extension <code>.simics</code>
+or <code>.include</code> and defaults to Python if the extension
+is <code>.py</code> or <code>.yml</code>.
+</p><p>
+Finally, as can be seen, the parameters are accessed via a global
+object <code>params</code>, both in CLI and in Python. In Python the
+object acts like a regular Python dictionary and in CLI it is a Simics
+object with various commands.
+</p><p>
+Notice how we illustrate different ways to read parameters: one can
+use the CLI command <b>params.get</b>, or <code>params.get</code> via
+inline Python, or Python dictionary notation. The latter will throw an
+exception if the parameter is not assigned.
+</p><p>
+For more details about the syntax, available types etc, see the <em>Target
+parameters reference</em>.
+
+  </p><h2 class="jdocu"><a name="preset-example">5.3.4 Example presets</a></h2>
+<p>
+  
+</p><p>
+Here is an example preset for to the example target. The target is assumed
+to be a file named <code>example.target.yml</code>:
+</p><p>
+</p><pre class="jdocu_small">%YAML 1.2
+---
+args:
+  tau:
+    beta: test
+  epsilon:
+    mu: foo
+  import: include.preset.yml
+...
+</pre><p>
+</p><p>
+As can be seen, argument values are specified under the <code>args</code> using the parameter names as keys. Also note that presets can include other presets.
+</p><p>
+Here is the the included preset, <code>include.preset.yml</code>:
+</p><pre class="jdocu_small">%YAML 1.2
+---
+args:
+  sigma: foo
+  tau:
+    beta: bar
+
+target: example.target.yml
+...
+</pre><p>
+</p><p>
+Notice that the first preset overrides the argument <code>beta</code> in
+the included preset. This illustrates how presets can be stacked on
+top of each other, only overriding what is necessary. This facilitates
+easily creating variants of target configurations for runs with
+different parameters.
+</p><p>
+Also note that the second preset specifies the target that it is based
+on. The result is that the preset, and all presets that import it, can
+be run directly.
+
+  </p><h2 class="jdocu"><a name="target-concept">5.3.5 Target definition</a></h2>
+<p>
+  
+</p><p>
+  As mentioned at the top of this section, a <i>target</i> is a file
+  with name that matches <code>targets/*/*.target.yml</code>, located in
+  the Simics project or in a package available in the project.
+</p><p>
+  The intention is that the top level scripts, that should be exposed
+  to the user via the <b>load-target</b> command, are turned into
+  targets by naming them accordingly.
+</p><p>
+  Targets can be listed from the Simics CLI or from the shell as
+  mentioned in <a class="reference" href="#script-cli-commands">5.3.6</a>. The idea is to make
+  it easy to find the main entry points to a hardware model without
+  looking for a particular script name in the package or project.
+
+  </p><h2 class="jdocu"><a name="script-cli-commands">5.3.6 Run-time usage</a></h2>
+<p>
+  
+</p><p>
+There are two main CLI commands:
+</p><ul> 
+<li><b>load-target</b>, which can be used to run scripts that
+have <i>target</i> status, as defined in Section
+  <a class="reference" href="#target-concept">5.3.5</a>. This command expects a target name as parameter. Available targets is returned by the <b>list-targets</b> command, or when running Simics with the command line flag <code>-l</code>.</li>
+<li><b>run-script</b>, which can be used to run scripts specified by file
+  name.</li>
+</ul>
+<p>
+Calling <b>load-target</b> with a target name has the same
+effect as calling <b>run-script</b> on the file that defines the
+target.
+</p><p>
+Target names and script file names can also be provided directly to
+Simics on the command line, in order to run them.
+</p><p>
+As mentioned above, the parameters are accessed via a
+global <code>params</code> object, which has a number of CLI commands as
+well. These can be discovered using tab completion or by
+running <b>help</b> on the object.  
+
+  </p><h2 class="jdocu"><a name="Using-parameter-references">5.3.7 Using parameter references</a></h2>
+<p>
+  
+</p><p>
+Consider the situation where there are two scripts, perhaps hardware
+and software setup, that are connected by a main target script. Often
+the software script has parameters that should have the same value as
+some parameter in the hardware script, and the main script has to make
+sure this happens.
+</p><p>
+Here are examples of sub-scripts, <code>alpha.yml</code>
+and <code>beta.yml</code>.
+  </p><p>
+</p><pre class="jdocu_small">%YAML 1.2
+---
+# This is alpha.yml
+params:
+  foo:
+    type: str
+    default: alpha
+cmd: print(params['foo'])
+...
+</pre><p>
+</p><p>
+</p><pre class="jdocu_small">%YAML 1.2
+---
+# This is beta.yml
+params:
+  foo:
+    type: str
+    required: true
+  bar:
+    type: int
+    required: true
+cmd: print(params['foo'])
+...
+</pre><p>
+</p><p>
+Without parameter references, the main script can look like this:
+</p><p>
+</p><pre class="jdocu_small">%YAML 1.2
+---
+params:
+  bar:
+    type: int
+    required: true
+  alpha:
+    import: "%script%/alpha.yml"
+  beta:
+    import: "%script%/beta.yml"
+code-type: simics
+cmd: |
+  run-script "%script%/alpha.yml" namespace = alpha
+  params.setdefault "beta:foo" (params.get "alpha:foo")
+  params.setdefault "beta:bar" (params.get "bar")
+  run-script "%script%/beta.yml" namespace = beta
+...
+</pre><p>
+</p><p>
+Parameter references facilitate avoiding the explicit copying of
+parameter values, so that the main script can be expressed like this:
+</p><p>
+</p><pre class="jdocu_small">%YAML 1.2
+---
+params:
+  bar:
+    type: int
+    required: true
+  alpha:
+    import: "%script%/alpha.yml"
+  beta:
+    import: "%script%/beta.yml"
+    defaults:
+      foo: ^alpha:foo
+      bar: ^bar
+code-type: simics
+cmd: |
+  run-script "%script%/alpha.yml" namespace = alpha
+  run-script "%script%/beta.yml" namespace = beta
+...
+</pre><p>
+</p><p>
+
+</p>
+<div class="chain">
+<a href="script-branches.html">5.2 Script Branches</a>
+<a href="userguide-scripting-python.html">5.4 Scripting Using Python</a>
+</div>

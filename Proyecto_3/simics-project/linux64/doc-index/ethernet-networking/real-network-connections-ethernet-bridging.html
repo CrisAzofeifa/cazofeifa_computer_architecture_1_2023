@@ -1,0 +1,252 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.2.2 Ethernet Bridging</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="real-network-connections-port-forwarding.html">4.2.1 Port Forwarding</a>
+<a href="real-network-connections-host-connection.html">4.2.3 Host Connection</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="real-network.html">4 Connecting to a Real Network</a>
+&nbsp;/&nbsp;
+<a href="real-network-connections.html">4.2 Connection Types</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="real-network-connections-ethernet-bridging">4.2.2 Ethernet Bridging</a></h1>
+<p>
+      <a name="bridging"></a>
+     <a name="Ethernetbridging"></a>
+</p><p>
+Simics can act as a bridge between simulated Ethernet networks and the
+real Ethernet networks of the host. With this type of connection, the
+simulated machines will appear as directly connected to the real
+network, both to the simulated machines and to the hosts on the real
+network. For that reason, the simulated machines should be configured
+with IP addresses from the same subnet as the real hosts.
+</p><p>
+Since the simulated machines appear to be located on the real network,
+there is no need to configure routes on real hosts that communicate
+with it. They can find the simulated machines by sending ARP requests,
+just like they would find other real hosts.
+</p><p>
+When using a bridged connection, it is recommended to use a dedicated
+host network interface for the bridge, not the interface that the host
+uses for general network access. Otherwise,
+special configuration of the bridge interface is necessary for any
+kind of network access for the host. The details about this
+configuration will not be covered in this manual. See section
+<a class="reference" href="real-network-access.html">4.3</a> for how to set up <a name="TAP">TAP</a>
+access.
+</p><p>
+To create a bridged connection to the real network, use the
+<b>connect-real-network-bridge</b> command. It takes an
+<i>interface</i> argument that specifies which host TAP interface that
+should be used.
+</p><p>
+</p><h2 class="jdocu"><a name="real-network-connections-ethernet-bridging-example">4.2.2.1 Example</a></h2>
+<p>
+     
+</p><p>
+This example assumes that the simulation is starting from the
+checkpoint prepared in section <a class="reference" href="real-network-examples.html">4.1</a>,
+and that a TAP bridge has been set up as described in section
+<a class="reference" href="#real-network-connections-ethernet-bridging-tap">4.2.2.2</a>.
+</p><p>
+To set up an Ethernet bridging connection between the real network and
+the simulated network, run the <b>connect-real-network-bridge</b>
+command. This will automatically create an Ethernet link, connect it
+to the simulated machine and set up bridging to the real network:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>connect-real-network-bridge</b>
+No Ethernet link found, created default_eth_switch0.
+Connected board.mb.sb.eth_slot to default_eth_switch0
+[rn0.rn info] Connecting to existing TAP device 'sim_tap0'
+'default_eth_switch0' connected to real network.
+</pre><p>
+</p><p>
+When using Ethernet bridging, the simulated machine should be
+configured with an unused IP address and netmask from the real
+network. In this case we use 10.0.0.241 and 255.255.255.0. Replace it
+with an unused IP address and netmask from the real network:
+</p><p>
+</p><pre class="jdocu_small">~# <b>ifconfig eth0 10.0.0.241 netmask 255.255.255.0</b>
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+As the target machine will appear as a real machine in the net, its gateway and
+DNS server should be correctly set according to the host settings, this step
+can be verified through pinging the gateway and DNS server IP.
+In some corner conditions, it's worth trying to reset (disable and then enable)
+the target Ethernet adapter if the gateway or DNS server are unreachable.
+</div>The simulated machine is now connected to the real network. Any kind
+of IP traffic is bridged between the simulated network and the real
+network. It should be possible to ping any real host from the
+simulated machine. Replace <em>10.0.0.240</em> with the address of a
+host on the real network:
+<p>
+</p><pre class="jdocu_small">~# <b>ping 10.0.0.240 -c 3</b>
+PING 10.0.0.240 (10.0.0.240): 56 data bytes
+64 bytes from 10.0.0.240: seq=0 ttl=64 time=10.285 ms
+64 bytes from 10.0.0.240: seq=1 ttl=64 time=0.349 ms
+64 bytes from 10.0.0.240: seq=2 ttl=64 time=0.323 ms
+
+--- 10.0.0.240 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.323/3.652/10.285 ms
+</pre><p>
+</p><p>
+Of course, it should also be possible to ping the simulated machine
+from the real host.
+</p><p>
+Running <code>traceroute</code> on the simulated machine shows that it is
+connected directly to the real network; there are no routers between
+it and the real host. Again, replace <em>10.0.0.240</em> with a host
+on the real network:
+</p><p>
+</p><pre class="jdocu_small">~# <b>traceroute 10.0.0.240</b>
+traceroute to 10.0.0.240 (10.0.0.240), 30 hops max, 38 byte packets
+ 1  10.0.0.240 (10.0.0.240)  10.106 ms  0.371 ms  0.347 ms
+</pre><p>
+</p><p>
+If the IP address of the simulated machine itself is printed and
+<code>!H</code> is printed after the response times, it means the
+simulated machine can not reach the real host, and the configuration
+is incorrect.
+</p><p>
+
+</p><h2 class="jdocu"><a name="real-network-connections-ethernet-bridging-tap">4.2.2.2 Setting up TAP for Ethernet Bridging</a></h2>
+<p>
+     
+</p><p>
+To use TAP access with the <b>connect-real-network-bridge</b>
+command, the operating system must be configured to act as a bridge
+between the virtual interface and the real interface. Follow the steps
+below to set it up.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+When setting up bridging between a TAP interface and a real
+Ethernet interface, the host will no longer accept traffic on the real
+interface. All connections the host has open on the interface will be
+lost. One consequence of this is that if this is being done from a
+remote console, the connection might be lost before the bridge is
+fully configured. We therefore strongly recommend that bridging is
+only set up on dedicated host interfaces.</div><b>Linux:</b>
+<p>
+</p><ol>
+
+    <li>Create a TAP interface, as described in section <a class="reference" href="real-network-access-tap.html">4.3.1</a></li>
+
+    <li>Create a bridge interface and connect the TAP interface and
+    the real interface. Turn off STP (Spanning Tree Protocol) in the
+    bridge as well, otherwise there will be STP traffic from the
+    bridge into both the simulated and the real network. Here the name
+    of the created bridge interface is <code>sim_br0</code> and the
+    interface used is <code>eth1</code>, but other names and interfaces
+    can be used.
+<p>
+</p><pre class="jdocu_small">computer# <b><a name="brctl">brctl</a> addbr sim_br0</b>
+computer# <b>brctl addif sim_br0 sim_tap0</b>
+computer# <b>brctl addif sim_br0 eth1</b>
+computer# <b>brctl stp sim_br0 off</b>
+</pre><p></p></li>
+
+    <li>Bring up the TAP interface and the bridge interface.
+<p>
+</p><pre class="jdocu_small">computer# <b>ifconfig sim_tap0 promisc up</b>
+computer# <b>ifconfig sim_br0 promisc up</b>
+</pre><p></p></li>
+
+    <li>Bring up the Ethernet interface.
+<p>
+</p><pre class="jdocu_small">computer# <b>ifconfig eth1 up</b>
+</pre><p></p></li>
+
+</ol>
+<p>
+To remove the bridging when finished, do the following:
+</p><p>
+</p><ol>
+
+    <li>Bring down the TAP interface and the bridge interface.
+<p>
+</p><pre class="jdocu_small">computer# <b>ifconfig sim_tap0 down</b>
+computer# <b>ifconfig sim_br0 down</b>
+</pre><p></p></li>
+
+    <li>Delete the bridge interface.
+<p>
+</p><pre class="jdocu_small">computer# <b>brctl delbr sim_br0</b>
+</pre><p></p></li>
+
+</ol>
+<p>
+</p><div class="note">
+<b>Note:</b>
+The <code><a name="brctl2">brctl</a></code> utility is usually not present in
+default Linux installations. It is usually included in the
+<code>bridge-utils</code> package.</div><b>Windows:</b>
+<p>
+</p><ol>
+
+    <li>Open the <b>Network Connections</b> folder of
+      <b>Control Panel</b>.
+    </li>
+
+    <li>Select the OpenVPN TAP interface and the real interface to
+    bridge to at the same time.</li>
+
+    <li>Right-click on the OpenVPN TAP interface to bring up a context
+    menu, and select <em>Bridge Connections</em>.</li>
+
+</ol>
+<p>
+Windows will now set up bridging between the OpenVPN TAP interface and
+the real interface. If successful both the OpenVPN TAP and real
+interfaces will seem to disappear as they are now contained in the new
+bridge interface. To undo the bridging, go to the <em>Network
+Connections</em> folder, right-click on the bridge and select
+<em>Delete</em>.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Perhaps you want to disable the spanning tree algorithm (STA). To do that
+  you must add or edit the <b>DisableSTA</b> registry key to <code>1</code>.
+  Disabling STA will minimize the time to allow packages over the bridge.
+  Rebooting Windows is required.<br>
+  Windows 7 has the key at<br>
+  <code>HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\<b>BridgeMP</b>\DisableSTA</code>
+  while Windows 10 and later has the key at<br>
+  <code>HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\<b>MsBridge</b>\DisableSTA</code>.
+</div>
+<p>
+</p>
+<div class="chain">
+<a href="real-network-connections-port-forwarding.html">4.2.1 Port Forwarding</a>
+<a href="real-network-connections-host-connection.html">4.2.3 Host Connection</a>
+</div>

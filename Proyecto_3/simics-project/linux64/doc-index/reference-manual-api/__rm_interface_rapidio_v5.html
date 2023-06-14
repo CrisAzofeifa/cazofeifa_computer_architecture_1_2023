@@ -1,0 +1,162 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>rapidio_v5</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_rapidio_v4.html">rapidio_v4</a>
+<a href="__rm_interface_riscv_coprocessor.html">riscv_coprocessor</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_rapidio_v5">rapidio_v5</a></h1>
+<p>
+
+<a name="rapidio_v5"></a><a name="rapidio_v5_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(rapidio_v5) {
+        void (*transaction_request)(
+                conf_object_t *obj, uint16 target_id, uint16 source_id,
+                uint32 transport_class,
+                uint64 addr, rapidio_operation_t op, bytes_t msg, uint64 id);
+        void (*transaction_response)(
+                conf_object_t *obj, bytes_t msg, uint64 id);
+        void (*doorbell)(
+                conf_object_t *obj, uint16 target_id, uint16 source_id,
+                uint32 transport_class, uint16 val);
+        void (*deliver_message)(
+                conf_object_t *obj, uint16 target_id, uint16 source_id,
+                uint32 transport_class,
+                uint16 mbox, uint16 letter, bytes_t msg);
+        void (*read_register_request)(
+                conf_object_t *obj, uint16 target_id, uint16 source_id,
+                uint32 transport_class,
+                uint8 hopcount, uint32 reg_no, uint64 id);
+        void (*read_register_response)(
+                conf_object_t *obj, uint32 val, uint64 id);
+        void (*write_register)(
+                conf_object_t *obj, uint16 target_id, uint16 source_id,
+                uint32 transport_class,
+                uint8 hopcount, uint32 reg_no, uint32 val);
+        void (*port_write)(
+                conf_object_t *obj, uint16 target_id, uint16 source_id,
+                uint32 transport_class,
+                uint8 hopcount, bytes_t msg);
+        void (*stream_data)(
+                conf_object_t *obj, uint16 target_id, uint16 source_id,
+                uint32 transport_class,
+                uint8 cos, uint8 xh, uint16 stream_id, bytes_t pdu);
+};
+#define RAPIDIO_V5_INTERFACE "rapidio_v5"
+</pre><p>
+</p><p>
+
+   This interface is designed for peer-to-peer RapidIO communication. It
+   supersedes the <code>rapidio_v4</code> interface; adding data streaming
+   support.
+</p><p>
+   The request/response function pairs take an <i>id</i> parameter; the
+   caller of the request function may choose any ID it likes, and the recipient
+   is expected to reply by calling the sender's response function with the same
+   ID. The recipient may delay for as long as it wishes before responding, but
+   it is required to respond exactly once to each request. Both sides may
+   continue to make new calls while a request is underway.
+</p><p>
+   I/O accesses are done using <b><i>transaction_request</i></b> and
+   <b><i>transaction_response</i></b>; the kind of access is determined by the
+   <i>op</i> argument. The valid values are: 
+</p><pre class="jdocu_small">typedef enum {
+        RapidIO_Read,
+        RapidIO_Write,
+        RapidIO_Increment,
+        RapidIO_Decrement,
+        RapidIO_Test_and_Swap,
+        RapidIO_Set,
+        RapidIO_Clear,
+        RapidIO_Compare_and_Swap,
+        RapidIO_Swap
+} rapidio_operation_t;</pre><p>
+
+</p><p>
+   The size of the <i>msg</i> argument decides the transaction size and the
+   <i>addr</i> argument dictates where the access is made. The contents of
+   <i>msg</i> is the input and output values of the transaction (assumed to
+   be big-endian for the purposes of the increment and decrement operations).
+   The plain read and write operations only send useful data in <i>msg</i>
+   in one direction, but a byte sequence of the right length must be sent
+   anyway (but its contents are ignored).
+</p><p>
+   The <b><i>doorbell</i></b> method corresponds to a DOORBELL/DONE packet pair,
+   while <b><i>deliver_message</i></b> denotes a non-fragmented message. On the
+   physical line this will be split into 256-byte MESSAGE packets, acknowledged
+   with a DONE packet.
+</p><p>
+   <b><i>read_register_request</i></b>, <b><i>read_register_response</i></b>, and
+   <b><i>write_register</i></b> is the way to simulate MAINTENANCE operations.
+</p><p>
+   <b><i>port_write</i></b> corresponds to PORT_WRITE packet, with all arguments
+   stored in big-endian order in the <i>msg</i> argument. Typically, this
+   is the four 32-bit words <code>component_tag_csr</code>,
+   <code>port_error_detect_csr</code>, <code>port_id</code>, and
+   <code>transport_layer_error_detect_csr</code>.
+</p><p>
+   The <b><i>stream_data</i></b> method corresponds to a non-fragmented DATA STREAM
+   packet. On the physical line this will be split into MTU-sized MESSAGE
+   packets.
+</p><p>
+   From RapidIO specifications Part 10:
+   "Data streaming transactions differ from most other RapidIO
+   transactions in two ways: they must accommodate larger variably sized data
+   transfers, and the transactions are not acknowledged with a response packet."
+</p><p>
+   When <i>xh</i> is set to 1, the <b><i>stream_data</i></b> corresponds to the
+   extended DATA STREAM packet used for traffic management. The payload for this
+   extended packet is always four bytes, representing the <code>TM OP</code>, 
+   <code>wildcard</code>, <code>mask</code>, <code>parameter 1</code> and
+   <code>parameter 2</code> bits stored in big-endian order. Note that <i>xh</i>
+   is the 3+1 bit pair representing Xtype and xh bits from rapidio packet 
+   header, not a bool.
+</p><p>
+   The <i>transport_class</i> represents packet fields that are transmitted
+   in the physical layer part. For serial RapidIO, bits are allocated as
+   follows: critical request flow, <code>crf</code>, in bit 0, priority in bit 3-2,
+   and virtual channel in bit 7-4.
+</p><p>
+   This interface is not yet perfect, and may undergo non-compatible changes in
+   the future. Error reporting and cache control packets like IO_READ_HOME and
+   FLUSH are not yet supported.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_rapidio_v4.html">rapidio_v4</a>
+<a href="__rm_interface_riscv_coprocessor.html">riscv_coprocessor</a>
+</div>

@@ -1,0 +1,216 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>8.3 Test Framework Libraries Available Outside Simics</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="defining-tests.html">8.2 Defining Test Suites</a>
+<a href="pymods-inside.html">8.4 Test Framework Libraries Available in Simics Tests</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="test-framework.html">8 Test Framework</a>
+&nbsp;/&nbsp;</div>
+<h1>8.3 Test Framework Libraries Available Outside Simics</h1>
+<article class="not-numbered">
+<h2 id="vptest_utils"><a href="#vptest_utils">vptest_utils</a></h2>
+<p>
+</p><p>Python API for virtual platform test.</p>
+<p></p>
+<h3 id="add_checkpoint_tests"><a href="#add_checkpoint_tests">add_checkpoint_tests</a></h3>
+<article class="doc-item not-in-toc not-numbered">
+<h4 id="synopsis"><a href="#synopsis">SYNOPSIS</a></h4>
+<pre><code>add_checkpoint_tests(suite, target, script, start, duration, variation = '', assert_objs = ['cpu0'], extra_args = [], assert_time = 10, check_cycles_and_steps_in_sync = True)
+</code></pre>
+<h4 id="description"><a href="#description">DESCRIPTION</a></h4>
+<p>
+</p><p>Add tests to check that reading and writing checkpoints does not change
+the behavior of a target system.</p>
+<p>The test does this by running Simics several times:</p>
+<ol>
+<li>first load the target, run to time start, and then collect the
+state-assertion file while running for duration cycles, </li>
+<li>then save a checkpoint at time start and run for duration cycles,
+comparing against the state-assertion file, </li>
+<li>then load the checkpoint from the previous step, write a new checkpoint
+and run for duration cycles, comparing against the state-assertion file,</li>
+<li>then load the new checkpoint and run for duration cycles comparing
+against the state-assertion file, </li>
+<li>finally a test is run which runs up to time start and then writes
+several checkpoints with duration cycles between them. </li>
+</ol>
+<p>Arguments:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:suite">suite</span><br>
+the test suite to add the tests to</li>
+<li><span class="term" id="dt:target">target</span><br>
+the name of the target directory in <code>[project]/targets</code></li>
+<li><span class="term" id="dt:script">script</span><br>
+the script in that directory which creates and sets up the target</li>
+<li><span class="term" id="dt:start">start</span><br>
+the time the checks performed by the tests should be started ad, in steps</li>
+<li><span class="term" id="dt:duration">duration</span><br>
+the number of steps past the start time the tests should check the state
+of the system</li>
+<li><span class="term" id="dt:variation">variation</span><br>
+a name for this variation of testing the target, defaults to the
+empty string</li>
+<li><span class="term" id="dt:assert_objs">assert_objs</span><br>
+a list of objects to use in the state assertion, defaults to <code>["cpu0"]</code></li>
+<li><span class="term" id="dt:extra_args">extra_args</span><br>
+extra arguments passed to each Simics process started by the test,
+defaults to <code>[]</code></li>
+<li><span class="term" id="dt:assert_time">assert_time</span><br>
+the interval in steps between state-assertion saves, defaults to <code>10</code></li>
+<li><span class="term" id="dt:check_cycles_and_steps_in_sync">check_cycles_and_steps_in_sync</span><br>
+if True the tests check that the cycle and step counts remain in sync,
+defaults to <code>True</code></li>
+</ul>
+</div>
+<p></p>
+</article>
+<h3 id="add_random_command_tests"><a href="#add_random_command_tests">add_random_command_tests</a></h3>
+<article class="doc-item not-in-toc not-numbered">
+<h4 id="synopsis-2"><a href="#synopsis-2">SYNOPSIS</a></h4>
+<pre><code>add_random_command_tests(suite, target, script, name = None, project_only = False, disabled_commands = [], disabled_classes = [], disabled_interfaces = [])
+</code></pre>
+<h4 id="description-2"><a href="#description-2">DESCRIPTION</a></h4>
+<p>
+</p><p>Add tests to check all the commands provided by the virtual platform can
+be run properly.</p>
+<p>Arguments: </p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:suite-2">suite</span><br>
+the test suite to add the tests to</li>
+<li><span class="term" id="dt:target-2">target</span><br>
+the name of the target directory in <code>[project]/targets</code></li>
+<li><span class="term" id="dt:script-2">script</span><br>
+the script in that directory which creates and sets up the target</li>
+<li><span class="term" id="dt:name">name</span><br>
+the test name, defaults to <code>None</code></li>
+<li><span class="term" id="dt:project_only">project_only</span><br>
+if <code>True</code> the tests will test the commands of local modules,
+defaults to <code>False</code></li>
+<li><span class="term" id="dt:disabled_commands">disabled_commands</span><br>
+the commands which will be ignored by the test, defaults to <code>[]</code></li>
+<li><span class="term" id="dt:disabled_classes">disabled_classes</span><br>
+the classes which will be ignored by the test, defaults to <code>[]</code></li>
+<li><span class="term" id="dt:disabled_interfaces">disabled_interfaces</span><br>
+the interfaces which will be ignored by the test, defaults to <code>[]</code></li>
+</ul>
+</div>
+<p></p>
+</article>
+<h2 id="testparams"><a href="#testparams">testparams</a></h2>
+<p>
+</p><p>Information about the test environment and some test utilities.</p>
+<p></p>
+<h3 id="fail"><a href="#fail">fail</a></h3>
+<article class="doc-item not-in-toc not-numbered">
+<h4 id="synopsis-3"><a href="#synopsis-3">SYNOPSIS</a></h4>
+<pre><code>fail(reason = '')
+</code></pre>
+<h4 id="description-3"><a href="#description-3">DESCRIPTION</a></h4>
+<p>
+</p><p>Raise a <code>TestFailure</code> exception.</p>
+<p>Argument: </p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:reason">reason</span><br>
+a string containing the reason for the failure, passed to the
+<code>TestFailure</code> constructor </li>
+</ul>
+</div>
+<p></p>
+</article>
+<h3 id="timeout"><a href="#timeout">timeout</a></h3>
+<article class="doc-item not-in-toc not-numbered">
+<h4 id="synopsis-4"><a href="#synopsis-4">SYNOPSIS</a></h4>
+<pre><code>timeout()
+</code></pre>
+<h4 id="description-4"><a href="#description-4">DESCRIPTION</a></h4>
+<p>
+</p><p>Raise a <code>TestTimeout</code> exception.</p>
+<p></p>
+</article>
+<h3 id="simics_base_path"><a href="#simics_base_path">simics_base_path</a></h3>
+<article class="doc-item not-in-toc not-numbered">
+<h4 id="synopsis-5"><a href="#synopsis-5">SYNOPSIS</a></h4>
+<pre><code>simics_base_path()
+</code></pre>
+<h4 id="description-5"><a href="#description-5">DESCRIPTION</a></h4>
+<p>
+</p><p>Return the absolute path to the Simics base package.</p>
+<p></p>
+</article>
+<h3 id="project_path"><a href="#project_path">project_path</a></h3>
+<article class="doc-item not-in-toc not-numbered">
+<h4 id="synopsis-6"><a href="#synopsis-6">SYNOPSIS</a></h4>
+<pre><code>project_path()
+</code></pre>
+<h4 id="description-6"><a href="#description-6">DESCRIPTION</a></h4>
+<p>
+</p><p>Returns the absolute path to the project under test. Tests added with
+<code>suite.add_simics_test()</code> and <code>suite.add_simics_tests()</code> run Simics in
+this project.</p>
+<p></p>
+</article>
+<h3 id="test_root"><a href="#test_root">test_root</a></h3>
+<article class="doc-item not-in-toc not-numbered">
+<h4 id="synopsis-7"><a href="#synopsis-7">SYNOPSIS</a></h4>
+<pre><code>test_root()
+</code></pre>
+<h4 id="description-7"><a href="#description-7">DESCRIPTION</a></h4>
+<p>
+</p><p>Return the absolute path to the simics-base test directory.</p>
+<p></p>
+</article>
+<h3 id="testfailure"><a href="#testfailure">TestFailure</a></h3>
+<article class="doc-item not-in-toc not-numbered">
+<h4 id="superclasses"><a href="#superclasses">SUPERCLASSES</a></h4>
+<p>builtins.Exception</p>
+<h4 id="description-8"><a href="#description-8">DESCRIPTION</a></h4>
+<p>
+</p><p>Exception which test functions should raise to indicate test failure.</p>
+<p></p>
+</article>
+<h3 id="testtimeout"><a href="#testtimeout">TestTimeout</a></h3>
+<article class="doc-item not-in-toc not-numbered">
+<h4 id="superclasses-2"><a href="#superclasses-2">SUPERCLASSES</a></h4>
+<p>builtins.Exception</p>
+<h4 id="description-9"><a href="#description-9">DESCRIPTION</a></h4>
+<p>
+</p><p>Exception which test functions should raise to indicate timeout.</p>
+<p></p>
+</article>
+</article>
+
+<div class="chain">
+<a href="defining-tests.html">8.2 Defining Test Suites</a>
+<a href="pymods-inside.html">8.4 Test Framework Libraries Available in Simics Tests</a>
+</div>

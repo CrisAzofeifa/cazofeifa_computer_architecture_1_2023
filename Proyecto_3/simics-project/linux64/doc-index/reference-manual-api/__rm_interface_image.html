@@ -1,0 +1,125 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>image</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_hypersim_pattern_matcher.html">hypersim_pattern_matcher</a>
+<a href="__rm_interface_image_snoop.html">image_snoop</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_image">image</a></h1>
+<p>
+
+<a name="image"></a><a name="image_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is used for handling big data images.
+<p>
+   <b><i>read</i></b> and <b><i>write</i></b> access a chunk of data at a time.
+   Only accesses within the bounds of the image are allowed.
+</p><p>
+   <b><i>clear_range</i></b> fills an interval with null bytes,
+   <b><i>fill</i></b> with any byte value.
+</p><p>
+   <b><i>size</i></b> returns the image size.
+</p><p>
+   <b><i>get</i></b> and <b><i>set</i></b> work like <b><i>read</i></b>
+   and <b><i>write</i></b> but pass the data using a bytes_t instead,
+   and can be used from Python.
+</p><p>
+   <b><i>flush_writable</i></b> writes out all unwritten changes to a writable
+   backing file if one exists; otherwise, does nothing.
+</p><p>
+   Other methods are not currently for public use.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(image) {
+#if !defined(PYWRAP)
+        void (*read)(conf_object_t *img, void *NOTNULL to_buf, uint64 start,
+                     size_t length);
+        void (*write)(conf_object_t *img, const void *NOTNULL from_buf,
+                      uint64 start, size_t length);
+        int (*for_all_spages)(conf_object_t *img,
+                              int (*NOTNULL f)(image_spage_t *NOTNULL p,
+                                               uint64 ofs, void *arg),
+                              void *arg);
+#endif /* not PYWRAP */
+        void (*set_persistent)(conf_object_t *obj);
+        void (*save_to_file)(conf_object_t *NOTNULL obj,
+                             const char *NOTNULL file,
+                             uint64 start, uint64 length);
+        void (*save_diff)(conf_object_t *NOTNULL obj,
+                          const char *NOTNULL file);
+        void (*clear_range)(conf_object_t *NOTNULL obj,
+                            uint64 start, uint64 length);
+        void (*fill)(conf_object_t *NOTNULL obj,
+                     uint64 start, uint64 length, uint8 value);
+        uint64 (*size)(conf_object_t *NOTNULL obj);
+        void (*set)(conf_object_t *NOTNULL obj, uint64 ofs, bytes_t b);
+        bytes_t (*get)(conf_object_t *NOTNULL obj, uint64 ofs, size_t size);
+        void (*flush_writable)(conf_object_t *NOTNULL obj);
+};
+
+#define IMAGE_INTERFACE "image"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+     <tbody><tr><td class="jdocu_noborder"><b><i>read</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>write</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>for_all_spages</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>set_persistent</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>save_to_file</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>save_diff</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>clear_range</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>fill</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>size</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>set</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>get</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+     <tr><td class="jdocu_noborder"><b><i>flush_writable</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+    </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_hypersim_pattern_matcher.html">hypersim_pattern_matcher</a>
+<a href="__rm_interface_image_snoop.html">image_snoop</a>
+</div>

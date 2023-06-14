@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;bp-manager.notify&gt;.break</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-bp-manager.memory.wait-for.html">&lt;bp-manager.memory&gt;.wait-for</a>
+<a href="rm-cmd-bp-manager.notify.run-until.html">&lt;bp-manager.notify&gt;.run-until</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="bp-manager.notify.break"></a>
+<h1 id="bp-manager.notify.break"><a href="#bp-manager.notify.break">&lt;bp-manager.notify&gt;.break</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;bp-manager.notify&gt;.break</b> [<i>object</i>|-global] <i>"name"</i> [-once] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Enables breaking simulation on notifiers. When this is enabled, every time the specified notifier is triggered a message is printed and simulation is stopped.
+<p>
+The <i>name</i> parameter specifies the notifier. If <tt>-global</tt> is specified, then the notifier must be global, otherwise the notifier must be registered on <i>object</i>.
+</p><p>
+If <i>name</i> is the name of a global notifier, then <tt>-global</tt> is not needed. If <i>name</i> is the name of a non-global notifier and <i>object</i> is not provided, then the breakpoint is added on all objects that have this notifier registered.
+</p><p>
+For the global notifiers, see the documentation of the <tt>global_notifier_type_t</tt> enum about which names should be used.
+</p><p>
+For the predefined non-global notifiers, see the documentation of the <tt>notifier_type_t</tt> enum about which names should be used.
+</p><p>
+The <tt>-once</tt> flag causes the breakpoint to automatically be removed after it has triggered. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.bp-manager.html">bp-manager</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-bp-manager.memory.wait-for.html">&lt;bp-manager.memory&gt;.wait-for</a>
+<a href="rm-cmd-bp-manager.notify.run-until.html">&lt;bp-manager.notify&gt;.run-until</a>
+</div>

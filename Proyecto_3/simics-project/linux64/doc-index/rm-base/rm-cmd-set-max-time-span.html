@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>set-max-time-span</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-set-image-memory-limit.html">set-image-memory-limit</a>
+<a href="rm-cmd-set-memory-limit.html">set-memory-limit – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="set-max-time-span"></a>
+<h1 id="set-max-time-span"><a href="#set-max-time-span">set-max-time-span</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>set-max-time-span</b> [<i>max-time-span</i>] [<i>cell</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Set the <i>max-time-span</i> parameter for the cell <i>cell</i>, or for all cells if the <i>cell</i> argument is omitted.
+<p>
+Simics ensures that CPUs simulated in parallel within a particular cell never has virtual time differences that exceed this setting. The setting is only applicable if Simics is running in the <tt>subsystem</tt> or the <tt>multicore</tt> threading mode.
+</p><p>
+Setting a too large interval may introduce too much latency in the simulation. On the other hand, setting a too small value may increase the synchronization overhead and limit the parallelism, leading to degraded simulation performance.
+</p><p>
+The special value 0 means that the <tt>time-quantum</tt> value should be used as the <i>max-time-span</i> parameter.
+</p><p>
+<b>NOTE</b>: The parameter resembles the <tt>time-quantum</tt> parameter, which is used by Simics when CPUs are simulated in sequences from a single thread.
+</p><p>
+<b>NOTE</b>: CPUs belonging to different cells will also be kept synchronized, but in this case the maximal virtual time difference is controlled by the <code>set-min-latency</code> command. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-set-threading-mode.html">set-threading-mode</a>, 
+<a href="rm-cmd-set-time-quantum.html">set-time-quantum</a>, 
+<a href="rm-cmd-set-min-latency.html">set-min-latency</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-set-image-memory-limit.html">set-image-memory-limit</a>
+<a href="rm-cmd-set-memory-limit.html">set-memory-limit – deprecated</a>
+</div>

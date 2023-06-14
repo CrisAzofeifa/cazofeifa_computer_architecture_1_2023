@@ -1,0 +1,198 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>36 Extension Classes</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="notifiers.html">35 Notifiers</a>
+<a href="transactions.html">37 Transactions</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-simics-programming.html">VI Simics API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Extension-Classes">36 Extension Classes</a></h1>
+<p>
+
+</p><p>
+An extension class is a Simics class which is never instantiated on its own,
+but instead is used in the construction of other classes to augment
+them with functionality defined by the extension class.
+</p><p>
+</p><h2 class="jdocu"><a name="Usage-Example">36.1 Usage Example</a></h2>
+<p>
+
+</p><p>
+The following example defines the <b>my_clock</b> class, which
+functions just like the standard <b>clock</b>, although
+with restricted configurability. The extension class
+<b>clock-extension</b> provides most of the functionality
+that the <b>my_clock</b> class needs:
+</p><p>
+
+ </p><pre class="jdocu_small">import pyobj, simics
+
+class my_clock(pyobj.ConfObject):
+    class execute(pyobj.Interface):
+        def run(self):
+            self.stop = False
+            while not simics.VT_async_events_pending() and not self.stop:
+                # advance time to the next pending event and dispatch it
+                self._up.obj.vtime.iface.event_handler.handle_event()
+        def stop(self):
+            self.stop = True
+
+    class frequency(pyobj.Interface):
+        def get(self):
+            return 1E6
+
+simics.SIM_extend_class("my_clock", "clock-extension")
+</pre><p>
+</p><p>
+ 
+</p><p>
+The <b>clock-extension</b> extension class basically provides the
+following: a port object <b>vtime</b> which is used to
+dispatch pending events and drive the cycle queues;
+port objects <b>vtime.cycles</b> and <b>vtime.ps</b> which
+contain the cycle queue and the pico seconds queue respectively;
+a <code>cycle</code> interface which interfaces
+the <b>vtime.cycles</b> object; and a <i>cell</i> attribute
+which determines which cell the clock belongs to. In short,
+the <b>clock-extension</b> class defines the event queues
+and other functionality needed by Simics for an object to be scheduled.
+</p><p>
+The <b>my_clock</b> class provides the frequency the
+cycle clock should use by implementing the <code>frequency</code> interface;
+this interface is used by the <b>vtime</b> object.
+</p><p>
+When the <b>myclass</b> object gets scheduled, then
+the <b><i>run</i></b> method of the <code>execute</code> interface
+will be invoked, and in this simple example, the time is
+forwarded to the next pending event by simply invoking
+the <b><i>handle_event</i></b> method.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Defining-an-Extension-Class">36.2 Defining an Extension Class</a></h2>
+<p>
+
+</p><p>
+An extension class is defined just like a regular class. The only
+difference is that the class kind should be
+<code>Sim_Class_Kind_Extension</code>. The following example defines
+an extension class which just extends classes with a single attribute
+called <i>test</i>:
+</p><p>
+</p><pre class="jdocu_small">typedef struct {
+        int test;
+} test_extension_t;
+
+static conf_class_t *test_cls;
+
+static void *
+init(conf_object_t *obj)
+{
+        return MM_ZALLOC(1, test_extension_t);
+}
+
+static void
+dealloc(conf_object_t *obj)
+{
+        test_extension_t *p = SIM_extension_data(obj, test_cls);
+        MM_FREE(p);
+}
+
+static set_error_t
+set_test_attr(conf_object_t *obj, attr_value_t *v)
+{
+        test_extension_t *p = SIM_extension_data(obj, test_cls);
+        p-&gt;test = SIM_attr_integer(*v);
+        return Sim_Set_OK;
+}
+
+static attr_value_t
+get_test_attr(conf_object_t *obj)
+{
+        test_extension_t *p = SIM_extension_data(obj, test_cls);
+        return SIM_make_attr_int64(p-&gt;test);
+}
+
+void
+register_test_extension_class(void)
+{
+    class_info_t class_info = {
+        .init = init,
+        .dealloc = dealloc,
+        .kind = Sim_Class_Kind_Extension,
+    };
+    cls = SIM_create_class("test_extension", &amp;class_methods);
+    SIM_register_attribute(
+        cls, "test",
+        get_test_attr, set_test_attr,
+        "i", "sample test attribute");
+
+    test_cls = cls;
+}
+</pre><p>
+The main point to note is that the object data associated with the
+extension is created by the <b><i>init</i></b>
+method and retrieved by calling <b><i>SIM_extension_data</i></b> with
+the extension class itself as an argument besides the object.
+
+</p><h2 class="jdocu"><a name="Defining-an-Extension-Class-in-Python">36.3 Defining an Extension Class in Python</a></h2>
+<p>
+
+The following example uses the <b>pyobj</b> framework
+to extend the class <b>trivial</b> with the extension
+class <b>test_extension</b> which provides the attribute
+test:
+</p><p>
+
+ </p><pre class="jdocu_small">import pyobj, simics
+
+class test_extension(pyobj.ClassExtension):
+    class test(pyobj.SimpleAttribute(0, 'i')): pass
+
+class trivial(pyobj.ConfObject):
+    pass
+
+simics.SIM_extend_class("trivial", "test_extension")
+</pre><p>
+</p><p>
+ 
+</p><p>
+An instance of the <b>trivial</b> class now has the
+<i>test</i> attribute defined by the extension class:
+</p><pre class="jdocu_small">simics&gt; @SIM_create_object('trivial', 'trivial')
+simics&gt; trivial-&gt;test = 22
+</pre><p>
+</p><p>
+
+</p>
+<div class="chain">
+<a href="notifiers.html">35 Notifiers</a>
+<a href="transactions.html">37 Transactions</a>
+</div>

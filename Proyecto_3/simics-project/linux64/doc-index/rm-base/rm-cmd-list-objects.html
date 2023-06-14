@@ -1,0 +1,90 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>list-objects</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-list-object-references.html">list-object-references</a>
+<a href="rm-cmd-list-objects-with-interface.html">list-objects-with-interface – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="list-objects"></a>
+<h1 id="list-objects"><a href="#list-objects">list-objects</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>list-objects</b> [<i>"class"</i>] [<i>"type"</i>] [<i>namespace</i>] [<i>"substr"</i>] [-all] [-n] [-sort-by-classname] [-a] [-recursive] [-tree] [-hide-port-objects] [-class-desc] [-expand-all] [-with-class-name] [<i>component</i>] ([ <i>"iface"</i> ... ] | list of <i>"iface"</i>) ([ <i>"port"</i> ... ] | list of <i>"port"</i>) <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Lists configuration objects and the classes they belong to. With the <i>class</i>, <i>iface</i> and <i>port</i> arguments, you can restrict the listing to objects of a particular class, or to objects that implement particular interfaces. Notice, the <i>iface</i> argument must come last on the line.
+<p>
+By default, only the objects in the current namespace are listed (see the <code>change-namespace</code> command). The <i>namespace</i> argument can be used to override the current namespace. (The <i>component</i> argument is a deprecated alias of <i>namespace</i>.)
+</p><p>
+When the <i>namespace</i> argument is used, objects in standard sub-namespaces are always included, e.g. <tt>list-objects namespace=DEV</tt> will always include objects hierarchies rooted at <tt>DEV.bank</tt>, <tt>DEV.port</tt> and <tt>DEV.impl</tt>.
+</p><p>
+Objects of class <tt>index-map</tt> are only listed if specifically asked for, using the <i>class</i> argument.
+</p><p>
+If the optional <i>substr</i> argument is specified, only objects with a name matching this sub-string will be printed. The current namespace part of the object name will not be included in the name matched against.
+</p><p>
+Use the <tt>-recursive</tt> flag to list objects in both the current namespace and in the namespaces below it in the hierarchy.
+</p><p>
+With the <tt>-all</tt> flag, all objects are listed, regardless of namespace.
+</p><p>
+By default objects are sorted by name. The <tt>-sort-by-classname</tt> flag sorts them by class name instead.
+</p><p>
+Component objects are printed first and then all other objects. Use the <tt>-a</tt> flag to mix all objects in the same list.
+</p><p>
+The <tt>-tree</tt> flag prints a tree of all the objects descending from the current namespace. This implies <tt>-recursive</tt>. If <tt>-all</tt> is given the tree will start from the root. Objects not belonging to any hierarchy will be put in the root node. Arrays of leaf objects will be summarized unless <tt>-expand-all</tt> is given. With the <tt>-with-class-name</tt> flag class names are added to all non port objects.
+</p><p>
+The <tt>-hide-port-objects</tt> flag will suppress port objects from the result; this includes "port", "bank", and "impl" objects.
+</p><p>
+The <tt>-class-desc</tt> flag will include a short description in the result.
+</p><p>
+The <tt>port</tt> argument selects objects that have all the interfaces specified as port/bank. Writing <tt>list-objects port=signal</tt> will return <tt>obj.port/bank.RESET</tt> if <tt>RESET</tt> is type interface <tt>signal</tt>, as well as the root object <tt>obj</tt>.
+</p><p>
+The <code>list-objects</code> command returns a list of objects when used in an expression. The <code>get-object-list</code> only returns such a list.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-change-namespace.html">change-namespace</a>, 
+<a href="rm-cmd-l.html">l</a>, 
+<a href="rm-cmd-ll.html">ll</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-list-object-references.html">list-object-references</a>
+<a href="rm-cmd-list-objects-with-interface.html">list-objects-with-interface – deprecated</a>
+</div>

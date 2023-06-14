@@ -1,0 +1,140 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Sloop module reference</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="snoop-refman.html">Snoop module reference</a>
+</div>
+<div class="path">
+<a href="index.html">Python Coroutines in Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 id="sloop-module-reference"><a href="#sloop-module-reference">Sloop module reference</a></h1>
+<p>This section contains reference documentation for the
+<code>sloop</code> Python module.</p>
+<h2 id="break"><a href="#break"><strong>Break</strong></a></h2>
+<pre><code>class Break(Exception)
+</code></pre>
+<p>Raised by <code>run_until_complete</code> when simulation was interrupted, e.g.
+when the end-user issued the <code>break</code> CLI command.</p>
+<h2 id="error"><a href="#error"><strong>Error</strong></a></h2>
+<pre><code>class Error(Exception)
+</code></pre>
+<p>Raised for incorrect usage of <code>sloop</code></p>
+<h2 id="get_running_loop"><a href="#get_running_loop"><strong>get_running_loop</strong></a></h2>
+<pre><code>def get_running_loop()
+</code></pre>
+<p>Like <code>asyncio.get_running_loop</code>, but must be run from a task
+created by Sloop's <code>create_task</code>.</p>
+<h2 id="global_event_loop"><a href="#global_event_loop"><strong>global_event_loop</strong></a></h2>
+<pre><code>def global_event_loop()
+</code></pre>
+<p>The default <code>sloop</code> event loop</p>
+<h2 id="run_until_complete"><a href="#run_until_complete"><strong>run_until_complete</strong></a></h2>
+<pre><code>def run_until_complete(fut)
+</code></pre>
+<p>Similar to <code>asyncio.EventLoop.run_until_complete</code>, but runs
+simulation until a coroutine, future or task is done. If the
+argument is a coroutine, then the coroutine is scheduled as a task
+within the <code>global_event_loop</code> sloop event loop. May only be called
+while simulation is stopped, from Global Context.</p>
+<h2 id="create_task"><a href="#create_task"><strong>create_task</strong></a></h2>
+<pre><code>def create_task(coro, *, name=None)
+</code></pre>
+<p>Like <code>asyncio.create_task</code>, create a task in the currently
+running <code>sloop</code> event loop. Raises <code>RuntimeError</code> if not called
+from a <code>sloop</code> corotuine.</p>
+<h2 id="call_soon"><a href="#call_soon"><strong>call_soon</strong></a></h2>
+<pre><code>def call_soon(fun, *args)
+</code></pre>
+<p>Like <code>asyncio.call_soon</code>, but must be run from a sloop task</p>
+<h2 id="wrap_future"><a href="#wrap_future"><strong>wrap_future</strong></a></h2>
+<pre><code>def wrap_future(fut)
+</code></pre>
+<p>Similar to <code>asyncio.wrap_future</code>, wrap a future-like object
+so it can be awaited within a sloop loop.</p>
+<p>Mainly useful to wrap the results of higher-order <code>asyncio</code> coroutines,
+e.g. <code>sloop.wrap_future(asyncio.gather(...))</code> or <code>map(sloop.wrap_future, asyncio.as_completed(...))</code>.</p>
+<p>Raises <code>RuntimeError</code> if not called
+from a <code>sloop</code> corotuine.</p>
+<h2 id="wait_call"><a href="#wait_call"><strong>wait_call</strong></a></h2>
+<pre><code>async def wait_call(fun, *args)
+</code></pre>
+<p>Similar to <code>asyncio.to_thread</code>, run a slow function
+outside the Sloop event loop and await the result.</p>
+<p>Like <code>asyncio</code>, <code>sloop</code> emits a warning if a coroutine takes too
+long between waits; wrapping a call in <code>wait_call</code> silences
+this. However, unlike <code>asyncio.to_thread</code>, <code>wait_call</code> schedules
+the function to run in Global Context rather than in a separate
+thread, so it will still block the progress of simulation. Thus, the
+motivation for the function is to allow preservation of asyncio's
+convention that expensive code should not be run within coroutines.</p>
+<p>Raises <code>RuntimeError</code> if not called from a <code>sloop</code> corotuine.</p>
+<h2 id="wait"><a href="#wait"><strong>wait</strong></a></h2>
+<pre><code>async def wait(s: snoop.Snooper)
+</code></pre>
+<p>Wait for the next time a snooper yields.</p>
+<h2 id="trace"><a href="#trace"><strong>trace</strong></a></h2>
+<pre><code>async def trace(snooper, until)
+</code></pre>
+<p>Collect all values yielded by <code>snooper</code> until the first time
+<code>until</code> yields, and return a list of these values.</p>
+<h2 id="tracer"><a href="#tracer"><strong>Tracer</strong></a></h2>
+<pre><code>class Tracer
+</code></pre>
+<p>Asynchronous context manager that converts a snooper into an
+asynchronous iterator of yielded values. The asynchronous iterator is
+returned by <code>__enter__</code>, so typical usage looks like this:</p>
+<pre><code>async with Tracer(SomeSnooper(...)) as t:
+    async for value in t:
+        ...
+</code></pre>
+<h3 id="tracer-__init__"><a href="#tracer-__init__">Tracer.<strong>__init__</strong></a></h3>
+<pre><code>def __init__(self, snooper: snoop.Snooper, until: snoop.Snooper=None)
+</code></pre>
+<p><code>snooper</code> is the snooper whose values to collect. <code>until</code>
+specifies when to stop iteration; the default is to continue
+indefinitely.</p>
+<h2 id="callbackscope"><a href="#callbackscope"><strong>CallbackScope</strong></a></h2>
+<pre><code>class CallbackScope(contextlib.AbstractAsyncContextManager)
+</code></pre>
+<p>Reusable asynchronous context manager that subscribes a
+callback to a snooper while entered.</p>
+<h3 id="callbackscope-__init__"><a href="#callbackscope-__init__">CallbackScope.<strong>__init__</strong></a></h3>
+<pre><code>def __init__(self, snp: snoop.Snooper[T], cb: Callable[[T], None])
+</code></pre>
+<p>The callback <code>cb</code> is subscribed to <code>snp</code> while entered.</p>
+<h2 id="timeout"><a href="#timeout"><strong>timeout</strong></a></h2>
+<pre><code>def timeout(snooper)
+</code></pre>
+<p>Similar to <code>asyncio.timeout</code> in Python 3.11, returns an
+asynchronous context manager that interrupts the block by raising a
+<code>TimeoutError</code> exception if it does not finish in time. Unlike
+<code>asyncio.timeout</code>, the timeout is specified by a snooper object,
+typically an instance of <code>sloop.Seconds</code>.</p>
+
+<div class="chain">
+<a href="snoop-refman.html">Snoop module reference</a>
+</div>

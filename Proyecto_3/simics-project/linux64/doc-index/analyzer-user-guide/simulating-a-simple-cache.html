@@ -1,0 +1,192 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.2 Simulating a Simple Cache</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="caches-introduction.html">5.1 Introduction to Cache Simulation with Simics</a>
+<a href="programmatically-constructing-a-cache-hierarchy.html">5.3 Programmatically constructing a cache hierarchy</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="caches.html">5 Cache Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 id="simulating-a-simple-cache">5.2 <a href="#simulating-a-simple-cache">Simulating a Simple Cache</a></h1>
+<p>Caches models are not currently well integrated with the component system that Simics uses for other devices. For that reason, users are typically required to create caches and connect them by hand. This approach offers, on the other hand, total control on the configuration process. There are however some help commands that can be used to add simple cache hierarchies, and we will study them below.</p>
+<p>Here is an example on how to create three level caches by using the instrumentation framework.</p>
+<p>First you need to create a cache tool object with the following command:</p>
+<pre><code>
+  new-simple-cache-tool name = cachetool -connect-all
+</code></pre>
+<p>If you want to simulate simple timing you can add a cycle staller object to the cache tool as well:</p>
+<pre><code>
+  new-cycle-staller name = cs0 stall-interval = 10000
+  new-simple-cache-tool name = cachetool cycle-staller = cs0 -connect-all
+</code></pre>
+<p>The cycle-staller object adds extra stalls from the caches to the processors at a given interval (here 10000 cycles). The purpose of this method compared to stalling the processor at each memory access is that is much more efficient to do it. The staller will sum up all penalty cycles from the caches, and then apply them as a single stall time at the end of the interval.</p>
+<p>If only cache statistics such as hit rates etc. are requested the cycle staller can be omitted.</p>
+<p>The <code>new-simple-cache-tool</code> command creates an instrumentation tool that works as a handler for all processors added to the tool. The <code>-connect-all</code> flag tells the command to connect to all the processors in the configuration. Simics usually does not make any distinction between single cores and cores with hardware threads. Each thread will be regarded a "processor", and thus you will get a connection for each hardware threads present in the configuration. A connection is small Simics object that handles the association between the caches and the processor hardware threads.</p>
+<p>You can also use the <em>processors</em> argument to the command to list only a certain group of processors (threads) to connect to. This can be useful for heterogeneous setups where different core have different cache settings. In such scenario you should create more than one cache tool.</p>
+<p>The cache tool installs instrumentation callbacks for every memory operation and redirects them to the caches. The callbacks can be installed on different access types such as data operation and instruction fetches, and this is used to dispatch the access to the correct first level cache, the instruction cache or the data cache.</p>
+<p>Now we are going to add the cache models to the tool. We use the commands <code>add-l1d-cache</code> (level one data cache), <code>add-l1i-cache</code> (level one instruction cache), <code>add-l2-cache</code> (level two cache for both data and instructions), and then <code>add-l3-cache</code> (shared level tree cache among the cores).</p>
+<pre><code>
+(cachetool.add-l1d-cache name = l1d line-size = 64 sets = 64 ways = 12
+ -ip-read-prefetcher prefetch-additional = 1)
+
+(cachetool.add-l1i-cache name = l1i line-size = 64 sets = 64 ways = 8)
+
+(cachetool.add-l2-cache name = l2 line-size = 64 sets = 1024 ways = 20
+ -prefetch-adjacent prefetch-additional = 4)
+
+(cachetool.add-l3-cache name = l3 line-size = 64 sets = 8192 ways = 12)
+</code></pre>
+<p>This is an example of added caches to a QSP (quick start platform) that consists of 1 cpu socket (cpu0), with 2 cores and 2 threads per core. Before the caches are added the processor hierarchy looks like:</p>
+<p>(Notice, the following examples shows just selected output from the <code>list-objects -tree</code> command.)</p>
+<pre><code>
+ cpu0 ┐
+      ├ core[0][0]
+      ├ core[0][1]
+      ├ core[1][0]
+      ├ core[1][1]
+</code></pre>
+<p>and after when the caches has been added:</p>
+<pre><code>
+ cpu0 ┐
+      ├ cache[0] ┐
+      │          ├ l1d 
+      │          ├ l1i 
+      │          └ l2
+      ├ cache[1] ┐
+      │          ├ l1d 
+      │          ├ l1i 
+      │          └ l2
+      ├ core[0][0]
+      ├ core[0][1]
+      ├ core[1][0]
+      ├ core[1][1]
+      ├ directory_l1 
+      ├ directory_l2 
+      ├ directory_l3 
+      ├ l3 
+</code></pre>
+<p>As you can see, there are added caches for all the cores. The cache[0] namespace keeps the caches for core 0, and cache[1] for core 1 respectively. The two hardware threads core[0][0] and core[0][1] will share the caches under cache[0], and core[1][0] and core[1][1] will share the caches under cache[1]. All accesses from the threads go first to l1d/l1i and then to l2. The l3 cache is shared between both cores. The directory objects keeps a cache directory for each cache level that keeps track of the cache coherency. The caches models a simple MESI protocol for each level. The directories also talk to each other to keep the consistency for all levels.</p>
+<p>You can also list the cache objects created in a table by the following command:</p>
+<pre><code>
+simics&gt; list-objects class = simple_cache -all
+┌──────────────┬──────────────────────────┐
+│    Class     │          Object          │
+├──────────────┼──────────────────────────┤
+│&lt;simple_cache&gt;│board.mb.cpu0.cache[0].l1d│
+│&lt;simple_cache&gt;│board.mb.cpu0.cache[0].l1i│
+│&lt;simple_cache&gt;│board.mb.cpu0.cache[0].l2 │
+│&lt;simple_cache&gt;│board.mb.cpu0.l3          │
+└──────────────┴──────────────────────────┘
+</code></pre>
+<p>There is also a command, <code>&lt;simple_cache_tool&gt;.list-caches</code>, to list the caches connected to a specific <code>simple_cache_tool</code>. For example:</p>
+<pre><code>
+    simics&gt; cachetool.list-caches
+┌─────┬──────────────────────────┬────┬────┬─────────┬──────────┐
+│Row #│       Cache Object       │Sets│Ways│Line Size│Total Size│
+├─────┼──────────────────────────┼────┼────┼─────────┼──────────┤
+│    1│board.mb.cpu0.cache[0].l1d│  64│  12│       64│ 48.00 kiB│
+│    2│board.mb.cpu0.cache[0].l1i│  64│   8│       64│ 32.00 kiB│
+│    3│board.mb.cpu0.cache[0].l2 │1024│  20│       64│  1.25 MiB│
+│    4│board.mb.cpu0.l3          │4096│  12│       64│  3.00 MiB│
+└─────┴──────────────────────────┴────┴────┴─────────┴──────────┘
+</code></pre>
+<p>Here some size properties of the caches is also displayed.</p>
+<p>All the configuration parameters to the <code>&lt;simple_cache&gt;</code>.add-{l1d,l1i,l2,l3}-cache commands are listed here:</p>
+<ul>
+<li><code>line-size</code> the cache line size, default 64 (bytes).</li>
+<li><code>sets</code> the number of cache sets, i.e., number of indices.</li>
+<li><code>ways</code> sets the cache associativity, i.e., the total number of cache lines will be sets * ways, default number of ways is 1.</li>
+<li><code>-write-through</code> if the cache should be a write through cache, i.e., all writes will be passed through to the next level (even cache hits). Default is not to write through.</li>
+<li><code>-no-write-allocate</code> if the cache should not allocate lines upon a cache write miss. If no write allocate the cache will write through on write misses. Default is to do write allocate, by first reading the cache line.</li>
+<li><code>read-penalty</code> sets the time in cycle it takes to read from the cache.</li>
+<li><code>read-miss-penalty</code> sets the time in cycles it takes to miss in the cache. So for a miss both the read penalty and read miss penalty will be added. Usually this is only set for the last cache to set the time it takes to reach memory.</li>
+<li><code>write-penalty</code> sets the time in cycle it takes to write to the cache.</li>
+<li><code>write-miss-penalty</code> sets the time in cycle it takes to write and miss in the cache. So for a miss both the write penalty and write miss penalty will be added. Usually this is only set for the last cache to set the time it takes to reach memory.</li>
+<li><code>prefetch-additional</code> sets how many consecutive cache lines to fetch additionally to the one that missed.</li>
+<li><code>-prefetch-adjacent</code> means that the cache will, on a miss, prefetch the adjacent cache line as well, so the total fetch region is cache line size times 2, naturally aligned.</li>
+<li><code>-ip-read-prefetcher</code> adds an instruction pointer stride prefetcher for reads</li>
+<li><code>-ip-write-prefetcher</code> adds an instruction pointer stride prefetcher for writes</li>
+<li><code>-no-issue</code> this is a special flag for the add-l1i-cache command which prevents the CPU to do any instruction fetch accesses to the instruction cache. This is useful if the instruction cache should be called from another tool, such as a branch predictor tool that drives the instructions cache. If not set, the instruction cache will be called for each new cache block that the CPU fetches.</li>
+</ul>
+<p>The penalties from above is only relevant if you add the cycle staller object.</p>
+<p>If you run the simulation for a while, say 1 000 000 000 cycles, with the <code>run-cycles</code> command, you will get information about a cache with the <code>cache.print-statistics</code> command.</p>
+<p>So, from the table above choose one cache object, and do for instance:</p>
+<pre><code>
+simics&gt; board.mb.cpu0.cache[0].l1d.print-statistics
+  
+</code></pre>
+<p>The output will be something like the following. See chapter <em>Understanding the Statistics of Simple Cache</em> below for more information about the statistics.</p>
+<pre><code>
+
+┌─────┬───────────────────────────────────┬────────┬─────┐
+│Row #│              Counter              │ Value  │  %  │
+├─────┼───────────────────────────────────┼────────┼─────┤
+│    1│read accesses                      │10571090│     │
+│    2│read misses                        │  194075│ 1.84│
+│    3│write accesses                     │ 3704615│     │
+│    4│write misses                       │  152557│ 4.12│
+│    5│prefetch accesses                  │  323980│     │
+│    6│prefetch misses                    │  253378│78.21│
+│    7│prefetched lines used              │  139516│43.06│
+│    8│evicted lines (total)              │  599242│     │
+│    9│evicted modified lines             │  172067│28.71│
+│   10│entire cache flushes (invd, wbinvd)│       8│     │
+│   11│uncachable read accesses           │56531126│     │
+│   12│uncachable write accesses          │38655295│     │
+└─────┴───────────────────────────────────┴────────┴─────┘
+  
+</code></pre>
+<p>The table can also be exported to a comma separated value file (csv), by using the <code>.export-table-csv</code> command, e.g.,</p>
+<pre><code>
+simics&gt; board.mb.cpu0.cache[0].l1d.export-table-csv file = my-stats.csv
+  
+</code></pre>
+<p>You can also view the content of a cache with the <code>.print-cache-content</code> command, e.g.,</p>
+<pre><code>
+simics&gt; board.mb.cpu0.cache[0].l1d.print-cache-content -no-row-column
+
+┌─────┬────────────────┬────────────────┬────────────────┬────────────────┐
+│Index│      Way0      │      Way1      │      Way2      │      Way3      │
+├─────┼────────────────┼────────────────┼────────────────┼────────────────┤
+│    0│M:0xdffd4b00:2:-│S:0xdffef000:1:-│S:0xdffce000:0:-│M:0xdffcf200:3:-│
+│    1│E:0xdffedf40:2:-│E:0xdffcf240:1:P│M:0xdffcf040:3:-│S:0xdffce040:0:-│
+│    2│S:0xdffce080:1:-│S:0xdffcf280:2:-│M:0xdffcf180:3:-│E:0xdffedf80:0:-│
+│    3│M:0xdffd4ac0:1:-│E:0xdffcf2c0:3:P│E:0xdffcf1c0:0:S│E:0xdffedfc0:2:-│
+└─────┴────────────────┴────────────────┴────────────────┴────────────────┘
+</code></pre>
+<p>The <code>-no-row-column</code> removes the default Row column from the table, which is useful since it reduces possible confusion with the Index column.</p>
+<p>This example shows a small cache with only 4 sets and 4 ways. The first letter of each cache line shows the state of the cache line in the MESI cache protocol. M is modified, E is Exclusive, S is shared, and I is Invalid. The next field is the tag, or rather the physical address of the cache line. The next number tells the age of the cache line among the ways in the set. 0 means the most recently used (MRU) and higher number means older up to the highest number representing the leased recently used (LRU) line. The last letter shows the prefetch status. P means the line has been prefetched but not used yet, and S means that line is currently part of a stride prefetching scheme.</p>
+<p>There is a flag to the command, <code>-no-invalid-sets</code>, that filters out sets with only invalid lines.</p>
+<p>Also, the table printed will default to only show a maximum of 40 sets. To show more or fewer of the sets use the <em>max</em> argument to the command to set the limit. </p>
+
+<div class="chain">
+<a href="caches-introduction.html">5.1 Introduction to Cache Simulation with Simics</a>
+<a href="programmatically-constructing-a-cache-hierarchy.html">5.3 Programmatically constructing a cache hierarchy</a>
+</div>

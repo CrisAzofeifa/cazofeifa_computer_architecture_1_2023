@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;simple_cache_tool&gt;.add-l2-cache</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-simple_cache_tool.add-l1i-cache.html">&lt;simple_cache_tool&gt;.add-l1i-cache</a>
+<a href="rm-cmd-simple_cache_tool.add-l3-cache.html">&lt;simple_cache_tool&gt;.add-l3-cache</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="simple_cache_tool.add-l2-cache"></a>
+<h1 id="simple_cache_tool.add-l2-cache"><a href="#simple_cache_tool.add-l2-cache">&lt;simple_cache_tool&gt;.add-l2-cache</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;simple_cache_tool&gt;.add-l2-cache</b> [<i>"name"</i>] [<i>line-size</i>] <i>sets</i> [<i>ways</i>] [<i>read-penalty</i>] [<i>read-miss-penalty</i>] [<i>write-penalty</i>] [<i>write-miss-penalty</i>] [<i>prefetch-additional</i>] [-write-through] [-no-write-allocate] [-prefetch-adjacent] [-ip-read-prefetcher] [-ip-write-prefetcher] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Add level 2 caches to all connected processors. The level 1 data and instruction caches will be connected to this one. <i>name</i> can be given to set a name for the cache object in the hierarchy. <i>line-size</i> is cache line size (default 64 bytes), <i>sets</i> number of sets/indices, and <i>ways</i> number of ways (default 1).
+<p>
+You can configure the cache to be a write through cache by giving the <tt>-write-through</tt> flag, default is a write back cache.
+</p><p>
+To prevent the cache from allocating lines on writes use the <tt>-no-write-allocate</tt> flag.
+</p><p>
+The <i>read-penalty</i>, <i>read-miss-penalty</i>, <i>write-penalty</i>, <i>write-miss-penalty</i> sets the penalties in cycles for cache accesses and misses, respectively. The read/write penalty is added to the total penalty when accessing the cache (i.e., the cost of reaching the cache), a miss penalty is added when a miss occurs and there is no next level cache.
+</p><p>
+If <i>prefetch-additional</i> is given, the cache will prefetch additional consecutive cache lines on a miss.
+</p><p>
+<tt>-prefetch-adjacent</tt> means that the cache will, on a miss, prefetch the adjacent cache line as well, so the total fetch region is cache line size * 2, naturally aligned.
+</p><p>
+<tt>-ip-read-prefetcher</tt> and <tt>-ip-write-prefetcher</tt> adds a hardware instruction pointer based stride prefetcher for reads and writes respectively. Write prefetching will issue read for ownership prefetch accesses to the cache, meaning that other caches having those lines will be forced to flush them. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simple-cache-tool.html">simple-cache-tool</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-simple_cache_tool.add-l1i-cache.html">&lt;simple_cache_tool&gt;.add-l1i-cache</a>, 
+<a href="rm-cmd-simple_cache_tool.add-l3-cache.html">&lt;simple_cache_tool&gt;.add-l3-cache</a>, 
+<a href="rm-cmd-simple_cache_tool.add-l3-cache-slice.html">&lt;simple_cache_tool&gt;.add-l3-cache-slice</a>, 
+<a href="rm-cmd-simple_cache_tool.list-caches.html">&lt;simple_cache_tool&gt;.list-caches</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-simple_cache_tool.add-l1i-cache.html">&lt;simple_cache_tool&gt;.add-l1i-cache</a>
+<a href="rm-cmd-simple_cache_tool.add-l3-cache.html">&lt;simple_cache_tool&gt;.add-l3-cache</a>
+</div>

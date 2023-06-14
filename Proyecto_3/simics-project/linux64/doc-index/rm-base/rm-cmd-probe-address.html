@@ -1,0 +1,79 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>probe-address</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-print-time.html">print-time</a>
+<a href="rm-cmd-processor-status.html">processor-status</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="probe-address"></a>
+<h1 id="probe-address"><a href="#probe-address">probe-address</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>probe-address</b> <i>address</i> [<i>obj</i>] [<i>inquiry</i>] [-port] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Probes a memory <i>address</i> for a processor, or a memory space, and reports the destination object. If the destination is a device that provides register information, the addressed register within the device will be shown. If used in an expression the destination object will be returned.
+<p>
+If no address prefix is used (<tt>p:</tt>, <tt>l:</tt> or <tt>v:</tt>), the address is interpreted as virtual when used with a processor or else as a physical address.
+</p><p>
+The currently selected frontend processor is used unless the <i>obj</i> argument selects a specific processor or memory-space object in the system.
+</p><p>
+The <i>inquiry</i> argument, which defaults to <tt>TRUE</tt>, sets the inquiry flag of the transaction that is used when probing. Transactions in inquiry mode must have no side-effects and may bypass certain access restrictions.
+</p><p>
+The <tt>-port</tt> flag only applies to processor and selects the port space instead of the memory address space if it exists.
+</p><p>
+All memory spaces that the access will traverse are listed, with the local address in each. The command warns for overlapping mappings with the same priority.
+</p><p>
+A memory system may include objects implementing the 'translate' interface which modifies memory access addresses at run time. A warning is displayed if the address may be affected by such objects, since it is not possible for the command to determine how the address is manipulated.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-memory-map.html">memory-map</a>, 
+<a href="rm-cmd-devs.html">devs</a>, 
+<a href="rm-cmd-memory-space.map.html">&lt;memory-space&gt;.map</a>, 
+<a href="rm-cmd-port-space.map.html">&lt;port-space&gt;.map</a>, 
+<a href="rm-cmd-print-device-regs.html">print-device-regs</a>, 
+<a href="rm-cmd-print-device-reg-info.html">print-device-reg-info</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-print-time.html">print-time</a>
+<a href="rm-cmd-processor-status.html">processor-status</a>
+</div>

@@ -1,0 +1,95 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ieee_802_3_mac_v3</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ieee_802_3_mac.html">ieee_802_3_mac</a>
+<a href="__rm_interface_ieee_802_3_phy.html">ieee_802_3_phy</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ieee_802_3_mac_v3">ieee_802_3_mac_v3</a></h1>
+<p>
+
+<a name="ieee_802_3_mac_v3"></a><a name="ieee_802_3_mac_v3_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">#define IEEE_802_3_MAC_V3_INTERFACE "ieee_802_3_mac_v3"
+SIM_INTERFACE(ieee_802_3_mac_v3) {
+        void (*receive_frame)(
+                conf_object_t *obj, int phy, const frags_t *frame, int crc_ok);
+        void (*tx_bandwidth_available)(conf_object_t *obj, int phy);
+        void (*link_status_changed)(
+                conf_object_t *obj, int phy, ieee_802_3_link_status_t status);
+};
+</pre><p>
+</p><p>
+
+   
+</p><pre class="jdocu_small">typedef enum {
+        IEEE_link_unconnected,
+        IEEE_link_down,
+        IEEE_link_up
+} ieee_802_3_link_status_t;</pre><p>
+
+</p><p>
+   Interface that should be implemented by 802.3 media access control layers.
+</p><p>
+   The <b><i>receive_frame</i></b> function is called when a frame has been
+   received by the phy.  The frame is passed as a
+   <code><a name="frags_t">frags_t</a></code> that must not be modified. 
+</p><p>
+   The <i>crc_ok</i> flag is set to indicate that the frame is valid
+   with regards to CRC calculations. If the <i>crc_ok</i> flag is not
+   set, the frame is considered invalid. Note that in general,
+   <i>crc_ok</i> does not indicate whether or not the CRC field in the
+   frame can be relied upon, or whether its computation has been skipped to
+   improve simulation performance. When using new-style links,
+   <i>crc_ok</i> set to false indicates that the CRC field contains
+   valid information that is not matching with the frame contents.
+</p><p>
+   The <b><i>tx_bandwidth_available</i></b> is called by the PHY when a
+   previous call to <b><i>send_frame</i></b> or <b><i>check_tx_bandwidth</i></b>
+   in the <code>ieee_802_3_phy_v3</code> interface have returned no bandwidth
+   available.
+</p><p>
+   <b><i>link_status_changed</i></b> is called when the phy detects a change
+   of the link status.
+</p><p>
+   The <i>phy</i> parameter is deprecated and should be ignored.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+<p>
+   
+</p></dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ieee_802_3_mac.html">ieee_802_3_mac</a>
+<a href="__rm_interface_ieee_802_3_phy.html">ieee_802_3_phy</a>
+</div>

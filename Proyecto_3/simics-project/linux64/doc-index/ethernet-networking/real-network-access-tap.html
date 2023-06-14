@@ -1,0 +1,249 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.3.1 TAP Access</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="real-network-access.html">4.3 Accessing Host Ethernet Interfaces</a>
+<a href="real-network-interface.html">4.4 Selecting Host Ethernet Interface</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="real-network.html">4 Connecting to a Real Network</a>
+&nbsp;/&nbsp;
+<a href="real-network-access.html">4.3 Accessing Host Ethernet Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="real-network-access-tap">4.3.1 TAP Access</a></h1>
+<p>
+
+</p><p>
+With TAP access Simics will connect the simulated network to a virtual
+Ethernet (TAP) interface provided by the operating system. Accessing
+the TAP interface does not require administrative privileges, so once
+the TAP interface has been configured, Simics can connect to the real
+network without administrative privileges.
+</p><p>
+The TAP interface can either be bridged to a real Ethernet interface
+to create an Ethernet bridging connection, or configured with an IP
+address to create a host connection. This section only describes the
+basic configuration which is required for both kinds of
+connections. Read section <a class="reference" href="real-network-connections-ethernet-bridging.html">4.2.2</a> for the
+additional steps needed for Ethernet bridging connections and <a class="reference" href="real-network-connections-host-connection.html">4.2.3</a> for the additional
+steps required for host connections.
+</p><p>
+The setup required for TAP access differs for simulation hosts running
+Linux and Windows.
+</p><p>
+</p><h2 class="jdocu"><a class="not-numbered" name="Linux">Linux</a></h2>
+<p> 
+</p><p>
+Creating a TAP interface that Simics can use is done in two simple
+steps. These commands require administrative privileges:
+</p><p>
+</p><ol>
+
+    <li>Give the user running the simulation access to the
+    <code>/dev/net/tun</code> device.
+<p>
+</p><pre class="jdocu_small">computer# <b>chmod a+rw /dev/net/tun</b>
+</pre><p></p></li>
+
+   <li>Create the TAP interface. Here the name of the user that will
+   be using the TAP interface is assumed to be <code>joe</code> and the
+   name of the TAP interface will be <code>sim_tap0</code>, but it should
+   of course be replaced with the correct user name and TAP interface.
+<p>
+</p><pre class="jdocu_small">computer# <b>ip tuntap add sim_tap0 mode tap user joe</b>
+</pre><p></p></li>
+
+   <li>Bring up the interface. (Optional in some environments.)
+<p>
+</p><pre class="jdocu_small">computer# <b>ip link set dev sim_tap0 up</b>
+</pre><p></p></li>
+
+</ol>
+<p>
+To remove a TAP interface, do the following (requires
+administrative privileges):
+</p><p>
+</p><pre class="jdocu_small">computer# <b>ip tuntap del mode tap name sim_tap0</b>
+</pre><p>
+</p><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Windows">Windows</a></h2>
+<p>
+
+</p><p>
+Tow create a TAP interface, a <em>TAP</em> driver is required. One such
+is available from the OpenVPN project. See the <em>Installation
+Guide</em> for information about how to do this.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Simics uses the MAC addresses of the simulation host's network
+interfaces to identify the host for licensing purposes. The licensing
+system does not differentiate TAP interfaces and real Ethernet
+interfaces. Creating or removing TAP interfaces may therefore
+cause a node-locked license to stop working. Renaming the TAP device
+so that the Local Area Connection is first will probably fix
+this.</div>Configuring a TAP interface consists of setting its name and IP
+address.
+<p>
+</p><ol>
+    <li>In the <b>Control Panel</b>, find <b>Network
+      Connections.</b>
+    </li>
+
+    <li>Rename the new TAP interface if you like to, for example to
+      "TAP".
+    </li>
+
+     <li>To configure the IP address, right click the TAP device and
+     choose Properties, then select "Internet Protocol(TCP/IP)" and
+     click the "Properties" button. Some values are 10.10.0.100 for
+     the IP address and 255.255.255.0 for the Subnet Mask.</li>
+
+     <li>Click "OK" twice to save the new configuration</li>
+</ol>
+<p>
+</p><h2 class="jdocu"><a class="not-numbered" name="TAP-devices-with-multiple-users-and-simulations">TAP devices with multiple users and simulations</a></h2>
+<p> 
+</p><p>
+On Windows, TAP devices are typically created with sufficient
+permissions for all users to be able to access them. On Linux however,
+you have to be the user or belong to the group that was specified when
+the device was created to be able to access it . On both Windows and
+Linux, each device can only be opened by one application at a
+time. These facts can lead to problems when multiple users tries to
+run the same Simics configuration on the same machine, possibly even
+at the same time.
+</p><p>
+Let us take a closer look at how to solve the problem with having
+multiple users running identical configurations on the same machine,
+but not necessarily at the same time:
+</p><p>
+Newer versions of the Linux kernel offers the possibility to assign a
+group to a TAP device; any member of that group is allowed to open the
+tap device, and no further configuration is needed. That means that
+any routing table entries that has been set up on the simulation host
+has to be configured only once and can remain the same after that.
+Without the group functionality of TAP devices, each user must use its
+own TAP device. This means that the interface argument to
+<b>connect-real-network-[host,bridge]</b> must depend on which
+user that runs the command, and routes on the simulation host must be
+updated to match that TAP device.
+As has previously been said, TAP devices on Windows can typically be
+accessed by all users, so the choice of having one or multiple TAP
+devices is entirely up to the users.
+</p><p>
+If several users needs to run identical configurations at the same
+time with access to the same real network it gets even more
+complicated; the simple answer is that it is generally not possible.
+Even if the users run the configuration on different simulation hosts,
+it is generally not possible connect both simulations to the real
+network in a correct and working manner.
+The reasons are a little different between a host connection and a
+bridged connection, but in both cases it has to do with the fact
+that there are multiple target machines that have the same IP and MAC
+addresses on connected to the real network in some way.
+</p><p>
+When using a bridged real network connection, the simulated network
+will appear to be the same network as the real one. When
+running two identical simulations, both MAC and IP addresses will be
+duplicated on the same network, which will lead to unexpected behavior
+even if different simulation hosts are used.
+When using a host connection the simulation host can only route
+traffic to one of the simulated networks since the network addresses
+and TAP interface addresses has to be the same for both
+simulations.
+The only possible setup is a host connection where each simulation is
+running on a different machine, and the only communication is
+internally on the simulated network and between simulated machines and
+their simulation host.
+</p><p>
+The general solution to this problem is to use configurations that are
+not completely identical. Each simultaneously running configuration
+should have unique network properties, such as IP address range, MAC
+address range and TAP interface. Using such Simics configurations, all
+network configuration, including routes and TAP interfaces on the real
+hosts can be done in advance and does not have to be changed for every
+Simics configuration that is started. For example, if a bridged
+connection is required, several TAP interfaces and a real network
+interface can be bridged together to form a single bridge.
+</p><p>
+The examples below show how real network connections can be configured
+when running multiple <em>almost</em> identical Simics configurations
+simultaneously. For both examples, the part of the configuration that
+has to be done by the root user can be done once so that the user
+running the simulation does not need administrative privileges.
+</p><p>
+Figure <a class="reference" href="#multihost">3</a> shows a setup with two Simics
+processes on the same simulation host, both using a host
+connection. Each Simics process connects to its own TAP device. All
+target machines in the <code>Simics 0</code> configuration has IP
+addresses on the 10.10.x.0 network while the <code>Simics 1</code>
+configuration has IP addresses on the 10.10.y.0 network. It is
+important that all the real hosts that the target machines needs to
+talk to has static routes set up for the 10.10.x.0 and 10.10.y.0
+networks, using the simulation host as gateway.
+</p><p>
+</p><div class="figure" id="multihost">
+
+<div style="text-align: center">
+<img alt="" src="multi-host.png">
+<div class="caption">Figure 3. Example setup of multiple Simics instances using a host connection</div>
+</div>
+</div>
+
+<p>
+Figure <a class="reference" href="#multibridge">4</a> shows a setup similar to Figure <a class="reference" href="#multihost">3</a>. In this case the target machine connect to the
+real network using an Ethernet bridge on the simulation host. The
+bridge is invisible to both the target machines and the real hosts. As
+all IP addresses must be on the 192.168.0.0 network, the <code>Simics
+0</code> configuration uses IP addresses between 192.168.0.0 and
+192.168.0.9, and the <code>Simics 1</code> configuration uses IP addresses
+between 192.168.0.10 and 192.168.0.19. Note that both
+<code>sim_tap0</code> and <code>sim_tap1</code> is part of the same Ethernet
+bridge, and that none of the interfaces that is a part of the bridge
+has any IP address. In this description the MAC addresses has been
+left out to not unnecessarily clutter the figure and
+description. These needs to be partitioned between the two Simics
+configurations in the same way as the IP addresses.
+</p><p>
+</p><div class="figure" id="multibridge">
+
+<div style="text-align: center">
+<img alt="" src="multi-bridge.png">
+<div class="caption">Figure 4. Example setup of multiple Simics instances using a bridged connection</div>
+</div>
+</div>
+
+<p>
+ </p>
+<div class="chain">
+<a href="real-network-access.html">4.3 Accessing Host Ethernet Interfaces</a>
+<a href="real-network-interface.html">4.4 Selecting Host Ethernet Interface</a>
+</div>

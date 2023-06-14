@@ -1,0 +1,248 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7.1 File Transfers Using the Simics Agent</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+<a href="working-with-images.html">7.2 Working with Images</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="matic">7.1 File Transfers Using the Simics Agent</a></h1>
+<p><a name="MaticSimics-Agent"></a>
+  <a name="Agent-Manager"></a>
+  <a name="Simics-Agent"></a>
+  <a name="Simics-AgentAgent-Manager"></a>
+  <a name="Simics-Agentagent-handler"></a>
+</p><p>
+  Simics Agent is a feature in Simics which can be used to move files and
+  directories in and out of a simulation in a deterministic way, without any
+  network connection or kernel modules. It also provides a deterministic way of
+  executing commands on the target systems and knowing when they finish.
+</p><p>
+  This feature consists of two parts. One part is present inside a Simics
+  simulation session (<b>agent_manager</b> and
+  <b>agent_handler</b> objects) and the other part is
+  the <code>simics-agent</code> application running on the target system.
+</p><p>
+  The <code>simics-agent</code> application must be located on the target system
+  and the user is in charge of starting it. The application as well as the
+  target system must be running for its commands to execute. There is typically
+  just a single Simics Agent in a target system, but there may be more target
+  systems and agents.
+</p><p>
+  The user has to create the <b>agent_manager</b> object with
+  the <b>start-agent-manager</b> Simics command.
+  The object will find running Simics Agents and keep track of them. There can
+  be only one <b>agent_manager</b> in Simics session.
+</p><p>
+  In order to control and issue commands to a Simics Agent, the user must run
+  the <b>&lt;agent_manager&gt;.connect-to-agent</b> command, which returns a
+  unique <b>agent_handle</b> for the Simics Agent. Several handles may
+  be connected to one Simics Agent, which are executing commands concurrently.
+</p><p>
+  All the commands that the <b>agent_handle</b> provides are
+  asynchronous and queued in the handle until they have completed. Handles can
+  be created and used in scripts, script-branches, or interactively on the
+  Simics command-line. The two commands,
+  <b>&lt;agent_handle&gt;.run-until-job</b> and
+  <b>&lt;agent_handle&gt;.wait-for-job</b>, allow the user to wait until a
+  particular or all queued commands have finished.
+</p><p>
+  Exactly <em>when</em> a Simics Agent runs and executes a particular command
+  is defined by the target system, neither Simics nor the user can control it.
+</p><p>
+  A ready-to-use Simics Agent is installed on some virtual platform images.
+  Agents for some architectures are also available on CD (ISO) in the
+  <code></code><i>[simics-base]</i><code>/targets/common/images/</code> directory.
+  For other use cases, the agent source code comes with Simics Base
+  and can be copied onto and compiled for the target system, usually
+  without, or with only minor, adjustments. The source code is located
+  at <code></code><i>[simics-base]</i><code>/src/misc/simics-agent/</code>.
+</p><p>
+  A Simics Agent runs only when needed, otherwise it sleeps and regularly polls
+  for requests. Agent responsiveness versus performance taxing is a trade-off
+  that is controlled by the polling interval, but affects all users of that
+  Simics Agent.
+</p><p>
+  </p><div class="note">
+<b>Note:</b>
+If reverse execution is enabled, any command given to Simics Agent will
+    replace any older bookmarks with a reverse execution barrier at the current
+    time.
+  </div><div class="note">
+<b>Note:</b>
+A checkpoint will contain Simics Agents and the Agent Manager, but not any
+    Agent Handles. Thus, any ongoing transactions or pending commands are lost
+    and must be rerun.
+  </div>The following sections shows an example where a binary is uploaded to the
+  target system, started, and its output file downloaded to the host. See the
+  <em>Simics Reference Manual</em> or command-line interface help for
+  details on <b>agent_manager</b> and <b>agent_handle</b>
+  classes and the methods they provide.
+<p>
+  The examples assume that a target system is booted and a Simics Agent is
+  running on it. All but the first example expects the simulation to be running.
+</p><p>
+  Creating a Simics Agent Manager is done once per simulation session, both
+  for interactive use and for scripts.
+</p><p>
+  </p><pre class="jdocu_small">simics&gt; <b>start-agent-manager</b>
+agent-manager 'agent_manager' is created and enabled.
+  </pre><p>
+</p><p>
+  </p><h2 class="jdocu"><a name="Interactive-Example">7.1.1 Interactive Example</a></h2>
+<p>
+  
+</p><p>
+  The <b>agent_manager</b> was started above, but the user needs an
+  <b>agent_handle</b> to issue commands to. The connect command below
+  will return immediately, whether the simulation is running or not, and whether
+  there is any known Simics Agents matching the requested identity or not. Since
+  no name was given, the returned handle will have the default name.
+</p><p>
+  It is recommended, but not required, to issue commands while the simulation is
+  stopped, like in this example, for the sake of determinism and repeatability.
+</p><p>
+  </p><pre class="jdocu_small">simics&gt; <b>agent_manager.connect-to-agent</b>
+matic0 connected to simics_agent0
+simics&gt; <b>matic0.upload -executable my_test /bin/</b>
+matic0:job 1
+simics&gt; <b>matic0.run "/bin/my_test -out /var/my_test.log"</b>
+matic0:job 2
+  </pre><p>
+</p><p>
+  Now two commands have been given, but since the simulation is stopped they
+  will not execute yet. The first command will upload the application binary and
+  make it executable (if it isn't already), while the second command will run
+  it. The queued commands can be listed along with their sequence id's.
+</p><p>
+  </p><pre class="jdocu_small">simics&gt; matic0.list-jobs
+	#1	upload my_test /bin/my_test, queued
+	#2	run "/bin/my_test -out /var/my_test.log", queued
+
+  </pre><p>
+</p><p>
+  Note that the <b>&lt;agent_handle&gt;.list-jobs</b> command does not
+  require the simulation to be running (nor even a Simics Agent to exist).
+  Then, run the queued commands and wait for them to complete.
+</p><p>
+  </p><pre class="jdocu_small">simics&gt; <b>matic0.run-until-job</b>
+File my_test copied from host to target /bin/my_test
+... [the output of the my_test command, if any] ...
+matic0:job 2 finished
+  </pre><p>
+</p><p>
+  The test application produced an output log file that should be downloaded
+  from the simulation to the host. When downloading files the user may want to
+  specify the <code>-overwrite</code> flag. Otherwise the file will not be
+  downloaded on following runs, as the file will persist on the host.
+</p><p>
+  </p><pre class="jdocu_small">simics&gt; <b>matic0.download -overwrite /var/my_test.log</b>
+matic0:job 3
+simics&gt; <b>matic0.run-until-job</b>
+File /var/my_test.log copied from target to host ./my_test.log
+matic0:job 3 finished
+  </pre><p>
+</p><p>
+
+  </p><h2 class="jdocu"><a name="Example-with-a-Script-Branch">7.1.2 Example with a Script Branch</a></h2>
+<p>
+  
+</p><p>
+  This example will perform the same tasks as the previous example, but in a
+  script-branch. The handle will automatically run the queued commands one after
+  another in strict order, and they will complete in due time. Technically, the
+  script-branch will queue all commands up until a
+  <b>&lt;agent_handle&gt;.wait-for-job</b> command and only then wait for
+  them to finish.
+</p><p>
+  </p><pre class="jdocu_small"><b>script-branch "run my_test" {
+    local $matic = (agent_manager.connect-to-agent)
+    $matic.upload -executable from = my_test to = /bin/
+    $job = ($matic.run -capture "/bin/my_test -out /var/my_test.log")
+    $matic.download -overwrite /var/my_test.log
+    $matic.wait-for-job</b>  # wait until ALL jobs are done <b>
+    echo ($matic.get-captured-output $job)
+    $matic.delete-handle
+}</b>
+  </pre><p>
+</p><p>
+  This example prints the output of the <code>my_test</code> application, but
+  requires a <b>wait-for-job</b> command, because without it the application
+  will not have run before the script-branch reaches the echo statement and then
+  deletes the handle.
+</p><p>
+  It is good practice to delete any lingering objects in the end of a script
+  branch. The output of the my_test command is captured and printed, but can
+  alternatively be written to a file instead.
+</p><p>
+  </p><pre class="jdocu_small">File my_test copied from host to target /bin/my_test
+File /var/my_test.log copied from target to host ./my_test.log
+... [the output of the my_test command, if any] ...
+  </pre><p>
+</p><p>
+
+  </p><h2 class="jdocu"><a name="Example-from-the-target-shell">7.1.3 Example from the target shell</a></h2>
+<p>
+  
+</p><p>
+  Similar to the previous examples, a test log file will be copied from the
+  target system to the host system. Here, the execution is controlled completely
+  from the command-line in the target system shell.
+</p><p>
+  </p><div class="note">
+<b>Note:</b>
+The direction of the upload and download commands are reversed, when giving
+    the commands from the target system, compared to the host system.
+  </div><pre class="jdocu_small">~ # <b>simics-agent --executable --download my_test --to /bin/</b>
+File my_test copied from host to target /bin/my_test
+The Simics target agent has quit.
+~ # <b>my_test -out /var/my_test.log</b>
+...
+~ # <b>simics-agent --overwrite --upload /var/my_test.log</b>
+File /var/my_test.log copied from target to host ./my_test.log
+The Simics target agent has quit.
+  </pre><p>
+</p><p>
+  Give the <code>--help</code> argument to the <b>simics-agent</b> for more
+  information on the available commands and options.
+</p><p>
+  For these target initiated commands to work, the Agent Manager must be started
+  on the host, but no Simics Agents are required to be running in the target
+  system. Different Simics Agents and using them will not conflict or interfere
+  with each other.
+
+</p>
+<div class="chain">
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+<a href="working-with-images.html">7.2 Working with Images</a>
+</div>

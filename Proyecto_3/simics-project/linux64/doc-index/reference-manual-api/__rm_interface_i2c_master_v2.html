@@ -1,0 +1,75 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i2c_master_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_i2c_master.html">i2c_master</a>
+<a href="__rm_interface_i2c_slave.html">i2c_slave</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_i2c_master_v2">i2c_master_v2</a></h1>
+<p>
+
+<a name="i2c_master_v2"></a><a name="i2c_master_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">
+typedef enum {
+        I2C_ack = 0,
+        I2C_noack = 1
+} i2c_ack_t;
+
+SIM_INTERFACE(i2c_master_v2) {
+        void (*acknowledge)(conf_object_t *device, i2c_ack_t ack);
+        void (*read_response)(conf_object_t *device, uint8 value);
+};
+
+#define I2C_MASTER_V2_INTERFACE "i2c_master_v2"
+</pre><p>
+</p><p>
+
+   The <code>i2c_master_v2</code> interface should be implemented
+   by devices that intend to act as a master on an I2C link.
+</p><p>
+   The function <b><i>acknowledge</i></b> is called in response to a
+   <b><i>start</i></b> or <b><i>write</i></b> call in the
+   <code>i2c_slave_v2</code> interface of the slave device.
+   <b><i>read_response</i></b> is called as response to a
+   <b><i>read</i></b> call.  More details can be found in the
+   documentation of the <a class="jdocu" href="__rm_interface_i2c_slave_v2.html">i2c_slave_v2</a> interface.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_i2c_master.html">i2c_master</a>
+<a href="__rm_interface_i2c_slave.html">i2c_slave</a>
+</div>

@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>load-binary</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-ll.html">ll</a>
+<a href="rm-cmd-load-coverage.html">load-coverage</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="load-binary"></a>
+<a name="memory_space.load-binary"></a>
+<a name="processor_info.load-binary"></a>
+<h1 id="load-binary"><a href="#load-binary">load-binary</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>load-binary</b> <i>filename</i> [<i>offset</i>] [-v] [-pa] [-l] [-n] <br><b>&lt;memory_space&gt;.load-binary</b> <i>filename</i> [<i>offset</i>] [-v] [-pa] [-n] <br><b>&lt;processor_info&gt;.load-binary</b> <i>filename</i> [<i>offset</i>] [-v] [-pa] [-n] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Load a binary (executable) file, <i>filename</i>, into the given physical or virtual memory space. The supported formats are ELF, Motorola S-Record, PE32 and PE32+. For ELF, all segments with a PT_LOAD program header are loaded.
+<p>
+By default the virtual load address from the file is used. The physical load address can be used instead, for file formats supporting both, by specifying the <tt>-pa</tt> flag. The load address selected does not affect if the binary is loaded into the virtual or physical address space.
+</p><p>
+If an <i>offset</i> is supplied, it will be added to the load address taken from the file.
+</p><p>
+The global <code>load-binary</code> command will use the currently selected processor to find the memory space to load the binary into. If the <tt>-l</tt> flag is given, it will load it into the virtual memory space, otherwise it will use the physical memory space. The processor must have a valid virtual to physical translation set up.
+</p><p>
+When using the namespace command on a <tt>processor</tt> object, it will load the binary into the virtual memory space of that processor.
+</p><p>
+When using the namespace command on a <tt>memory-space</tt> object, it will load the binary directly into that memory space without any virtual to physical translation.
+</p><p>
+The <tt>-v</tt> flag turns on verbose mode, printing information about the loaded file.
+</p><p>
+The <tt>-n</tt> flags tells the command to not clear <tt>.bss</tt> areas in the file.
+</p><p>
+The return value is the address of the execution entry point. This value is typically used in a call to <code>set-pc</code>.
+</p><p>
+<code>load-binary</code> uses Simics's Search Path and path markers (%simics%, %script%) to find the file to load. Refer to <cite>The Command Line Interface</cite> chapter of the <cite>Simics User's Guide</cite> manual for more information on how Simics's Search Path is used to locate files. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-load-file.html">load-file</a>, 
+<a href="rm-cmd-add-directory.html">add-directory</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-ll.html">ll</a>
+<a href="rm-cmd-load-coverage.html">load-coverage</a>
+</div>

@@ -1,0 +1,195 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>agent_handle</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-accel-vga.html">accel-vga</a>
+<a href="rm-class-agent_manager.html">agent_manager</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="agent_handle"><a href="#agent_handle">agent_handle</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ The <tt>agent_handle</tt> class is used by <i>Matic</i> to resemble connections with Simics Agents, which are running on target systems. A handle provides the user with commands so that she can interact with the agent of the handle.
+<p>
+An agent handle can only be connected to one Simics Agent but an agent may be connected to several handles.
+</p><p>
+Matic requires the simulation to run, allowing Simics Agents on the target systems to run and respond. However, if the simulation is not running, any commands will be queued on the agent handle until they are run eventually.
+</p><p>
+The <code> &lt;agent_manager&gt;.connect-to-agent</code> command creates an agent handle that will be associated with an agent as soon as possible. Agent handles should be deleted when they no longer are needed.
+</p><p>
+The <tt>stale_timeout</tt> attribute controls the timeout period after the end of an agent poll interval until the Simics Agent is declared dead unless it has made contact. The setting applies individually to each Simics Agent, but control is shared among its handles. Once dead, all its handles will become stale and all their commands will be canceled. New commands cannot be given to a stale handle.
+</p><p>
+The handle also provides some other attributes: <tt>connected_to</tt>, <tt>magic</tt>, <tt>stale</tt>, <tt>state</tt> and <tt>windows</tt>. See the help text for each attribute for more information.
+</p><p>
+<b>See also:</b> <cite>Simics User's Guide</cite> as well as the <tt>agent_manager</tt> class.
+</p><h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-agent_handle.agent-poll-interval.html">agent-poll-interval</a>
+ – set the agent's polling interval</li>
+<li>
+<a href="rm-cmd-agent_handle.agent-quit.html">agent-quit</a>
+ – quit the agent for this handle</li>
+<li>
+<a href="rm-cmd-agent_handle.agent-restart.html">agent-restart</a>
+ – restart the Simics target agent</li>
+<li>
+<a href="rm-cmd-agent_handle.change-directory.html">change-directory</a>
+ – change this handle's working directory</li>
+<li>
+<a href="rm-cmd-agent_handle.delete-handle.html">delete-handle</a>
+ – delete this agent handle</li>
+<li>
+<a href="rm-cmd-agent_handle.discard-jobs.html">discard-jobs</a>
+ – discard jobs from this agent handle</li>
+<li>
+<a href="rm-cmd-agent_handle.download.html">download</a>
+ – download file from system to host</li>
+<li>
+<a href="rm-cmd-agent_handle.download-dir.html">download-dir</a>
+ – download directory from target to host</li>
+<li>
+<a href="rm-cmd-agent_handle.get-captured-output.html">get-captured-output</a>
+ – get or print the captured job output</li>
+<li>
+<a href="rm-cmd-agent_handle.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-agent_handle.list-files.html">list-files</a>
+ – list target directory contents</li>
+<li>
+<a href="rm-cmd-agent_handle.list-jobs.html">list-jobs</a>
+ – list commands posted on this handle</li>
+<li>
+<a href="rm-cmd-agent_handle.print-file.html">print-file</a>
+ – print file contents on Simics CLI</li>
+<li>
+<a href="rm-cmd-agent_handle.print-working-directory.html">print-working-directory</a>
+ – print this handle's working directory</li>
+<li>
+<a href="rm-cmd-agent_handle.run.html">run</a>
+ – execute a command on the target system</li>
+<li>
+<a href="rm-cmd-agent_handle.run-until-job.html">run-until-job</a>
+ – run simulation until job completed</li>
+<li>
+<a href="rm-cmd-agent_handle.status.html">status</a>
+ – print status of the object</li>
+<li>
+<a href="rm-cmd-agent_handle.target-time.html">target-time</a>
+ – set or get target system date and time</li>
+<li>
+<a href="rm-cmd-agent_handle.upload.html">upload</a>
+ – upload file from host to target</li>
+<li>
+<a href="rm-cmd-agent_handle.upload-dir.html">upload-dir</a>
+ – upload directory from host to target</li>
+<li>
+<a href="rm-cmd-agent_handle.wait-for-job.html">wait-for-job</a>
+ – suspend script branch until job completed</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:connected_to">
+<i>connected_to</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>The agent-id of the connected agent.</dd>
+<dt id="dt:magic">
+<i>magic</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i|n</code>
+<br>The Simics Agent magic id number.</dd>
+<dt id="dt:path">
+<i>path</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>The private working directory on the target system.</dd>
+<dt id="dt:stale">
+<i>stale</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read-only</b> access; type: 
+<code>b</code>
+<br>True, if the handle has become stale.</dd>
+<dt id="dt:stale_timeout">
+<i>stale_timeout</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i|f</code>
+<br>Stale handle timeout, in seconds, started at the end of the poll interval. Requires an active connection.</dd>
+<dt id="dt:state">
+<i>state</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>The current state of the handle.</dd>
+<dt id="dt:windows">
+<i>windows</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b|n</code>
+<br>True, if running on a Windows system.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.matic.html">matic</a>
+</section>
+<div class="chain">
+<a href="rm-class-accel-vga.html">accel-vga</a>
+<a href="rm-class-agent_manager.html">agent_manager</a>
+</div>

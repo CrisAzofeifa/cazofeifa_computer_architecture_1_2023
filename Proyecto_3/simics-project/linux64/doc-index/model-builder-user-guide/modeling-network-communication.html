@@ -1,0 +1,94 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>21 Modeling Network Communication</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="frags_t.html">20 Representing Network Packets with frags_t</a>
+<a href="modeling-ethernet-devices.html">22 Modeling Ethernet Devices</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-common-hardware-components.html">III Modeling Common Hardware Components</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Modeling-Network-Communication">21 Modeling Network Communication</a></h1>
+<p>
+
+</p><p>
+Simics provides <em>link</em> objects that model common network protocols such
+as Ethernet (<b>ethernet-switch</b>, etc.) or serial networks
+(<b>ser-link</b>). These are documented respectively in
+the <em>Ethernet Networking Technology Guide</em> and a section of
+the <em>Simics User's Guide</em>.
+</p><p>
+In addition, Simics makes available the necessary infrastructure to build
+custom network simulation links while enjoying the same benefits as the
+standard Simics links. How to best build custom network simulation is dependent
+on the intended usage:
+</p><p>
+</p><ul>
+
+<li>Communication between devices does not require links at all: simple
+interface calls between objects suffice. For easier configuration, a common
+broadcast bus object can redistribute the messages on behalf of the sender,
+with possibly more complex addressing schemes. All of this can be achieved with
+a proper combination of Simics interfaces, and is no different than an
+interrupt controller sending "messages" to the processor. 
+<p>
+It is important to note however, that this type of network simulation is
+quickly constrained by the fact that it can not be multithreaded, so it will
+limit the possibilities of simulating large systems. There are cases where this
+does not matter—or at least, does not matter enough yet—such as for
+the standard Simics <b>i2c-link</b>, which uses a similar scheme as
+described above.</p></li>
+
+<li>For multithreaded communication between devices, Simics link objects are a
+requirement. However, there are simple cases that can be covered with an
+existing link:
+the <b>datagram_link</b>. The <b>datagram_link</b> is a simple,
+yet fully functional broadcast link that transmit simple byte string messages
+from one sender to all the other devices on the link. It is meant primarily as
+an example of a custom link, but it can be reused directly for simple
+point-to-point communication between two devices, or a simple broadcast
+communication. The <code>datagram_link</code> interface used for
+communication is documented in the <em>API Reference Manual</em> while the
+connector type used for components is described in section
+<a class="reference" href="creating-configurations.html#cmp-connector-types">24.10</a>.</li>
+
+<li>For more complex communication protocol, such as multiple message types
+(link status, link speed, data transfer, etc.), more advanced addressing
+schemes (unicast, multicast groups, etc) or different device roles on the link
+(such as senders and receivers in the <b>signal-link</b>), a custom
+link is more appropriate. The link library for custom links is described, along
+with the link API, in the <em>Link Library Programming Guide</em>.</li>
+
+</ul>
+<p>
+</p>
+<div class="chain">
+<a href="frags_t.html">20 Representing Network Packets with frags_t</a>
+<a href="modeling-ethernet-devices.html">22 Modeling Ethernet Devices</a>
+</div>

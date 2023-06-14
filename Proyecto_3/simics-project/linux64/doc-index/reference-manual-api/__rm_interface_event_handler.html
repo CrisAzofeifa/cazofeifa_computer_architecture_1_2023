@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>event_handler</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_event_delta.html">event_delta</a>
+<a href="__rm_interface_event_provider.html">event_provider</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_event_handler">event_handler</a></h1>
+<p>
+
+<a name="event_handler"></a><a name="event_handler_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>event_handler</code> interface is implemented by
+   the <code>vtime</code> port object and is invoked by CPUs or clocks
+   implementing the <code>event_delta</code> interface.
+<p>
+   The <b><i>handle_event</i></b> method should be called when the number
+   of cycles to the next event has reached zero. The method
+   invokes the next event and notifies the CPU or clock about the cycle count
+   to the next pending event by invoking the <b><i>set_delta</i></b> method.
+</p><p>
+   The <b><i>stop</i></b> method should be called if a dispatched
+   event requests the simulation to be stopped. The method is typically
+   called from the <b><i>stop</i></b> method of the <code>execute</code>
+   interface. If the <b><i>stop</i></b> method is not called, then time may be
+   advanced by a fraction of a cycle after an event has been dispatched.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(event_handler) {
+        bool (*handle_event)(conf_object_t *NOTNULL obj);
+        void (*stop)(conf_object_t *NOTNULL obj);
+};
+#define EVENT_HANDLER_INTERFACE "event_handler"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_event_delta.html">event_delta</a>
+<a href="__rm_interface_event_provider.html">event_provider</a>
+</div>

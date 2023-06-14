@@ -1,0 +1,113 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ethernet_probe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ethernet_common.html">ethernet_common</a>
+<a href="__rm_interface_ethernet_snoop.html">ethernet_snoop</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ethernet_probe">ethernet_probe</a></h1>
+<p>
+
+<a name="ethernet_probe"></a><a name="ethernet_probe_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">typedef enum {
+        Eth_Probe_Port_A = 0,
+        Eth_Probe_Port_B = 1
+} eth_probe_side_t;
+</pre><p>
+</p><p>
+   
+   
+   </p><pre class="jdocu_small">typedef void (*ethernet_probe_snoop_t)(lang_void *user_data,
+                                       conf_object_t *probe,
+                                       eth_probe_side_t to_side,
+                                       const frags_t *frame,
+                                       eth_frame_crc_status_t crc_status);
+</pre><p>
+</p><p>
+   
+   
+   </p><pre class="jdocu_small">SIM_INTERFACE(ethernet_probe) {
+        void (*attach_snooper)(conf_object_t *NOTNULL probe,
+                               ethernet_probe_snoop_t snoop_fun,
+                               lang_void *user_data);
+        void (*attach_probe)(conf_object_t *NOTNULL probe,
+                             ethernet_probe_snoop_t snoop_fun,
+                             lang_void *user_data);
+        void (*detach)(conf_object_t *NOTNULL probe);
+        void (*send_frame)(conf_object_t *NOTNULL probe,
+                           eth_probe_side_t to_side,
+                           const frags_t *frame,
+                           eth_frame_crc_status_t crc_status);
+};
+
+#define ETHERNET_PROBE_INTERFACE "ethernet_probe"
+</pre><p>
+</p><p>
+   
+</p><p>
+   This interface is implemented by <b>eth-probe</b> objects. Once a
+   probe has been inserted between a device and an Ethernet link, the functions
+   of this interface can be used to setup callbacks:
+</p><p>
+   </p><dl><dt id="dt:attach_snooper"><b><b><i>attach_snooper()</i></b></b></dt><dd>Attach a snooper function: the
+   probe will pass each frame to the snooper function, then forward it
+   unchanged where it should be going</dd><dt id="dt:attach_probe"><b><b><i>attach_probe()</i></b></b></dt><dd>Attach a probe function: the probe
+   will pass each frame to the probe function, and give it the responsibility
+   of forwarding the frame or any number of modified or additional frames using
+   the <b><i>send_frame()</i></b> function.</dd><dt id="dt:detach"><b><b><i>detach</i></b></b></dt><dd>Detach the currently registered callback from
+   the probe.</dd><dt id="dt:send_frame"><b><b><i>send_frame</i></b></b></dt><dd>Send a frame via the probe, either to the
+   side A or B of the probe. Which side is which can be obtained with the <b>&lt;eth-probe&gt;.info</b> function.</dd></dl><p>This interface should only be used for inspection, and never as part of the
+   actual simulation. The snoop functions must not affect the simulation in any
+   way.
+</p><p>
+   The <i>clock</i> parameter tells the link on which clock to post the
+   events that call the snoop function. The snoop function will be called at
+   the delivery time of the network packet, which means that it will be called
+   at the same time as any Ethernet devices attached to the same clock that
+   receives packets from the same link.
+</p><p>
+   Snooped frames with a matching CRC will contain the correct frame check
+   sequence.
+</p><p>
+   The <i>user_data</i> parameter is passed to the snoop function every
+   time it is called.
+   
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ethernet_common.html">ethernet_common</a>
+<a href="__rm_interface_ethernet_snoop.html">ethernet_snoop</a>
+</div>

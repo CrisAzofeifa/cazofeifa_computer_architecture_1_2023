@@ -1,0 +1,76 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>connect-real-network-port-in</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-connect-real-network-napt.html">connect-real-network-napt</a>
+<a href="rm-cmd-connect-real-network-port-out.html">connect-real-network-port-out</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="connect-real-network-port-in"></a>
+<h1 id="connect-real-network-port-in"><a href="#connect-real-network-port-in">connect-real-network-port-in</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>connect-real-network-port-in</b> (<i>target-port</i>|<i>"service"</i>) <i>ethernet-link</i> [<i>service-node</i>] [<i>"host-ip"</i>] [<i>host-port</i>] [<i>"target-ip"</i>] [-tcp] [-udp] [-f] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Enable or disable port forwarding from the host that Simics is running on, to a simulated machine, specified by <i>target-ip</i>. The externally visible port <i>host-port</i> on the host is mapped to the port <i>target-port</i> on the simulated machine. The external port (<i>host-port</i>) can be associated with a certain IP address on the host by specifying the <i>host-ip</i> argument.
+<p>
+For commonly used services the string argument <i>service</i> can be used instead of a port number. If several Ethernet links exists, the one that the simulated machine is connected to must be specified using <i>ethernet-link</i>.
+</p><p>
+The service-node that will perform the port forwarding is selected automatically based on the Ethernet link unless one is specified using the <i>service-node</i> argument.
+</p><p>
+The flags <tt>-tcp</tt> and <tt>-udp</tt> can be used to specify the protocol to forward. The default is to forward only the usual protocol for named services and both tcp and udp for numerically specified ports.
+</p><p>
+The <i>host-port</i> given is only a hint, and the actual port used may be a different one. The command output shows the actual port used, and it can also be determined by inspecting the connections attribute in the appropriate port forwarding object.
+</p><p>
+The flag <tt>-f</tt> can be used to cause the command to fail if the suggested host port could not be allocated, without the flag the command will assign the first available port starting from the specified host port and upwards.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.service-node.html">service-node</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-connect-real-network.html">connect-real-network</a>, 
+<a href="rm-cmd-connect-real-network-port-out.html">connect-real-network-port-out</a>, 
+<a href="rm-cmd-connect-real-network-napt.html">connect-real-network-napt</a>, 
+<a href="rm-cmd-connect-real-network-host.html">connect-real-network-host</a>, 
+<a href="rm-cmd-connect-real-network-bridge.html">connect-real-network-bridge</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-connect-real-network-napt.html">connect-real-network-napt</a>
+<a href="rm-cmd-connect-real-network-port-out.html">connect-real-network-port-out</a>
+</div>

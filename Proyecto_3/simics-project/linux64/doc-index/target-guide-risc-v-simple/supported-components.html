@@ -1,0 +1,549 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4 Supported Components</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simulated-machines.html">3 Simulated Machines</a>
+<a href="miscellaneous-notes.html">5 Miscellaneous Notes</a>
+</div>
+<div class="path">
+<a href="index.html">RISC-V* Simple Board Target Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Supported-Components">4 Supported Components</a></h1>
+<p>
+
+</p><p>
+The following sections list components that are supported for the RISC-V
+architecture. There also exist other components in Simics, such as various
+PCI devices, that may work for RISC-V but that have not been tested.
+</p><p>
+The default machines are constructed from components in the
+<code>-system.include</code> files in
+<code>[simics]/targets/risc-v-simple/</code>. See the
+<em>Configuration and Checkpointing</em> chapter in
+the <em>Simics User's Guide</em> for
+information on how to define your own machine, or make modifications
+to an existing machine.
+</p><p>
+
+  </p><h2 class="jdocu"><a name="RISC-V-Simple-System-Components">4.1 RISC-V* Simple System Components</a></h2>
+<p>
+  
+  </p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_risc_v_simple_comp">risc_v_simple_comp</a></h3>
+<p>
+
+<a name="risc_v_simple_comp"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">RISC-V Simple Board Component</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-risc-v-simple-comp"></a><a name="create-risc-v-simple-comp"></a><b>create-risc-v-simple-comp</b> [<i>"name"</i>] [<i>"core_class"</i>] [<i>"disk0_image"</i>] [<i>disk0_size</i>] [<i>"disk1_image"</i>] [<i>disk1_size</i>] [<i>"disk2_image"</i>] [<i>disk2_size</i>] [<i>entropy_seed</i>] [<i>freq_mhz</i>] [<i>"mac_address"</i>] [<i>memory_megs</i>] [<i>num_cores</i>] [<i>timebase_freq_mhz</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-risc-v-simple-comp"></a><a name="new-risc-v-simple-comp"></a><b>new-risc-v-simple-comp</b> [<i>"name"</i>] [<i>"core_class"</i>] [<i>"disk0_image"</i>] [<i>disk0_size</i>] [<i>"disk1_image"</i>] [<i>disk1_size</i>] [<i>"disk2_image"</i>] [<i>disk2_size</i>] [<i>entropy_seed</i>] [<i>freq_mhz</i>] [<i>"mac_address"</i>] [<i>memory_megs</i>] [<i>num_cores</i>] [<i>timebase_freq_mhz</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:component_queue"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:core_class"><b>core_class</b></dt><dd>Classname of primary core, default is riscv-rv64</dd><dt id="dt:cpu_list"><b>cpu_list</b></dt><dd></dd><dt id="dt:disk0_image"><b>disk0_image</b></dt><dd>disk0 image file.</dd><dt id="dt:disk0_size"><b>disk0_size</b></dt><dd>disk0 size, used if no disk image is provided.
+           If set to zero no disk will be created.</dd><dt id="dt:disk1_image"><b>disk1_image</b></dt><dd>disk1 image file.</dd><dt id="dt:disk1_size"><b>disk1_size</b></dt><dd>disk1 size, used if no disk image is provided.
+           If set to zero no disk will be created.</dd><dt id="dt:disk2_image"><b>disk2_image</b></dt><dd>disk2 image file.</dd><dt id="dt:disk2_size"><b>disk2_size</b></dt><dd>disk2 size, used if no disk image is provided.
+           If set to zero no disk will be created.</dd><dt id="dt:domain"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:entropy_seed"><b>entropy_seed</b></dt><dd>Seed for virtio entropy device.</dd><dt id="dt:freq_mhz"><b>freq_mhz</b></dt><dd>Frequency in MHz of each core, default is 100 MHz</dd><dt id="dt:instantiated"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:mac_address"><b>mac_address</b></dt><dd>The MAC address of the virtual Ethernet card.</dd><dt id="dt:machine_icon"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:memory_megs"><b>memory_megs</b></dt><dd>Size in MB of RAM memory, default is 2048</dd><dt id="dt:num_cores"><b>num_cores</b></dt><dd>Number cores, default is 4</dd><dt id="dt:object_list"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:timebase_freq_mhz"><b>timebase_freq_mhz</b></dt><dd>Frequency in MHz of the timebase, i.e. 'mtime', default is 1MHz</dd><dt id="dt:top_component"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level"><b>top_level</b></dt><dd></dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">eth</td><td class="jdocu_border">ethernet-link</td><td class="jdocu_border">down</td></tr>
+
+<tr><td class="jdocu_border">serial0</td><td class="jdocu_border">serial</td><td class="jdocu_border">down</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+
+  </p><h2 class="jdocu"><a name="Standard-Components">4.2 Standard Components</a></h2>
+<p>
+  
+  
+
+
+
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_ethernet_cable">ethernet_cable</a></h3>
+<p>
+
+<a name="ethernet_cable"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Ethernet cable: this component represents a two-points Ethernet cable,
+    allowing two devices to connect to each other.</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-ethernet-cable"></a><a name="create-ethernet-cable"></a><b>create-ethernet-cable</b> [<i>"name"</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-ethernet-cable"></a><a name="new-ethernet-cable"></a><b>new-ethernet-cable</b> [<i>"name"</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:component_queue-2"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components-2"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:connector_count"><b>connector_count</b></dt><dd>Total number of occupied connectors</dd><dt id="dt:cpu_list-2"><b>cpu_list</b></dt><dd>A list of all processors that belong to the component. This
+        attribute is not valid until the object has been instantiated. This
+        attribute is only used in top-level components and other components
+        that are used as software domains.</dd><dt id="dt:domain-2"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots-2"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:global_id"><b>global_id</b></dt><dd>Global identifier for use in distributed simulation or NIL if the
+        link is not distributed.</dd><dt id="dt:goal_latency"><b>goal_latency</b></dt><dd>Goal latency in seconds for this link.
+        See also the <b>set-min-latency</b> command.</dd><dt id="dt:immediate_delivery"><b>immediate_delivery</b></dt><dd>Immediate delivery instead of using the specified latency.
+         Implies nondeterminism for multi cell messaging.</dd><dt id="dt:instantiated-2"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:machine_icon-2"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:object_list-2"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix-2"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories-2"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots-2"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info-2"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:top_component-2"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level-2"><b>top_level</b></dt><dd>Set to TRUE for top-level components, i.e. the root of a hierarchy.</dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">device0</td><td class="jdocu_border">ethernet-link</td><td class="jdocu_border">any</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_ethernet_hub">ethernet_hub</a></h3>
+<p>
+
+<a name="ethernet_hub"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Ethernet hub: this component represents a simple broadcasting Ethernet
+    link allowing any number of devices to connect.</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-ethernet-hub"></a><a name="create-ethernet-hub"></a><b>create-ethernet-hub</b> [<i>"name"</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-ethernet-hub"></a><a name="new-ethernet-hub"></a><b>new-ethernet-hub</b> [<i>"name"</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:component_queue-3"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components-3"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:cpu_list-3"><b>cpu_list</b></dt><dd>A list of all processors that belong to the component. This
+        attribute is not valid until the object has been instantiated. This
+        attribute is only used in top-level components and other components
+        that are used as software domains.</dd><dt id="dt:domain-3"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots-3"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:global_id-2"><b>global_id</b></dt><dd>Global identifier for use in distributed simulation or NIL if the
+        link is not distributed.</dd><dt id="dt:goal_latency-2"><b>goal_latency</b></dt><dd>Goal latency in seconds for this link.
+        See also the <b>set-min-latency</b> command.</dd><dt id="dt:immediate_delivery-2"><b>immediate_delivery</b></dt><dd>Immediate delivery instead of using the specified latency.
+         Implies nondeterminism for multi cell messaging.</dd><dt id="dt:instantiated-3"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:machine_icon-3"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:object_list-3"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix-3"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories-3"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots-3"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info-3"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:top_component-3"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level-3"><b>top_level</b></dt><dd>Set to TRUE for top-level components, i.e. the root of a hierarchy.</dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">device0</td><td class="jdocu_border">ethernet-link</td><td class="jdocu_border">any</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_ethernet_switch">ethernet_switch</a></h3>
+<p>
+
+<a name="ethernet_switch"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link.</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-ethernet-switch"></a><a name="create-ethernet-switch"></a><b>create-ethernet-switch</b> [<i>"name"</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-ethernet-switch"></a><a name="new-ethernet-switch"></a><b>new-ethernet-switch</b> [<i>"name"</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:component_queue-4"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components-4"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:cpu_list-4"><b>cpu_list</b></dt><dd>A list of all processors that belong to the component. This
+        attribute is not valid until the object has been instantiated. This
+        attribute is only used in top-level components and other components
+        that are used as software domains.</dd><dt id="dt:domain-4"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots-4"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:global_id-3"><b>global_id</b></dt><dd>Global identifier for use in distributed simulation or NIL if the
+        link is not distributed.</dd><dt id="dt:goal_latency-3"><b>goal_latency</b></dt><dd>Goal latency in seconds for this link.
+        See also the <b>set-min-latency</b> command.</dd><dt id="dt:immediate_delivery-3"><b>immediate_delivery</b></dt><dd>Immediate delivery instead of using the specified latency.
+         Implies nondeterminism for multi cell messaging.</dd><dt id="dt:instantiated-4"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:machine_icon-4"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:object_list-4"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix-4"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories-4"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots-4"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info-4"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:top_component-4"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level-4"><b>top_level</b></dt><dd>Set to TRUE for top-level components, i.e. the root of a hierarchy.</dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">device0</td><td class="jdocu_border">ethernet-link</td><td class="jdocu_border">any</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_ethernet_vlan_switch">ethernet_vlan_switch</a></h3>
+<p>
+
+<a name="ethernet_vlan_switch"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Ethernet VLAN switch: this component represents a switched Ethernet
+    network with VLAN support. Any number of devices is allowed to connect to
+    various ports of the switch. Each port can be configured with its own VLAN
+    information, in order to create sub-networks in the switch.</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-ethernet-vlan-switch"></a><a name="create-ethernet-vlan-switch"></a><b>create-ethernet-vlan-switch</b> [<i>"name"</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-ethernet-vlan-switch"></a><a name="new-ethernet-vlan-switch"></a><b>new-ethernet-vlan-switch</b> [<i>"name"</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:component_queue-5"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components-5"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:cpu_list-5"><b>cpu_list</b></dt><dd>A list of all processors that belong to the component. This
+        attribute is not valid until the object has been instantiated. This
+        attribute is only used in top-level components and other components
+        that are used as software domains.</dd><dt id="dt:domain-5"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots-5"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:global_id-4"><b>global_id</b></dt><dd>Global identifier for use in distributed simulation or NIL if the
+        link is not distributed.</dd><dt id="dt:goal_latency-4"><b>goal_latency</b></dt><dd>Goal latency in seconds for this link.
+        See also the <b>set-min-latency</b> command.</dd><dt id="dt:immediate_delivery-4"><b>immediate_delivery</b></dt><dd>Immediate delivery instead of using the specified latency.
+         Implies nondeterminism for multi cell messaging.</dd><dt id="dt:instantiated-5"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:machine_icon-5"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:object_list-5"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix-5"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories-5"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots-5"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info-5"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:top_component-5"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level-5"><b>top_level</b></dt><dd>Set to TRUE for top-level components, i.e. the root of a hierarchy.</dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">trunk_dev0</td><td class="jdocu_border">ethernet-link</td><td class="jdocu_border">any</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_std-service-node">std-service-node</a></h3>
+<p>
+
+<a name="std-service-node"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The "std-service-node" component represents a network service node that can be connected to Ethernet links to provide services such as DNS, DHCP/BOOTP, RARP and TFTP. A service node component does not have any connectors by default. Instead, connectors have to be added using the <b>&lt;std-service-node&gt;.add-connector</b> command.</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-std-service-node"></a><a name="create-std-service-node"></a><b>create-std-service-node</b> [<i>"name"</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-std-service-node"></a><a name="new-std-service-node"></a><b>new-std-service-node</b> [<i>"name"</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:component_queue-6"><b>component_queue</b></dt><dd>The overriding queue object for this component.</dd><dt id="dt:connections"><b>connections</b></dt><dd>This attribute should not be used anymore. Each component has connector objects that contain all connector functionality. List of connections for the component. The format is a list of lists, each containing the name of the connector, the connected component, and the name of the connector on the other component.</dd><dt id="dt:dynamic_slots-6"><b>dynamic_slots</b></dt><dd>Dictionary with dynamic slots.</dd><dt id="dt:instantiated-6"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:object_list-6"><b>object_list</b></dt><dd>Dictionary with objects that the component consists of.</dd><dt id="dt:object_prefix-6"><b>object_prefix</b></dt><dd>Object prefix string used by the component. The prefix is typically set by the <b>set-component-prefix</b> command before the component is created.</dd><dt id="dt:pending_cell_object_factories-6"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:top_component-6"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until the component has been instantiated.</dd></dl><p></p></dd>
+</dl><p>
+
+
+
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_ser_link">ser_link</a></h3>
+<p>
+
+<a name="ser_link"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Serial link connecting two serial devices</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-ser-link"></a><a name="create-ser-link"></a><b>create-ser-link</b> [<i>"name"</i>] [<i>buffer_size</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-ser-link"></a><a name="new-ser-link"></a><b>new-ser-link</b> [<i>"name"</i>] [<i>buffer_size</i>] [<i>"global_id"</i>] [<i>goal_latency</i>] [<i>immediate_delivery</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:buffer_size"><b>buffer_size</b></dt><dd>The number of characters the link may buffer. Must be at least 1.</dd><dt id="dt:component_queue-7"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components-6"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:cpu_list-6"><b>cpu_list</b></dt><dd>A list of all processors that belong to the component. This
+        attribute is not valid until the object has been instantiated. This
+        attribute is only used in top-level components and other components
+        that are used as software domains.</dd><dt id="dt:domain-6"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots-7"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:global_id-5"><b>global_id</b></dt><dd>Global identifier for use in distributed simulation or NIL if the
+        link is not distributed.</dd><dt id="dt:goal_latency-5"><b>goal_latency</b></dt><dd>Goal latency in seconds for this link.
+        See also the <b>set-min-latency</b> command.</dd><dt id="dt:immediate_delivery-5"><b>immediate_delivery</b></dt><dd>Immediate delivery instead of using the specified latency.
+         Implies nondeterminism for multi cell messaging.</dd><dt id="dt:instantiated-7"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:machine_icon-6"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:object_list-7"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix-7"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories-7"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots-6"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info-6"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:top_component-7"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level-6"><b>top_level</b></dt><dd>Set to TRUE for top-level components, i.e. the root of a hierarchy.</dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">device[0-1]</td><td class="jdocu_border">serial</td><td class="jdocu_border">any</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+
+
+
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_server_console_comp">server_console_comp</a></h3>
+<p>
+
+<a name="server_console_comp"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Deprecated class - do not use</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-server-console-comp"></a><a name="create-server-console-comp"></a><b>create-server-console-comp</b> [<i>"name"</i>] [<i>telnet_port</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-server-console-comp"></a><a name="new-server-console-comp"></a><b>new-server-console-comp</b> [<i>"name"</i>] [<i>telnet_port</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:component_queue-8"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components-7"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:cpu_list-7"><b>cpu_list</b></dt><dd>A list of all processors that belong to the component. This
+        attribute is not valid until the object has been instantiated. This
+        attribute is only used in top-level components and other components
+        that are used as software domains.</dd><dt id="dt:domain-7"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots-8"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:instantiated-8"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:machine_icon-7"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:object_list-8"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix-8"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories-8"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots-7"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info-7"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:telnet_port"><b>telnet_port</b></dt><dd>TCP/IP port to connect the telnet service of the console to.</dd><dt id="dt:top_component-8"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level-7"><b>top_level</b></dt><dd>Set to TRUE for top-level components, i.e. the root of a hierarchy.</dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">serial</td><td class="jdocu_border">serial</td><td class="jdocu_border">up</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_text_console_comp">text_console_comp</a></h3>
+<p>
+
+<a name="text_console_comp"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The "text_console_comp" component represents a serial text console.</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-text-console-comp"></a><a name="create-text-console-comp"></a><b>create-text-console-comp</b> [<i>"name"</i>] [<i>"bg_color"</i>] [<i>"fg_color"</i>] [<i>height</i>] [<i>"title"</i>] [<i>width</i>] [<i>"win32_font"</i>] [<i>window</i>] [<i>"x11_font"</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-text-console-comp"></a><a name="new-text-console-comp"></a><b>new-text-console-comp</b> [<i>"name"</i>] [<i>"bg_color"</i>] [<i>"fg_color"</i>] [<i>height</i>] [<i>"title"</i>] [<i>width</i>] [<i>"win32_font"</i>] [<i>window</i>] [<i>"x11_font"</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:bg_color"><b>bg_color</b></dt><dd>The background color.</dd><dt id="dt:component_queue-9"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components-8"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:cpu_list-8"><b>cpu_list</b></dt><dd>A list of all processors that belong to the component. This
+        attribute is not valid until the object has been instantiated. This
+        attribute is only used in top-level components and other components
+        that are used as software domains.</dd><dt id="dt:domain-8"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots-9"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:fg_color"><b>fg_color</b></dt><dd>The foreground color.</dd><dt id="dt:has_user_defined_title"><b>has_user_defined_title</b></dt><dd>return True if current title is set by users.</dd><dt id="dt:height"><b>height</b></dt><dd>The height of the console window.</dd><dt id="dt:instantiated-9"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:machine_icon-8"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:object_list-9"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix-9"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories-9"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots-8"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info-8"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:title"><b>title</b></dt><dd>The Window title.</dd><dt id="dt:top_component-9"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level-8"><b>top_level</b></dt><dd>Set to TRUE for top-level components, i.e. the root of a hierarchy.</dd><dt id="dt:width"><b>width</b></dt><dd>The width of the console window.</dd><dt id="dt:win32_font"><b>win32_font</b></dt><dd>Font to use in the console on Windows host.</dd><dt id="dt:window"><b>window</b></dt><dd>Try to open window if TRUE (default). FALSE disables the window.</dd><dt id="dt:x11_font"><b>x11_font</b></dt><dd>Font to use in the console when using X11 (Linux/Solaris host).</dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">serial</td><td class="jdocu_border">serial</td><td class="jdocu_border">up</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+
+
+  
+
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_server_console_comp2">server_console_comp</a></h3>
+<p>
+
+<a name="server_console_comp2"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Deprecated class - do not use</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-server-console-comp"></a><a name="create-server-console-comp2"></a><b>create-server-console-comp</b> [<i>"name"</i>] [<i>telnet_port</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-server-console-comp"></a><a name="new-server-console-comp2"></a><b>new-server-console-comp</b> [<i>"name"</i>] [<i>telnet_port</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:component_queue-10"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components-9"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:cpu_list-9"><b>cpu_list</b></dt><dd>A list of all processors that belong to the component. This
+        attribute is not valid until the object has been instantiated. This
+        attribute is only used in top-level components and other components
+        that are used as software domains.</dd><dt id="dt:domain-9"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots-10"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:instantiated-10"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:machine_icon-9"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:object_list-10"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix-10"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories-10"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots-9"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info-9"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:telnet_port-2"><b>telnet_port</b></dt><dd>TCP/IP port to connect the telnet service of the console to.</dd><dt id="dt:top_component-10"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level-9"><b>top_level</b></dt><dd>Set to TRUE for top-level components, i.e. the root of a hierarchy.</dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">serial</td><td class="jdocu_border">serial</td><td class="jdocu_border">up</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__rm_component_text_console_comp2">text_console_comp</a></h3>
+<p>
+
+<a name="text_console_comp2"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The "text_console_comp" component represents a serial text console.</dd>
+<dt class="jdocu_descitem"><b>Commands</b></dt><dd class="jdocu_descitem"><p><a name="__rm_command_create-text-console-comp"></a><a name="create-text-console-comp2"></a><b>create-text-console-comp</b> [<i>"name"</i>] [<i>"bg_color"</i>] [<i>"fg_color"</i>] [<i>height</i>] [<i>"title"</i>] [<i>width</i>] [<i>"win32_font"</i>] [<i>window</i>] [<i>"x11_font"</i>] <br>
+
+
+
+</p><p><a name="__rm_command_new-text-console-comp"></a><a name="new-text-console-comp2"></a><b>new-text-console-comp</b> [<i>"name"</i>] [<i>"bg_color"</i>] [<i>"fg_color"</i>] [<i>height</i>] [<i>"title"</i>] [<i>width</i>] [<i>"win32_font"</i>] [<i>window</i>] [<i>"x11_font"</i>] <br>
+
+</p></dd>
+<dt class="jdocu_descitem"><b>Attributes</b></dt><dd class="jdocu_descitem"><dl><dt id="dt:bg_color-2"><b>bg_color</b></dt><dd>The background color.</dd><dt id="dt:component_queue-11"><b>component_queue</b></dt><dd>The queue object for this component. It is only used as
+        a placeholder for the real queue object before the component is
+        instantiated. It can point to an instantiated cycle object or
+        a pre_conf object.</dd><dt id="dt:components-10"><b>components</b></dt><dd>This attribute is only valid for top-level components.
+        List of components below the top-level component. This
+        attribute is not valid until the object has been instantiated.</dd><dt id="dt:cpu_list-10"><b>cpu_list</b></dt><dd>A list of all processors that belong to the component. This
+        attribute is not valid until the object has been instantiated. This
+        attribute is only used in top-level components and other components
+        that are used as software domains.</dd><dt id="dt:domain-10"><b>domain</b></dt><dd>This attribute is only valid for top-level components.
+        Domain to put the component in.</dd><dt id="dt:dynamic_slots-11"><b>dynamic_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:fg_color-2"><b>fg_color</b></dt><dd>The foreground color.</dd><dt id="dt:has_user_defined_title-2"><b>has_user_defined_title</b></dt><dd>return True if current title is set by users.</dd><dt id="dt:height-2"><b>height</b></dt><dd>The height of the console window.</dd><dt id="dt:instantiated-11"><b>instantiated</b></dt><dd>Set to TRUE if the component has been instantiated.</dd><dt id="dt:machine_icon-10"><b>machine_icon</b></dt><dd>This attribute is only valid for top-level components.
+        An instance of a top-level component may override the default
+        <i>system_icon</i> with its own icon. This attribute is
+        the name of an 80x80 pixel large icon in PNG format that should
+        reside in the [host]/lib/images/ directory of the Simics installation
+        or the project.</dd><dt id="dt:object_list-11"><b>object_list</b></dt><dd>Dictionary with the instantiated objects that the
+        component consists of.</dd><dt id="dt:object_prefix-11"><b>object_prefix</b></dt><dd>Object prefix string used by the component.</dd><dt id="dt:pending_cell_object_factories-11"><b>pending_cell_object_factories</b></dt><dd>Internal attribute for pending cell objects factories.</dd><dt id="dt:static_slots-10"><b>static_slots</b></dt><dd>Do not use. Kept for checkpoint compatibility.</dd><dt id="dt:system_info-10"><b>system_info</b></dt><dd>This attribute is only valid for top-level components.
+        A short single-line description of the current configuration
+        of the  system that the component is a top-level of. The line may
+        include the Linux name of the simulated machine, the installed
+        operating system, or similar information. For example Tango -
+        Fedora Core 5 Linux</dd><dt id="dt:title-2"><b>title</b></dt><dd>The Window title.</dd><dt id="dt:top_component-11"><b>top_component</b></dt><dd>The top level component. Attribute is not valid until
+        the component has been instantiated.</dd><dt id="dt:top_level-10"><b>top_level</b></dt><dd>Set to TRUE for top-level components, i.e. the root of a hierarchy.</dd><dt id="dt:width-2"><b>width</b></dt><dd>The width of the console window.</dd><dt id="dt:win32_font-2"><b>win32_font</b></dt><dd>Font to use in the console on Windows host.</dd><dt id="dt:window-2"><b>window</b></dt><dd>Try to open window if TRUE (default). FALSE disables the window.</dd><dt id="dt:x11_font-2"><b>x11_font</b></dt><dd>Font to use in the console when using X11 (Linux/Solaris host).</dd></dl><p></p></dd>
+<dt class="jdocu_descitem"><b>Connectors</b></dt><dd class="jdocu_descitem"><table>
+
+<tbody><tr><td class="jdocu_border"><b>Name</b></td><td class="jdocu_border"><b>Type</b></td><td class="jdocu_border"><b>Direction</b></td></tr>
+
+<tr><td class="jdocu_border">serial</td><td class="jdocu_border">serial</td><td class="jdocu_border">up</td></tr>
+
+</tbody></table>
+</dd>
+</dl><p>
+
+
+
+</p><p>
+</p>
+<div class="chain">
+<a href="simulated-machines.html">3 Simulated Machines</a>
+<a href="miscellaneous-notes.html">5 Miscellaneous Notes</a>
+</div>

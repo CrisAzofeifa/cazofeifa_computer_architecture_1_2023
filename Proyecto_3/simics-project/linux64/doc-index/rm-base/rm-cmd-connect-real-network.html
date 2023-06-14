@@ -1,0 +1,79 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>connect-real-network</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-connect-panel-to-frontend.html">connect-panel-to-frontend</a>
+<a href="rm-cmd-connect-real-network-bridge.html">connect-real-network-bridge</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="connect-real-network"></a>
+<h1 id="connect-real-network"><a href="#connect-real-network">connect-real-network</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>connect-real-network</b> [<i>"target-ip"</i>] [<i>ethernet-link</i>] [<i>"service-node-ip"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Enables NAPT for accesses that are initiated from the simulated machine.
+<p>
+If <i>target-ip</i> is specified, the command also enables port forwarding from the host that Simics is running on, to a simulated machine specified by <i>target-ip</i>, allowing access from real hosts to the simulated one. If <i>target-ip</i> is already used for any of the target ports 21, 22, 23, or 80, this command just prints the current port forwarding.
+</p><p>
+Ports are opened on the host for a number of commonly used protocols (such as FTP and telnet). Additional ports can be configured using the <code>connect-real-network-port-in</code> command.
+</p><p>
+Port forwarding can be enabled for several simulated machines at the same time.
+</p><p>
+If several Ethernet links exists, the one that the simulated machine is connected to must be specified as <i>ethernet-link</i>. If no Ethernet link exists, one will be created and all Ethernet devices are connected to it.
+</p><p>
+A <tt>service-node</tt> will also be added to the link if there isn't one connected already. If a service-node is added it will either get the IP address <i>service-node-ip</i>, if it was specified, or the IP of the target with the lowest byte set to 1. If neither <i>service-node-ip</i> nor <i>target-ip</i> is specified, it will get the <tt>10.10.0.1</tt> as IP.
+</p><p>
+If a default port-forwarding target has been set using the <code>default-port-forward-target</code> command, this will be used as default value for the <i>target-ip</i> parameters. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.service-node.html">service-node</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-default-port-forward-target.html">default-port-forward-target</a>, 
+<a href="rm-cmd-connect-real-network-napt.html">connect-real-network-napt</a>, 
+<a href="rm-cmd-connect-real-network-port-in.html">connect-real-network-port-in</a>, 
+<a href="rm-cmd-connect-real-network-port-out.html">connect-real-network-port-out</a>, 
+<a href="rm-cmd-connect-real-network-host.html">connect-real-network-host</a>, 
+<a href="rm-cmd-connect-real-network-bridge.html">connect-real-network-bridge</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-connect-panel-to-frontend.html">connect-panel-to-frontend</a>
+<a href="rm-cmd-connect-real-network-bridge.html">connect-real-network-bridge</a>
+</div>

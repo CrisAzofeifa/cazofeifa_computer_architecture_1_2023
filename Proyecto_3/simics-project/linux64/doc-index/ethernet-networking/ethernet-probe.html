@@ -1,0 +1,147 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.5.2 Ethernet Probe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="traffic-monitoring-software.html">3.5.1 Traffic Monitoring Software</a>
+<a href="traffic-snooping.html">3.5.3 Traffic Snooping</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="simicsnet.html">3 Network Simulation</a>
+&nbsp;/&nbsp;
+<a href="observing-network-traffic.html">3.5 Observing Network Traffic</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Ethernet-Probe">3.5.2 Ethernet Probe</a></h1>
+<p>
+
+</p><p>
+The Ethernet probe provides a way to listen to traffic at a particular endpoint
+of the link, that is, the probe will receive both incoming and outgoing traffic
+for a particular device.
+</p><p>
+A probe is inserted using the <b>insert-ethernet-probe</b> command with
+appropriate arguments. We will use <i>QSP-x86</i> as
+an example machine. Please start the simulation with
+the <code>firststeps-no-network.simics</code> start script:
+</p><p>
+
+
+
+
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module eth-links</b>
+simics&gt; <b>new-ethernet-switch link0</b>
+Created instantiated 'ethernet_switch' component 'link0'
+simics&gt; <b>connect link0.device0 board.mb.sb.eth_slot</b>
+
+# insert a probe between the PHY of the eth[0] device above and the link
+simics&gt; <b>load-module eth-probe</b>
+simics&gt; <b>insert-ethernet-probe device = board.mb.sb.phy</b>
+Created probe 'probe0'
+simics&gt; <b>probe0.info</b>
+Information about probe0 [class eth-probe]
+==========================================
+
+Connections:
+    Port A : board.mb.sb.phy
+    Port B : link0.link
+</pre><p>
+</p><p>
+At this point, the probe is ready to use. You can issue
+a <b>&lt;eth-probe&gt;.pcap-dump</b> or similar command to connect an
+external network monitoring tool at the probe level. The traffic will be dumped
+as seen from the <b>board.mb.sb.phy</b> device.
+</p><p>
+You can also register your own callback to listen to the traffic going-on in
+the probe, using the <code>ethernet_probe</code> interface provided by the
+probe object:
+</p><p>
+
+   </p><pre class="jdocu_small">typedef enum {
+        Eth_Probe_Port_A = 0,
+        Eth_Probe_Port_B = 1
+} eth_probe_side_t;
+</pre><p>
+</p><p>
+   
+
+   </p><pre class="jdocu_small">typedef void (*ethernet_probe_snoop_t)(lang_void *user_data,
+                                       conf_object_t *probe,
+                                       eth_probe_side_t to_side,
+                                       const frags_t *frame,
+                                       eth_frame_crc_status_t crc_status);
+</pre><p>
+</p><p>
+   
+
+   </p><pre class="jdocu_small">SIM_INTERFACE(ethernet_probe) {
+        void (*attach_snooper)(conf_object_t *NOTNULL probe,
+                               ethernet_probe_snoop_t snoop_fun,
+                               lang_void *user_data);
+        void (*attach_probe)(conf_object_t *NOTNULL probe,
+                             ethernet_probe_snoop_t snoop_fun,
+                             lang_void *user_data);
+        void (*detach)(conf_object_t *NOTNULL probe);
+        void (*send_frame)(conf_object_t *NOTNULL probe,
+                           eth_probe_side_t to_side,
+                           const frags_t *frame,
+                           eth_frame_crc_status_t crc_status);
+};
+
+#define ETHERNET_PROBE_INTERFACE "ethernet_probe"
+</pre><p>
+</p><p>
+   
+</p><p>
+A complete description of this interface is provided in the <em>Simics
+Reference Manual</em>. What we are interested in at this point is to register
+a <em>snooper</em> callback that will only listen to traffic:
+</p><p>
+</p><pre class="jdocu_small"># a callback that does nothing but print a warning
+simics&gt; <b>@def callback(user_data, probe, to_side, packet, crc_status):</b>
+        <b>    if to_side == Eth_Probe_Port_A:</b>
+        <b>        print('packet going to device')</b>
+        <b>    else:</b>
+        <b>        print('packet going to network')</b>
+
+........
+simics&gt; <b>@conf.probe0.iface.ethernet_probe.attach_snooper(callback, None)</b>
+simics&gt; <b>c</b> 
+packet going to network
+packet going to network
+[...]
+</pre><p>
+</p><p>
+The probe can also drop, modify or inject packets. This is described in
+the <em>Injecting Network Traffic</em> section below.
+</p><p>
+</p>
+<div class="chain">
+<a href="traffic-monitoring-software.html">3.5.1 Traffic Monitoring Software</a>
+<a href="traffic-snooping.html">3.5.3 Traffic Snooping</a>
+</div>

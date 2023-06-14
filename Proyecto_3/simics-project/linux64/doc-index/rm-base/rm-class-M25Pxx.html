@@ -1,0 +1,300 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>M25Pxx</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-ISA.html">ISA</a>
+<a href="rm-class-NS16450.html">NS16450</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="M25Pxx"><a href="#M25Pxx">M25Pxx</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The <tt>generic_spi_flash</tt> class implements the M25P05/10/20/40/80/16/32/64/128, N25Q256A/512A/00AA and W25Q80/16/32/64/128 BV/CV serial flash memories, accessed via the SPI Interface. Different flash models using serial interface from different manufactures can be implemented by manually configure JEDEC ID, sector number and sector size attributes.<ul> <li>Unimplemented features: <ul> <li>operation waiting state</li> <li>Non-8bit align SPI transfer</li> </ul> </li> <li>4-byte address mode is implemented for Micron N25Q family.</li></ul>
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, serial_peripheral_interface_slave
+<h3 id="port-objects">
+<a href="#port-objects">Port Objects</a>
+</h3>
+<dl>
+<dt id="dt:bank-fcl">bank.fcl</dt>
+<dd>
+<a href="rm-class-generic_spi_flash.html#fcl">generic_spi_flash.fcl</a>
+ – Flash control logic</dd>
+<dt id="dt:port-hreset">port.HRESET</dt>
+<dd>
+<a href="rm-class-generic_spi_flash.html#HRESET">generic_spi_flash.HRESET</a>
+</dd>
+<dt id="dt:port-top_sector_lock">port.TOP_SECTOR_LOCK</dt>
+<dd>
+<a href="rm-class-generic_spi_flash.html#TOP_SECTOR_LOCK">generic_spi_flash.TOP_SECTOR_LOCK</a>
+</dd>
+<dt id="dt:port-write_protect">port.WRITE_PROTECT</dt>
+<dd>
+<a href="rm-class-generic_spi_flash.html#WRITE_PROTECT">generic_spi_flash.WRITE_PROTECT</a>
+</dd>
+</dl>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:jedec_signature">
+<i>JEDEC_signature</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|[iii]</code>
+<br>JEDEC standard signature. It should be configured in format like [0x20, 0x20, 0x15] for M25P16. Please refer to the hardware documentation for the correct value.</dd>
+<dt id="dt:addr4b_enabled">
+<i>addr4b_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Enable 4-byte address mode.</dd>
+<dt id="dt:dual_parallel_enabled">
+<i>dual_parallel_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Device represents two instances in dual parallel mode.</dd>
+<dt id="dt:elec_signature">
+<i>elec_signature</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Electronic Signature, has default value 0x13. this is not the same as, or even a subset of, the JEDEC 16-bit Electronic Signature. this is for reason of backward compatibility, only, and should not be used for new designs. It should be configured with value 0x05 for M25P05-A, 0x10 for M25P10-A, 0x11 for M25P20, 0x12 for M25P40, 0x13 for M25P80, 0x14 for M25P16, 0x15 for M25P32. 0x16 for M25P64. For all other devices not listed above, please check the respective hardware documentation.</dd>
+<dt id="dt:extended_id">
+<i>extended_id</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|[ii]</code>
+<br>Extended device identification. It is only implemented in some flash models. For those models, the two bytes are used to identify different devices. It should be configured like: [0x4d, 0x00] for S25FL032P. Please refer to the hardware documentation for the correct value.</dd>
+<dt id="dt:fcmd_counter">
+<i>fcmd_counter</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{256}]</code>
+<br>Array of the commands statistic counters.</dd>
+<dt id="dt:fpdi_enabled">
+<i>fpdi_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Enable DUAL INPUT FAST PROGRAM Command. Please refer to the hardware documentation to set True.</dd>
+<dt id="dt:fpqi_enabled">
+<i>fpqi_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Enable QUAD INPUT FAST PROGRAM Command. Please refer to the hardware documentation to set True.</dd>
+<dt id="dt:frdo_enabled">
+<i>frdo_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Enable DUAL OUTPUT FAST READ Command. Please refer to the hardware documentation to set True.</dd>
+<dt id="dt:frqo_enabled">
+<i>frqo_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Enable QUAD OUTPUT FAST READ Command. Please refer to the hardware documentation to set True.</dd>
+<dt id="dt:mem_block">
+<i>mem_block</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|[os]</code>
+<br>Connects to an <tt>image</tt> object which holding the data, the <tt>size</tt> of attached object should be equal to <tt>sector_number.val</tt> * <tt>sector_size.val</tt>.
+<p>
+Required interfaces: <tt>image</tt>.</p></dd>
+<dt id="dt:pp_buffer">
+<i>pp_buffer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>d|n</code>
+<br>buffer for holding page program data</dd>
+<dt id="dt:sector_lock">
+<i>sector_lock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>d</code>
+<br>The SPM1 lock registers.</dd>
+<dt id="dt:sector_number">
+<i>sector_number</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Sector number in the whole flash, has default value 16. Please refer to the hardware documentation for the correct value.</dd>
+<dt id="dt:sector_size">
+<i>sector_size</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Bytes size for flash sector, has default value 0x10000(64 * 1024). Please refer to the hardware documentation for the correct value. For example, 0x8000 for M25P05-A</dd>
+<dt id="dt:sfdp_data">
+<i>sfdp_data</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>Array for storing headers and data for sfdp tables.</dd>
+<dt id="dt:sfdp_flash_size">
+<i>sfdp_flash_size</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Size of flash memory which is stored in basic SFDT table.</dd>
+<dt id="dt:sfdp_tables_num">
+<i>sfdp_tables_num</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total number of SFPD tables.</dd>
+<dt id="dt:sfdp_tables_revision">
+<i>sfdp_tables_revision</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ii]{2}]</code>
+<br>Revision of sfdp table [msb, lsb].</dd>
+<dt id="dt:spi_master">
+<i>spi_master</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|[os]|n</code>
+<br>SPI master this device connected to.
+<p>
+Required interfaces: <tt>serial_peripheral_interface_master</tt>.</p></dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.generic-spi-flash.html">generic-spi-flash</a>
+</section>
+<h2 id="HRESET"><a href="#HRESET">generic_spi_flash.HRESET</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="interfaces-implemented-2">
+<a href="#interfaces-implemented-2">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<h2 id="TOP_SECTOR_LOCK"><a href="#TOP_SECTOR_LOCK">generic_spi_flash.TOP_SECTOR_LOCK</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="interfaces-implemented-3">
+<a href="#interfaces-implemented-3">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<h2 id="WRITE_PROTECT"><a href="#WRITE_PROTECT">generic_spi_flash.WRITE_PROTECT</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="interfaces-implemented-4">
+<a href="#interfaces-implemented-4">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<h2 id="fcl"><a href="#fcl">generic_spi_flash.fcl</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-2">
+<a href="#description-2">Description</a>
+</h3>
+Flash control logic
+<h3 id="interfaces-implemented-5">
+<a href="#interfaces-implemented-5">Interfaces Implemented</a>
+</h3>conf_object, log_object, bank_instrumentation_subscribe, instrumentation_order, io_memory, register_view, register_view_read_only
+<h3 id="commands-for-interface-bank_instrumentation_subscribe">
+<a href="#commands-for-interface-bank_instrumentation_subscribe">Commands for interface bank_instrumentation_subscribe</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-bank_instrumentation_subscribe.bp-break-bank.html">bp-break-bank</a>
+ – set device access break</li>
+<li>
+<a href="rm-cmd-bank_instrumentation_subscribe.bp-run-until-bank.html">bp-run-until-bank</a>
+ – run until specified device access occurs</li>
+<li>
+<a href="rm-cmd-bank_instrumentation_subscribe.bp-trace-bank.html">bp-trace-bank</a>
+ – enable tracing of device accesses</li>
+<li>
+<a href="rm-cmd-bank_instrumentation_subscribe.bp-wait-for-bank.html">bp-wait-for-bank</a>
+ – wait for specified device access</li>
+</ul>
+<h3 id="commands-for-interface-instrumentation_order">
+<a href="#commands-for-interface-instrumentation_order">Commands for interface instrumentation_order</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-instrumentation-move.html">instrumentation-move</a>
+ – reorder instrumentation connections</li>
+<li>
+<a href="rm-cmd-instrumentation-order.html">instrumentation-order</a>
+ – list instrumentation order for object</li>
+</ul>
+</section>
+<div class="chain">
+<a href="rm-class-ISA.html">ISA</a>
+<a href="rm-class-NS16450.html">NS16450</a>
+</div>

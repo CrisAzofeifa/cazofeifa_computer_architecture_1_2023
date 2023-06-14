@@ -1,0 +1,224 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>base-trace-mem-hier</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-bank_patch_tool_connection.html">bank_patch_tool_connection</a>
+<a href="rm-class-bitmask-translator.html">bitmask-translator</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="base-trace-mem-hier"><a href="#base-trace-mem-hier">base-trace-mem-hier</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The base class for the trace mode. This module provides an easy way of generating traces from Simics. Actions traced are executed instructions, memory accesses and, occurred exceptions. Traces will by default be printed as text to the terminal but can also be directed to a file in which case a binary format is available as well.
+<p>
+It is also possible to control what will be traced by setting a few of the provided attributes. Some of those should be set before enabling the tracer for the first time. If processors and memory-spaces from different cells are traced, then multi-threading must be disabled
+</p><h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-base-trace-mem-hier.start.html">start</a>
+ – control default tracer</li>
+<li>
+<a href="rm-cmd-base-trace-mem-hier.start.html">stop</a>
+ – stop default tracer</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:file">
+<i>file</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|n</code>
+<br>Name of output file that the trace is written to. If the name ends in <tt>.gz</tt>, the output will be gzipped.</dd>
+<dt id="dt:raw_mode">
+<i>raw_mode</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 for raw output format, and 0 for ascii. Raw output format is only supported when writing to a file.</dd>
+<dt id="dt:consumer">
+<i>consumer</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Optional consumer object. Must implement trace_consume.</dd>
+<dt id="dt:enabled">
+<i>enabled</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable tracing, 0 to disable.</dd>
+<dt id="dt:trace_instructions">
+<i>trace_instructions</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable instruction tracing, 0 to disable.</dd>
+<dt id="dt:trace_data">
+<i>trace_data</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable tracing of data, 0 to disable.</dd>
+<dt id="dt:trace_exceptions">
+<i>trace_exceptions</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable tracing of exceptions, 0 to disable.</dd>
+<dt id="dt:filter_duplicates">
+<i>filter_duplicates</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to filter out duplicate trace entries. Useful to filter out multiple steps in looping or repeating instructions.</dd>
+<dt id="dt:print_virtual_address">
+<i>print_virtual_address</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable printing of the virtual address, 0 to disable.</dd>
+<dt id="dt:print_physical_address">
+<i>print_physical_address</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable printing of the physical address, 0 to disable.</dd>
+<dt id="dt:print_linear_address">
+<i>print_linear_address</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable printing of the linear address, 0 to disable.</dd>
+<dt id="dt:print_access_type">
+<i>print_access_type</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable printing of the memory access type, 0 to disable.</dd>
+<dt id="dt:print_memory_type">
+<i>print_memory_type</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable printing of the memory type, 0 to disable.</dd>
+<dt id="dt:print_memory_space">
+<i>print_memory_space</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br><tt>true</tt>|<tt>false</tt> Set to true to enable printing of memory spaces. False is default.</dd>
+<dt id="dt:print_data">
+<i>print_data</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br><tt>1</tt>|<tt>0</tt> Set to 1 to enable printing of data and instruction op codes, 0 to disable.</dd>
+<dt id="dt:data_intervals_p">
+<i>data_intervals_p</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ii]*]</code>
+<br>List of physical address intervals for data tracing. If no intervals are specified, all addresses are traced.</dd>
+<dt id="dt:data_intervals_v">
+<i>data_intervals_v</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ii]*]</code>
+<br>List of virtual address intervals for data tracing. If no intervals are specified, all addresses are traced.</dd>
+<dt id="dt:cpu_list">
+<i>cpu_list</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[o*]|n</code>
+<br>List of processor objects to restrict the trace to or NIL to include all processor objects. The attribute must be set before enabling the tracer for the first time. If processor objects from different cells are traced, then multi-threading must be disabled.</dd>
+<dt id="dt:memory_space_list">
+<i>memory_space_list</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[o*]</code>
+<br>List of additional memory spaces to add to the trace besides those connected to the processors in the cpu_list attribute. Should be set before enabling the tracer for the first time. If memory-spaces from different cells are traced, then multi-threading must be disabled</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.trace.html">trace</a>
+</section>
+<div class="chain">
+<a href="rm-class-bank_patch_tool_connection.html">bank_patch_tool_connection</a>
+<a href="rm-class-bitmask-translator.html">bitmask-translator</a>
+</div>

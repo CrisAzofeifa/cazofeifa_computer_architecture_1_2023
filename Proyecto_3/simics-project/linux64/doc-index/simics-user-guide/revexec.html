@@ -1,0 +1,160 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>12.3 Reverse Execution</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="symbolic-debugging.html">12.2 Symbolic Debugging</a>
+<a href="lowlevel-software.html">13 Using Simics for Hardware Bring-Up and Firmware Development</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="low-level-debugging.html">III Low-Level Debugging</a>
+&nbsp;/&nbsp;
+<a href="debug.html">12 Low-level Debugging with Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="revexec">12.3 Reverse Execution</a></h1>
+<p>
+<a name="reverse-execution"></a>
+</p><p>
+Simics has the capability to run a simulation in reverse, which in
+many cases can greatly simplify the debugging of complicated software
+problems.
+</p><p>
+From a user perspective, there is little difference between running
+the simulation forwards and backwards; all the standard debugging
+tools like breakpoints and watchpoints can be used when the simulation
+is run in reverse. There are, however, some reverse execution specific
+issues, which are discussed in the following sections.
+</p><p>
+</p><h2 class="jdocu"><a name="Using-Reverse-Execution">12.3.1 Using Reverse Execution</a></h2>
+<p>
+
+<a name="bookmarks"></a>
+<a name="reverse-executionbookmarks"></a>
+</p><p>
+Before any reverse operations can be performed, there has to be at least one
+time bookmark; reverse operations are possible in the region following
+the first (oldest) bookmark. Depending upon how Simics is invoked (and various
+user preferences), a time bookmark denoted "start" is sometimes added
+automatically at the beginning of the simulation. Bookmarks can also
+be created by enabling reverse execution in an external debugger.
+</p><p>
+Bookmarks are managed through the commands
+</p><ul>
+<li><b>set-bookmark <em>label</em></b>,</li>
+<li><b>list-bookmarks</b> and</li>
+<li><b>delete-bookmark [<em>label</em> | -all]</b>.</li>
+</ul>
+<p>
+</p><div class="note">
+<b>Note:</b>
+From a performance and resource utilization perspective, it might be advantageous
+to put the first bookmark as close to the region of interest as possible.
+</div>Reverse execution support is disabled when all time bookmarks are deleted.
+<p>
+Once reverse execution has been enabled (by the creation of a time
+bookmark), it is possible to both run the simulation in reverse and to
+skip backwards in time. The Simics commands to do this are
+</p><ul>
+<li><b>reverse</b>,</li>
+<li><b>reverse-to <em>position</em></b> and</li>
+<li><b>skip-to <em>position</em></b>.</li>
+</ul>
+The <b>reverse</b> and <b>reverse-to</b> commands run the simulation backwards
+until a breakpoint occurs or till the oldest time bookmark is reached. The <b>skip-to</b> command jumps to a particular point in time, ignoring intermediate breakpoints.
+It should be noted that skipping can be significantly faster than reversing.
+<p>
+The <b>skip-to</b> and <b>reverse-to</b>
+commands take either an absolute step count or a time bookmark
+as argument.
+</p><p>
+Most forward executing commands used for debugging has
+a corresponding reverse variant obtained by adding a reverse prefix.
+The reverse variant of <b>step-instruction</b> is for instance
+<b>reverse-step-instruction</b>.
+</p><p>
+Any external input (like a human typing on a virtual serial console) is
+replayed when the simulation is being run forward after a reversal; this
+guarantees that the simulation will follow the same path as it did originally.
+For the same reason, all external input is ignored until the point is reached
+where the first reverse operation was initiated. It is possible to
+override this behavior with the <b>clear-recorder</b>
+command. This command discards all recorded input and allows an alternate
+future to take place.
+</p><p>
+Some changes to the simulation from entities outside the simulation
+are not recorded by recorders, for example manual changes from the
+command line interfaces or the graphical user interface. Such changes
+can make reverse execution operate somewhat unpredictably. It is
+recommended that any time bookmarks before a non-replayable change of
+the simulation state is deleted explicitly.
+</p><h2 class="jdocu"><a name="Performance">12.3.2 Performance</a></h2>
+<p>
+
+<a name="reverse-executionperformance"></a>
+</p><p>
+The usage of time bookmarks has a certain impact on overall
+performance since it implicitly enables reverse execution
+support. Normal performance is always obtained if all time bookmarks
+are removed.
+</p><p>
+The reverse execution engine optimizes performance for certain reverse
+operations that are expected to be common. One example of this is that
+skipping to a bookmark (or to the region just after a bookmark) can be
+significantly faster than skipping to some other location.
+</p><p>
+It is possible to tune certain reverse execution parameters in order
+to optimize for a particular usage pattern (although the default
+settings should work well in most situations). Trade-offs exist
+between:
+</p><p>
+</p><ul>
+<li>reverse performance</li>
+<li>forward performance</li>
+<li>memory utilization</li>
+<li>scope of reversibility</li>
+</ul>
+The <b>rexec-limit</b> command is the primary tool for adjusting the balance, e.g.
+<p>
+</p><pre class="jdocu_small">    simics&gt; <b>rexec-limit steps = 20000000 </b>
+    simics&gt; <b>rexec-limit size_mb = 200 </b>
+</pre><p>
+</p><p>
+The steps limit indicate that the scope of interest is at most the
+specified number of steps.  By imposing a steps limit, resources can
+be spent more effectively with the drawback that reversal past the
+limit may not be possible.
+</p><p>
+The size limit imposes a limit on the amount of memory reverse
+execution may use. If the limit is exceeded, reverse performance will
+be traded for less memory consumption.
+
+</p>
+<div class="chain">
+<a href="symbolic-debugging.html">12.2 Symbolic Debugging</a>
+<a href="lowlevel-software.html">13 Using Simics for Hardware Bring-Up and Firmware Development</a>
+</div>

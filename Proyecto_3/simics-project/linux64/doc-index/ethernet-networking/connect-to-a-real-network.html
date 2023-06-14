@@ -1,0 +1,169 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.2 Connect to a Real Network</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simple-virtual-network.html">2.1 Simple Virtual Network</a>
+<a href="simicsnet.html">3 Network Simulation</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="ethernet-guide-tutorial.html">2 Tutorial</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Connect-to-a-Real-Network">2.2 Connect to a Real Network</a></h1>
+<p>
+
+</p><p>
+
+
+
+
+</p><p>
+A network simulation can also be connected to a real network. By doing this,
+simulated computers and real computers will be able to communicate with each
+other.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Timing problems when using a real network connection, such as
+TCP timeouts, indicates that the simulation is running too fast: it might be
+idle most of the time. In this case, slow it down by using the
+<b><a name="enable-real-time-mode">enable-real-time-mode</a></b> command.</div><div class="note">
+<b>Note:</b>
+Connecting to a real network introduces potential security
+risks. See the Installation Guide for more information.</div>Before following the steps in this example, start a new
+<code>firststeps.simics</code>. By default, the <code>firststeps.simics</code>
+target script creates not only the target machine but also an Ethernet switch
+(the <b>ethernet_switch0</b> object of the <b>ethernet_switch</b>
+class) and a kind of a router (the <b>service_node_cmp0</b> object of
+the <b>service_node_comp</b>).
+
+
+<p>
+Once the target machine is booted, we can see that the simulated machine got IP address
+assigned. We use here newer <code>ip</code> command but the legacy <code>ifconfig</code>
+command is also available on the target: 
+</p><p>
+</p><pre class="jdocu_small">~# <b>ip a</b>
+1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s25: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc fq state UP group default qlen 1000
+    link/ether 00:17:a0:00:00:00 brd ff:ff:ff:ff:ff:ff
+    inet 10.10.0.100/24 brd 10.10.0.255 scope global dynamic enp0s25
+       valid_lft 2998sec preferred_lft 2998sec
+    inet6 11:2233:4455:6677:217:a0ff:fe00:0/64 scope global mngtmpaddr noprefixroute 
+       valid_lft forever preferred_lft forever
+    inet6 fe80::217:a0ff:fe00:0/64 scope link 
+       valid_lft forever preferred_lft forever
+~#
+</pre><p>      
+</p><p>
+The IP address for the simulated machine was provided though DHCP service
+by the <b>service_node_cmp0</b> object. The <b>service_node_cmp0</b>
+object allows also to reach the outside world from the simulated machine:
+</p><p>
+</p><pre class="jdocu_small">~# <b>curl -o index.html www.google.com</b>
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 12419    0 12419    0     0   1566      0 --:--:--  0:00:07 --:--:--  3022
+~#
+</pre><p>      
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Corporate networks may require the use of proxies to
+connect to external resources. The simulated machine is not an exception.
+Thus, reaching external resource from the simulated machine may require
+additional configuration of the simulated machine.</div>Often, we would like to reach the simulated machine from the outside world.
+This can be done by configuring the <b>service_node_cmp0</b> object to
+redirect accesses done to the simulation host ports to the simulated machine.
+To achieve this we will use the <b>connect-real-network</b> command.
+This command can set up a lot of things: create a new Ethernet switch,
+connect it to all simulated network devices as well as to the real network.
+In our case most of the things were already set up by
+the <code>firststeps.simics</code> target script so
+the command will just instruct the <b>service_node_cmp0</b> object to
+forward ports 4021, 4022, 4023 and 4080 on the simulation host
+to the simulated machine's telnet, SSH, FTP and HTTP ports, respectively.
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>connect-real-network</b>
+NAPT already enabled.
+Host TCP port 4021 -&gt; 10.10.0.100:21
+Host TCP port 4022 -&gt; 10.10.0.100:22
+Host TCP port 4023 -&gt; 10.10.0.100:23
+Host TCP port 4080 -&gt; 10.10.0.100:80
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Note that <b>connect-real-network</b> found out which IP
+address to work with by checking configuration variables set
+by <code>firststeps.simics</code>. You can also specify this address as
+parameter to the command</div>Since <b>connect-real-network</b> has set up forwarding for the ssh, telnet, FTP
+and HTTP ports of the simulated machine, it is possible to login to the
+simulated machine with ssh command. On your host, try the following:
+<p>
+</p><pre class="jdocu_small">host~$ <b>ssh -p 4022 -l root localhost</b>
+The authenticity of host '[localhost]:4022 ([127.0.0.1]:4022)' can't be established.
+ECDSA key fingerprint is SHA256:KcA9xIWuTUKDaTduNWCtxFHGnbRNiOxeFfNaci45MqI.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '[localhost]:4022' (ECDSA) to the list of known hosts.
+~# <b>exit</b>
+logout
+Connection to localhost closed.
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Note that if you restart the simulated machine, you may need
+to remove the line starting with '[localhost]:4022' in host file
+<code>~/.ssh/known_hosts</code> to login with ssh again.</div>You can also access the minimal web server running on the simulated
+computer. Point your browser to the following
+address: <a class="jdocu" href="http://localhost:4080" rel="noopener noreferrer" target="_top">http://localhost:4080</a>. You should get something similar to
+figure <a class="reference" href="#fs-web-server">1</a>.
+<p>
+</p><div class="figure" id="fs-web-server">
+
+<div style="text-align: center">
+<img alt="" src="fs-httpd.png">
+<div class="caption">Figure 1. A very simple page</div>
+</div>
+</div>
+
+<p>
+Chapter <a class="reference" href="real-network.html">4</a> is the reference for
+everything related to real network connections.
+</p><p>
+</p>
+<div class="chain">
+<a href="simple-virtual-network.html">2.1 Simple Virtual Network</a>
+<a href="simicsnet.html">3 Network Simulation</a>
+</div>

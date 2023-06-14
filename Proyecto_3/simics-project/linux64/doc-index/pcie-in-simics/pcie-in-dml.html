@@ -1,0 +1,251 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>PCIe in DML</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="high-level-design.html">High level design</a>
+<a href="dml-template-reference.html">DML template reference</a>
+</div>
+<div class="path">
+<a href="index.html">PCIe Modeling Library</a>
+&nbsp;/&nbsp;</div>
+<h1 id="pcie-in-dml"><a href="#pcie-in-dml">PCIe in DML</a></h1>
+<p>Simics provides a set of DML templates to assist in writing models for
+PCIe compliant devices. The templates are available in
+<code>[simics]/src/devices/dml-lib/pcie/</code>.</p>
+<h2 id="endpoints"><a href="#endpoints">Endpoints</a></h2>
+<p>A typical endpoint device would use the <a class="reference" href="common.html#pcie_endpoint">pcie_endpoint</a>
+template. This template defines the <code>pcie_config</code> register bank which
+simulates a Type 0 Configuration header. It also defines a <strong>connect</strong> for
+the upstream target, implements the required interfaces, and handles the
+mapping of resources defined in any base address registers.</p>
+<img alt="a PCIe Endpoint" height="300px" src="pcie-endpoint.png">
+<h3 id="configuration-header"><a href="#configuration-header">Configuration Header</a></h3>
+<p>The configuration header of a PCIe device is a register bank,
+typically named pcie_config, which uses the template
+<a class="reference" href="common.html#physical_config_bank">physical_config_bank</a>. A register bank would normally
+not instantiate this template directly, but use either of
+<a class="reference" href="common.html#type_0_bank">type_0_bank</a> or <a class="reference" href="bridge.html#type_1_bank">type_1_bank</a> instead. An
+endpoint that uses the <code>pcie_endpoint</code> template automatically gets a
+bank <code>pcie_config</code> which is an instance of the
+<a class="reference" href="common.html#type_0_bank">type_0_bank</a> template. All instances of
+<a class="reference" href="common.html#physical_config_bank">physical_config_bank</a> will be mapped in the
+configuration space of the upstream port when the device is connected,
+and all base address registers in the bank will be mapped in the
+appropriate address space, according to the type. If more than one
+instance of <code>physical_config_bank</code> exists in the same device,
+i.e. when simulating a multi-function-device, they must be separated
+by assigning different values to the parameter <code>function</code>. Sample code
+for a simple multi-function endpoint is available in the quick-start
+<a class="reference" href="quickstart.html#multi-function-endpoint">Multi-Function Endpoint</a> section.</p>
+<h3 id="device-id-vendor-id-and-class-code"><a href="#device-id-vendor-id-and-class-code">Device ID, Vendor ID and Class Code</a></h3>
+<p>The <code>pcie_config</code> bank defines the registers <code>vendor_id</code>, <code>device_id</code>
+and <code>class_code</code>. An endpoint must assign init values for these,
+according to the specification of the hardware that is to be
+simulated. Sample code for setting Vendor ID, Device ID and Class Code
+is available in the quick-start <a class="reference" href="quickstart.html#endpoint">Endpoint</a> section.
+Depending on the device to be modeled, the init value for other
+registers might also need to be customized.</p>
+<h3 id="capabilities"><a href="#capabilities">Capabilities</a></h3>
+<p>PCIe defines optional "Capabilities" and "Extended
+Capabilities". These are available as templates, configurable by
+parameters. The templates are designed to be applied on groups, and
+all templates require the parameters <code>base</code> and <code>next_ptr</code> to be
+defined. The <code>base</code> parameter defines the address of the first
+register in the capability structure. The <code>next_ptr</code> defines the base
+address of the first address in the next capability structure (or zero
+if this is the last capability). For example, the
+<a class="reference" href="quickstart.html#endpoint">Endpoint</a> in the quick-start section has the
+Subsystem ID (SSID) and Message Signaled Interrupts (MSI) capabilities
+defined</p>
+<p>Note that except where explicitly noted, the capability templates just
+define the registers and fields from the PCIe specification. The
+actual functionality must then be implemented by the device code. See
+<a href="dml-template-reference.html">DML Template Reference</a> for more details.</p>
+<h3 id="base-address-registers"><a href="#base-address-registers">Base Address Registers</a></h3>
+<p>An endpoint typically defines at least one base address register. In
+Simics these are declared by creating registers in the bank that
+corresponds to the configuration header (typically <code>pcie_config</code>).
+The base address registers must use one of the base address templates,
+for example the <a class="reference" href="common.html#memory_base_address">memory_base_address</a>. The
+<a class="reference" href="quickstart.html#endpoint">Endpoint</a> in the quick-start section defines two
+Memory Base Address registers, <code>bar0</code> and <code>bar2</code>. Each of them is tied
+to a register bank that will be mapped when the Memory Space Enable
+bit in the Command register is written as '1'.</p>
+<p>There are a number of different templates that can be used to simulate
+base address registers, and they can be customized using various
+parameters. These are described in the <a href="common.html#abstract_base_address">Common
+Templates</a> section of this document.</p>
+<h3 id="interrupts"><a href="#interrupts">Interrupts</a></h3>
+<p>Endpoints can send legacy interrupts using the
+<code>raise_legacy_interrupt</code> and <code>lower_legacy_interrupt</code> methods in the
+<code>pcie_config</code> bank. If the Endpoint has MSI or MSI-X capability, it
+can use the appropriate <a class="reference" href="#capabilities">Capabilities</a> template implement this and
+send message signalled interrupts by using the <code>raise</code> method in the
+group using the <code>msi_capability</code> or <code>msix_capability</code> template. The
+<a class="reference" href="quickstart.html#endpoint">Endpoint</a> in the quick-start section, for example,
+has MSI capability and raises MSI vector 0 when the <code>intr</code> register in
+<code>app0</code> is written.</p>
+<h3 id="read-write-pcie-memory"><a href="#read-write-pcie-memory">Read/Write PCIe Memory</a></h3>
+<p>Simics PCIe uses the <code>transaction_t</code> data type for all
+transactions. The <a class="reference" href="common.html#config_bank">config_bank</a> template provides utility
+methods for reading and writing to the PCIe memory space. These
+methods reside in the group <code>memory</code> and operate on the
+<code>upstream_target</code>. Details are available in the
+<a class="reference" href="common.html#memory-methods">Memory methods</a> section of this document. Below is a
+sample DML device which defines a method that reads 8 bytes from PCIe
+memory and writes it back with all bits flipped.</p>
+<figure id="example-memory-read-write">
+<figcaption>Figure 5. Example memory reading and writing</figcaption>
+<pre><code class="language-dml">dml 1.4;
+device endpoint;
+import "pcie/common.dml";
+
+is pcie_endpoint;
+
+method process_data(uint64 address) {
+    local (pcie_error_t err, uint64 value) = pcie_config.memory.read(addr, 8);
+    if (err != PCIE_Error_No_Error) {
+        log error: "failed to read PCIe memory @ 0x%x", address;
+        return;
+    }
+    err = pcie_config.memory.write(addr, ~value, 8);
+    if (err != PCIE_Error_No_Error)
+        log error: "failed to write PCIe memory @ 0x%x", address;
+}
+</code></pre>
+</figure>
+<h3 id="send-receive-messages"><a href="#send-receive-messages">Send/Receive Messages</a></h3>
+<p>Just like for memory transactions, the <a class="reference" href="common.html#config_bank">config_bank</a>
+template defines a group <code>message</code> with utility methods for sending
+and receiving messages. By default, the methods for receiving just log
+an "unimpl" string and return <code>false</code>, indicating that the device did
+not accept the message. Device code must override the methods for the
+messages it wishes to service, and return <code>true</code> if the message is
+accepted. As with the <code>memory</code> group, the methods for sending messages
+operate on <code>upstream_target</code>.</p>
+<p>Here is a sample DML device which accepts 'Vendor Defined Type 0'
+messages and sends a 'Vendor Defined Type 1' message upstream, with
+the address bits inverted. The available methods are described in more
+detail in the <a href="common.html#message-methods-sending">Sending</a> and
+<a href="common.html#message-methods-receiving">Receiving</a> Messages sections.</p>
+<figure id="example-send-receive-message">
+<figcaption>Figure 6. Example sending and receiving messages</figcaption>
+<pre><code class="language-dml">dml 1.4;
+device endpoint;
+import "pcie/common.dml";
+
+is pcie_endpoint;
+
+bank pcie_config {
+    // ...
+    group message {
+        method vendor_defined_type_0(transaction_t *t, uint64 addr) -&gt; (bool) {
+            log info, 2: "VDM Type 0 received, address: 0x%x", addr;
+            local pcie_error_t err = message.send(
+                ~addr, PCIE_Vendor_Defined_Type_1, PCIE_Msg_Route_Upstream);
+            return err == PCIE_Error_No_Error;
+        }
+    }
+    // ..
+}
+</code></pre>
+</figure>
+<h2 id="root-complexes-and-switches"><a href="#root-complexes-and-switches">Root Complexes and Switches</a></h2>
+<p>A PCIe device that is not an endpoint, i.e. a Root Port or a a Switch
+Port, is simulated with the help of an object of the class
+<code>pcie-downstream-port</code>.</p>
+<p>A root or switch port would typically use the
+<a class="reference" href="bridge.html#pcie_root_port">pcie_root_port</a> template. The <code>pcie_root_port</code> template
+creates a port object <code>downstream_port</code> of the class
+<code>pcie-downstream-port</code> and defines a bank <code>pcie_config</code> which is an
+instance of the <a class="reference" href="bridge.html#type_1_bank">type_1_bank</a> template. It also defines a
+connect to an upstream target and provides default implementations for
+the interface <code>transaction_translator</code> to handle upstream
+transactions.</p>
+<p>The <a class="reference" href="bridge.html#type_1_bank">type_1_bank</a> template automatically handles the
+standard base address registers for IO, Memory, and Prefetchable memory.
+It maps the configured ranges in the appropriate address space of the
+connected upstream target, forwarding them to its downstream
+port. Here is an overview image of a sample RC with one root port and
+one Root Complex Integrated Endpoint (RCiEP)</p>
+<img alt="a PCIe Root Complex" height="500px" src="pcie-root-complex.png">
+<p>And here is an overview image of a sample Switch with one upstream and
+three downstream ports.</p>
+<img alt="a PCIe Switch" height="500px" src="pcie-switch.png">
+<p>The quick-start section contains sample code for creating a similar
+<a class="reference" href="quickstart.html#root-complex">Root Complex</a> and <a class="reference" href="quickstart.html#switch">Switch</a></p>
+<h3 id="handling-upstream-traffic"><a href="#handling-upstream-traffic">Handling upstream traffic</a></h3>
+<p>The <code>pcie_root_port</code> automatically forwards all upstream traffic to
+its <code>upstream_target</code>. A port that wishes to change that can either
+redirect traffic of a certain type by setting any or all of the
+parameters <code>def</code>, <code>msg</code>, <code>mem</code>, <code>io</code>, and <code>cfg</code> in the group <code>txl</code> to
+a valid map target. Setting it to <code>NULL</code> will block upstream traffic
+of that type. See the documentation for the
+<a class="reference" href="bridge.html#pcie_translator">pcie_translator</a> template for more information.</p>
+<h3 id="handling-upstream-messages"><a href="#handling-upstream-messages">Handling upstream messages</a></h3>
+<p>Messages can be handled by creating instances of the template
+<code>handling_messages</code> in the <code>upstream_message</code> port. This port is
+created automatically by the <a class="reference" href="bridge.html#pcie_root_port">pcie_root_port</a> template. See the
+documentation for the <a class="reference" href="bridge.html#handling_messages">handling_messages</a> template for more
+information. Here is an example that handles Vendor Defined Message
+Type 0:</p>
+<figure id="example-upstream-message">
+<figcaption>Figure 7. Example upstream message handling</figcaption>
+<pre><code class="language-dml">dml 1.4;
+device rp;
+import "pcie/common.dml";
+
+is pcie_root_port;
+
+port upstream_message {
+    group vdm0 is handling_messages {
+        method message(transaction_t *t, uint64 addr,
+                       pcie_message_type_t type) -&gt; (pcie_error_t) {
+            if (type != PCIE_Vendor_Defined_Type_0) {
+                // message not handled here
+                return PCIE_Error_Not_Set;
+            }
+
+            log info: "VDM0 received";
+            return PCIE_Error_No_Error;
+        }
+    }
+}
+</code></pre>
+</figure>
+<h2 id="other-bridges"><a href="#other-bridges">Other bridges</a></h2>
+<p>A device that wishes to bridge PCIe to/from host memory, without
+necessarily being a Type 1 device, would use the <a class="reference" href="bridge.html#pcie_bridge">pcie_bridge</a>
+template. Like <code>pcie_root_port</code>, the template creates a port object
+<code>downstream_port</code> but it doesn't create any register bank and instead
+of an <code>upstream_target</code> it has a connect <code>host_memory</code> to which it
+translates requests.</p>
+
+<div class="chain">
+<a href="high-level-design.html">High level design</a>
+<a href="dml-template-reference.html">DML template reference</a>
+</div>

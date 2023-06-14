@@ -1,0 +1,104 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>usb_device</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_usb.html">usb</a>
+<a href="__rm_interface_vectored_interrupt.html">vectored_interrupt</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_usb_device">usb_device</a></h1>
+<p>
+
+<a name="usb_device"></a><a name="usb_device_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>usb_device_interface_t</code> interface is implemented
+   by all USB devices. It is used by the USB host to communicate with
+   the USB devices.  The interface is Simics internal, and may be
+   changed in future versions of Simics.  It should not be used by
+   user-defined classes.
+<p>
+   The <b><i>submit_transfer()</i></b> function is used by the USB host controller
+   to send a new transfer to a USB device. Transfers are the basic means of
+   communication between the USB host controller and the USB devices. A
+   transfer contains all information needed to handle control, bulk, interrupt,
+   and isochronous transfers. A transfer to a USB device simply moves the
+   control from the USB host to the USB device. The USB device can then
+   decide when to send back any useful data to the USB host.  The USB device
+   receives a pointer to the transfer to handle. It can either handle the
+   transfer immediately or send the transfer back later using the
+   <b><i>complete_transfer()</i></b> function in the
+   <code>usb_interface_t</code> interface, which is implemented by the USB
+   host.
+</p><p>
+   The USB device must return <code>USB_Transfer_Completed</code> when it
+   handles the transfer immediately, i.e., it has filled the required fields in
+   the transfer structure. The USB device must return
+   <code>USB_Transfer_Not_Ready</code> for unfinished transfers, i.e., the
+   USB device does not have any interesting data to deliver at this point. The
+   isochronous and interrupt transfers contain a field indicating how long time
+   the USB host expects the USB device to wait before returning the
+   transfer. Note that it is just an indication on how often this transfer is
+   scheduled in the periodic list and USB devices can complete the transfers at
+   any time. A value of <code>0</code> means that the USB host does have any
+   expectations about the return time.
+</p><p>
+   The <b><i>abort_transfer()</i></b> function tells the USB device to abort a
+   transfer previously issued by the USB host. The USB device should not call
+   the <b><i>complete_transfer()</i></b> function for a request that has been
+   aborted.
+</p><p>
+   The <b><i>reset()</i></b> function is used by the USB host to reset the USB
+   device.
+</p><p>
+   The USB host expects the device to return the same transfer pointer it
+   received when completing, i.e., the transfer pointer is used to identify
+   uniquely a transfer.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(usb_device) {
+        usb_transfer_completion_t (*submit_transfer)(conf_object_t *dev_obj,
+                                                     usb_transfer_t *transfer);
+        void (*abort_transfer)(conf_object_t *dev_obj,
+                               usb_transfer_t *transfer);
+        void (*reset)(conf_object_t *dev_obj);
+};
+
+#define USB_DEVICE_INTERFACE "usb_device"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_usb.html">usb</a>
+<a href="__rm_interface_vectored_interrupt.html">vectored_interrupt</a>
+</div>

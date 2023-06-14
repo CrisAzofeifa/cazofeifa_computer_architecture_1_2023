@@ -1,0 +1,70 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>set-time-quantum</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-set-threading-mode.html">set-threading-mode</a>
+<a href="rm-cmd-setup-x86-timing.html">setup-x86-timing</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="set-time-quantum"></a>
+<a name="cpu-switch-time"></a>
+<h1 id="set-time-quantum"><a href="#set-time-quantum">set-time-quantum</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>set-time-quantum</b> [<i>cycles</i>|<i>seconds</i>] [<i>cell</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Change the time, in <i>cycles</i> or <i>seconds</i>, between processor switches for processors in the cell <i>cell</i>. The command sets the processor switch time globally if the <i>cell</i> argument is omitted, and all existing cells will have their time quantum reset to the new value, and cells created later will use the new value.
+<p>
+Without arguments, <code>set-time-quantum</code> prints the time quantum of all cells in the system, as well as the default time quantum (if set).
+</p><p>
+If the argument is given in cycles the <tt>time_quantum</tt> attribute is unset. And if the argument is given in seconds then the <tt>cpu_switch_time</tt> attribute is unset, both in the <tt>sim</tt> class.
+</p><p>
+When used in an expression, the command returns the given value, in seconds or cycles, or an exception is raised. Without arguments the current time quantum is returned, or -1 if no cell exists, or if there are cells with different time quantum values. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-cell.cpu-switch-time.html">&lt;cell&gt;.cpu-switch-time</a>, 
+<a href="rm-cmd-set-max-time-span.html">set-max-time-span</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-set-threading-mode.html">set-threading-mode</a>
+<a href="rm-cmd-setup-x86-timing.html">setup-x86-timing</a>
+</div>

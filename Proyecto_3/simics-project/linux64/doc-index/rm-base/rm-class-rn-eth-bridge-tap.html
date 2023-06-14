@@ -1,0 +1,171 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>rn-eth-bridge-tap</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-rev-execution.html">rev-execution</a>
+<a href="rm-class-rom.html">rom</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="rn-eth-bridge-tap"><a href="#rn-eth-bridge-tap">rn-eth-bridge-tap</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Ethernet bridge using a TAP interface.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, ethernet_common, recorded, real_network
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-rn-eth-bridge-tap.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-rn-eth-bridge-tap.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:interface">
+<i>interface</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|n</code>
+<br>The name of the TAP interface on the host.</dd>
+<dt id="dt:connected">
+<i>connected</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Set to true if the object is connected to the real network and configured properly. Also used to initiate a new connection. If the object successfully opened the TAP device but failed to read the IP address and netmask, this attribute has to be set to true again after the TAP device has been configured.</dd>
+<dt id="dt:tap_bridge">
+<i>tap_bridge</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Should be set to true if the TAP interface is used to setup an Ethernet bridge.</dd>
+<dt id="dt:host_ip">
+<i>host_ip</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>IP address of the network adapter (TAP) connected to the real network.</dd>
+<dt id="dt:host_netmask">
+<i>host_netmask</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>Network address mask of the host Ethernet network.</dd>
+<dt id="dt:run_in_thread">
+<i>run_in_thread</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The run_in_thread level, either 1 or 2.</dd>
+<dt id="dt:link">
+<i>link</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Simulated Ethernet link to connect to.</dd>
+<dt id="dt:recorder">
+<i>recorder</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Recorder device for recording and playback of traffic from the real network.</dd>
+<dt id="dt:tx_bandwidth">
+<i>tx_bandwidth</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The transmit bandwidth of the network interface in bits per second. The network interface will limit the rate at which it sends packets to remain below this bandwidth. Set to 0 for unlimited bandwidth. Default limit is 10Mbit/s.</dd>
+<dt id="dt:tx_next_time">
+<i>tx_next_time</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>Next time the bandwidth limitation allows us to send a frame</dd>
+<dt id="dt:tx_packet_rate">
+<i>tx_packet_rate</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The maximum transmit rate of the network interface in packets per second. The network interface will limit the rate at which it sends packets to remain below this rate. Set to 0 for unlimited rate, which is the default.</dd>
+</dl>
+<h3 id="class-attributes">
+<a href="#class-attributes">Class Attributes</a>
+</h3>
+<dl>
+<dt id="dt:network_devices">
+<i>network_devices</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[s*]</code>
+<br>List of TAP interfaces on the host machine.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.real-network.html">real-network</a>
+</section>
+<div class="chain">
+<a href="rm-class-rev-execution.html">rev-execution</a>
+<a href="rm-class-rom.html">rom</a>
+</div>

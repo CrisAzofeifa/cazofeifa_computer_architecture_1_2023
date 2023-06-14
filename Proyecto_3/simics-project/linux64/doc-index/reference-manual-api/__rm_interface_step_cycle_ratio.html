@@ -1,0 +1,79 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>step_cycle_ratio</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_step.html">step</a>
+<a href="__rm_interface_step_event_instrumentation.html">step_event_instrumentation</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_step_cycle_ratio">step_cycle_ratio</a></h1>
+<p>
+
+<a name="step_cycle_ratio"></a><a name="step_cycle_ratio_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>step_cycle_ratio</code> interface is implemented by
+  processors that support a changeable ratio between steps and
+  cycles. The <b>set-step-rate</b> command uses this interface to
+  set the ratio between steps and cycles.
+<p>
+  The <b><i>set_ratio</i></b> sets the ratio between <i>steps</i> and
+  <i>cycles</i>. Note that the introduction of stall cycles can
+  skew the ratio. The <b><i>get_ratio</i></b> simply returns the current
+  ratio.
+</p><p>
+  The <i>cycles</i> and <i>step</i> arguments must be in the range
+  [1..128] and <i>cycles</i> must be a power of two. Implementers of this
+  interface may choose to ignore other values of <i>cycles</i> and
+  <i>step</i> and may log an error.
+</p><p>
+  </p><pre class="jdocu_small">
+typedef struct {
+        uint32 steps;
+        uint32 cycles;
+} step_cycle_ratio_t;
+
+SIM_INTERFACE(step_cycle_ratio) {
+        step_cycle_ratio_t (*get_ratio)(conf_object_t *obj);
+        void (*set_ratio)(conf_object_t *obj, uint32 steps, uint32 cycles);
+};
+
+#define STEP_CYCLE_RATIO_INTERFACE "step_cycle_ratio"
+</pre><p>
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_step.html">step</a>
+<a href="__rm_interface_step_event_instrumentation.html">step_event_instrumentation</a>
+</div>

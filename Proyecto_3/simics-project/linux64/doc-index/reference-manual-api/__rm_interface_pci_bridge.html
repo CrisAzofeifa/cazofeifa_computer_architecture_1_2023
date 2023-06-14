@@ -1,0 +1,66 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pci_bridge</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_nios_eic.html">nios_eic</a>
+<a href="__rm_interface_pci_bus.html">pci_bus</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pci_bridge">pci_bridge</a></h1>
+<p>
+
+<a name="pci_bridge"></a><a name="pci_bridge_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is implemented by all PCI bridges.
+   For interrupts, the initiating device is specified with a pci-bus object and
+   PCI device number pair, and the pin represents PCI interrupt lines (A, B, C,
+   or D) as numbers in the range of 0 to 3.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(pci_bridge) {
+        void (*system_error)(conf_object_t *obj);
+        void (*raise_interrupt)(conf_object_t *obj, conf_object_t *pci_bus,
+                                int device, int pin);
+        void (*lower_interrupt)(conf_object_t *obj, conf_object_t *pci_bus,
+                                int device, int pin);
+};
+
+#define PCI_BRIDGE_INTERFACE		"pci_bridge"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_nios_eic.html">nios_eic</a>
+<a href="__rm_interface_pci_bus.html">pci_bus</a>
+</div>

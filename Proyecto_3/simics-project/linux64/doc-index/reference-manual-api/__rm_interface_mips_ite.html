@@ -1,0 +1,86 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>mips_ite</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_mips_exception_query.html">mips_exception_query</a>
+<a href="__rm_interface_ms1553_link.html">ms1553_link</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_mips_ite">mips_ite</a></h1>
+<p>
+
+<a name="mips_ite"></a><a name="mips_ite_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This <code>mips_ite</code> interface is implemented by the CPU, for
+   communicating with the MIPS Inter-Thread Communication Unit.
+<p>
+   The <b><i>set_dtag_lo</i></b> function sets the DTagLo SPR.
+</p><p>
+   The <b><i>get_dtag_lo</i></b> function returns the value of the DTagLo SPR.
+</p><p>
+   The <b><i>get_errctl</i></b> function returns the value of the ErrCtl SPR.
+</p><p>
+   The <b><i>block_tc</i></b> function marks the current TC as blocked on gating
+   storage and swaps in another TC.
+</p><p>
+   The <b><i>gated_exception</i></b> function throws an immediate exception.
+</p><p>
+   The <b><i>current_tc_num</i></b> function returns the currently running TC
+   number on the VPE.
+</p><p>
+   The <b><i>unblock_tc</i></b> function unblocks the specified TC if it is
+   currently blocked on gating storage.
+</p><p>
+   The <b><i>is_big_endian</i></b> function indicates if the CPU expects
+   big endian memory storage.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(mips_ite) {
+        void (*set_dtag_lo)(conf_object_t *NOTNULL obj, uint32 value);
+        uint32 (*get_dtag_lo)(conf_object_t *NOTNULL obj);
+        uint32 (*get_errctl)(conf_object_t *NOTNULL obj);
+        void (*block_tc)(conf_object_t *NOTNULL obj);
+        void (*gated_exception)(conf_object_t *NOTNULL obj);
+        int (*current_tc_num)(conf_object_t *NOTNULL obj);
+        void (*unblock_tc)(conf_object_t *NOTNULL obj, int tc_num);
+        bool (*is_big_endian)(conf_object_t *NOTNULL obj);
+};
+#define MIPS_ITE_INTERFACE "mips_ite"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_mips_exception_query.html">mips_exception_query</a>
+<a href="__rm_interface_ms1553_link.html">ms1553_link</a>
+</div>

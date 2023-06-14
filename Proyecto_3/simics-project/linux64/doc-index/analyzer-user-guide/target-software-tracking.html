@@ -1,0 +1,106 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2 OS Awareness</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="analyzer-introduction.html">1 Introduction</a>
+<a href="tracker-activation.html">2.1 Tracker Activation</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 id="os-awareness">2 <a href="#os-awareness">OS Awareness</a></h1>
+<p>The OS Awareness (OSA) feature provides commands (section <a class="reference" href="osa-commands.html">2.3</a>) and interfaces (section <a class="reference" href="software-tracker-scripting.html">2.5</a>) to assist in debugging or analyzing target software. Other Simics features, such as the Simics debugger, also make use of the OSA feature.</p>
+<p>To be able to debug, analyze, or otherwise track tasks, processes, etc on the target software Simics employs specialized <em>tracker</em> modules. These trackers examine the state of the target system to determine when and where each task is running. This is usually achieved by monitoring changes to memory, registers or processor state. No modification or instrumentation of the target software is required.</p>
+<p>This documentation covers the OS Awareness framework and trackers that are provided in the Simics base package. For other trackers, see their respective documentation. The <em>Simics Model Builder</em> product makes it possible to create custom trackers.</p>
+<p>To be able to use the features described in this chapter, the configuration script for the target system needs to support the OS awareness functionality. For this to work the target script has to be set up with a <code>software</code> object and a <code>tracker</code> composition object for the specific operating system. Most provided target scripts will set up the software object directly under the main system top object, such as <code>board.software</code>. See section <a class="reference" href="os-awareness-scripts.html">2.9</a> for details about adding OS Awareness to scripts.</p>
+<p>To see which tracker is used, you can use the <code>info</code> command on the software slot:</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.info</strong>
+Information about board.software [class os_awareness]
+=====================================================
+
+Software:
+          Tracker : board.software.tracker
+    Tracker class : linux_tracker_comp
+             CPUs : board.mb.cpu0.core[0][0]
+</code></pre>
+<p>In the example above, the software tracker is configured with the tracker composition of type <code>linux_tracker_comp</code> at the slot <code>board.software.tracker</code>. If there is no tracker object configured then <code>none</code> is shown both as class and object.</p>
+<p>The <code>software</code> object provides commands for inspecting and monitoring the target software, an overview of available commands can be found in section <a class="reference" href="osa-commands.html">2.3</a>.</p>
+
+<ul class="subsections">
+<li>
+<a href="tracker-activation.html">2.1 Tracker Activation</a>
+</li>
+<li>
+<a href="nodes.html">2.2 The Node Tree</a>
+</li>
+<li>
+<a href="osa-commands.html">2.3 Commands</a>
+</li>
+<li>
+<a href="node-tree-patterns.html">2.4 Node path patterns</a>
+</li>
+<li>
+<a href="software-tracker-scripting.html">2.5 Scripting</a>
+</li>
+<li>
+<a href="event-system.html">2.6 Event system</a>
+</li>
+<li>
+<a href="tracker-parameters.html">2.7 Tracker Parameters</a>
+</li>
+<li>
+<a href="os-awareness-configuration.html">2.8 Tracker Configuration</a>
+</li>
+<li>
+<a href="os-awareness-scripts.html">2.9 Adding Tracker Support to Target Scripts</a>
+</li>
+<li>
+<a href="os-awareness-domains.html">2.10 Multiple Software Domains</a>
+</li>
+<li>
+<a href="multiple-oss.html">2.11 Multiple Operating Systems on a Single Machine</a>
+</li>
+<li>
+<a href="os-awareness-limitations.html">2.12 Limitations</a>
+</li>
+<li>
+<a href="linux-tracker.html">2.13 Linux Tracker</a>
+</li>
+<li>
+<a href="cpumode-tracker.html">2.14 CPU Mode Tracker</a>
+</li>
+<li>
+<a href="partition-tracker.html">2.15 Partition tracker</a>
+</li>
+<li>
+<a href="uefi-fw-trk.html">2.16 UEFI Firmware Tracker</a>
+</li>
+</ul>
+<div class="chain">
+<a href="analyzer-introduction.html">1 Introduction</a>
+<a href="tracker-activation.html">2.1 Tracker Activation</a>
+</div>

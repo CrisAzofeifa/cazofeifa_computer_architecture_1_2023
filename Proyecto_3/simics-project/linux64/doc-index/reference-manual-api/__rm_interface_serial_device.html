@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>serial_device</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_scale_factor_listener.html">scale_factor_listener</a>
+<a href="__rm_interface_serial_peripheral_interface_master.html">serial_peripheral_interface_master</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_serial_device">serial_device</a></h1>
+<p>
+
+<a name="serial_device"></a><a name="serial_device_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Interface used to connect serial devices together. It can be implemented
+   both by devices such as UARTs and text consoles, and by links.
+<p>
+   A character (byte) is sent with the <b><i>write()</i></b> function;
+   <i>obj</i> is the receiving device or link, and <i>value</i> is
+   either a data byte, or the out-of-band value <code>TTY_ABORT</code>.
+</p><p>
+   The receiver will return the number of characters accepted; i.e. 1 on
+   success and 0 if it could not handle the new byte. If the receiver returns
+   0, it must later call <b><i>receive_ready()</i></b> in the sender's
+   <code>serial_device</code> interface to signal that new bytes can now be
+   accepted. A serial device must handle the case where the
+   <b><i>receive_ready()</i></b> function is called although it has no more bytes
+   to send.
+</p><p>
+   </p><pre class="jdocu_small">
+#define TTY_ABORT   0x100
+
+SIM_INTERFACE(serial_device) {
+        int (*write)(conf_object_t *obj, int value);
+        void (*receive_ready)(conf_object_t *obj);
+};
+
+#define SERIAL_DEVICE_INTERFACE "serial_device"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_scale_factor_listener.html">scale_factor_listener</a>
+<a href="__rm_interface_serial_peripheral_interface_master.html">serial_peripheral_interface_master</a>
+</div>

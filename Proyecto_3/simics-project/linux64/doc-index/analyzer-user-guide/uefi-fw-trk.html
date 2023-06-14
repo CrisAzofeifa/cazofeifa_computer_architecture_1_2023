@@ -1,0 +1,311 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.16 UEFI Firmware Tracker</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="partition-tracker.html">2.15 Partition tracker</a>
+<a href="debugging-target-code.html">3 Debugging Target Code</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="uefi-firmware-tracker">2.16 <a href="#uefi-firmware-tracker">UEFI Firmware Tracker</a></h1>
+<p>The <em>UEFI Firmware Tracker</em> tracks UEFI, Intel® Slim Bootloader (Intel® SBL) and Intel® Firmware Support Package (Intel® FSP) module loading and unloading to allow source code debugging of UEFI systems. The UEFI Firmware Tracker is implemented as an <em>OS Awareness</em> component. Read more about OS Awareness in chapter <a class="reference" href="target-software-tracking.html">2</a>.</p>
+<p>Supported target platforms for the tracker are X86 and ARM64.</p>
+<p>While the tracker works on both Windows and Linux and can track UEFI, Intel® Slim Bootloader (Intel® SBL) and Intel® FSP, there are some details to consider when it comes to <em>source code debugging</em>, see section <a class="reference" href="#source-code-debugging">2.16.3</a>.</p>
+<h2 id="tracking-techniques">2.16.1 <a href="#tracking-techniques">Tracking Techniques</a></h2>
+<p>Knowing how the UEFI tracker works is optional, but understanding the basics may be useful during configuration. Tracking is handled with several techniques which handles modules loaded in the different UEFI phases.</p>
+<p>The below tables lists the <em>tracking techniques</em> available on <em>X86</em> (figure <a class="reference" href="#uefi-fw-trk-tracking-techniques-x86">7</a>) and <em>ARM64</em> (figure <a class="reference" href="#uefi-fw-trk-tracking-techniques-arm64">8</a>) and for which phases, or modules the tracking techniques work. Note that some tracking techniques may find other module types as well. However, it may not support unload for example.</p>
+<figure id="uefi-fw-trk-tracking-techniques-x86">
+<table><thead><tr><th><strong>Tracking Technique</strong></th><th><strong>Default</strong></th><th><strong>SEC and PEI (static)</strong></th><th><strong>PEI (dynamic)</strong></th><th><strong>DXE</strong></th><th><strong>SMM</strong></th><th><strong>Intel® FSP</strong></th></tr></thead><tbody>
+<tr><td>Map File</td><td>Disabled</td><td>Yes</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>Pre-DXE</td><td>Disabled</td><td>—</td><td>Yes</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>DXE</td><td>Enabled</td><td>—</td><td>—</td><td>Yes</td><td>—</td><td>—</td></tr>
+<tr><td>SMM</td><td>Enabled</td><td>—</td><td>—</td><td>—</td><td>Yes</td><td>—</td></tr>
+<tr><td>Execution <a href="#uefi-fw-trk-tracking-techniques-footnote-x86-1">(1)</a><a href="#uefi-fw-trk-tracking-techniques-footnote-x86-2">(2)</a></td><td>Enabled</td><td>Yes</td><td>Yes</td><td>—</td><td>—</td><td>Yes</td></tr>
+<tr><td>Notification <a href="#uefi-fw-trk-tracking-techniques-footnote-x86-2">(2)</a></td><td>Enabled</td><td>Yes</td><td>Yes</td><td>Yes <a href="#uefi-fw-trk-tracking-techniques-footnote-x86-3">(3)</a></td><td>—</td><td>—</td></tr>
+<tr><td>Reset <a href="#uefi-fw-trk-tracking-techniques-footnote-x86-2">(4)</a></td><td>Enabled</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>OS Hand-off <a href="#uefi-fw-trk-tracking-techniques-footnote-x86-4">(5)</a></td><td>Enabled</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+</tbody></table>
+<table><thead><tr></tr></thead><tbody>
+<tr><td><span id="uefi-fw-trk-tracking-techniques-footnote-x86-1"><strong>(1)</strong></span></td><td>Detection of module unload is not supported.</td></tr>
+<tr><td><span id="uefi-fw-trk-tracking-techniques-footnote-x86-2"><strong>(2)</strong></span></td><td>Will not remove SEC and PEI modules when UEFI enters DXE (which DXE tracking supports).</td></tr>
+<tr><td><span id="uefi-fw-trk-tracking-techniques-footnote-x86-3"><strong>(3)</strong></span></td><td>Requires that UEFI has been updated with notification support, see appendix <a class="reference" href="uefi-fw-trk-uefi-notification-update.html">B</a>.</td></tr>
+<tr><td><span id="uefi-fw-trk-tracking-techniques-footnote-x86-4"><strong>(4)</strong></span></td><td><em>Reset tracking</em> does not track modules but will clear the module list when detecting a processor reset.</td></tr>
+<tr><td><span id="uefi-fw-trk-tracking-techniques-footnote-x86-5"><strong>(5)</strong></span></td><td><em>OS Hand-off tracking</em> does not track modules, but improves simulation performance while executing the OS..</td></tr>
+</tbody></table>
+<figcaption>Figure 7.  Tracking techniques available on X86 targets. </figcaption>
+</figure>
+<figure id="uefi-fw-trk-tracking-techniques-arm64">
+<table><thead><tr><th><strong>Tracking Technique</strong></th><th><strong>Default</strong></th><th><strong>SEC and PEI (static)</strong></th><th><strong>PEI (dynamic)</strong></th><th><strong>DXE</strong></th></tr></thead><tbody>
+<tr><td>Map File</td><td>Disabled</td><td>Yes</td><td>—</td><td>—</td></tr>
+<tr><td>DXE</td><td>Enabled</td><td>—</td><td>—</td><td>Yes</td></tr>
+<tr><td>Execution <a href="#uefi-fw-trk-tracking-techniques-footnote-arm64-1">(1)</a><a href="#uefi-fw-trk-tracking-techniques-footnote-arm64-2">(2)</a></td><td>Enabled</td><td>Yes</td><td>Yes</td><td>—</td></tr>
+</tbody></table>
+<table><thead><tr></tr></thead><tbody>
+<tr><td><span id="uefi-fw-trk-tracking-techniques-footnote-arm64-1"><strong>(1)</strong></span></td><td>Detection of module unload is not supported.</td></tr>
+<tr><td><span id="uefi-fw-trk-tracking-techniques-footnote-arm64-2"><strong>(2)</strong></span></td><td>Will not remove SEC and PEI modules when UEFI enters DXE (which DXE tracking supports).</td></tr>
+</tbody></table>
+<figcaption>Figure 8.  Tracking techniques available on ARM64 targets </figcaption>
+</figure>
+<h2 id="commands">2.16.2 <a href="#commands">Commands</a></h2>
+<p>The UEFI firmware tracker commands are used to configure the tracker and also to provide information about the UEFI system. The commands are: </p>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:uefi_fw_tracker-detect-parameters"><code>&lt;uefi_fw_tracker&gt;.detect-parameters</code></span><br>
+Detect parameters and load them directly by using the <code>-load</code> flag. Example for the target <code>viper</code>: </p>
+<pre><code>viper.software.tracker.detect-parameters -load
+</code></pre>
+<p>Parameters can also be saved to a parameter file which can then be loaded with <code>&lt;uefi_fw_tracker&gt;.load-parameters</code>. Use the <em>param-file</em> argument to specify a file to save. </p>
+</li>
+<li>
+<p><span class="term" id="dt:uefi_fw_tracker-load-parameters"><code>&lt;uefi_fw_tracker&gt;.load-parameters</code></span><br>
+Load configuration parameters for the tracker from a configuration parameter file such a file created by <code>&lt;uefi_fw_tracker&gt;.detect-parameters</code>. Example for the target <code>viper</code>: </p>
+<pre><code>viper.software.tracker.load-parameters
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:uefi_fw_tracker-info"><code>&lt;uefi_fw_tracker&gt;.info</code></span><br>
+Show information on how the tracker was configured. Example for the target <code>viper</code>: </p>
+<pre><code>viper.software.tracker.info
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:uefi_fw_tracker-status"><code>&lt;uefi_fw_tracker&gt;.status</code></span><br>
+Show the tracker enabled state, list all UEFI modules currently loaded, and show various UEFI system information. Example for the target <code>viper</code>: </p>
+<pre><code>viper.software.tracker.status
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:uefi_fw_tracker_comp-list-modules-or-uefi_fw_mapper-list-modules"><code>&lt;uefi_fw_tracker_comp&gt;.list-modules</code> or <code>&lt;uefi_fw_mapper&gt;.list-modules</code></span><br>
+List the UEFI modules that the tracker is aware of. To list all modules, specify <code>max=0</code>. </p>
+</li>
+</ul>
+</div>
+<p>For more information about the commands, see: </p>
+<ul>
+<li>section <a class="reference" href="osa-commands.html#controlling">2.3.1</a> for an overview of the OS Awareness set of commands, and </li>
+<li>command help information in <em>Simics CLI</em>: 
+<pre><code>
+simics&gt; load-module uefi-fw-tracker
+simics&gt; help uefi_fw_tracker
+  
+</code></pre>
+</li>
+</ul>
+<h2 id="source-code-debugging">2.16.3 <a href="#source-code-debugging">Source Code Debugging</a></h2>
+<p>In order for source code debugging to work, there are some requirements that must be met: </p>
+<ol>
+<li>The <em>host type</em> in combination with the <em>compiler tool chain</em> used to compile UEFI must be <em>supported</em> (see table in Figure <a class="reference" href="#uefi-fw-trk-debugging-host-compiler">9</a>). </li>
+<li>The UEFI system must have been compiled with <em>debug information</em>. </li>
+<li>The debug information and source files must be <em>available to TCF</em>.</li>
+</ol>
+<figure id="uefi-fw-trk-debugging-host-compiler">
+<table><thead><tr><th><strong>Compiler Tool Chain</strong></th><th><strong>Microsoft Windows</strong></th><th><strong>Linux</strong></th></tr></thead><tbody>
+<tr><td>Microsoft Visual Studio</td><td>Supported <a href="#uefi-fw-trk-debugging-dbghelp">(1)</a></td><td>—</td></tr>
+<tr><td>ELF/DWARF compiler such as GCC</td><td>Supported</td><td>Supported</td></tr>
+</tbody></table>
+<table><thead><tr></tr></thead><tbody>
+<tr><td><span id="uefi-fw-trk-debugging-dbghelp"><strong>(1)</strong></span></td><td>Requires that DBGHELP.DLL is available to TCF.</td></tr>
+</tbody></table>
+<figcaption>Figure 9. Supported combinations of of *host type* and *compiler tool chain*</figcaption>
+</figure>
+<p>To get the best source code debugging experience when debugging UEFI (or any other binary), please compile with as <em>much debug information</em> as possible and as <em>little optimization</em>as possible.</p>
+<p>If copying an already built UEFI system from another computer, it is important to <em>keep</em> files that are needed for debugging. There is usually a <code>DEBUG</code> folder for each UEFI module that contains the files needed for debugging, and it is important that at least the some of the files are kept. As an example, lets say that the module <code>SecCore</code> has a directory <code>Build/.../SecCore/DEBUG</code>. Then at least the following files <em>must be kept</em></p>
+<table><thead><tr><th><strong>Microsoft Visual Studio</strong></th><th><strong>ELF/DWARF compiler such as GCC</strong></th></tr></thead><tbody>
+<tr><td>SecMain.efi</td><td>SecMain.efi</td></tr>
+<tr><td>SecMain.dll</td><td>SecMain.dll</td></tr>
+<tr><td>SecMain.pdb</td><td>SecMain.debug</td></tr>
+</tbody></table>
+<h2 id="configuration">2.16.4 <a href="#configuration">Configuration</a></h2>
+<p>Some platform start scripts come with UEFI Firmware Tracker support. If that is not the case, a tracker configuration must be added.</p>
+<p>Here is an example of how to configure the <em>viper</em> system. For more in-depth information on OS Awareness configurations, read section <a class="reference" href="os-awareness-scripts.html">2.9</a>.</p>
+<pre><code>
+# Specify the file that will contain the tracker parameters.
+if not defined tracker_params { $tracker_params = "uefi.params" }
+
+# Load uefi-fw-tracker and insert it into the tracker hierarchy.
+load-module uefi-fw-tracker
+viper.software.insert-tracker tracker = uefi_fw_tracker_comp
+
+# Detect the parameters which will be written to the $tracker_params.
+viper.software.tracker.detect-parameters -overwrite param-file = $tracker_params
+
+# Load the parameters.
+viper.software.tracker.load-parameters $tracker_params
+
+# Enable the tracker.
+viper.software.enable-tracker
+  
+</code></pre>
+<p>If the target configuration scripts configures another OS-Awareness tracker, this should be deleted first with the command <code>&lt;os_awareness&gt;.delete-tracker</code>, for example: </p>
+<pre><code>
+# Delete the current tracker to allow configuration of the UEFI tracker.
+viper.software.delete-tracker
+  
+</code></pre>
+<p>After incorporating the tracker configuration and starting the simulation, you can debug the system with the debugger commands in <em>Simics CLI</em>. For more information about debugging with Simics in general, see chapter <a class="reference" href="debugging-target-code.html">3</a>. </p>
+<h2 id="troubleshooting">2.16.5 <a href="#troubleshooting">Troubleshooting</a></h2>
+<p>This section describes common problems and how to fix them.</p>
+<ul>
+<li>
+<p>If <strong>debugging of UEFI</strong> does not work correctly, please perform the following steps in order: </p>
+<ul>
+<li>Start by troubleshooting <strong>tracking problems</strong> in figure <a class="reference" href="#uefi-fw-trk-troubleshoot-tracker-configuration">10</a>, <a class="reference" href="#uefi-fw-trk-troubleshoot-by-running-forward">11</a>, and <a class="reference" href="#uefi-fw-trk-troubleshoot-uefi-advanced">12</a> These steps are needed to be sure that the tracker configuration is correct enough to allow <em>finding at least one UEFI module</em>. </li>
+<li>When the tracker works well enough to at least find an UEFI module, but debugging problems remain, continue to <strong>troubleshoot debugging</strong> in figure <a class="reference" href="#uefi-fw-trk-troubleshoot-stack-trace">13</a>, <a class="reference" href="#uefi-fw-trk-troubleshoot-visual-studio-build">14</a> and <a class="reference" href="#uefi-fw-trk-troubleshoot-module-problems">15</a></li>
+</ul>
+</li>
+<li>
+<p>If the problem is that the UEFI tracker degrades <strong>simulation performance</strong>: </p>
+<ul>
+<li>
+<p>If the code or situation that demands debugging can be reached by running simulation <em>a specific time</em> or by setting for example an address breakpoint (which does not require debug information and hence not a tracker either):</p>
+<ol>
+<li>Start the simulation without the tracker enabled.</li>
+<li>Run until the time or address that requires debugging</li>
+<li>Enable the tracker to allow source code debugging</li>
+</ol>
+<p>Unless rebuilding UEFI is needed and the same code needs to be debugged several times, saving a checkpoint (<code>write-configuration</code>) after reaching the situation that requires debugging, and for subsequent steps, load the checkpoint (<code>read-configuration</code>), <em>and then</em> enable the tracker may be an option. </p>
+</li>
+</ul>
+<ol>
+<li><em>Pre-DXE tracking</em> has a lot of performance penalty. If <em>Pre-DXE tracking</em> is used, consider if <em>Execution tracking</em> can be used instead. </li>
+</ol>
+</li>
+</ul>
+<figure id="uefi-fw-trk-troubleshoot-tracker-configuration">
+<p><img alt="" src="uefi-fw-tracker-trshoot-tracker-configuration.png"></p>
+<ul>
+<li>(1) See section <a class="reference" href="#configuration">2.16.4</a>.</li>
+<li>(2) See section <a class="reference" href="tracker-activation.html">2.1</a>.</li>
+</ul>
+<figcaption>Figure 10. Troubleshoot the tracker configuration</figcaption>
+</figure>
+<figure id="uefi-fw-trk-troubleshoot-by-running-forward">
+<p><img alt="" src="uefi-fw-tracker-trshoot-by-running-forward.png"></p><figcaption>Figure 11. Troubleshoot by running forward. Not every address (for example the reset vector) has debug information.</figcaption><p></p>
+</figure>
+<figure id="uefi-fw-trk-troubleshoot-uefi-advanced">
+<p><img alt="" src="uefi-fw-tracker-trshoot-tracker-advanced.png"></p>
+<ul>
+<li>(1) See section <a class="reference" href="#tracking-techniques">2.16.1</a>.</li>
+<li>(2) See section <a class="reference" href="#configuration">2.16.4</a>.</li>
+</ul>
+<figcaption>Figure 12. Troubleshoot tracking advanced</figcaption>
+</figure>
+<figure id="uefi-fw-trk-troubleshoot-stack-trace">
+<p><img alt="" src="uefi-fw-tracker-trshoot-stack-trace.png"></p>
+<ul>
+<li>(1) See the end of section <a class="reference" href="talos-debugging-cli.html#configuration">3.1.2</a>. </li>
+</ul>
+<figcaption>Figure 13. Troubleshoot stack trace</figcaption>
+</figure>
+<figure id="uefi-fw-trk-troubleshoot-visual-studio-build">
+<p><img alt="" src="uefi-fw-tracker-trshoot-visual-studio-build.png"></p>
+<ul>
+<li>(1) See appendix <a class="reference" href="uefidbg-dbghelp.html">A</a>. </li>
+</ul>
+<figcaption>Figure 14. Troubleshoot debugging UEFI built with Visual Studio</figcaption>
+</figure>
+<figure id="uefi-fw-trk-troubleshoot-module-problems">
+<p><img alt="" src="uefi-fw-tracker-trshoot-module-problems.png"></p>
+<ul>
+<li>(1) See the end of section <a class="reference" href="talos-debugging-cli.html#configuration">3.1.2</a>. </li>
+<li>(2) See section <a class="reference" href="#source-code-debugging">2.16.3</a>. </li>
+</ul>
+<figcaption>Figure 15. Troubleshoot module problems</figcaption>
+</figure>
+<h2 id="limitations">2.16.6 <a href="#limitations">Limitations</a></h2>
+<ul>
+<li>
+<p>Debugging UEFI systems compiled with Visual Studio only works on Windows hosts and require <code>DBGHELP.DLL</code>. </p>
+</li>
+<li>
+<p>When debugging UEFI systems compiled with Visual Studio, the paths to the module binaries must be shorter than 256 characters. This is a limitation in <code>DBGHELP.DLL</code>. </p>
+</li>
+<li>
+<p>Pre-DXE tracking does not support tracking of Terse Executable (TE) modules. </p>
+</li>
+<li>
+<p>When tracking the DXE phase, breakpoints are added on each 4 MB interval in the area specified by <em>dxe-start</em> and <em>dxe-size</em>. Any address within this range that cannot be read when the tracker is enabled is ignored. If the EFI_SYSTEM_TABLE_POINTER is placed in memory that is not readable when the tracker is enabled, DXE will not be detected. As a workaround, either toggle the tracker when in DXE, or set <code>enable_dxe_phase_mem_map_changed_hap</code> to true. </p>
+<div class="note">
+<p>Setting <code>enable_dxe_phase_mem_map_changed_hap</code> has a severe performance impact on some systems. </p>
+</div>
+</li>
+<li>
+<p>Multi socket system has not been tested and are not officially supported, but may work. </p>
+</li>
+<li>
+<p>Only modules that have a PDB pointer containing a PDB file path can be tracked. </p>
+</li>
+<li>
+<p>Execution tracking does not track unloading of modules. </p>
+</li>
+<li>
+<p>For full SMM tracking both SMM and execution tracking modes must be enabled. </p>
+</li>
+<li>
+<p>Only modules that have a module path (IMAGE) in the map-file will be tracked by the map-file tracker. If these modules have a valid PDB pointer, and are executed, it is possible to track them using the execution tracker. </p>
+</li>
+<li>
+<p>On ARM64, <em>Pre-DXE tracking</em> is not supported. To track dynamic PEI modules, <em>Execution tracking</em> should be used. </p>
+</li>
+<li>
+<p>On ARM64, <em>Reset tracking</em> is not supported. The recommended workaround is to add a breakpoint on reset, and toggle (disable and then enable) the tracker if reset occurs. </p>
+</li>
+</ul>
+<h2 id="legacy-uefi-tracker">2.16.7 <a href="#legacy-uefi-tracker">Legacy UEFI Tracker</a></h2>
+<p>The <em>UEFI Firmware Tracker</em> supersedes the legacy <em>UEFI Tracker</em>. The legacy <em>UEFI Tracker</em> documentation has been moved to the manual <em>Legacy UEFI Tracker</em>. New users should use the <em>UEFI Firmware Tracker</em>, and existing users of the legacy <em>UEFI Tracker</em> are urged to migrate the tracker configuration to use the <em>UEFI Firmware Tracker</em>.</p>
+<p>The <em>UEFI Firmware Tracker</em> has several benefits over the legacy <em>UEFI Tracker</em>: </p>
+<ul>
+<li>The tracker can be enabled at any time during simulation (not just at cycle zero). This makes it possible to run simulation in <em>full speed</em> until a known cycle or address breakpoint and <em>then</em> enable the tracker. </li>
+<li>Checkpointing and reverse execution works for all UEFI phases (not just in the PEI phase). </li>
+<li>Tracking modules listed in the UEFI build's map file is more stable. </li>
+<li>Tracking of DXE modules is more stable. </li>
+<li>Tracking of SMM modules is more stable. </li>
+<li>Performance has been improved. </li>
+<li>It is possible to target specific aspects of UEFI. For example, it is possible to only track the statically loaded <em>SEC and PEI</em> modules listed in the <em>UEFI build's map file</em>, or to only track the <em>DXE modules</em> while ignoring all other modules. </li>
+<li>The tracker works on Microsoft* Windows* and Linux, but debugging only works on Microsoft Windows. </li>
+</ul>
+<p>When comparing the configuration required for the <em>UEFI Firmware Tracker</em> with the legacy <em>UEFI Tracker</em>: </p>
+<ul>
+<li>The set of commands differ between the legacy <em>UEFI Tracker</em> and the <em>UEFI Firmware Tracker</em> since <em>UEFI Firmware Tracker</em> is based on the <em>OS Awareness</em> framework. See the <em>Migrating To UEFI Firmware Tracker</em> application note. </li>
+<li>SMM tracking does not require any configuration. </li>
+<li>The user is no longer required to locate the <em>efi-dir</em> and <em>sub-dirs</em> during configuration. </li>
+<li>The <em>UEFI build's map file</em> is no longer required if Execution Tracking is enabled. </li>
+</ul>
+<p>The following is not required in the <em>UEFI Firmware Tracker</em> configuration but for debugging: </p>
+<ul>
+<li>The library <code>DBGHELP.DLL</code> is needed for debugging See appendix <a class="reference" href="uefidbg-dbghelp.html">A</a> for installation details. </li>
+<li>If the UEFI system was not built on the local machine, the debugger (but not the tracker) may require a <em>path map</em> to find the binaries while debugging. </li>
+</ul>
+
+<div class="chain">
+<a href="partition-tracker.html">2.15 Partition tracker</a>
+<a href="debugging-target-code.html">3 Debugging Target Code</a>
+</div>

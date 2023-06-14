@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>cycle_event</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_cycle_control.html">cycle_control</a>
+<a href="__rm_interface_cycle_event_instrumentation.html">cycle_event_instrumentation</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_cycle_event">cycle_event</a></h1>
+<p>
+
+<a name="cycle_event"></a><a name="cycle_event_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">TODO: document the <code>cycle_event</code> interface.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(cycle_event) {
+        cycles_t (*cycles)(conf_object_t *NOTNULL obj);
+        void (*post)(conf_object_t *NOTNULL obj,
+                     const event_class_t *NOTNULL evclass,
+                     conf_object_t *NOTNULL ev_obj,
+                     cycles_t cycles,
+                     lang_void *param);
+
+        void (*cancel)(conf_object_t *NOTNULL obj,
+                       const event_class_t *NOTNULL evclass,
+                       conf_object_t *NOTNULL ev_obj,
+                       int (*pred)(lang_void *data, lang_void *match_data),
+                       lang_void *match_data);
+
+        cycles_t (*lookup)(conf_object_t *NOTNULL obj,
+                           const event_class_t *NOTNULL evclass,
+                           conf_object_t *NOTNULL ev_obj,
+                           int (*pred)(lang_void *data, lang_void *match_data),
+                           lang_void *match_data);
+
+        attr_value_t (*events)(conf_object_t *NOTNULL obj);
+};
+#define CYCLE_EVENT_INTERFACE "cycle_event"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_cycle_control.html">cycle_control</a>
+<a href="__rm_interface_cycle_event_instrumentation.html">cycle_event_instrumentation</a>
+</div>

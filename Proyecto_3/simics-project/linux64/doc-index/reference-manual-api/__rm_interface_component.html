@@ -1,0 +1,147 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>component</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_co_execute.html">co_execute</a>
+<a href="__rm_interface_component_connector.html">component_connector</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_component">component</a></h1>
+<p>
+
+<a name="component"></a><a name="component_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">All component classes must implement the <code>component</code>
+   interface. All functions in the interface must be implemented.
+<p>
+   The <b><i>pre_instantiate</i></b> function is called before the
+   component is instantiated. The function returns <code>true</code> if the
+   component can be instantiated, or <code>false</code> if not.
+</p><p>
+   The component might need to do some extra work after the component
+   has been instantiated. This should be done when called via the
+   <b><i>post_instantiate</i></b> function.
+</p><p>
+   The <b><i>create_cell</i></b> function returns <code>true</code> if the
+   configuration system can create a default cell object for the
+   component, or <code>false</code> if not. Both
+   <b><i>pre_instantiate</i></b> and <b><i>create_cell</i></b> typically
+   return <code>true</code>.
+</p><p>
+   Component has slots. A slot has key and value. The key is the slot
+   name as a string. The value is a conf object, a pre conf object, or
+   None, or nested lists of such types.
+</p><p>
+   Slots are either defined in the component or added after the
+   component has been created. Slots defined in the component are
+   static slots which can not be deleted, but the slot value can be
+   changed. Slots added to the component after creation are
+   dynamic slots and they can be removed when wanted.
+</p><p>
+   The <b><i>get_slots</i></b> function returns a dictionary with slot
+   names as dictionary keys and slot values as dictionary values.
+</p><p>
+   The <b><i>get_slot_objects</i></b> function returns a list of all conf
+   objects and pre conf objects extracted from all slot values.
+</p><p>
+   The <b><i>get_slot_value</i></b> returns the slot value. The slot name
+   is passed as <i>slot</i> argument. A slot value is set using
+   the <b><i>set_slot_value</i></b> function. The <i>value</i>
+   argument should be a conf object, pre conf object, or None, or
+   nested lists of such types. The get function returns NULL on failure.
+   The set function does not return anything to indicate failure.
+</p><p>
+   The <b><i>has_slot</i></b> function returns <code>true</code> if the
+   <i>slot</i> exists, otherwise <code>false</code>. The slot can
+   either be a static slot or a dynamic slot. The <b><i>add_slot</i></b>
+   function adds the slot named <i>slot</i>. Adding a slot can
+   fail if the slot already exist. The added slot will be a dynamic
+   slot. A dynamic slot can be deleted. The <b><i>del_slot</i></b>
+   function deletes a dynamic slot. Deleting a slot will fail if the
+   slot does not exist or if the slot is static. Both
+   <b><i>add_slot</i></b> and <b><i>del_slot</i></b> returns <code>true</code>
+   on success or <code>false</code> on failure.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(component) {
+        bool (*pre_instantiate)(conf_object_t *obj);
+        void (*post_instantiate)(conf_object_t *obj);
+        bool (*create_cell)(conf_object_t *obj);
+
+        attr_value_t (*get_slots)(conf_object_t *obj);
+        attr_value_t (*get_slot_objects)(conf_object_t *obj);
+
+        attr_value_t (*get_slot_value)(conf_object_t *obj,
+                                 const char *NOTNULL slot);
+        void (*set_slot_value)(conf_object_t *obj,
+                         const char *NOTNULL slot,
+                         attr_value_t value);
+
+        bool (*has_slot)(conf_object_t *obj,
+                         const char *NOTNULL slot);
+        bool (*add_slot)(conf_object_t *obj,
+                         const char *NOTNULL slot);
+        bool (*del_slot)(conf_object_t *obj,
+                         const char *NOTNULL slot);
+};
+#define COMPONENT_INTERFACE "component"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>post_instantiate</i></b></td><td class="jdocu_noborder">Global Context
+           </td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>pre_instantiate</i></b></td><td class="jdocu_noborder">Global Context
+           </td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>create_cell</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_slots</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_objects</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_slot_value</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>set_slot_value</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>add_slot</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>del_slot</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_co_execute.html">co_execute</a>
+<a href="__rm_interface_component_connector.html">component_connector</a>
+</div>

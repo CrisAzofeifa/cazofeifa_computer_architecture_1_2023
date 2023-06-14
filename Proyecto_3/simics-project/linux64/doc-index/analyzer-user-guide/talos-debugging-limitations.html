@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.4 Debugger Limitations</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="debugger-api.html">3.3 The Debugger API</a>
+<a href="code-coverage.html">4 Code Coverage</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="debugging-target-code.html">3 Debugging Target Code</a>
+&nbsp;/&nbsp;</div>
+<h1 id="debugger-limitations">3.4 <a href="#debugger-limitations">Debugger Limitations</a></h1>
+<p>This section lists limitations for the Simics debugger in the current release of Simics.</p>
+<p><strong>General</strong></p>
+<ul>
+<li>The Simics debugger supports x86 and x86_64, PPC32, PPC64, ARM, MIPS64, and ARC targets.</li>
+<li>On MIPS64, stepping over a Linux syscall (for instance stepping over a call to printf) in a process may fail due to limitations to the stack crawling functionality. </li>
+<li>It is not possible to reboot an OS if Simics OS awareness trackers are enabled.</li>
+</ul>
+<p><strong>Simics OS Awareness and Process Trackers</strong></p>
+<ul>
+<li>Process trackers have been tested on VxWorks and Linux.</li>
+<li>Simics process trackers only allow access to the currently active software node on each processor core. Therefore it is not possible to access the memory of inactive tasks.</li>
+<li>When using VxWorks as a guest OS with a Hypervisor system, it is not currently possible to debug a real-time process (RTP) on the VxWorks virtual board.</li>
+<li>When debugging SMP systems with no process trackers configured, the debugger cannot handle thread migration over cores. Make sure you add symbol files and plant breakpoints on all cores.</li>
+<li>OS Awareness does not automatically detect the load addresses of dynamically loaded software. You have to enter this information manually.</li>
+<li>Enabling OS Awareness slows down Simics. This may cause the debugger experience to be slow.</li>
+</ul>
+<p><strong>Breakpoints</strong></p>
+<ul>
+<li>When using VMP and the Simics Debugger the performance can degrade if too many breakpoints are planted. More precisely more than four breakpoints planted on the same memory page is known to trigger a performance drop. In that case it is advised to disable VMP using the command <code>disable-vmp</code>. </li>
+<li>Planting breakpoints on <em>Process</em> or <em>RTP</em> contexts does not work. Instead, the user-interface plants breakpoints on all existing children contexts. When a new thread is created in this process, the breakpoint will not be automatically planted on it. </li>
+<li>When editing multiple source code files with the same name, line breakpoints are planted on all files regardless of the full path of the files. You can scope the breakpoint more precisely in the Breakpoint Properties dialog, in the Scope tab. </li>
+<li>When reverse stepping over a range, breakpoints in the range are skipped. However, breakpoints outside of the range (for example, in a function called inside the range) will be hit as usual. </li>
+<li>You cannot plant a watchpoint on a local variable. </li>
+<li>When planting an expression breakpoint, the expression will be evaluated when the breakpoint is hit. If the expression is not valid, no error will be reported and the target will stop as if the expression was evaluated successfully.</li>
+</ul>
+
+<div class="chain">
+<a href="debugger-api.html">3.3 The Debugger API</a>
+<a href="code-coverage.html">4 Code Coverage</a>
+</div>

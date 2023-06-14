@@ -1,0 +1,100 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.4.1 Configure Port Forwarding</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="connect-windbg.html">2.4 Connect Windows Kernel Debugger to the Target</a>
+<a href="start-windbg.html">2.4.2 Start WinDbg</a>
+</div>
+<div class="path">
+<a href="index.html">Windows Kernel Debugging</a>
+&nbsp;/&nbsp;
+<a href="network-debugging.html">2 Windows Kernel Debugging Over a Network</a>
+&nbsp;/&nbsp;
+<a href="connect-windbg.html">2.4 Connect Windows Kernel Debugger to the Target</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="port-forwarding">2.4.1 Configure Port Forwarding</a></h1>
+<p>
+  
+</p><p>
+  Locate the Ethernet network connected to your target system. It is usually
+  called <b>ethernet_switch0</b>, but check that using
+  <b>list-objects</b> command:
+</p><p>
+  </p><pre class="jdocu_small">simics&gt; <b>list-objects type = ethernet_switch -all</b>
+Component Class    Object
+-----------------------------------
+&lt;ethernet_switch  ethernet_switch0
+  </pre><p>
+</p><p>
+  In a start-up script that uses the common Simics Ethernet setup scripts, you
+  can also use the script variable <b>$eth_link</b> to locate the Ethernet
+  network.
+</p><p>
+  On the Simics command-line, issue one command to set up outbound port
+  forwarding:
+</p><p>
+  </p><pre class="jdocu_small">simics&gt; connect-real-network-port-out service-node-port=&lt;port-in-target&gt;<img alt="Line break" src="nextline.png">
+ethernet-link=&lt;ethlink&gt; target-ip=&lt;debug-host-ip&gt;<img alt="Line break" src="nextline.png">
+target-port=&lt;port-on-host&gt; -udp
+  </pre><p>
+</p><p>
+  where:
+</p><p>
+  </p><ul>
+    <li><b>&lt;ethlink&gt;</b> is the name of the Ethernet link as discussed
+      above.</li>
+    <li><b>&lt;port-on-host&gt;</b> is the port to use to connect on the host
+      side. It can be the same as the target-side port specified above, such as
+      50010.</li>
+    <li><b>&lt;simics-target-ip&gt;</b> is the IP address of the Simics target,
+      such as 10.10.0.100 for the <i>QSP-x86</i> example.</li>
+    <li><b>&lt;port-in-target&gt;</b> is the port configured on the target
+      above, such as 50010.</li>
+    <li><b>&lt;debug-host-ip&gt;</b> is the IP address of the real-world machine
+      running WinDbg. To run WinDbg on the host running Simics, use 127.0.0.1.
+      For another machine on the local network, use its network address. You
+      would use the IP of another machine for the case where you are simulating
+      a Windows target on a Linux host, and need to call into a Windows host
+      that actually runs WinDbg. </li>
+  </ul>
+<p>
+  For example in the <i>QSP-x86</i> example, with WinDbg on the host running Simics:
+</p><p>
+  </p><pre class="jdocu_small">simics&gt; <b>$eth_link</b>
+'ethernet_switch0'
+simics&gt; <b>connect-real-network-port-out ethernet-link = $eth_link<img alt="Line break" src="nextline.png">
+service-node-port = 50010 target-port = 50010 target-ip = '127.0.0.1'</b>
+10.10.0.1 UDP port 50010 on link ethernet_switch0.link -&gt; host 127.0.0.1:50010
+10.10.0.1 TCP port 50010 on link ethernet_switch0.link -&gt; host 127.0.0.1:50010
+ff02::1:2 UDP port 50010 on link ethernet_switch0.link -&gt; host 127.0.0.1:50010
+ff02::1:2 TCP port 50010 on link ethernet_switch0.link -&gt; host 127.0.0.1:50010
+  </pre><p>
+</p>
+<div class="chain">
+<a href="connect-windbg.html">2.4 Connect Windows Kernel Debugger to the Target</a>
+<a href="start-windbg.html">2.4.2 Start WinDbg</a>
+</div>

@@ -1,0 +1,1753 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3 Simulated Machines</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="qsp-x86-overview.html">2 QSP-x86 Overview</a>
+<a href="miscellaneous-notes.html">4 Miscellaneous Notes</a>
+</div>
+<div class="path">
+<a href="index.html">QSP-x86 Target Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Simulated-Machines">3 Simulated Machines</a></h1>
+<p>
+
+</p><p>
+Simics scripts for starting QSP x86 machines are located in the
+<code>[project]/targets/qsp-x86/</code> directory, while the actual
+configuration scripts can be found in the
+<code>targets/qsp-x86/</code> directory in the corresponding
+add-on package.
+</p><p>
+
+
+</p><p>
+</p><h2 class="jdocu"><a name="Machine-Scripts-and-Parameters">3.1 Machine Scripts and Parameters</a></h2>
+<p>
+
+</p><p>
+The following parameters can be set before the running of each script.
+</p><p>
+</p><h3 class="jdocu"><a name="firststeps.simics">3.1.1 firststeps.simics</a></h3>
+<p>
+  
+Example x86 machine referred to by different documents going with Simics.
+It is identical to <code>qsp-clear-linux.simics</code> but with some harmless
+warnings disabled.
+  </p><dl><dt id="dt:cpu"><b>CPU</b></dt><dd><dl><dt id="dt:cpu_comp_class"><b>cpu_comp_class</b></dt><dd>– string<br>
+CPU model. It should be specified as CPU component class without
+the "processor_" prefix and with underscores replaced with hyphens,
+e.g. x86-intel64. Tip: to obtain the list of CPU component classes
+please use the "list-classes substr = processor_" Simics command.
+        <br>
+        Default value: <code>"x86QSP1"</code>
+      </dd><dt id="dt:num_cpus"><b>num_cpus</b></dt><dd>– integer<br>
+Number of physical processors in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores"><b>num_cores</b></dt><dd>– integer<br>
+Number of cores per physical processor in the machine. Allowed values are
+1 - 128.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores_small"><b>num_cores_small</b></dt><dd>– integer<br>
+Number of small cores per physical processor in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:num_threads"><b>num_threads</b></dt><dd>– one of {1, 2, 4}<br>
+Number of threads per processor core in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_threads_small"><b>num_threads_small</b></dt><dd>– one of {0, 1, 2, 4}<br>
+Number of threads per small core in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:cpi"><b>cpi</b></dt><dd>– integer<br>
+Clock cycles per executed instruction for the processors.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:freq_mhz"><b>freq_mhz</b></dt><dd>– integer<br>
+Processor frequency in MHz.
+        <br>
+        Default value: <code>2000</code>
+      </dd><dt id="dt:apic_freq_mhz"><b>apic_freq_mhz</b></dt><dd>– integer<br>
+APIC frequency in MHz.
+        <br>
+        Default value: <code>133</code>
+      </dd></dl><p></p></dd><dt id="dt:consoles"><b>Consoles</b></dt><dd><dl><dt id="dt:show_con0"><b>show_con0</b></dt><dd>– boolean<br>
+Automatically display the text console on the first serial port.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:show_con1"><b>show_con1</b></dt><dd>– boolean<br>
+Automatically display the text console on the second serial port.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:show_gfx_con"><b>show_gfx_con</b></dt><dd>– boolean<br>
+Automatically display the graphics console.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:hide_consoles"><b>hide_consoles</b></dt><dd>– boolean<br>
+Do not display any console windows at startup.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:serial_console_fg_color"><b>serial_console_fg_color</b></dt><dd>– string<br>
+The foreground color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"#80ff80"</code>
+      </dd><dt id="dt:serial_console_bg_color"><b>serial_console_bg_color</b></dt><dd>– string<br>
+The background color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"black"</code>
+      </dd></dl><p></p></dd><dt id="dt:dvd-cd-rom"><b>DVD/CD-ROM</b></dt><dd><dl><dt id="dt:create_cdrom"><b>create_cdrom</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual CD-ROM drive
+of type SATA or IDE. Simics object <i>machine_name</i>.cdrom
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd></dl><p></p></dd><dt id="dt:deprecated"><b>Deprecated</b></dt><dd><dl><dt id="dt:cpu_class"><b>cpu_class</b></dt><dd>– string or NIL<br>
+CPU component class. Deprecated: use the cpu_comp_class parameter instead.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:disks"><b>Disks</b></dt><dd><dl><dt id="dt:create_disk0"><b>create_disk0</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual hard disk of type SATA
+or IDE. Simics object <i>machine_name</i>.disk0 is created and
+connected to the target machine.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk0_image"><b>disk0_image</b></dt><dd>– existing file or NIL<br>
+Disk image file for the <i>machine_name</i>.disk0 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:disk0_size"><b>disk0_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk0 virtual disk in bytes.
+If <code>NIL</code>, the size of <i>disk0_image</i> is used.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:create_disk1"><b>create_disk1</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine an additional virtual hard disk
+of type SATA or IDE. Simics object <i>machine_name</i>.disk1
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk1_image"><b>disk1_image</b></dt><dd>– existing file or NIL<br>
+Disk image file for the <i>machine_name</i>.disk1 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:disk1_size"><b>disk1_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk1 virtual disk. If <code>NIL</code>,
+the size of <i>disk1_image</i> is used.
+        <br>
+        Default value: <code>8Gi</code>
+      </dd><dt id="dt:writable_state_dir"><b>writable_state_dir</b></dt><dd>– string or NIL<br>
+If not NIL, the parameter is interpreted as a directory name. It is passed as
+an argument to the enable-writable-persistent-state command in order to set
+up a writable persistent state for the configuration.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:networking"><b>Networking</b></dt><dd><dl><dt id="dt:create_network"><b>create_network</b></dt><dd>– boolean<br>
+Creates an Ethernet link and connects the primary Ethernet adapter to it.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:dhcp_pool_ip"><b>dhcp_pool_ip</b></dt><dd>– string or NIL<br>
+Start IP address for the DHCP server in the service node.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:dhcp_pool_size"><b>dhcp_pool_size</b></dt><dd>– integer<br>
+Size of the IP address pool for the DHCP server in the service node.
+        <br>
+        Default value: <code>100</code>
+      </dd><dt id="dt:dhcp_domain_name"><b>dhcp_domain_name</b></dt><dd>– string<br>
+Domain name to use for the DHCP server in the service node.
+        <br>
+        Default value: <code>"network.sim"</code>
+      </dd><dt id="dt:service_node"><b>service_node</b></dt><dd>– string or NIL<br>
+Name of the <em>service node</em> to use for services such as DHCP and DNS.
+If <code>NIL</code>, a new service-node will be created unless
+<i>create_service_node</i> is <code>FALSE</code>.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:create_service_node"><b>create_service_node</b></dt><dd>– boolean<br>
+Creates a service-node and connects it to the Ethernet link
+<i>eth_link</i>.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:service_node_ip_address"><b>service_node_ip_address</b></dt><dd>– string<br>
+IP address of the service node.
+        <br>
+        Default value: <code>"10.10.0.1"</code>
+      </dd><dt id="dt:service_node_name"><b>service_node_name</b></dt><dd>– string or NIL<br>
+Name of the created service node, or <code>NIL</code> for the standard name.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:service_node_setup"><b>service_node_setup</b></dt><dd>– boolean<br>
+Setup service node services, such as DNS and DHCP. Set to <code>FALSE</code> if
+this has been done already.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:eth_link"><b>eth_link</b></dt><dd>– string or NIL<br>
+Name of the Ethernet link to use for networking. If <code>NIL</code>, a new
+Ethernet switch will be created.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:network_goal_latency"><b>network_goal_latency</b></dt><dd>– integer or NIL<br>
+Goal latency for communication on the Ethernet link.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:eth_link_gid"><b>eth_link_gid</b></dt><dd>– string or NIL<br>
+Global ID for the Ethernet link in a distributed setup. It should only be
+set if the link is distributed over multiple Simics sessions. The link ID
+must be the same in all sessions.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:connect_real_network"><b>connect_real_network</b></dt><dd>– one of {"no", "napt"}<br>
+Connects the simulated Ethernet link to the host network using NAPT
+(Network Address Port Translation).
+        <br>
+        Default value: <code>"napt"</code>
+      </dd><dt id="dt:eth_vlan_enable"><b>eth_vlan_enable</b></dt><dd>– boolean<br>
+When creating an Ethernet switch, create a VLAN-enabled one.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:eth_connector_vlan_id"><b>eth_connector_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+virtual machine connection.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:service_node_vlan_id"><b>service_node_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+service_node connection. If this parameter is not set, eth_connector_vlan_id
+will be used instead.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:ip_address"><b>ip_address</b></dt><dd>– string<br>
+The board IP address.
+        <br>
+        Default value: <code>"auto"</code>
+      </dd><dt id="dt:mac_address"><b>mac_address</b></dt><dd>– string<br>
+MAC address of the primary Ethernet adapter.
+The format is "XX:XX:XX:XX:XX:XX".
+        <br>
+        Default value: <code>"auto"</code>
+      </dd></dl><p></p></dd><dt id="dt:simulation"><b>Simulation</b></dt><dd><dl><dt id="dt:create_tracker"><b>create_tracker</b></dt><dd>– boolean<br>
+Creates the Linux tracker object.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:tracker_params"><b>tracker_params</b></dt><dd>– existing file (*.params) or NIL<br>
+OS awareness parameter file for the Linux kernel running on the machine.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:auto_login"><b>auto_login</b></dt><dd>– boolean<br>
+Automatically log in as a "simics" user on the serial console.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:auto_login_root"><b>auto_login_root</b></dt><dd>– boolean<br>
+Automatically log in as a "root" user on the serial console. When
+the parameter is set it overrides the "auto_login" parameter.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:use_vmp"><b>use_vmp</b></dt><dd>– boolean<br>
+Enables host virtualization (VMP) for better simulation performance. This
+option affects simulated time. See the performance chapter in the
+<em>Simics User's Guide</em> for more information about VMP.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:enable_system_clock"><b>enable_system_clock</b></dt><dd>– boolean<br>
+Enables a configuration with a separate clock to which devices are bound
+instead of to the first CPU.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:system_clock_class"><b>system_clock_class</b></dt><dd>– string<br>
+The class used for the system clock if the
+<i>enable_system_clock</i> parameter is true.
+        <br>
+        Default value: <code>"clock"</code>
+      </dd><dt id="dt:create_osa"><b>create_osa</b></dt><dd>– boolean<br>
+Create OS awareness framework.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd></dl><p></p></dd><dt id="dt:system"><b>System</b></dt><dd><dl><dt id="dt:bios_image"><b>bios_image</b></dt><dd>– existing file or NIL<br>
+BIOS file.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/SIMICSX58IA32X64_1_1_0_r.fd"</code>
+      </dd><dt id="dt:vga_bios_image"><b>vga_bios_image</b></dt><dd>– existing file or NIL<br>
+VGABIOS file.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:lan_bios_image"><b>lan_bios_image</b></dt><dd>– existing file or NIL<br>
+ROM BIOS file for the ICH10 LAN Ethernet adaptor
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:spi_flash_image"><b>spi_flash_image</b></dt><dd>– existing file or NIL<br>
+The ICH10 SPI flash file to use.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/spi-flash.bin"</code>
+      </dd><dt id="dt:machine_name"><b>machine_name</b></dt><dd>– string<br>
+Name of the machine. Used for the top level component.
+        <br>
+        Default value: <code>"board"</code>
+      </dd><dt id="dt:memory_megs"><b>memory_megs</b></dt><dd>– integer<br>
+Amount of RAM in the machine, in MiB. The highest supported value is
+65536 (64 GiB). More than 64 GiB is not supported since the x86QSP1
+processor is limited to a 36-bit physical address space.
+        <br>
+        Default value: <code>8192</code>
+      </dd><dt id="dt:rtc_time"><b>rtc_time</b></dt><dd>– string<br>
+The date and time of the simulated real-time clock set when the configuration
+is created. The format is "YYYY-MM-DD HH:MM:SS". Can also be set to "auto"
+to use the current host time.
+        <br>
+        Default value: <code>"auto"</code>
+      </dd><dt id="dt:create_usb_tablet"><b>create_usb_tablet</b></dt><dd>– boolean<br>
+Connects a USB tablet device for input using absolute positioning that
+provides better user experience than a mouse.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd></dl><p></p></dd><dt id="dt:results"><b>Results</b></dt><dd><dl><dt id="dt:system-2"><b>system</b></dt><dd>– string<br>
+      </dd><dt id="dt:eth_link-2"><b>eth_link</b></dt><dd>– string or NIL<br>
+      </dd><dt id="dt:service_node-2"><b>service_node</b></dt><dd>– string or NIL<br>
+      </dd></dl><p></p></dd></dl><p>
+</p><h3 class="jdocu"><a name="qsp-clear-linux.simics">3.1.2 qsp-clear-linux.simics</a></h3>
+<p>
+  
+Script that boots Clear Linux image with UEFI.
+  </p><dl><dt id="dt:cpu-2"><b>CPU</b></dt><dd><dl><dt id="dt:cpu_comp_class-2"><b>cpu_comp_class</b></dt><dd>– string<br>
+CPU model. It should be specified as CPU component class without
+the "processor_" prefix and with underscores replaced with hyphens,
+e.g. x86-intel64. Tip: to obtain the list of CPU component classes
+please use the "list-classes substr = processor_" Simics command.
+        <br>
+        Default value: <code>"x86QSP1"</code>
+      </dd><dt id="dt:num_cpus-2"><b>num_cpus</b></dt><dd>– integer<br>
+Number of physical processors in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores-2"><b>num_cores</b></dt><dd>– integer<br>
+Number of cores per physical processor in the machine. Allowed values are
+1 - 128.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores_small-2"><b>num_cores_small</b></dt><dd>– integer<br>
+Number of small cores per physical processor in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:num_threads-2"><b>num_threads</b></dt><dd>– one of {1, 2, 4}<br>
+Number of threads per processor core in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_threads_small-2"><b>num_threads_small</b></dt><dd>– one of {0, 1, 2, 4}<br>
+Number of threads per small core in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:cpi-2"><b>cpi</b></dt><dd>– integer<br>
+Clock cycles per executed instruction for the processors.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:freq_mhz-2"><b>freq_mhz</b></dt><dd>– integer<br>
+Processor frequency in MHz.
+        <br>
+        Default value: <code>2000</code>
+      </dd><dt id="dt:apic_freq_mhz-2"><b>apic_freq_mhz</b></dt><dd>– integer<br>
+APIC frequency in MHz.
+        <br>
+        Default value: <code>133</code>
+      </dd></dl><p></p></dd><dt id="dt:consoles-2"><b>Consoles</b></dt><dd><dl><dt id="dt:show_con0-2"><b>show_con0</b></dt><dd>– boolean<br>
+Automatically display the text console on the first serial port.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:show_con1-2"><b>show_con1</b></dt><dd>– boolean<br>
+Automatically display the text console on the second serial port.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:show_gfx_con-2"><b>show_gfx_con</b></dt><dd>– boolean<br>
+Automatically display the graphics console.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:hide_consoles-2"><b>hide_consoles</b></dt><dd>– boolean<br>
+Do not display any console windows at startup.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:serial_console_fg_color-2"><b>serial_console_fg_color</b></dt><dd>– string<br>
+The foreground color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"#80ff80"</code>
+      </dd><dt id="dt:serial_console_bg_color-2"><b>serial_console_bg_color</b></dt><dd>– string<br>
+The background color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"black"</code>
+      </dd></dl><p></p></dd><dt id="dt:dvd-cd-rom-2"><b>DVD/CD-ROM</b></dt><dd><dl><dt id="dt:create_cdrom-2"><b>create_cdrom</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual CD-ROM drive
+of type SATA or IDE. Simics object <i>machine_name</i>.cdrom
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd></dl><p></p></dd><dt id="dt:deprecated-2"><b>Deprecated</b></dt><dd><dl><dt id="dt:cpu_class-2"><b>cpu_class</b></dt><dd>– string or NIL<br>
+CPU component class. Deprecated: use the cpu_comp_class parameter instead.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:disks-2"><b>Disks</b></dt><dd><dl><dt id="dt:create_disk0-2"><b>create_disk0</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual hard disk of type SATA
+or IDE. Simics object <i>machine_name</i>.disk0 is created and
+connected to the target machine.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk0_image-2"><b>disk0_image</b></dt><dd>– existing file or NIL<br>
+Disk image file for the <i>machine_name</i>.disk0 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:disk0_size-2"><b>disk0_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk0 virtual disk in bytes.
+If <code>NIL</code>, the size of <i>disk0_image</i> is used.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:create_disk1-2"><b>create_disk1</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine an additional virtual hard disk
+of type SATA or IDE. Simics object <i>machine_name</i>.disk1
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk1_image-2"><b>disk1_image</b></dt><dd>– existing file or NIL<br>
+Disk image file for the <i>machine_name</i>.disk1 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:disk1_size-2"><b>disk1_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk1 virtual disk. If <code>NIL</code>,
+the size of <i>disk1_image</i> is used.
+        <br>
+        Default value: <code>8Gi</code>
+      </dd><dt id="dt:writable_state_dir-2"><b>writable_state_dir</b></dt><dd>– string or NIL<br>
+If not NIL, the parameter is interpreted as a directory name. It is passed as
+an argument to the enable-writable-persistent-state command in order to set
+up a writable persistent state for the configuration.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:networking-2"><b>Networking</b></dt><dd><dl><dt id="dt:create_network-2"><b>create_network</b></dt><dd>– boolean<br>
+Creates an Ethernet link and connects the primary Ethernet adapter to it.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:dhcp_pool_ip-2"><b>dhcp_pool_ip</b></dt><dd>– string or NIL<br>
+Start IP address for the DHCP server in the service node.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:dhcp_pool_size-2"><b>dhcp_pool_size</b></dt><dd>– integer<br>
+Size of the IP address pool for the DHCP server in the service node.
+        <br>
+        Default value: <code>100</code>
+      </dd><dt id="dt:dhcp_domain_name-2"><b>dhcp_domain_name</b></dt><dd>– string<br>
+Domain name to use for the DHCP server in the service node.
+        <br>
+        Default value: <code>"network.sim"</code>
+      </dd><dt id="dt:service_node-3"><b>service_node</b></dt><dd>– string or NIL<br>
+Name of the <em>service node</em> to use for services such as DHCP and DNS.
+If <code>NIL</code>, a new service-node will be created unless
+<i>create_service_node</i> is <code>FALSE</code>.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:create_service_node-2"><b>create_service_node</b></dt><dd>– boolean<br>
+Creates a service-node and connects it to the Ethernet link
+<i>eth_link</i>.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:service_node_ip_address-2"><b>service_node_ip_address</b></dt><dd>– string<br>
+IP address of the service node.
+        <br>
+        Default value: <code>"10.10.0.1"</code>
+      </dd><dt id="dt:service_node_name-2"><b>service_node_name</b></dt><dd>– string or NIL<br>
+Name of the created service node, or <code>NIL</code> for the standard name.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:service_node_setup-2"><b>service_node_setup</b></dt><dd>– boolean<br>
+Setup service node services, such as DNS and DHCP. Set to <code>FALSE</code> if
+this has been done already.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:eth_link-3"><b>eth_link</b></dt><dd>– string or NIL<br>
+Name of the Ethernet link to use for networking. If <code>NIL</code>, a new
+Ethernet switch will be created.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:network_goal_latency-2"><b>network_goal_latency</b></dt><dd>– integer or NIL<br>
+Goal latency for communication on the Ethernet link.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:eth_link_gid-2"><b>eth_link_gid</b></dt><dd>– string or NIL<br>
+Global ID for the Ethernet link in a distributed setup. It should only be
+set if the link is distributed over multiple Simics sessions. The link ID
+must be the same in all sessions.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:connect_real_network-2"><b>connect_real_network</b></dt><dd>– one of {"no", "napt"}<br>
+Connects the simulated Ethernet link to the host network using NAPT
+(Network Address Port Translation).
+        <br>
+        Default value: <code>"napt"</code>
+      </dd><dt id="dt:eth_vlan_enable-2"><b>eth_vlan_enable</b></dt><dd>– boolean<br>
+When creating an Ethernet switch, create a VLAN-enabled one.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:eth_connector_vlan_id-2"><b>eth_connector_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+virtual machine connection.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:service_node_vlan_id-2"><b>service_node_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+service_node connection. If this parameter is not set, eth_connector_vlan_id
+will be used instead.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:ip_address-2"><b>ip_address</b></dt><dd>– string<br>
+The board IP address.
+        <br>
+        Default value: <code>"auto"</code>
+      </dd><dt id="dt:mac_address-2"><b>mac_address</b></dt><dd>– string<br>
+MAC address of the primary Ethernet adapter.
+The format is "XX:XX:XX:XX:XX:XX".
+        <br>
+        Default value: <code>"auto"</code>
+      </dd></dl><p></p></dd><dt id="dt:simulation-2"><b>Simulation</b></dt><dd><dl><dt id="dt:create_tracker-2"><b>create_tracker</b></dt><dd>– boolean<br>
+Creates the Linux tracker object.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:tracker_params-2"><b>tracker_params</b></dt><dd>– existing file (*.params) or NIL<br>
+OS awareness parameter file for the Linux kernel running on the machine.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:auto_login-2"><b>auto_login</b></dt><dd>– boolean<br>
+Automatically log in as a "simics" user on the serial console.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:auto_login_root-2"><b>auto_login_root</b></dt><dd>– boolean<br>
+Automatically log in as a "root" user on the serial console. When
+the parameter is set it overrides the "auto_login" parameter.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:use_vmp-2"><b>use_vmp</b></dt><dd>– boolean<br>
+Enables host virtualization (VMP) for better simulation performance. This
+option affects simulated time. See the performance chapter in the
+<em>Simics User's Guide</em> for more information about VMP.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:enable_system_clock-2"><b>enable_system_clock</b></dt><dd>– boolean<br>
+Enables a configuration with a separate clock to which devices are bound
+instead of to the first CPU.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:system_clock_class-2"><b>system_clock_class</b></dt><dd>– string<br>
+The class used for the system clock if the
+<i>enable_system_clock</i> parameter is true.
+        <br>
+        Default value: <code>"clock"</code>
+      </dd><dt id="dt:create_osa-2"><b>create_osa</b></dt><dd>– boolean<br>
+Create OS awareness framework.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd></dl><p></p></dd><dt id="dt:system-3"><b>System</b></dt><dd><dl><dt id="dt:bios_image-2"><b>bios_image</b></dt><dd>– existing file or NIL<br>
+BIOS file.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/SIMICSX58IA32X64_1_1_0_r.fd"</code>
+      </dd><dt id="dt:vga_bios_image-2"><b>vga_bios_image</b></dt><dd>– existing file or NIL<br>
+VGABIOS file.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:lan_bios_image-2"><b>lan_bios_image</b></dt><dd>– existing file or NIL<br>
+ROM BIOS file for the ICH10 LAN Ethernet adaptor
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:spi_flash_image-2"><b>spi_flash_image</b></dt><dd>– existing file or NIL<br>
+The ICH10 SPI flash file to use.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/spi-flash.bin"</code>
+      </dd><dt id="dt:machine_name-2"><b>machine_name</b></dt><dd>– string<br>
+Name of the machine. Used for the top level component.
+        <br>
+        Default value: <code>"board"</code>
+      </dd><dt id="dt:memory_megs-2"><b>memory_megs</b></dt><dd>– integer<br>
+Amount of RAM in the machine, in MiB. The highest supported value is
+65536 (64 GiB). More than 64 GiB is not supported since the x86QSP1
+processor is limited to a 36-bit physical address space.
+        <br>
+        Default value: <code>8192</code>
+      </dd><dt id="dt:rtc_time-2"><b>rtc_time</b></dt><dd>– string<br>
+The date and time of the simulated real-time clock set when the configuration
+is created. The format is "YYYY-MM-DD HH:MM:SS". Can also be set to "auto"
+to use the current host time.
+        <br>
+        Default value: <code>"auto"</code>
+      </dd><dt id="dt:create_usb_tablet-2"><b>create_usb_tablet</b></dt><dd>– boolean<br>
+Connects a USB tablet device for input using absolute positioning that
+provides better user experience than a mouse.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd></dl><p></p></dd><dt id="dt:results-2"><b>Results</b></dt><dd><dl><dt id="dt:system-4"><b>system</b></dt><dd>– string<br>
+      </dd><dt id="dt:eth_link-4"><b>eth_link</b></dt><dd>– string or NIL<br>
+      </dd><dt id="dt:service_node-4"><b>service_node</b></dt><dd>– string or NIL<br>
+      </dd></dl><p></p></dd></dl><p>
+</p><h3 class="jdocu"><a name="qsp-dvd-boot.simics">3.1.3 qsp-dvd-boot.simics</a></h3>
+<p>
+  
+Starts a virtual machine that boots from a DVD or CD-ROM ISO file, using a
+UEFI BIOS. This script can be used to install an operating system on
+a QSP-x86 machine.
+  </p><dl><dt id="dt:cpu-3"><b>CPU</b></dt><dd><dl><dt id="dt:cpu_comp_class-3"><b>cpu_comp_class</b></dt><dd>– string<br>
+CPU model. It should be specified as CPU component class without
+the "processor_" prefix and with underscores replaced with hyphens,
+e.g. x86-intel64. Tip: to obtain the list of CPU component classes
+please use the "list-classes substr = processor_" Simics command.
+        <br>
+        Default value: <code>"x86QSP1"</code>
+      </dd><dt id="dt:num_cpus-3"><b>num_cpus</b></dt><dd>– integer<br>
+Number of physical processors in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores-3"><b>num_cores</b></dt><dd>– integer<br>
+Number of cores per physical processor in the machine. Allowed values are
+1 - 128.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores_small-3"><b>num_cores_small</b></dt><dd>– integer<br>
+Number of small cores per physical processor in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:num_threads-3"><b>num_threads</b></dt><dd>– one of {1, 2, 4}<br>
+Number of threads per processor core in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_threads_small-3"><b>num_threads_small</b></dt><dd>– one of {0, 1, 2, 4}<br>
+Number of threads per small core in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:cpi-3"><b>cpi</b></dt><dd>– integer<br>
+Clock cycles per executed instruction for the processors.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:freq_mhz-3"><b>freq_mhz</b></dt><dd>– integer<br>
+Processor frequency in MHz.
+        <br>
+        Default value: <code>2000</code>
+      </dd><dt id="dt:apic_freq_mhz-3"><b>apic_freq_mhz</b></dt><dd>– integer<br>
+APIC frequency in MHz.
+        <br>
+        Default value: <code>133</code>
+      </dd></dl><p></p></dd><dt id="dt:consoles-3"><b>Consoles</b></dt><dd><dl><dt id="dt:show_con0-3"><b>show_con0</b></dt><dd>– boolean<br>
+Automatically display the text console on the first serial port.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:show_con1-3"><b>show_con1</b></dt><dd>– boolean<br>
+Automatically display the text console on the second serial port.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:show_gfx_con-3"><b>show_gfx_con</b></dt><dd>– boolean<br>
+Automatically display the graphics console.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:hide_consoles-3"><b>hide_consoles</b></dt><dd>– boolean<br>
+Do not display any console windows at startup.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:serial_console_fg_color-3"><b>serial_console_fg_color</b></dt><dd>– string<br>
+The foreground color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"white"</code>
+      </dd><dt id="dt:serial_console_bg_color-3"><b>serial_console_bg_color</b></dt><dd>– string<br>
+The background color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"black"</code>
+      </dd></dl><p></p></dd><dt id="dt:dvd-cd-rom-3"><b>DVD/CD-ROM</b></dt><dd><dl><dt id="dt:iso_image"><b>iso_image</b></dt><dd>– existing file<br>
+ISO image of a DVD or CD-ROM to boot from.
+        <br>
+         <b>Mandatory parameter.</b>
+      </dd><dt id="dt:create_cdrom-3"><b>create_cdrom</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual CD-ROM drive
+of type SATA or IDE. Simics object <i>machine_name</i>.cdrom
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd></dl><p></p></dd><dt id="dt:deprecated-3"><b>Deprecated</b></dt><dd><dl><dt id="dt:cpu_class-3"><b>cpu_class</b></dt><dd>– string or NIL<br>
+CPU component class. Deprecated: use the cpu_comp_class parameter instead.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:disks-3"><b>Disks</b></dt><dd><dl><dt id="dt:create_disk0-3"><b>create_disk0</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual hard disk of type SATA
+or IDE. Simics object <i>machine_name</i>.disk0 is created and
+connected to the target machine.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk0_image-3"><b>disk0_image</b></dt><dd>– existing file or NIL<br>
+Disk image file for the <i>machine_name</i>.disk0 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:disk0_size-3"><b>disk0_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk0 virtual disk in bytes.
+If <code>NIL</code>, the size of <i>disk0_image</i> is used.
+        <br>
+        Default value: <code>2000Gi</code>
+      </dd><dt id="dt:create_disk1-3"><b>create_disk1</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine an additional virtual hard disk
+of type SATA or IDE. Simics object <i>machine_name</i>.disk1
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk1_image-3"><b>disk1_image</b></dt><dd>– existing file or NIL<br>
+Disk image file for the <i>machine_name</i>.disk1 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:disk1_size-3"><b>disk1_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk1 virtual disk. If <code>NIL</code>,
+the size of <i>disk1_image</i> is used.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:writable_state_dir-3"><b>writable_state_dir</b></dt><dd>– string or NIL<br>
+If not NIL, the parameter is interpreted as a directory name. It is passed as
+an argument to the enable-writable-persistent-state command in order to set
+up a writable persistent state for the configuration.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:networking-3"><b>Networking</b></dt><dd><dl><dt id="dt:create_network-3"><b>create_network</b></dt><dd>– boolean<br>
+Creates an Ethernet link and connects the primary Ethernet adapter to it.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:dhcp_pool_ip-3"><b>dhcp_pool_ip</b></dt><dd>– string or NIL<br>
+Start IP address for the DHCP server in the service node.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:dhcp_pool_size-3"><b>dhcp_pool_size</b></dt><dd>– integer<br>
+Size of the IP address pool for the DHCP server in the service node.
+        <br>
+        Default value: <code>100</code>
+      </dd><dt id="dt:dhcp_domain_name-3"><b>dhcp_domain_name</b></dt><dd>– string<br>
+Domain name to use for the DHCP server in the service node.
+        <br>
+        Default value: <code>"network.sim"</code>
+      </dd><dt id="dt:service_node-5"><b>service_node</b></dt><dd>– string or NIL<br>
+Name of the <em>service node</em> to use for services such as DHCP and DNS.
+If <code>NIL</code>, a new service-node will be created unless
+<i>create_service_node</i> is <code>FALSE</code>.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:create_service_node-3"><b>create_service_node</b></dt><dd>– boolean<br>
+Creates a service-node and connects it to the Ethernet link
+<i>eth_link</i>.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:service_node_ip_address-3"><b>service_node_ip_address</b></dt><dd>– string<br>
+IP address of the service node.
+        <br>
+        Default value: <code>"10.10.0.1"</code>
+      </dd><dt id="dt:service_node_name-3"><b>service_node_name</b></dt><dd>– string or NIL<br>
+Name of the created service node, or <code>NIL</code> for the standard name.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:service_node_setup-3"><b>service_node_setup</b></dt><dd>– boolean<br>
+Setup service node services, such as DNS and DHCP. Set to <code>FALSE</code> if
+this has been done already.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:eth_link-5"><b>eth_link</b></dt><dd>– string or NIL<br>
+Name of the Ethernet link to use for networking. If <code>NIL</code>, a new
+Ethernet switch will be created.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:network_goal_latency-3"><b>network_goal_latency</b></dt><dd>– integer or NIL<br>
+Goal latency for communication on the Ethernet link.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:eth_link_gid-3"><b>eth_link_gid</b></dt><dd>– string or NIL<br>
+Global ID for the Ethernet link in a distributed setup. It should only be
+set if the link is distributed over multiple Simics sessions. The link ID
+must be the same in all sessions.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:connect_real_network-3"><b>connect_real_network</b></dt><dd>– one of {"no", "napt"}<br>
+Connects the simulated Ethernet link to the host network using NAPT
+(Network Address Port Translation).
+        <br>
+        Default value: <code>"napt"</code>
+      </dd><dt id="dt:eth_vlan_enable-3"><b>eth_vlan_enable</b></dt><dd>– boolean<br>
+When creating an Ethernet switch, create a VLAN-enabled one.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:eth_connector_vlan_id-3"><b>eth_connector_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+virtual machine connection.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:service_node_vlan_id-3"><b>service_node_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+service_node connection. If this parameter is not set, eth_connector_vlan_id
+will be used instead.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:ip_address-3"><b>ip_address</b></dt><dd>– string<br>
+The board IP address.
+        <br>
+        Default value: <code>"auto"</code>
+      </dd><dt id="dt:mac_address-3"><b>mac_address</b></dt><dd>– string<br>
+MAC address of the primary Ethernet adapter.
+The format is "XX:XX:XX:XX:XX:XX".
+        <br>
+        Default value: <code>"auto"</code>
+      </dd></dl><p></p></dd><dt id="dt:simulation-3"><b>Simulation</b></dt><dd><dl><dt id="dt:real_time_mode"><b>real_time_mode</b></dt><dd>– boolean<br>
+Prevents the simulation from running faster than real time.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:system_info"><b>system_info</b></dt><dd>– string<br>
+A description of the target.
+        <br>
+        Default value: <code>"QSP x86 - DVD/CD-ROM boot UEFI"</code>
+      </dd><dt id="dt:enable_break_on_reboot"><b>enable_break_on_reboot</b></dt><dd>– boolean<br>
+Interrupts the simulation if the machine is rebooted.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:enable_system_clock-3"><b>enable_system_clock</b></dt><dd>– boolean<br>
+Enables a configuration with a separate clock to which devices are bound
+instead of to the first CPU.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:system_clock_class-3"><b>system_clock_class</b></dt><dd>– string<br>
+The class used for the system clock if the
+<i>enable_system_clock</i> parameter is true.
+        <br>
+        Default value: <code>"clock"</code>
+      </dd><dt id="dt:create_osa-3"><b>create_osa</b></dt><dd>– boolean<br>
+Create OS awareness framework.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd></dl><p></p></dd><dt id="dt:system-5"><b>System</b></dt><dd><dl><dt id="dt:bios_image-3"><b>bios_image</b></dt><dd>– existing file or NIL<br>
+BIOS file.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/SIMICSX58IA32X64_1_1_0_r.fd"</code>
+      </dd><dt id="dt:vga_bios_image-3"><b>vga_bios_image</b></dt><dd>– existing file or NIL<br>
+VGABIOS file.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:lan_bios_image-3"><b>lan_bios_image</b></dt><dd>– existing file or NIL<br>
+ROM BIOS file for the ICH10 LAN Ethernet adaptor
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:spi_flash_image-3"><b>spi_flash_image</b></dt><dd>– existing file or NIL<br>
+The ICH10 SPI flash file to use.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/spi-flash.bin"</code>
+      </dd><dt id="dt:enable_efi"><b>enable_efi</b></dt><dd>– boolean<br>
+Sets EFI BIOS, else PC BIOS (legacy BIOS).
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:machine_name-3"><b>machine_name</b></dt><dd>– string<br>
+Name of the machine. Used for the top level component.
+        <br>
+        Default value: <code>"board"</code>
+      </dd><dt id="dt:memory_megs-3"><b>memory_megs</b></dt><dd>– integer<br>
+Amount of RAM in the machine, in MiB. The highest supported value is
+65536 (64 GiB). More than 64 GiB is not supported since the x86QSP1
+processor is limited to a 36-bit physical address space.
+        <br>
+        Default value: <code>8192</code>
+      </dd><dt id="dt:rtc_time-3"><b>rtc_time</b></dt><dd>– string<br>
+The date and time of the simulated real-time clock set when the configuration
+is created. The format is "YYYY-MM-DD HH:MM:SS". Can also be set to "auto"
+to use the current host time.
+        <br>
+        Default value: <code>"2021-06-10 10:41:54"</code>
+      </dd><dt id="dt:create_usb_tablet-3"><b>create_usb_tablet</b></dt><dd>– boolean<br>
+Connects a USB tablet device for input using absolute positioning that
+provides better user experience than a mouse.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd></dl><p></p></dd><dt id="dt:results-3"><b>Results</b></dt><dd><dl><dt id="dt:system-6"><b>system</b></dt><dd>– string<br>
+      </dd><dt id="dt:eth_link-6"><b>eth_link</b></dt><dd>– string or NIL<br>
+      </dd><dt id="dt:service_node-6"><b>service_node</b></dt><dd>– string or NIL<br>
+      </dd></dl><p></p></dd></dl><p>
+</p><h3 class="jdocu"><a name="qsp-hdd-boot.simics">3.1.4 qsp-hdd-boot.simics</a></h3>
+<p>
+  
+Starts a virtual machine that boots from the HDD set by a given craff file.
+  </p><dl><dt id="dt:cpu-4"><b>CPU</b></dt><dd><dl><dt id="dt:cpu_comp_class-4"><b>cpu_comp_class</b></dt><dd>– string<br>
+CPU model. It should be specified as CPU component class without
+the "processor_" prefix and with underscores replaced with hyphens,
+e.g. x86-intel64. Tip: to obtain the list of CPU component classes
+please use the "list-classes substr = processor_" Simics command.
+        <br>
+        Default value: <code>"x86QSP1"</code>
+      </dd><dt id="dt:num_cpus-4"><b>num_cpus</b></dt><dd>– integer<br>
+Number of physical processors in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores-4"><b>num_cores</b></dt><dd>– integer<br>
+Number of cores per physical processor in the machine. Allowed values are
+1 - 128.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores_small-4"><b>num_cores_small</b></dt><dd>– integer<br>
+Number of small cores per physical processor in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:num_threads-4"><b>num_threads</b></dt><dd>– one of {1, 2, 4}<br>
+Number of threads per processor core in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_threads_small-4"><b>num_threads_small</b></dt><dd>– one of {0, 1, 2, 4}<br>
+Number of threads per small core in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:cpi-4"><b>cpi</b></dt><dd>– integer<br>
+Clock cycles per executed instruction for the processors.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:freq_mhz-4"><b>freq_mhz</b></dt><dd>– integer<br>
+Processor frequency in MHz.
+        <br>
+        Default value: <code>2000</code>
+      </dd><dt id="dt:apic_freq_mhz-4"><b>apic_freq_mhz</b></dt><dd>– integer<br>
+APIC frequency in MHz.
+        <br>
+        Default value: <code>133</code>
+      </dd></dl><p></p></dd><dt id="dt:consoles-4"><b>Consoles</b></dt><dd><dl><dt id="dt:show_con0-4"><b>show_con0</b></dt><dd>– boolean<br>
+Automatically display the text console on the first serial port.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:show_con1-4"><b>show_con1</b></dt><dd>– boolean<br>
+Automatically display the text console on the second serial port.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:show_gfx_con-4"><b>show_gfx_con</b></dt><dd>– boolean<br>
+Automatically display the graphics console.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:hide_consoles-4"><b>hide_consoles</b></dt><dd>– boolean<br>
+Do not display any console windows at startup.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:serial_console_fg_color-4"><b>serial_console_fg_color</b></dt><dd>– string<br>
+The foreground color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"white"</code>
+      </dd><dt id="dt:serial_console_bg_color-4"><b>serial_console_bg_color</b></dt><dd>– string<br>
+The background color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"black"</code>
+      </dd></dl><p></p></dd><dt id="dt:dvd-cd-rom-4"><b>DVD/CD-ROM</b></dt><dd><dl><dt id="dt:create_cdrom-4"><b>create_cdrom</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual CD-ROM drive
+of type SATA or IDE. Simics object <i>machine_name</i>.cdrom
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd></dl><p></p></dd><dt id="dt:deprecated-4"><b>Deprecated</b></dt><dd><dl><dt id="dt:cpu_class-4"><b>cpu_class</b></dt><dd>– string or NIL<br>
+CPU component class. Deprecated: use the cpu_comp_class parameter instead.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:disks-4"><b>Disks</b></dt><dd><dl><dt id="dt:create_disk0-4"><b>create_disk0</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual hard disk of type SATA
+or IDE. Simics object <i>machine_name</i>.disk0 is created and
+connected to the target machine.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk0_size-4"><b>disk0_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk0 virtual disk in bytes.
+If <code>NIL</code>, the size of <i>disk0_image</i> is used.
+        <br>
+        Default value: <code>200Gi</code>
+      </dd><dt id="dt:create_disk1-4"><b>create_disk1</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine an additional virtual hard disk
+of type SATA or IDE. Simics object <i>machine_name</i>.disk1
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk1_image-4"><b>disk1_image</b></dt><dd>– existing file or NIL<br>
+Disk image file for the <i>machine_name</i>.disk1 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:disk1_size-4"><b>disk1_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk1 virtual disk. If <code>NIL</code>,
+the size of <i>disk1_image</i> is used.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:writable_state_dir-4"><b>writable_state_dir</b></dt><dd>– string or NIL<br>
+If not NIL, the parameter is interpreted as a directory name. It is passed as
+an argument to the enable-writable-persistent-state command in order to set
+up a writable persistent state for the configuration.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:networking-4"><b>Networking</b></dt><dd><dl><dt id="dt:create_network-4"><b>create_network</b></dt><dd>– boolean<br>
+Creates an Ethernet link and connects the primary Ethernet adapter to it.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:dhcp_pool_ip-4"><b>dhcp_pool_ip</b></dt><dd>– string or NIL<br>
+Start IP address for the DHCP server in the service node.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:dhcp_pool_size-4"><b>dhcp_pool_size</b></dt><dd>– integer<br>
+Size of the IP address pool for the DHCP server in the service node.
+        <br>
+        Default value: <code>100</code>
+      </dd><dt id="dt:dhcp_domain_name-4"><b>dhcp_domain_name</b></dt><dd>– string<br>
+Domain name to use for the DHCP server in the service node.
+        <br>
+        Default value: <code>"network.sim"</code>
+      </dd><dt id="dt:service_node-7"><b>service_node</b></dt><dd>– string or NIL<br>
+Name of the <em>service node</em> to use for services such as DHCP and DNS.
+If <code>NIL</code>, a new service-node will be created unless
+<i>create_service_node</i> is <code>FALSE</code>.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:create_service_node-4"><b>create_service_node</b></dt><dd>– boolean<br>
+Creates a service-node and connects it to the Ethernet link
+<i>eth_link</i>.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:service_node_ip_address-4"><b>service_node_ip_address</b></dt><dd>– string<br>
+IP address of the service node.
+        <br>
+        Default value: <code>"10.10.0.1"</code>
+      </dd><dt id="dt:service_node_name-4"><b>service_node_name</b></dt><dd>– string or NIL<br>
+Name of the created service node, or <code>NIL</code> for the standard name.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:service_node_setup-4"><b>service_node_setup</b></dt><dd>– boolean<br>
+Setup service node services, such as DNS and DHCP. Set to <code>FALSE</code> if
+this has been done already.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:eth_link-7"><b>eth_link</b></dt><dd>– string or NIL<br>
+Name of the Ethernet link to use for networking. If <code>NIL</code>, a new
+Ethernet switch will be created.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:network_goal_latency-4"><b>network_goal_latency</b></dt><dd>– integer or NIL<br>
+Goal latency for communication on the Ethernet link.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:eth_link_gid-4"><b>eth_link_gid</b></dt><dd>– string or NIL<br>
+Global ID for the Ethernet link in a distributed setup. It should only be
+set if the link is distributed over multiple Simics sessions. The link ID
+must be the same in all sessions.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:connect_real_network-4"><b>connect_real_network</b></dt><dd>– one of {"no", "napt"}<br>
+Connects the simulated Ethernet link to the host network using NAPT
+(Network Address Port Translation).
+        <br>
+        Default value: <code>"napt"</code>
+      </dd><dt id="dt:eth_vlan_enable-4"><b>eth_vlan_enable</b></dt><dd>– boolean<br>
+When creating an Ethernet switch, create a VLAN-enabled one.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:eth_connector_vlan_id-4"><b>eth_connector_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+virtual machine connection.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:service_node_vlan_id-4"><b>service_node_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+service_node connection. If this parameter is not set, eth_connector_vlan_id
+will be used instead.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:ip_address-4"><b>ip_address</b></dt><dd>– string<br>
+The board IP address.
+        <br>
+        Default value: <code>"auto"</code>
+      </dd><dt id="dt:mac_address-4"><b>mac_address</b></dt><dd>– string<br>
+MAC address of the primary Ethernet adapter.
+The format is "XX:XX:XX:XX:XX:XX".
+        <br>
+        Default value: <code>"auto"</code>
+      </dd></dl><p></p></dd><dt id="dt:simulation-4"><b>Simulation</b></dt><dd><dl><dt id="dt:real_time_mode-2"><b>real_time_mode</b></dt><dd>– boolean<br>
+Prevents the simulation from running faster than real time.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:system_info-2"><b>system_info</b></dt><dd>– string<br>
+A description of the target.
+        <br>
+        Default value: <code>"QSP x86 - HDD boot UEFI"</code>
+      </dd><dt id="dt:create_tracker-3"><b>create_tracker</b></dt><dd>– boolean<br>
+Creates the tracker object.
+Only available for Linux target OS.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:tracker_params-3"><b>tracker_params</b></dt><dd>– existing file (*.params) or NIL<br>
+OS awareness parameter file for the kernel running on the machine.
+Only available for Linux target OS.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:enable_break_on_reboot-2"><b>enable_break_on_reboot</b></dt><dd>– boolean<br>
+Interrupts the simulation if the machine is rebooted.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:enable_system_clock-4"><b>enable_system_clock</b></dt><dd>– boolean<br>
+Enables a configuration with a separate clock to which devices are bound
+instead of to the first CPU.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:system_clock_class-4"><b>system_clock_class</b></dt><dd>– string<br>
+The class used for the system clock if the
+<i>enable_system_clock</i> parameter is true.
+        <br>
+        Default value: <code>"clock"</code>
+      </dd><dt id="dt:create_osa-4"><b>create_osa</b></dt><dd>– boolean<br>
+Create OS awareness framework.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd></dl><p></p></dd><dt id="dt:system-7"><b>System</b></dt><dd><dl><dt id="dt:bios_image-4"><b>bios_image</b></dt><dd>– existing file or NIL<br>
+BIOS file.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/SIMICSX58IA32X64_1_1_0_r.fd"</code>
+      </dd><dt id="dt:vga_bios_image-4"><b>vga_bios_image</b></dt><dd>– existing file or NIL<br>
+VGABIOS file.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:lan_bios_image-4"><b>lan_bios_image</b></dt><dd>– existing file or NIL<br>
+ROM BIOS file for the ICH10 LAN Ethernet adaptor
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:spi_flash_image-4"><b>spi_flash_image</b></dt><dd>– existing file or NIL<br>
+The ICH10 SPI flash file to use.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/spi-flash.bin"</code>
+      </dd><dt id="dt:enable_efi-2"><b>enable_efi</b></dt><dd>– boolean<br>
+Sets EFI BIOS, else PC BIOS (legacy BIOS).
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:machine_name-4"><b>machine_name</b></dt><dd>– string<br>
+Name of the machine. Used for the top level component.
+        <br>
+        Default value: <code>"board"</code>
+      </dd><dt id="dt:memory_megs-4"><b>memory_megs</b></dt><dd>– integer<br>
+Amount of RAM in the machine, in MiB. The highest supported value is
+65536 (64 GiB). More than 64 GiB is not supported since the x86QSP1
+processor is limited to a 36-bit physical address space.
+        <br>
+        Default value: <code>8192</code>
+      </dd><dt id="dt:rtc_time-4"><b>rtc_time</b></dt><dd>– string<br>
+The date and time of the simulated real-time clock set when the configuration
+is created. The format is "YYYY-MM-DD HH:MM:SS". Can also be set to "auto"
+to use the current host time.
+        <br>
+        Default value: <code>"2021-06-10 10:41:54"</code>
+      </dd><dt id="dt:create_usb_tablet-4"><b>create_usb_tablet</b></dt><dd>– boolean<br>
+Connects a USB tablet device for input using absolute positioning that
+provides better user experience than a mouse.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd></dl><p></p></dd><dt id="dt:other"><b>Other</b></dt><dd><dl><dt id="dt:disk0_image-4"><b>disk0_image</b></dt><dd>– existing file<br>
+Image file representing the contents of the primary disk.
+        <br>
+         <b>Mandatory parameter.</b>
+      </dd></dl><p></p></dd><dt id="dt:results-4"><b>Results</b></dt><dd><dl><dt id="dt:system-8"><b>system</b></dt><dd>– string<br>
+      </dd><dt id="dt:eth_link-8"><b>eth_link</b></dt><dd>– string or NIL<br>
+      </dd><dt id="dt:service_node-8"><b>service_node</b></dt><dd>– string or NIL<br>
+      </dd></dl><p></p></dd></dl><p>
+</p><h3 class="jdocu"><a name="qsp-usb-boot.simics">3.1.5 qsp-usb-boot.simics</a></h3>
+<p>
+  
+Starts a virtual machine that boots from a USB ISO file. This
+script can be used to install an operating system on a QSP-x86 machine.
+  </p><dl><dt id="dt:cpu-5"><b>CPU</b></dt><dd><dl><dt id="dt:cpu_comp_class-5"><b>cpu_comp_class</b></dt><dd>– string<br>
+CPU model. It should be specified as CPU component class without
+the "processor_" prefix and with underscores replaced with hyphens,
+e.g. x86-intel64. Tip: to obtain the list of CPU component classes
+please use the "list-classes substr = processor_" Simics command.
+        <br>
+        Default value: <code>"x86QSP1"</code>
+      </dd><dt id="dt:num_cpus-5"><b>num_cpus</b></dt><dd>– integer<br>
+Number of physical processors in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores-5"><b>num_cores</b></dt><dd>– integer<br>
+Number of cores per physical processor in the machine. Allowed values are
+1 - 128.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_cores_small-5"><b>num_cores_small</b></dt><dd>– integer<br>
+Number of small cores per physical processor in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:num_threads-5"><b>num_threads</b></dt><dd>– one of {1, 2, 4}<br>
+Number of threads per processor core in the machine.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:num_threads_small-5"><b>num_threads_small</b></dt><dd>– one of {0, 1, 2, 4}<br>
+Number of threads per small core in the machine (only applicable
+if the processor class specified by the cpu_comp_class parameter supports
+heterogeneous setups).
+        <br>
+        Default value: <code>0</code>
+      </dd><dt id="dt:cpi-5"><b>cpi</b></dt><dd>– integer<br>
+Clock cycles per executed instruction for the processors.
+        <br>
+        Default value: <code>1</code>
+      </dd><dt id="dt:freq_mhz-5"><b>freq_mhz</b></dt><dd>– integer<br>
+Processor frequency in MHz.
+        <br>
+        Default value: <code>2000</code>
+      </dd><dt id="dt:apic_freq_mhz-5"><b>apic_freq_mhz</b></dt><dd>– integer<br>
+APIC frequency in MHz.
+        <br>
+        Default value: <code>133</code>
+      </dd></dl><p></p></dd><dt id="dt:consoles-5"><b>Consoles</b></dt><dd><dl><dt id="dt:show_con0-5"><b>show_con0</b></dt><dd>– boolean<br>
+Automatically display the text console on the first serial port.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:show_con1-5"><b>show_con1</b></dt><dd>– boolean<br>
+Automatically display the text console on the second serial port.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:show_gfx_con-5"><b>show_gfx_con</b></dt><dd>– boolean<br>
+Automatically display the graphics console.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:hide_consoles-5"><b>hide_consoles</b></dt><dd>– boolean<br>
+Do not display any console windows at startup.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:serial_console_fg_color-5"><b>serial_console_fg_color</b></dt><dd>– string<br>
+The foreground color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"white"</code>
+      </dd><dt id="dt:serial_console_bg_color-5"><b>serial_console_bg_color</b></dt><dd>– string<br>
+The background color of the serial console, or RGB in #12ab89 format.
+        <br>
+        Default value: <code>"black"</code>
+      </dd></dl><p></p></dd><dt id="dt:dvd-cd-rom-5"><b>DVD/CD-ROM</b></dt><dd><dl><dt id="dt:create_cdrom-5"><b>create_cdrom</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual CD-ROM drive
+of type SATA or IDE. Simics object <i>machine_name</i>.cdrom
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd></dl><p></p></dd><dt id="dt:deprecated-5"><b>Deprecated</b></dt><dd><dl><dt id="dt:cpu_class-5"><b>cpu_class</b></dt><dd>– string or NIL<br>
+CPU component class. Deprecated: use the cpu_comp_class parameter instead.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:disks-5"><b>Disks</b></dt><dd><dl><dt id="dt:create_disk0-5"><b>create_disk0</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine a virtual hard disk of type SATA
+or IDE. Simics object <i>machine_name</i>.disk0 is created and
+connected to the target machine.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk0_image-5"><b>disk0_image</b></dt><dd>– existing file or NIL<br>
+Disk image file for the <i>machine_name</i>.disk0 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:disk0_size-5"><b>disk0_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk0 virtual disk in bytes.
+If <code>NIL</code>, the size of <i>disk0_image</i> is used.
+        <br>
+        Default value: <code>2000Gi</code>
+      </dd><dt id="dt:create_disk1-5"><b>create_disk1</b></dt><dd>– one of {"sata", "ide"} or NIL<br>
+Create and connect to the target machine an additional virtual hard disk
+of type SATA or IDE. Simics object <i>machine_name</i>.disk1
+is created and connected to the target machine. The type should be the same
+as <i>create_disk0</i>.
+        <br>
+        Default value: <code>"sata"</code>
+      </dd><dt id="dt:disk1_image-5"><b>disk1_image</b></dt><dd>– existing file or NIL<br>
+Disk image file for the <i>machine_name</i>.disk1 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:disk1_size-5"><b>disk1_size</b></dt><dd>– integer or NIL<br>
+Size of the <i>machine_name</i>.disk1 virtual disk. If <code>NIL</code>,
+the size of <i>disk1_image</i> is used.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:writable_state_dir-5"><b>writable_state_dir</b></dt><dd>– string or NIL<br>
+If not NIL, the parameter is interpreted as a directory name. It is passed as
+an argument to the enable-writable-persistent-state command in order to set
+up a writable persistent state for the configuration.
+        <br>
+        Default value: <code>NIL</code>
+      </dd></dl><p></p></dd><dt id="dt:networking-5"><b>Networking</b></dt><dd><dl><dt id="dt:create_network-5"><b>create_network</b></dt><dd>– boolean<br>
+Creates an Ethernet link and connects the primary Ethernet adapter to it.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:dhcp_pool_ip-5"><b>dhcp_pool_ip</b></dt><dd>– string or NIL<br>
+Start IP address for the DHCP server in the service node.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:dhcp_pool_size-5"><b>dhcp_pool_size</b></dt><dd>– integer<br>
+Size of the IP address pool for the DHCP server in the service node.
+        <br>
+        Default value: <code>100</code>
+      </dd><dt id="dt:dhcp_domain_name-5"><b>dhcp_domain_name</b></dt><dd>– string<br>
+Domain name to use for the DHCP server in the service node.
+        <br>
+        Default value: <code>"network.sim"</code>
+      </dd><dt id="dt:service_node-9"><b>service_node</b></dt><dd>– string or NIL<br>
+Name of the <em>service node</em> to use for services such as DHCP and DNS.
+If <code>NIL</code>, a new service-node will be created unless
+<i>create_service_node</i> is <code>FALSE</code>.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:create_service_node-5"><b>create_service_node</b></dt><dd>– boolean<br>
+Creates a service-node and connects it to the Ethernet link
+<i>eth_link</i>.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:service_node_ip_address-5"><b>service_node_ip_address</b></dt><dd>– string<br>
+IP address of the service node.
+        <br>
+        Default value: <code>"10.10.0.1"</code>
+      </dd><dt id="dt:service_node_name-5"><b>service_node_name</b></dt><dd>– string or NIL<br>
+Name of the created service node, or <code>NIL</code> for the standard name.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:service_node_setup-5"><b>service_node_setup</b></dt><dd>– boolean<br>
+Setup service node services, such as DNS and DHCP. Set to <code>FALSE</code> if
+this has been done already.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:eth_link-9"><b>eth_link</b></dt><dd>– string or NIL<br>
+Name of the Ethernet link to use for networking. If <code>NIL</code>, a new
+Ethernet switch will be created.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:network_goal_latency-5"><b>network_goal_latency</b></dt><dd>– integer or NIL<br>
+Goal latency for communication on the Ethernet link.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:eth_link_gid-5"><b>eth_link_gid</b></dt><dd>– string or NIL<br>
+Global ID for the Ethernet link in a distributed setup. It should only be
+set if the link is distributed over multiple Simics sessions. The link ID
+must be the same in all sessions.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:connect_real_network-5"><b>connect_real_network</b></dt><dd>– one of {"no", "napt"}<br>
+Connects the simulated Ethernet link to the host network using NAPT
+(Network Address Port Translation).
+        <br>
+        Default value: <code>"napt"</code>
+      </dd><dt id="dt:eth_vlan_enable-5"><b>eth_vlan_enable</b></dt><dd>– boolean<br>
+When creating an Ethernet switch, create a VLAN-enabled one.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:eth_connector_vlan_id-5"><b>eth_connector_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+virtual machine connection.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:service_node_vlan_id-5"><b>service_node_vlan_id</b></dt><dd>– integer<br>
+When connecting to a VLAN-enabled switch, use this VLAN ID for the
+service_node connection. If this parameter is not set, eth_connector_vlan_id
+will be used instead.
+        <br>
+        Default value: <code>-1</code>
+      </dd><dt id="dt:ip_address-5"><b>ip_address</b></dt><dd>– string<br>
+The board IP address.
+        <br>
+        Default value: <code>"auto"</code>
+      </dd><dt id="dt:mac_address-5"><b>mac_address</b></dt><dd>– string<br>
+MAC address of the primary Ethernet adapter.
+The format is "XX:XX:XX:XX:XX:XX".
+        <br>
+        Default value: <code>"auto"</code>
+      </dd></dl><p></p></dd><dt id="dt:simulation-5"><b>Simulation</b></dt><dd><dl><dt id="dt:real_time_mode-3"><b>real_time_mode</b></dt><dd>– boolean<br>
+Prevents the simulation from running faster than real time.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:system_info-3"><b>system_info</b></dt><dd>– string<br>
+A description of the target.
+        <br>
+        Default value: <code>"QSP x86 - USB boot UEFI"</code>
+      </dd><dt id="dt:enable_break_on_reboot-3"><b>enable_break_on_reboot</b></dt><dd>– boolean<br>
+Interrupts the simulation if the machine is rebooted.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:enable_system_clock-5"><b>enable_system_clock</b></dt><dd>– boolean<br>
+Enables a configuration with a separate clock to which devices are bound
+instead of to the first CPU.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd><dt id="dt:system_clock_class-5"><b>system_clock_class</b></dt><dd>– string<br>
+The class used for the system clock if the
+<i>enable_system_clock</i> parameter is true.
+        <br>
+        Default value: <code>"clock"</code>
+      </dd><dt id="dt:create_osa-5"><b>create_osa</b></dt><dd>– boolean<br>
+Create OS awareness framework.
+        <br>
+        Default value: <code>TRUE</code>
+      </dd></dl><p></p></dd><dt id="dt:system-9"><b>System</b></dt><dd><dl><dt id="dt:bios_image-5"><b>bios_image</b></dt><dd>– existing file or NIL<br>
+BIOS file.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/SIMICSX58IA32X64_1_1_0_r.fd"</code>
+      </dd><dt id="dt:vga_bios_image-5"><b>vga_bios_image</b></dt><dd>– existing file or NIL<br>
+VGABIOS file.
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:lan_bios_image-5"><b>lan_bios_image</b></dt><dd>– existing file or NIL<br>
+ROM BIOS file for the ICH10 LAN Ethernet adaptor
+        <br>
+        Default value: <code>NIL</code>
+      </dd><dt id="dt:spi_flash_image-5"><b>spi_flash_image</b></dt><dd>– existing file or NIL<br>
+The ICH10 SPI flash file to use.
+        <br>
+        Default value: <code>"%simics%/targets/qsp-x86/images/spi-flash.bin"</code>
+      </dd><dt id="dt:enable_efi-3"><b>enable_efi</b></dt><dd>– boolean<br>
+Sets EFI BIOS, else PC BIOS (legacy BIOS).
+        <br>
+        Default value: <code>TRUE</code>
+      </dd><dt id="dt:machine_name-5"><b>machine_name</b></dt><dd>– string<br>
+Name of the machine. Used for the top level component.
+        <br>
+        Default value: <code>"board"</code>
+      </dd><dt id="dt:memory_megs-5"><b>memory_megs</b></dt><dd>– integer<br>
+Amount of RAM in the machine, in MiB. The highest supported value is
+65536 (64 GiB). More than 64 GiB is not supported since the x86QSP1
+processor is limited to a 36-bit physical address space.
+        <br>
+        Default value: <code>8192</code>
+      </dd><dt id="dt:rtc_time-5"><b>rtc_time</b></dt><dd>– string<br>
+The date and time of the simulated real-time clock set when the configuration
+is created. The format is "YYYY-MM-DD HH:MM:SS". Can also be set to "auto"
+to use the current host time.
+        <br>
+        Default value: <code>"2021-06-10 10:41:54"</code>
+      </dd><dt id="dt:create_usb_tablet-5"><b>create_usb_tablet</b></dt><dd>– boolean<br>
+Connects a USB tablet device for input using absolute positioning that
+provides better user experience than a mouse.
+        <br>
+        Default value: <code>FALSE</code>
+      </dd></dl><p></p></dd><dt id="dt:usb"><b>USB</b></dt><dd><dl><dt id="dt:iso_image-2"><b>iso_image</b></dt><dd>– existing file<br>
+ISO image of a USB disk to boot from.
+        <br>
+         <b>Mandatory parameter.</b>
+      </dd><dt id="dt:usb_name"><b>usb_name</b></dt><dd>– string<br>
+Name of USB disk component.
+        <br>
+        Default value: <code>"usb_disk0"</code>
+      </dd></dl><p></p></dd><dt id="dt:results-5"><b>Results</b></dt><dd><dl><dt id="dt:system-10"><b>system</b></dt><dd>– string<br>
+      </dd><dt id="dt:eth_link-10"><b>eth_link</b></dt><dd>– string or NIL<br>
+      </dd><dt id="dt:service_node-10"><b>service_node</b></dt><dd>– string or NIL<br>
+      </dd></dl><p></p></dd></dl><p>
+
+</p><h2 class="jdocu"><a name="Target-Setup">3.2 Target Setup</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="Preparation">3.2.1 Preparation</a></h3>
+<p>
+
+</p><p>
+Download and install the following packages:
+</p><p>
+</p><ul>
+  <li>Pkg 1000 — Simics Base</li>
+  <li>Pkg 2096 — Quick-Start Platform for x86</li>
+  <li>Pkg 4094 — Optional: Clear Linux support</li>
+  <li>Pkg 8112 — Optional: Modern CPU model</li>
+</ul>
+<p>
+After installing the packages, run <b>project-setup</b> to
+create or update your project.
+</p><p>
+Package 4094 adds the default Clear Linux image to the qsp-clear-linux-
+scripts, where Clear Linux is a Linux distribution optimized for Intel® x86
+processors. Some other things to note about the distro setup:
+</p><ul>
+  <li>Using dynamic IP address assigned by DHCP</li>
+  <li>Kernel address space layout randomization (KASLR) is turned off</li>
+  <li>Automatic login as simics, a normal user with sudo powers</li>
+</ul>
+<p>
+Package 8112 enables the user to pick a more modern CPU by setting:
+</p><pre class="jdocu_small">$cpu_comp_class = "x86QSP2"</pre><p> before loading the target script.
+Look for other options in the script files for atom, client, modern, server
+or what scripts are available in the package at the moment.
+</p><p>
+If you want to connect and transfer data with the real network, you
+will need to set up a TAP interface; see <em>Ethernet Networking
+— User's Guide</em>, section 4.3.1.
+</p><p>
+When building your own images, you will have to use
+the <b>add-directory</b> command which will add the directory
+where you store your images to Simics's search path.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Install-from-DVD-example-with-Microsoft-Windows-7">3.2.2 Install from DVD, example with Microsoft Windows 7</a></h3>
+<p>
+
+</p><p>
+You will need a DVD-image of Windows 7 before starting the
+installation.
+See also the <em>Installing Microsoft Windows 7 on the x86-X58-ICH10
+target</em> application note.
+</p><p>
+
+</p><p>
+If you are using a Windows host you will need a separate program to create
+the image. If you are using a Linux host you should be able to create an
+image of your Windows&nbsp;7 DVD by running the following command as root
+at the command-prompt:
+</p><pre class="jdocu_small">$ <b>dd if=/dev/cdrom of=win7dvd.iso</b>
+</pre><p>
+</p><p>
+The working directory for this guide will be
+<code>[simics]/targets/qsp-x86/</code>.
+Put the created <code>win7dvd.iso</code> image in the
+<code>images</code> directory.
+</p><p>
+Create a new script called <code>win7inst.simics</code> to set up a disk and
+the DVD-image. It will use a script called <code>qsp-dvd-boot.simics</code>
+to boot the DVD and should look something like the following:
+</p><p>
+</p><pre class="jdocu_small">  $iso_image = "win7dvd.iso"
+  $disk_size = (80 * 1024 * 1024 * 1024)
+  run-command-file "%script%/qsp-dvd-boot.simics"
+</pre><p>
+</p><p>
+Set <i>disk_size</i> to match the size wanted for the
+disk (Windows 7 will require about 11 to 20 GB of space). Creating a
+larger disk will not consume more space on the host as the image is
+compressed with the <b>craff</b> utility.
+If not specified, the default size is 20 GB.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Make sure you have plenty of swap-space on your drive. You
+  can set your swap directory through the command
+  <b>set-image-memory-limit</b> in Simics.
+</div>Now run the created script and the Windows DVD should start
+booting. Follow the directives during the installation. After choosing
+a disk to install to, the installation will continue for quite a long
+time.
+<p>
+When the installation is completed, Windows is going to be rebooted. Simics
+does not handle reboots, so instead the CPU will end up
+in HLT state. Continue running the simulation until HLT state is
+displayed at Simics CLI when the simulation is stopped.
+</p><p>
+To save what has been installed to the disk-image, use the
+command <b>save-persistent-state <em>inst</em></b>. The command
+saves the current states of all persistent media such as disks and
+flash memories. The disk contents will now be saved in
+the <code>inst</code> directory.
+</p><p>
+Once the current disk contents is saved, Simics can be exited and the file
+<code>inst/board.disk.hd_image.craff</code> will contain the
+current image of the Windows-installation disk.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+If a checkpoint is saved at any time during the installation
+  you will have to merge the persistent state saved at the end with
+  the checkpointed disk using <b>craff</b> utility.
+</div>The new image can now be booted. To do this create a script named
+<code>qsp-w7-pro.simics</code> which contains the image just created.
+The scripts should look something like:
+<p>
+</p><pre class="jdocu_small">  $disk_image = "inst/board.disk.hd_image.craff"
+  $disk_size = (80 * 1024 * 1024 * 1024) # same size as used earlier
+  $machine_name = "board"
+  run-command-file "%simics%/targets/qsp-x86/qsp-system.include"
+  instantiate-components
+
+  # set a time quantum that provides a reasonable boot time
+  $system.cell-&gt;time_quantum = 0.0001
+
+  $system-&gt;system_info = "QSP-x86 - Windows 7 Professional"
+  enable-real-time-mode
+</pre><p>
+</p><p>
+Run this script and the installation will continue from
+the disk. Windows will then complete the installation and again a reboot
+is needed. When the CPU once again reaches HLT state, stop the simulation
+and save the current state by running the command
+<b>save-persistent-state <em>inst2</em></b>. Notice however, Simics will
+only save the difference compared to the last used image and not the
+whole image. You must merge the disk-image used to boot with the
+new state of the image using the <b>craff</b> utility located in
+the <code>[simics]/bin</code> directory. Run the following
+command to join the two <code>craff</code> files from the saved
+persistent states:
+</p><p>
+</p><pre class="jdocu_small">$ <b>craff -o images/inst.craff inst/board.disk.hd_image.craff inst2/board.disk.hd_image.craff </b></pre><p>
+</p><p>
+The created <code>images/inst.craff</code> image will be used to once again
+boot Windows for the last step of the installation. Modify the script
+<code>qsp-w7-pro.simics</code> that was used for the most recent boot
+to instead use the new image:
+</p><p>
+</p><pre class="jdocu_small">  $disk_image = "inst.craff"
+</pre><p>
+</p><p>
+Boot again and there will be more options for setting up Windows.
+Follow the instructions but when asked to configure time-settings just
+press <b>Next</b> (system time can be set in the startup-script).
+Windows 7 should now be up and running, at this point the final image
+should be saved, so Windows needs to be shut down.
+</p><p>
+Once at HLT state, after stopping the simulation, repeat the same procedure as
+before to save a disk-image, using
+<b>save-persistent-state <em>win-final</em></b>.
+The <b>craff</b> utility is used to make the final disk-image:
+</p><p>
+</p><pre class="jdocu_small">$ <b>craff -o images/win7.craff images/inst.craff win-final/board.disk.hd_image.craff</b>
+</pre><p>
+</p><p>
+The created <code>win7.craff</code> image can now be used to boot
+Windows, all that is needed is to modify the
+<code>qsp-w7-pro.simics</code> script to use this image. The intermediate
+persistent states can now be deleted.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Instead of saving an image using <b>save-persistent-state</b> you can
+  use a read/writable image instead of the DVD image, which lets changes to be
+  written directly to the disk. Read more about read/writable images and
+  saving changes to images in <em>Simics User's Guide</em>. <br>
+<p>
+  Yet another option is the <b>checkpoints-merge</b> utility; that is
+  because a saved persistent state is a checkpoint with only the persistent
+  data saved. See the <em>Simics User's Guide</em> for more
+  information.
+</p></div>
+<p>
+
+</p><h3 class="jdocu"><a name="Install-from-DVD-example-with-Ubuntu-22.04-LTS">3.2.3 Install from DVD, example with Ubuntu 22.04 LTS</a></h3>
+<p>
+
+</p><p>
+You will need a DVD-image before starting the installation. Download
+<code>ubuntu-22.04-desktop-amd64.iso</code> from
+<a class="jdocu" href="http://https://ubuntu.com/download/desktop" rel="noopener noreferrer" target="_top">https://ubuntu.com/download/desktop</a>.
+</p><p>
+A script called <code>qsp-dvd-boot.simics</code> will be
+used to boot the DVD.
+</p><p>
+Create a new script called <code>dvd_install.simics</code> to set
+up a disk and the DVD-image. It should look something like:
+</p><p>
+</p><pre class="jdocu_small">  $iso_image = "ubuntu-22.04-desktop-amd64.iso"
+  $disk_size = 80 * 1024 * 1024 * 1024
+  run-command-file "targets/qsp-x86/qsp-dvd-boot.simics"
+</pre><p>
+</p><p>
+Set <i>disk_size</i> to match the size wanted for the
+disk. Creating a larger disk will not consume more space on the host
+as the image is compressed with the <b>craff</b> utility.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Make sure you have plenty of swap-space on your drive. You
+  can set your swap directory through the command
+  <b>set-image-memory-limit</b> in Simics.
+</div>The created script can now be run and the DVD should start
+booting. Follow the directives during the installation. The
+installation process takes considerable time, which might include reboots.
+<p>
+Having finished the installation, the OS will be up and running,
+and to save a clean install disk image the systems must be
+halted. Now Shutdown the system. The
+simulation will automatically stop when the system is shut down. This
+can typically be identified as a message from a device that sleep
+state is not implemented or as an I/O operation outside of the defined
+address space. At this point save the disk image
+using <b>save-persistent-state <em>os-install-final</em></b>.
+</p><p>
+Now you can create a script for running the installed workload. It should look
+something like this:
+</p><p>
+</p><pre class="jdocu_small">  $disk_image = "os-install-final/board.disk.hd_image.craff"
+  $disk_size = 80 * 1024 * 1024 * 1024
+  $machine_name = "board"
+  run-command-file "targets/qsp-x86/qsp-system.include"
+  instantiate-components
+
+  # set a time quantum that provides a reasonable boot time
+  set-time-quantum cell = $system.cell seconds = 0.0001
+
+  $system-&gt;system_info = "QSP-x86 - My Own OS Install"
+  enable-real-time-mode
+</pre><p>
+</p><p>
+Saving of the final disk content will be quite slow if the host system
+ran out of memory and was forced to use disk as backing storage during
+the installation.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Using-a-Prepared-Disk-Image">3.2.4 Using a Prepared Disk Image</a></h3>
+<p>
+
+</p><p>
+To run a machine from an existing disk image, create a small script
+that looks something like this:
+</p><p>
+</p><pre class="jdocu_small">  $disk_image = "my_disk_image.img"
+  $machine_name = "board"
+  run-command-file "targets/qsp-x86/qsp-system.include"
+  instantiate-components
+
+  # set a time quantum that provides a reasonable boot time
+  set-time-quantum cell = $system.cell seconds = 0.0001
+
+  $system-&gt;system_info = "QSP-x86 - My Own Disk Image"
+  enable-real-time-mode
+</pre><p>
+</p><p>
+
+
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="qsp-x86-overview.html">2 QSP-x86 Overview</a>
+<a href="miscellaneous-notes.html">4 Miscellaneous Notes</a>
+</div>

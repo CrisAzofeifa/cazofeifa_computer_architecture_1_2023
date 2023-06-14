@@ -1,0 +1,84 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i2c_master</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_i2c_link.html">i2c_link</a>
+<a href="__rm_interface_i2c_master_v2.html">i2c_master_v2</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_i2c_master">i2c_master</a></h1>
+<p>
+
+<a name="i2c_master"></a><a name="i2c_master_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(i2c_master) {
+        void (*bus_freed)(conf_object_t *device);
+        void (*read_response)(conf_object_t *device, uint8 value);
+        void (*ack_read_response)(conf_object_t *device);
+        void (*write_response)(conf_object_t *device, i2c_status_t status);
+        void (*start_response)(conf_object_t *device, i2c_status_t status);
+};
+
+#define I2C_MASTER_INTERFACE "i2c_master"
+</pre><p>
+</p><p>
+
+   The <code>i2c_master</code> interface should be implemented
+   by devices that intend to act as a master on an I2C link.
+</p><p>
+   The functions <b><i>start_response</i></b>, <b><i>read_response</i></b>,
+   <b><i>ack_read_response</i></b> and <b><i>write_response</i></b> are
+   called as a response to the corresponding <b><i>request_*</i></b>
+   calls to the I2C link.
+</p><p>
+   The <i>status</i> parameter to the
+   <b><i>start_response</i></b> function can have three values:
+   </p><dl><dt id="dt:i2c_status_success"><b>I2C_status_success</b></dt><dd>The transfer was successfully started</dd><dt id="dt:i2c_status_noack"><b>I2C_status_noack</b></dt><dd>No I2C slave device accepted the transfer, likely
+     because there was no I2C slave device listening to the given
+     address</dd><dt id="dt:i2c_status_bus_busy"><b>I2C_status_bus_busy</b></dt><dd>An existing transfer blocks the I2C link. When the existing
+     transfer is completed (i.e., on the next STOP condition), the link
+     will call the <b><i>bus_freed</i></b> function in the master device,
+     if it's implemented. This makes it possible to avoid periodical
+     polling of a busy link.</dd></dl><p>The <i>status</i> parameter to the
+   <b><i>write_response</i></b> function can have two values,
+   <i>I2C_status_success</i> for success, or
+   <i>I2C_status_noack</i> if the slave device did not ack the
+   written byte.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_i2c_link.html">i2c_link</a>
+<a href="__rm_interface_i2c_master_v2.html">i2c_master_v2</a>
+</div>

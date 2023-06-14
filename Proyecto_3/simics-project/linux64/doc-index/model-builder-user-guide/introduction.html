@@ -1,0 +1,511 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>1 Introduction</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="introduction-and-preparation.html">I Introduction and Preparation</a>
+<a href="modeling-techniques.html">2 Modeling Techniques</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="introduction-and-preparation.html">I Introduction and Preparation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Introduction">1 Introduction</a></h1>
+<p>
+
+</p><p>
+This document shows how to model your hardware system in Simics and
+how to extend Simics with new functionality. This document does not
+stand alone. The Simics and DML reference manuals are invaluable for
+the details. It is not intended to be read from start to finish. After
+reading the introduction part feel free to read about the topics which
+interest you.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+You need the Simics Model Builder product to develop models and
+extensions for Simics.
+</div>This document is divided into several parts:
+<dl><dt id="dt:introduction-and-preparation"><b>Introduction and Preparation</b></dt><dd>This part contains an introduction to modeling virtual system and
+helps you prepare for modeling by telling you how to set up your
+system for Simics Model Builder. The introduction to modeling is
+recommended for all readers. This provides an overview of the way you
+model your hardware in Simics and how to map hardware concepts to
+Simics concepts.</dd><dt id="dt:device-modeling"><b>Device Modeling</b></dt><dd>This part describes the device modeling concepts and introduces
+DML, the tool used for writing device models. DML is designed to
+device modeling easier and remove a lot of the repetitive and error
+prone work you have to do if you develop your device model in for
+example C. It also includes chapters on writing new commands for the
+Simics command line interface and how to define new interfaces
+between device models.</dd><dt id="dt:modeling-common-hardware-components"><b>Modeling Common Hardware Components</b></dt><dd>This part builds on the previous part and shows you how to model
+some common kinds of devices in Simics.</dd><dt id="dt:creating-virtual-systems"><b>Creating Virtual Systems</b></dt><dd>This part shows you how to assemble the parts of a virtual system
+into a complete system. It also shows you how to deal with memory and
+address spaces in Simics. This is one of the most abstract parts of
+modeling a system in Simics and tries to map how software sees the
+hardware.</dd><dt id="dt:simics-api"><b>Simics API</b></dt><dd>This part explains the Simics API; its major concepts, how it is
+structured, how it evolves, and some rules and conventions for how to
+use it. It also explains how the API interacts with Simics's
+multithreading support, and how to make your modules safe to use in
+multithreaded simulations.</dd></dl><p>This document focuses on modeling the behavior of a system. Read
+the <em>Analyzer User's Guide</em> for information on modeling timing and
+caches in Simics.
+</p><p>
+The introduction chapter you are reading describes the concepts of
+system modeling and how they map to modeling in Simics. It also
+discusses the kind of information that must be gathered to model a
+system. After reading it you should have a basic understanding of what
+modeling is and what information about the hardware you need to
+gather.
+</p><p>
+</p><h2 class="jdocu"><a name="What-is-a-Model">1.1 What is a Model?</a></h2>
+<p>
+
+</p><p>
+Simics provides a full systems simulation environment for CPUs,
+boards, platforms, racks and even very complex heterogeneous systems
+networked together. A model provides the software running on a virtual
+platform within the Simics environment with a representation of the
+hardware interface that is exposed to the software, i.e., a
+"programmer's view". 
+</p><p>
+When creating models, it is important to choose the right level of
+abstraction. A comparison can be made with the field of physics, where
+different models are used for solving different types of problems. For
+example, on the sub-atomic scale quantum mechanics is used, to compute
+the motion of Earth-bound objects classical mechanics is used, and for
+objects moving at high speed relativistic models are used. Choosing the
+wrong model for a problem will either make it intractable or will not
+provide enough detail to yield correct results. The same goes for
+models of digital systems where a number of different abstraction
+levels are typically used. As more details are added to the
+simulation, the slower it will run and the more costly it will be to
+develop. There exists a trade off between simulation speed and model
+fidelity. Figure <a class="reference" href="#detail_vs_speed_figure">1</a> shows the
+characteristics for some commonly used abstractions. Note that the
+figure serves as an illustration and actual performance may vary
+substantially even within a specific abstraction.
+</p><p>
+</p><div class="figure" id="detail_vs_speed_figure">
+
+<div style="text-align: center">
+<img alt="" src="detail_vs_speed.png">
+<div class="caption">Figure 1. Simulation Detail vs Simulation Speed.</div>
+</div>
+</div>
+
+<p>
+
+</p><h2 class="jdocu"><a name="What-is-a-Functional-Model">1.2 What is a Functional Model?</a></h2>
+<p>
+
+</p><p>
+A Simics functional model presents the software with a functionally
+accurate view into the virtualized hardware.  Functional models are
+transaction based, applying a blackbox/transfer function approach
+where it is not important to duplicate how a specific result is
+obtained, but to duplicate what the exact transfer function will
+result in.  For timing-critical sections (e.g., device drivers response
+to interrupts, etc.), Simics provides the ability to insert delays
+that can be fine-tuned to model not only what data is provided, but
+also when that data is provided to the remainder of the system.
+</p><p>
+Using this approach, a functional model can be built based solely on
+hardware design and interface documents combined with some knowledge
+of the expectations and requirements of the operating system(s)
+running on top of that hardware.  When building a functional model,
+there is no need to have detailed knowledge on the inner workings of
+the platform or device.
+</p><p>
+
+</p><h2 class="jdocu"><a name="What-is-a-Systems-Model">1.3 What is a Systems Model?</a></h2>
+<p>
+
+</p><p>
+Today’s systems consist of many components including multi-core CPUs,
+multiple platforms, accelerators, racks, and heterogeneous
+combinations of CPU, DSP, ASIC and FPGA all connected via standard
+network, RapidIO, or backplane communication mechanisms.  Although
+many simulation environments and the models which they run are
+specific to a specific CPU core or maybe a System on Chip (SoC), these
+solutions fail to support the complete system.  Simics support for
+heterogeneous models and distributed host simulation processing
+provides the ability to model very complex systems while retaining a
+level of performance that is usable for real software development
+tasks.
+</p><p>
+A Simics system model may consist of tens, hundreds or thousands of
+smaller, independent models (CPU, platform, rack, etc.), any one of
+which can be created by an independent engineer and/or in different
+modeling languages. These smaller models, standing alone from a
+functional perspective, are connected together using Simics component
+system and scripting capability, or with one of Simics communications
+network infrastructure models (TCP/IP, MIL-STD-1553, RapidIO, etc.) in
+order to provide the full systems model and simulation.  This
+sub-element independence and flexibility allows a full system model to
+be created from disparate components and by leveraging in-house and
+3rd party expertise.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Simics-Team">1.4 Simics Team</a></h2>
+<p>
+
+</p><p>
+A typical customer’s Simics model team encompasses two key areas of
+knowledge.
+</p><p>
+</p><ol>
+<li>Functional model knowledge – possessing the ability to translate a
+  hardware block diagram and design documents into the DML language</li>
+
+<li>Simics scripting and API knowledge – possessing the ability to
+  connect smaller model components and devices as needed to form a
+  larger system using Simics command API, Python or C/C++</li>
+</ol>
+<p>
+
+</p><h2 class="jdocu"><a name="The-Modeling-Process">1.5 The Modeling Process</a></h2>
+<p>
+
+</p><p>
+The processes when virtualizing a new system roughly follows this
+outline:
+</p><p>
+</p><ol>
+
+<li>Create a list of devices and processors that comprise the system
+by collecting and reading design specifications, programmers reference
+manuals, and other relevant documents.</li>
+
+<li>Based on an analysis of the expected system usage, make a
+preliminary decision on the necessary level of abstraction necessary
+for each device. Can it be ignored, stubbed, or does it need
+to be fully implemented? (e.g., does the RTOS use the MMU? If not,
+don't model it.)</li>
+
+<li>Reuse existing device models and processor
+models from the Simics standard library. The library makes it faster to
+produce an initial model, since models for many common standard parts
+already exist. Reuse often means adapting an existing model of a
+similar device, which is much faster then writing a new model from
+scratch.</li>
+
+<li>Create initial models of any remaining devices using the DML tool.
+Initially, ignore as much functionality as possible to quickly get a
+working basic model, but write tests for the parts you do implement to
+make sure they behave as intended. This also helps catch errors which
+may get introduced when you add more parts to the model.</li>
+
+<li>Test the new system model with software that should run on the
+model, and add (or stub out) any missing functionality or devices 
+<em>required by the
+software</em>. For new devices where no software exist yet, create
+independent test cases.</li>
+
+<li>Iterate until the model runs the requisite software.</li>
+
+</ol>
+<p>
+This methodology is the classic iterative method, where you test the
+model early and often in order to explore the precise
+requirements. Historically, this had many names, from spiral model
+to agile methods or test-driven development.
+</p><p>
+The goal is to obtain a model which runs the required software, but
+which implements only the hardware functionality necessary to run the
+software and exercise its interesting behaviors. Over time,
+more functionality can be added to the model.
+</p><p>
+Often, it is possible to start using the new virtual system almost
+immediately after the project start. Even a basic system that does not
+yet contain all components can be used to begin software development. For
+example, a boot loader typically requires less virtual hardware to be
+in place than a full operating system port. Over time, more devices
+will be added to the virtual system, and it will evolve towards the
+final model.
+</p><p>
+With Simics's modular approach, it is always possible to go back and
+improve any element of the model.
+</p><p>
+</p><div class="figure" id="workflow_figure">
+
+<div style="text-align: center">
+<img alt="" src="workflow_fig.png">
+<div class="caption">Figure 2. The system modeling workflow.</div>
+</div>
+</div>
+
+<p>
+
+</p><h2 class="jdocu"><a name="Modeling-in-Simics">1.6 Modeling in Simics</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="Transaction-Level-Device-Modeling">1.6.1 Transaction-Level Device Modeling</a></h3>
+<p>
+
+</p><p>
+In Transaction-Level Device Modeling (TLM), each interaction with a device, typically, a processor reading
+from or writing to the registers of the devices, is handled at once:
+the device is presented with a request, computes the reply, and
+returns it in a single function call. This is far more efficient and
+easier to program than modeling the details of how bits and bytes are
+moved across interconnects, cycle-by-cycle.
+</p><p>
+In general, immediate non-pipelined completion of an operation is
+sufficient for modeling device's behavior. When the device driver
+expects a delay, that delay must be modeled, however the specific
+action or activity that leads to the delay does not need to be
+modeled. A classic example is a device that uses a hardware interrupt
+to signal command completion. The driver expects to be able to run
+code to prepare for the interrupt after writing the command to the
+device.  In a transactional model, the device model must include a
+delay between the completion of the command and the interrupt
+signaling the completion to the system. In this manner, the device
+local effects of a transaction are computed immediately, but
+notification of completion is deferred until the proper time has
+elapsed. 
+</p><p>
+Transaction-level models are typically implemented using the DML tool.
+DML provides a C-like programming language designed specifically for
+this type of modeling. Although device models can be written directly
+in C, using DML reduces development time and makes the code more
+readable and maintainable, and reduces the risk of making errors.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Memory-System-Modeling-and-Address-Maps">1.6.2 Memory System Modeling and Address Maps</a></h3>
+<p>
+
+</p><p>
+The memory map is a fundamental service provided by the Simics
+framework, and is a core component in enabling very fast
+simulation. The address space of a processor is modeled by Simics as a
+memory map. This approach allows the processor to directly access
+memories and devices without involving any explicit models of
+buses. This approach provides a functionally correct memory interface
+to the software, since software is unaware of <em>how</em> the data
+gets from the memory to the processor, and results in fast instruction
+execution and data access. With this approach, Simics's core memory
+handling is able to provide a virtual system with very fast read/write
+access to RAM and read access to FLASH and ROM without the requirement
+to involve any explicit device models.
+</p><p>
+Even when a Simics model includes a memory controller it is only used
+to manipulate, initialize or control the underlying activity of the
+Simics memory system and not as a component which is directly involved
+in accessing memory.
+</p><p>
+Simics also provides <b>image</b> objects to manage data for
+devices with large amounts of memory such as RAM, ROM, Flash, and
+disks. Image features include lazy allocation of host memory so that
+only data which is actually used is loaded. This allows Simics to
+simulate target memories which are larger than the physical memory of
+the host machine. Images also support incremental checkpoints of the
+system state.
+</p><p>
+For the simulation of PCI and similar interfaces where there are
+several levels of addressing being used, Simics uses subordinate
+memory maps cascaded from the primary memory map. This makes it easy
+to translate real-system mappings into the Simics system
+configuration. This method allows PCI models in Simics to support
+software probing and configuration, just like real PCI systems. The
+software setup is reflected in the PCI memory map, and device accesses
+are kept very efficient.
+</p><p>
+</p><div class="figure" id="mapping_figure">
+
+<div style="text-align: center">
+<img alt="" src="mapping_fig.png">
+<div class="caption">Figure 3. Mapping example.</div>
+</div>
+</div>
+
+<p>
+
+The illustration in figure <a class="reference" href="#mapping_figure">3</a> shows a
+simple example of how Simics uses memory spaces to map the processor's
+memory range to its immediately connected memory and devices, as well
+as across a PCI system to Ethernet and SCSI controllers. The PCI
+bridge will configure the PCI memory map when the software configures
+the PCI system, but will not be invoked in actual accesses to PCI
+devices.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Processor-Modeling">1.6.3 Processor Modeling</a></h3>
+<p>
+
+</p><p>
+The DML tool has been developed to support high performance and high
+level abstraction for all system devices with the exception of
+processors. When running simulation with functional models of devices
+the vast majority of host processing is used to simulate the target
+processors. As a result processor models (sometimes referred to as
+Instruction Set Simulators (ISS)) provided by Simics teams are highly
+optimized and tightly integrated into Simics. The result is that, at
+peak speeds, Simics can run billions of simulated instructions per
+second.
+</p><p>
+In order to run all the software of a system, the processor must
+implement both the user-level and supervisor-level interfaces of the
+processors, as well as the memory-management unit and various
+low-level machine registers. Anything that is readable or writable
+from the software side has to be modeled. Simics provides a large
+library of fast and functionally complete and correct processor models
+for most common embedded and desktop architectures including PowerPC,
+MIPS, ARM, SPARC, and x86.
+</p><p>
+For customers with pre-existing processor models or who desire to develop their
+own processor models, Simics provides an API that supports the integration of
+those models into the Simics framework. See the <em>Processor Model
+Integration Guide</em> for details.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Reusing-SystemC-and-Other-Types-of-Models">1.6.4 Reusing SystemC and Other Types of Models</a></h3>
+<p>
+
+</p><p>
+Recall that a full system model in Simics is comprised of multiple,
+smaller sub-models and that Simics provides concurrent support for
+multiple modeling languages.  Thus, Simics provides developers with
+the ability to run or
+reuse models that were not specifically written for
+Simics, such as <a name="SystemC">SystemC*</a> models, custom C/C++ models, etc. The
+most general way to integrate such a model into a Simics simulation is to write
+a wrapper for the other model to translate its APIs to the Simics
+framework's C/C++ API.
+</p><p>
+This approach can be used for almost any type of model, including models
+designed to run at similar abstraction levels as regular Simics models, or
+other types of models such as physics or hardware description language (HDL)
+models. If the abstraction level or APIs used by the foreign model is very
+different from that of Simics, it may require advanced techniques to do such an
+integration. Please contact your Simics provider to get more
+information about options and next steps.
+</p><p>
+To enable the integration of unmodified SystemC models into a Simics
+simulation, use the <i><a name="SystemC-Library">SystemC Library</a></i> add-on package. Consult
+the <em>SystemC Library Programming Guide</em> for details. Please contact
+your Simics provider to get access to the SystemC Library
+package.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Simics-High-Level-Modeling-Approach">1.6.5 Simics High Level Modeling Approach</a></h3>
+<p>
+
+</p><p>
+Simics models take a functional approach to modeling where entire
+transactions are handled in a single function.
+</p><ul>
+<li>Models should focus on the what instead of the how.</li>
+<ul>
+<li>Model details are optimized for the software that will run on
+  those models. Details that are irrelevant to software execution do
+  not need to be modeled.</li>
+<li>Explicit pre-defined device states can be easily provided to the
+  software.</li>
+</ul>
+<li>Models should be incrementally created to support different phases
+  of the product development life cycle.</li>
+<ul>
+<li>Initial model provides just enough emulation in order for the
+  firmware team to begin their efforts.</li>
+</ul>
+<li>Functional models can be quickly created and connected together
+  like building blocks.</li>
+<ul>
+<li>The system configuration is separate from device models.</li>
+</ul>
+</ul>
+<p>
+
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Preparing-for-System-Modeling">1.7 Preparing for System Modeling</a></h2>
+<p>
+
+</p><p>
+Before starting to build a system model, certain
+information should be collected. Since obtaining documentation can
+sometimes take time, it is a good idea to start looking for
+documentation and information as early as possible in a modeling
+project. Documents and information that Simics professionals have
+found to be particularly useful are:
+</p><p>
+</p><ul>
+
+  <li>The system documentation, including block diagrams, describing how
+  the components of the system are connected.</li>
+
+  <li>The Programmers Reference Manuals (PRMs) for each of the main chips,
+  devices, or functional blocks. The PRM goes by many names, such as
+  Programming Reference, User Reference Manual, Technical Reference Manual,
+  User Manual, and Reference Manual.</li>
+
+  <li>The source code of the software such as the BSP (Board Support Package),
+  device drivers, firmware, and operating systems, 
+  that manipulates the hardware, if it already exists.</li>
+
+</ul>
+<p>
+Once you have a basic understanding of the system, you should
+prioritize the list of components that need to be modeled. The
+following approach works well for many projects:
+</p><p>
+</p><ul>
+
+  <li>Identify the minimum set of components required to boot the
+  software. Having built a functional core model, it is easy to
+  incrementally add devices to the system. Note that the software
+  may have to be reconfigured to use only part of a
+  system. Alternatively identify an existing Simics reference board model
+  that is similar enough to serve as a baseline.</li>
+
+  <li>Identify the components where the most technical risk lie: both
+  risk in developing the model as well as in the software that
+  manipulates the component. This can be time risk or lack of
+  documentation, i.e., anything that can lead to missing the project
+  goals or deadlines.</li>
+
+  <li>Try to identify the components that have no initial impact on your
+  system, i.e., those that will not be manipulated or used by
+  software. They can either be modeled by a dummy model or not modeled at
+  all.</li>
+
+  <li>Try to identify the memories in the systems that can be handled
+  using Simics default memory modeling. This is done by reading the
+  documentation and identifying RAM, ROM, and flash regions in the
+  physical memory map.</li>
+
+</ul>
+<p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="introduction-and-preparation.html">I Introduction and Preparation</a>
+<a href="modeling-techniques.html">2 Modeling Techniques</a>
+</div>

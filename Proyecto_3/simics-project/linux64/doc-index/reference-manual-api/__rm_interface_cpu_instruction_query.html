@@ -1,0 +1,106 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>cpu_instruction_query</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_cpu_instruction_decoder.html">cpu_instruction_decoder</a>
+<a href="__rm_interface_cpu_instrumentation_subscribe.html">cpu_instrumentation_subscribe</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_cpu_instruction_query">cpu_instruction_query</a></h1>
+<p>
+
+<a name="cpu_instruction_query"></a><a name="cpu_instruction_query_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>cpu_instruction_query</code> interface can be used in functions
+   of the following types:
+<p>
+   </p><ul>
+   <li><code>cpu_instruction_cb_t</code></li>
+   <li><code>cpu_cached_instruction_cb_t</code></li>
+   <li><code>cpu_instruction_decoder_cb_t</code></li>
+   </ul>
+<p>
+   where an <code>instruction_handle_t</code> pointer is available. The
+   handle is only valid in the callback. The interface is used to request
+   information about the instruction being executed by the processor
+   <i>cpu</i>.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(cpu_instruction_query) {
+        logical_address_t (*logical_address)(
+                conf_object_t *cpu, instruction_handle_t *handle);
+        physical_address_t (*physical_address)(
+                conf_object_t *cpu, instruction_handle_t *handle);
+        cpu_bytes_t (*get_instruction_bytes)(
+                conf_object_t *cpu, instruction_handle_t *handle);
+};
+
+#define CPU_INSTRUCTION_QUERY_INTERFACE "cpu_instruction_query"
+</pre><p>
+</p><p>
+
+   The <b><i>logical_address</i></b> and <b><i>physical_address</i></b> is used to
+   get the different addresses of the instruction being executed.
+</p><p>
+   Note that if the instruction crosses a page boundary the last part of the
+   instruction will have a different mapping for the physical address than
+   returned by <b><i>physical_address</i></b>. To get hold of the physical address
+   on the second page, use the <b><i>logical_to_physical</i></b> method of the
+   <code>processor_info(_v2)</code> and provide the logical address of the
+   first byte on the second page.
+</p><p>
+   The <b><i>get_instruction_bytes</i></b> method is used to read the instruction
+   bytes. The returned data is of a cpu_bytes_t type that contains the data and
+   the size. The data member is only available during the execution of the
+   callback. The data cannot be changed. Corresponding type in Python is a
+   string of bytes.
+</p><p>
+   
+</p><pre class="jdocu_small">typedef struct cpu_bytes {
+        size_t size;
+#ifndef PYWRAP
+        const uint8 *data;
+#endif
+} cpu_bytes_t;</pre><p>
+
+</p><p>
+   Additional information can be read out with an architectural specific query
+   interface, see <code>x86_instruction_query</code> for details.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Threaded Context for all methods, but must be called from a callback
+   receiving a handle of type <code>instruction_handle_t</code>.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_cpu_instruction_decoder.html">cpu_instruction_decoder</a>
+<a href="__rm_interface_cpu_instrumentation_subscribe.html">cpu_instrumentation_subscribe</a>
+</div>

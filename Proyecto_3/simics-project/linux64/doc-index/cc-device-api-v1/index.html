@@ -1,0 +1,1059 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>C++ Device API v1</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>C++ Device API v1</h1>
+
+<p>
+
+
+
+</p><p>
+</p><h2 class="jdocu"><a name="Introduction">1 Introduction</a></h2>
+<p>
+
+</p><p>
+This document describes the Simics C++ Device API, which is a C++ layer built
+on top of the Simics C API. See the <em>Model Builder User's Guide</em> for
+more information about the C API. The C++ Device API is also used when
+integrating SystemC models into the Simics framework. See the <em>SystemC
+Library Programming Guide</em> for more information about Simics and SystemC
+models.
+</p><p>
+We recommend that you use DML for writing new simulation models, but it is
+often necessary to port existing simulations models from a different
+environment to Simics. If these are written in C++ or SystemC, you can use
+the <em>C++ Device API</em> to simplify the task. For SystemC there is further
+support described in the <em>SystemC Library Programming Guide</em>.
+</p><p>
+The Simics C++ Device API is a collection of C++ functions, data types, and
+templates that make it easier to connect a C++ simulation model to the Simics
+framework. The C++ Device API is implemented as a layer on top of the Simics C
+API and its source code can be found in
+<code>[simics]/src/devices/c++-api</code>. The
+detailed API documentation for the C++ API is available in the
+<em>Simics C++ Device API Reference Manual</em>.
+</p><p>
+While this application note aims to cover most aspects of porting C++ device
+models to the Simics APIs, it is assumed that you are familiar with the Simics
+device modeling concepts described in the <em>Model Builder User's
+Guide</em>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="The-Simics-C++-Device-API">2 The Simics C++ Device API</a></h2>
+<p>
+
+</p><p>
+The Simics C++ Device API is exported in the C++ namespace <code>simics</code>. To
+use it, your C++ files need to <code>#include
+&lt;simics/c++/device-api.h&gt;</code>.
+</p><p>
+You will also need to set <code>USE_CC_API := yes</code> in your
+module's <code>Makefile</code>. This makes sure the module can find the
+necessary C++ API header files and that the C++ API support files are linked
+into the module.
+</p><p>
+See the provided source code for the module <code>sample-device-c++</code> which
+shows how to use the API described in this document.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Preparations">3 Preparations</a></h2>
+<p>
+
+</p><p>
+Before you start to connect your C++ device to the Simics <a name="API">API</a>, you
+need to consider which the logical components of your <a name="device">device</a> model
+are, and how they are connected to each other and the rest of the simulation
+environment.
+</p><p>
+In Simics, device models are implemented as separate objects that are
+dynamically connected to each other using the Simics configuration system, and
+the objects communicate using explicitly requested interfaces. This is in
+contrast to C++, where the objects are often aggregated at compile time or by
+running compiled startup code and interfaces are resolved during compilation
+and linking. The <em>Model Builder User's Guide</em> has a more complete
+description of the Simics object system.
+</p><p>
+Just like in C++, the Simics <em><a name="objects">objects</a></em> are instances
+of <em><a name="classes">classes</a></em>, but the Simics object classes are dynamically
+defined by a Simics <em>module</em> by calling the Simics API to register
+callback functions to allocate and deallocate objects, and to
+add <em>attributes</em> to the classes.
+</p><p>
+</p><h3 class="jdocu"><a name="Designing-the-Classes">3.1 Designing the Classes</a></h3>
+<p>
+
+</p><p>
+The first step is to decide how the C++ model should appear within Simics. For
+a simple C++ model that models a small piece of hardware, it is probably
+nothing more than saying that the whole model should be a single Simics class.
+</p><p>
+But for a C++ model that consists of several components connected together, it
+is worth considering exposing it as several Simics classes. One reason for this
+is that it makes the Simics configuration more natural by creating a model that
+fits better with the Simics framework. And it allows for future separation of
+the model parts without major changes to the configurations.
+</p><p>
+Simply exposing the model as several classes will not automatically make the
+classes independent under the surface; they are still implemented as one
+conglomerate of C++ objects inside the implementation. To fully take advantage
+of the flexibility of the Simics configuration system, the device should be
+split it to discrete pieces that communicate only using Simics interfaces. By
+using well-known interfaces, the devices will become replaceable by newer
+implementations individually, and will allow experimentation in reconfiguration
+without having to recompile the model sources, or even having access to the
+source code.
+</p><p>
+This document focuses on creating Simics modules wrapping simple C++ models
+which define a single Simics class, but it easily extends to modules with
+several classes.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Defining-Attributes">3.2 Defining Attributes</a></h3>
+<p>
+
+<a name="attributes"></a>
+</p><p>
+A Simics object <em>attribute</em> is used to accomplish primarily
+two things. The first is to specify configuration parameters when initially
+creating the model instance. This includes connections to other configuration
+objects, model parameters such as frequencies and buffer sizes, but anything is
+possible.
+</p><p>
+The other main purpose of attributes is to allow saving and restoring the model
+state to support checkpointing and reversibility. This means that the complete
+state of the model needs to be available to the Simics configuration system as
+attribute values in a well-defined way.
+</p><p>
+A third use of attributes is for inspection of the state of the model. This is
+usually covered by the same attributes used for checkpointing. The
+configuration of the model may also use the checkpoint attributes to set an
+initial state.
+</p><p>
+</p><h4 class="jdocu"><a name="Configuration-Attributes">3.2.1 Configuration Attributes</a></h4>
+<p>
+
+</p><p>
+The configurable aspects of the C++ model should be available as configuration
+attributes. In some cases this will mean small changes to the C++
+implementation.
+</p><p>
+The most common configurable parameter is probably references to other Simics
+configuration objects, such as interrupt targets, memory spaces or DMA
+controllers. The model must never make any assumptions about what other objects
+appear in the system configuration. All rest-of-world information must be given
+in configuration parameters.
+</p><p>
+If the C++ model is written with compile-time configuration using the
+preprocessor, consider rewriting it to be dynamically reconfigurable. This will
+make the model more versatile, and potentially much more useful to a broader
+audience. The overhead of runtime checking of these kinds of configuration
+parameters is negligible in the vast majority of devices, especially when run
+in the context of full-system simulation.
+</p><p>
+For example, a parameter to decide which hardware revision to be compatible
+with may very well be a run-time parameter. Another option is adding
+configuration parameters that go outside the scope of the known hardware, by
+allowing buffer sizes and similar parameters to be reconfigured for
+experimental purposes.
+</p><p>
+
+</p><h4 class="jdocu"><a name="Model-State">3.2.2 Model State</a></h4>
+<p>
+
+</p><p>
+To support checkpointing, the model needs to be able to collect a full
+description of the current model state and it needs to be able to restore the
+model to the checkpointed state when the Simics object is created.
+</p><p>
+To support reversible execution, the requirements are stricter. The object
+needs to be able to restore from a checkpointed state at any time, even when
+there is a previous state that must be discarded.
+</p><p>
+An existing C++ model needs to be examined to find how its simulation state
+is defined. If the model is not written to handle checkpointing, it may need to
+be updated with a way to extract and restore the state.
+</p><p>
+The model state is made available to the Simics configuration system using a
+number of attributes. There should be one attribute for each piece of the model
+state. It is a good idea to design the set of attributes for the model in a way
+that allows some separation of the external, checkpointable representation of
+the state from the implementation details. Ideally, the checkpoint format
+should not need to be updated when the implementation is changed, including
+running on a different host platform, using different C++ classes, internal
+representation or other structural changes. As a minimum requirement the
+external representation must not depend on what compiler is used, or whether
+the model is built for a 32-bit or 64-bit environment. Preferably it should be
+fully portable between platforms regardless of what CPU architecture the
+simulation is running on. When changes to the checkpoint format is required,
+Simics provides ways to still be able to read old checkpoints with updated
+models.
+</p><p>
+For example, if the model models a device with 16 32-bit registers with
+different meaning, it is preferably represented as 16 integer-valued
+attributes, with names that match those used in the device programming manual.
+</p><p>
+An example of something to avoid doing is saving a copy of the memory
+representation of a C++ object. This is highly unportable and may break
+checkpoint compatibility just by recompiling the source with different compiler
+flags.
+</p><p>
+
+
+</p><h3 class="jdocu"><a name="Interfaces">3.3 Interfaces</a></h3>
+<p>
+
+</p><p>
+A Simics device model interacts with the rest of the simulation
+using <em>interfaces</em> and <em>ports</em>. Ports are named
+collections of one or more interfaces, and should be used when several
+interfaces together form one logical communication unit. There may be several
+ports implementing the same interface.
+</p><p>
+To be useful, the model should implement one or more interfaces. The most
+commonly implemented interface is called <code>io_memory</code> and is used to
+simulate memory transactions between processors, devices, and memory.
+</p><p>
+
+</p><p>
+Finally, the model needs to define a number of <em><a name="attributes2">attributes</a></em>
+to support configuration, checkpointing and other Simics features.
+</p><p>
+For more information about how to design a model for Simics, see
+  <em>Model Builder User's Guide</em>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Simics-Modules">4 Simics Modules</a></h2>
+<p>
+
+</p><p>
+The very first step of building a C++ simulation model for Simics is to create
+a Simics module. Usually, you put each Simics class in a model of its own. It
+is also possible to make several classes share one model, which may be
+necessary if the classes share code.
+</p><p>
+To create a C++ device model skeleton, you use <code>project-setup</code>:
+</p><dl><dt id="dt:windows"><b>Windows</b></dt><dd><pre class="jdocu_small">&gt; <b>cd <em>my-simics-project</em></b>
+project&gt; <b>bin\project-setup --c++-device my_cc_device</b></pre><p>
+</p></dd><dt id="dt:linux"><b>Linux</b></dt><dd><pre class="jdocu_small">$ <b>cd <em>my-simics-project</em></b>
+project$ <b>./bin/project-setup --c++-device my_cc_device</b></pre><p>
+</p></dd></dl><p>See the Build Environment chapter in the <em>Model Builder User's
+Guide</em> for details on how to set up a project and creating Simics model
+skeletons.
+</p><p>
+As a Simics module is loaded into Simics, it is initialized by running
+its <b><i>init_local()</i></b> function, which must use C linkage; i.e., it must
+be <code>extern "C"</code>.
+</p><p>
+This function is in particular responsible for registering all Simics classes
+with the Simics core, but you can add any other initialization code needed to
+that function.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Simics-Classes">5 Simics Classes</a></h2>
+<p>
+
+</p><p>
+A Simics class has a name, a short description and a documentation string. Its
+functionality is implemented in a number of configuration attributes and the
+interfaces (ports).
+</p><p>
+For each instance of a Simics class defined using the C++ API, there will be a
+C++ object created to correspond to that Simics configuration object. This C++
+object is an instance of a model-defined class that must inherit from
+the <code>simics::SimicsObject</code> class.
+</p><p>
+The C++ class must have a constructor taking a single parameter of
+type <code>SimicsObjectRef</code> which is passed on to
+the <code>SimicsObject</code> constructor.
+</p><p>
+ </p><pre class="jdocu_small">#include &lt;simics/c++/device-api.h&gt;
+
+class sample_instance : public simics::SimicsObject {
+  public:
+    explicit sample_instance(simics::SimicsObjectRef o)
+        : simics::SimicsObject(o) {
+        // initialize
+    }
+    // other members
+};
+ </pre><p>
+
+</p><p>
+This is the main object of the model instance, and everything goes through
+this. It should contain or reference anything that the model instance will
+need. Remember that there can be several instances of the model class, since
+the configuration allows the user to load multiple systems into the same
+simulation.
+</p><p>
+</p><h3 class="jdocu"><a name="Defining-the-Simics-Class">5.1 Defining the Simics Class</a></h3>
+<p>
+
+</p><p>
+A class is added to Simics by creating an instance of the template
+class <code>simics::ClassDef</code>. This object is usually created as a local
+variable in the <b><i>init_local</i></b> function.
+</p><p>
+</p><pre class="jdocu_small">extern "C" void
+init_local()
+{
+    simics::ClassDef&lt;sample_instance&gt;(
+        // Simics class name
+        "sample_device_auto_v1",
+        // short description
+        "sample C++ device",
+        // class documentation
+        "This is a sample Simics device written in C++.");
+} </pre><p>
+
+</p><p>
+The constructor parameters for <code>ClassDef</code> are the <i>class
+name</i>, the <i>long name</i> (or short description), and
+the <i>class documentation</i>. See the documentation
+of <b><i>SIM_register_class</i></b> for more information about these.
+</p><p>
+The template argument is the class that should be instantiated to represent the
+Simics object. It must inherit publically
+from <code>simics::SimicsObject</code> as noted above.
+</p><p>
+The registration of the Simics class is done in the destructor for
+the <code>ClassDef</code> class, so it is automatically performed when
+the object is no longer used. In the example above, the temporary
+object is immediately destroyed, and the class is registered. If the
+object is bound to a local variable, the registration will be
+performed at the end of <b><i>init_local</i></b>.
+</p><p>
+Sometimes it is necessary to know the Simics class that is being registered,
+and for that purpose the <b><i>register_with_simics</i></b> method can be called
+explicitly instead of letting the destructor do it. This method returns
+the <code>conf_class_t</code> pointer for the newly registered Simics class. If
+this pointer is null, it means that the registration has failed and
+the <b><i>init_local</i></b> function should exit without doing any more work. The
+error will afterwards be reported properly.
+</p><p>
+</p><pre class="jdocu_small">extern "C" void
+init_local()
+{
+    simics::ClassDef&lt;sample_instance&gt; def(
+        "sample_device_explicit_v1",
+        "sample C++ device",
+        "This is a sample Simics device written in C++.");
+
+    // register prematurely (not generally recommended)
+    conf_class_t *cls = def.register_with_simics();
+    if (!cls)
+        return;
+
+    // use cls to do any other registrations necessary
+} </pre><p>
+
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Attributes">6 Attributes</a></h2>
+<p>
+
+</p><p>
+The C++ API provides a number of ways to define the attributes,
+depending on which method of accessing the internal state is
+convenient. Generally, the attribute definition needs a way to extract
+the state from the C++ object, and then a way to convert this state
+to a Simics attribute value. These two parts are handled separately,
+and the ways to extract the state is described first.
+</p><p>
+The attribute is defined by creating an object of type <code>Attribute</code>
+and adding it to the <code>ClassDef</code> instance using the <code>&lt;&lt;</code>
+operator. The <code>Attribute</code> type is never instantiated directly.
+Instead, one of its subclasses is used, depending on how the state is
+accessed. They all share a few common features, and are created like this:
+</p><p>
+</p><pre class="jdocu_small">    def &lt;&lt; simics::<em>Some</em>Attribute&lt;sample_instance, <em>mapper</em>&gt;(
+        "value", "A value.", <em>...</em>)
+</pre><p>
+</p><p>
+The <em>mapper</em> is covered later. The first string is the attribute
+name, and must be unique for the class and stable between revisions of
+the model. The second string is the documentation. The rest of the
+arguments depend on which kind of attribute is defined.
+</p><p>
+</p><h3 class="jdocu"><a name="Mappers">6.1 Mappers</a></h3>
+<p>
+
+</p><p>
+A <em><a name="mapper">mapper</a></em> translates between C++ values and the data
+representation used by Simics attributes. Simics attribute values are stored in
+values of the type <code>attr_value_t</code>, and it can contain numbers (both
+integer and floating-point), booleans, strings, object references, binary data.
+It can also be a list of attribute values, or a dictionary mapping attribute
+values to other attribute values.
+</p><p>
+A mapper is a class that looks like this:
+</p><p>
+ </p><pre class="jdocu_small">class mapper {
+  public:
+    typedef T valuetype;
+    static const std::string type_string() { return "type"; }
+    static valuetype from_attr(const attr_value_t &amp;val);
+    static attr_value_t to_attr(const valuetype &amp;val);
+};
+</pre><p>
+
+</p><p>
+The type <em>T</em> is the C++ type that it can map to attribute values. An
+attribute definition that uses this mapper class will have functions or
+variable references using this type.
+</p><p>
+Type <em>type</em> string used by the <code>type_string</code> function is a Simics
+type string as defined by the API
+function <b><i>SIM_register_attribute</i></b>. For instance, for integer
+values it is <code>"i"</code>, and for strings it is <code>"s"</code>.
+</p><p>
+The include file <code>simics/c++/base/state_mapper.h</code> contains some
+predefined mapper classes.
+</p><p>
+</p><pre class="jdocu_small">    state_mapper&lt;char&gt;
+    state_mapper&lt;signed char&gt;
+    state_mapper&lt;unsigned char&gt;
+    state_mapper&lt;int&gt;
+    state_mapper&lt;unsigned&gt;
+    state_mapper&lt;long&gt;
+    state_mapper&lt;unsigned long&gt;
+    state_mapper&lt;long long&gt;
+    state_mapper&lt;unsigned long long&gt;
+    state_mapper&lt;bool&gt;
+    state_mapper&lt;double&gt;
+    conf_obj_state_mapper&lt;<em>allow_null</em>&gt;
+    string_state_mapper
+    attr_value_state_mapper
+</pre><p>
+</p><p>
+Some of them are of the form <code>state_mapper&lt;</code><em>T</em><code>&gt;</code>, which is
+mostly for convenience, but it also means that it can be used with a T that is
+a synonym for one of the types in the defined,
+so <code>state_mapper&lt;uint32&gt;</code> is also possible.
+</p><p>
+A model may define its own mappers, and they can be arbitrarily complicated,
+for instance mapping bit-level internal state to symbolic tables in the
+external representation.
+</p><p>
+For brevity, the examples below assume the following typedef:
+
+ </p><pre class="jdocu_small">typedef simics::state_mapper&lt;int&gt; int_mapper;
+</pre><p>
+</p><p>
+ 
+
+</p><h3 class="jdocu"><a name="SimpleAttribute">6.2 SimpleAttribute</a></h3>
+<p>
+
+</p><p>
+The <code>simics::SimpleAttribute</code> class is used when the state is
+represented directly as a public member variable in the C++ class used in
+the <code>ClassDef</code> declaration. The third parameter in the constructor
+is a member pointer to the state variable.
+</p><p>
+ </p><pre class="jdocu_small">class sample_instance : public simics::SimicsObject {
+  public:
+    explicit sample_instance(simics::SimicsObjectRef o)
+        : simics::SimicsObject(o), value(0) { }
+
+    int value;
+};
+                        //...
+extern "C" void
+init_local()
+{
+    simics::ClassDef&lt;sample_instance&gt;("sample_simple_attrib_v1",
+                                      "simple attribute", "...")
+        &lt;&lt; simics::SimpleAttribute&lt;sample_instance, int_mapper&gt;(
+            "value", "A value.", &amp;sample_instance::value);
+} </pre><p>
+
+</p><p>
+This example uses <code>&amp;sample_instance::value</code> to tell the attribute
+definition where the state variable is stored, given an instance
+of <code>sample_instance</code>.
+</p><p>
+For most models, the state variables are not as easily accessible, so one of
+the following attribute definition classes needs to be used instead.
+</p><p>
+
+</p><h3 class="jdocu"><a name="GetSetAttribute">6.3 GetSetAttribute</a></h3>
+<p>
+
+</p><p>
+The <code>simics::GetSetAttribute</code> class is used when the top-level
+object has methods to get and set the state variables that correspond to the
+attribute. The third and fourth parameters in the constructor are pointers to
+the member functions to get and set the state.
+</p><p>
+</p><pre class="jdocu_small">#include &lt;simics/c++/device-api.h&gt;
+#include &lt;simics/c++/base/state_mapper.h&gt;
+
+class sample_get_set_attrib : public simics::SimicsObject {
+  public:
+    explicit sample_get_set_attrib(simics::SimicsObjectRef o)
+        : simics::SimicsObject(o), value(0) { }
+
+    int get_value() const;
+    simics::SetResult set_value(const int &amp;v);
+
+  private:
+    int value;
+};
+
+// ...
+
+int
+sample_get_set_attrib::get_value() const
+{
+    return value;
+}
+
+simics::SetResult sample_get_set_attrib::set_value(const int &amp;v)
+{
+    if (v &lt; 256) {
+        value = v;
+        return simics::SetResult::no_error();
+    } else {
+        return simics::SetResult::error("Too large value");
+    }
+}
+
+extern "C" void
+init_local()
+{
+    simics::ClassDef&lt;sample_get_set_attrib&gt;(
+            "sample_get_set_attrib_v1",
+            "sample get/set attribute device",
+            "N/A")
+        &lt;&lt; simics::GetSetAttribute&lt;sample_get_set_attrib,
+        simics::state_mapper&lt;int&gt; &gt;(
+            "value", "A value.",
+            &amp;sample_get_set_attrib::get_value,
+            &amp;sample_get_set_attrib::set_value);
+}
+</pre><p>
+
+</p><p>
+By wrapping the value with functions, it is also possible to add extra checks.
+</p><p>
+The getter function simply returns the value. The return type must match the
+type defined by the mapper. The setter function takes a reference to a value,
+and can accept or reject it by returning
+either <code>simics::SetResult::no_error()</code>
+or <code>simics::SetResult::error(</code><em>msg</em><code>)</code>, where <em>msg</em> is a short
+message describing why it was rejected.
+</p><p>
+If the getter is <code>0</code>, it means that the attribute is write-only. If the
+setter is <code>0</code>, it means that it is read-only. If either is <code>0</code>,
+the attribute cannot be checkpointed and must be marked as such by giving the
+attribute flag <code>Sim_Attr_Pseudo</code>.
+</p><p>
+The <code>GetSetAttribute</code> template class also has optional third and
+fourth template parameters. If a data type is given as the third parameter,
+then the constructor, and the setter and getter functions will take an extra
+parameter which is a pointer to that data type. For example, this example uses
+a single pair of setter/getter functions for several flag attributes.
+</p><pre class="jdocu_small">class sample_get_set_flag : public simics::SimicsObject {
+  public:
+    explicit sample_get_set_flag(simics::SimicsObjectRef o)
+        : simics::SimicsObject(o), flags(32) { }
+
+    bool get_flag(int *idx) const;
+    simics::SetResult set_flag(const bool &amp;v, int *idx);
+
+  private:
+    std::vector&lt;bool&gt; flags;
+};
+
+bool
+sample_get_set_flag::get_flag(int *idx) const
+{
+    return flags.at(*idx);
+}
+
+simics::SetResult
+sample_get_set_flag::set_flag(const bool &amp;v, int *idx)
+{
+    flags.at(*idx) = v;
+    return simics::SetResult::no_error();
+}
+
+extern "C" void
+init_local()
+{
+    simics::ClassDef&lt;sample_get_set_flag&gt; def(
+            "sample_get_set_flag",
+            "sample get/set flag device",
+            "N/A");
+
+    def &lt;&lt; simics::GetSetAttribute&lt;sample_get_set_flag,
+        simics::state_mapper&lt;bool&gt;,int&gt;(
+            "flag0", "The first flag.",
+            &amp;sample_get_set_flag::get_flag,
+            &amp;sample_get_set_flag::set_flag,
+            new int(0))
+        &lt;&lt; simics::GetSetAttribute&lt;sample_get_set_flag,
+        simics::state_mapper&lt;bool&gt;,int&gt;(
+            "flag1", "The second flag.",
+            &amp;sample_get_set_flag::get_flag,
+            &amp;sample_get_set_flag::set_flag,
+            new int(1));
+}
+</pre><p>
+
+</p><p>
+The optional fourth template parameter is a function that takes the data pointer
+and destroys it when it is no longer needed. The default is to <code>delete</code>
+it.
+</p><p>
+
+</p><h3 class="jdocu"><a name="LocateAttribute">6.4 LocateAttribute</a></h3>
+<p>
+
+</p><p>
+The <code>simics::LocateAttribute</code> class is used when there is a state
+variable that contains the state to export through the attribute, but it isn't
+as readily available as when <code>SimpleAttribute</code> is used. Instead of a
+member pointer to the variable, a function is given that returns a reference to
+the state variable.
+</p><p>
+This is for instance useful when the state variable is in another object that
+is referenced from the main object.
+</p><pre class="jdocu_small">struct model {
+    int value;
+};
+
+class sample_locate_attrib : public simics::SimicsObject {
+  public:
+    explicit sample_locate_attrib(simics::SimicsObjectRef o)
+        : simics::SimicsObject(o), m() { }
+
+    model m;
+};
+
+int &amp;locate_value(sample_locate_attrib &amp;obj) {
+    return obj.m.value;
+}
+
+extern "C" void
+init_local()
+{
+    simics::ClassDef&lt;sample_locate_attrib&gt;(
+            "sample_locate_attrib",
+            "sample locate attribute device",
+            "N/A")
+        &lt;&lt; simics::LocateAttribute&lt;sample_locate_attrib, int_mapper&gt;(
+            "value", "A value.", locate_value);
+}
+</pre><p>
+
+</p><p>
+In this example, the <code>locate_value</code> chases the reference <code>m</code> to
+find the variable. It could call instance methods or do anything to achieve the
+same results. The important thing is that it needs to return a reference to an
+object that can be read from and written to.
+</p><p>
+
+</p><h3 class="jdocu"><a name="ProxyAttribute">6.5 ProxyAttribute</a></h3>
+<p>
+
+</p><p>
+The <code>simics::ProxyAttribute</code> class is the most versatile, and
+uses getter and setter functions. These functions are not member functions, but
+instead get the main object as a function parameter. Other than that, it works
+in a very similar way to <code>GetSetAttribute</code>.
+</p><pre class="jdocu_small">class sample_proxy_attrib : public simics::SimicsObject {
+  public:
+    explicit sample_proxy_attrib(simics::SimicsObjectRef o)
+        : simics::SimicsObject(o), value(0) { }
+
+    void set_hidden_value(int v) { value = v; }
+    const int &amp;get_hidden_value() const { return value; }
+
+  private:
+    int value;
+};
+
+// ...
+
+int get_value(const sample_proxy_attrib &amp;obj) {
+    return -obj.get_hidden_value();
+}
+
+simics::SetResult set_value(sample_proxy_attrib &amp;obj, const int &amp;v) {
+    obj.set_hidden_value(-v);
+    return simics::SetResult::no_error();
+}
+
+extern "C" void
+init_local()
+{
+    simics::ClassDef&lt;sample_proxy_attrib&gt;(
+            "sample_proxy_attrib_v1",
+            "sample proxy attributes device",
+            "N/A")
+        &lt;&lt; simics::ProxyAttribute&lt;sample_proxy_attrib, int_mapper&gt;(
+            "value", "A value.", get_value, set_value);
+}
+</pre><p>
+
+</p><p>
+By wrapping the value with functions, it is also possible to add extra checks
+and transformations. In the example above, the external representation is the
+negation of the value stored internally.
+</p><p>
+The getter function simply returns the value. The return type must match the
+type defined by the mapper. The setter function takes a reference to a value,
+and can accept or reject it by returning
+either <code>simics::SetResult::no_error()</code>
+or <code>simics::SetResult::error(</code><em>msg</em><code>)</code>, where <em>msg</em> is a short
+message describing why it was rejected.
+</p><p>
+If the getter is <code>0</code>, it means that the attribute is write-only. If the
+setter is <code>0</code>, it means that it is read-only. If either is <code>0</code>,
+the attribute cannot be checkpointed and must be marked as such by giving the
+attribute flag <code>Sim_Attr_Pseudo</code>.
+</p><p>
+The <code>ProxyAttribute</code> template class has optional third
+template parameters that adds a data pointer to the constructor and
+passes the data pointer to the getter and setter functions, and an
+optional fourth template parameter that gives a delete function. See
+the description of <code>GetSetAttribute</code> for more information.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Attribute-Flags">6.6 Attribute Flags</a></h3>
+<p>
+
+</p><p>
+All attribute classes have constructors where an extra parameter of
+type <code>attr_attr_t</code> has been added. This can be used to indicate that
+an attribute is required (<code>Sim_Attr_Required</code>) or that it should not be
+part of checkpoints (<code>Sim_Attr_Pseudo</code>).
+</p><p>
+
+</p><h3 class="jdocu"><a name="Creating-Custom-Mappers">6.7 Creating Custom Mappers</a></h3>
+<p>
+  
+</p><p>
+  As mentioned before, a mapper translates between C++ values and the
+  data representation used by Simics attributes. Predefined mappers
+  exists for simple types, like integers and floating point values. For
+  more complex types it is possible to create custom mappers. For
+  example, it may be desirable to map a list of integers to a vector
+  of integers. All that is required to perform this mapping is to
+  create a new mapper type and to implement the various functions as
+  shown in the example below:
+  
+ </p><pre class="jdocu_small">#include &lt;simics/c++/device-api.h&gt;
+#include &lt;vector&gt;
+
+class vect_mapper {
+  public:
+    typedef std::vector&lt;int&gt; valuetype;
+    static const std::string type_string() { return "[i*]"; }
+    static valuetype from_attr(const attr_value_t &amp;val);
+    static attr_value_t to_attr(const valuetype &amp;val);
+};
+
+vect_mapper::valuetype
+vect_mapper::from_attr(const attr_value_t &amp;val)
+{
+    vect_mapper::valuetype out_val;
+    out_val.reserve(SIM_attr_list_size(val));
+    for (unsigned n = 0; n &lt; SIM_attr_list_size(val); ++n)
+        out_val.push_back(SIM_attr_integer(SIM_attr_list_item(val, n)));
+
+    return out_val;
+}
+
+attr_value_t
+vect_mapper::to_attr(const vect_mapper::valuetype &amp;val)
+{
+    attr_value_t out_val = SIM_alloc_attr_list(val.size());
+    for (unsigned n = 0; n &lt; val.size(); ++n)
+        SIM_attr_list_set_item(&amp;out_val, n, SIM_make_attr_int64(val[n]));
+
+    return out_val;
+}
+
+class sample_instance : public simics::SimicsObject {
+  public:
+    explicit sample_instance(simics::SimicsObjectRef o)
+        : simics::SimicsObject(o), values() { }
+
+    std::vector&lt;int&gt; values;
+};
+                        //...
+extern "C" void
+init_local()
+{
+    simics::ClassDef&lt;sample_instance&gt;("sample_state_mapper",
+                                      "sample state mapper", "...")
+        &lt;&lt; simics::SimpleAttribute&lt;sample_instance, vect_mapper&gt;(
+            "value", "A value.", &amp;sample_instance::values);
+} </pre><p>
+
+
+
+</p><h2 class="jdocu"><a name="Ports-and-Interfaces">7 Ports and Interfaces</a></h2>
+<p>
+
+</p><p>
+To implement an interface, either as part of a port or not, there
+are four steps needed:
+</p><dl><dt id="dt:interface-declarations"><b>Interface declarations</b></dt><dd>Declare C++ methods that implement the interface and declare an interface.
+  </dd><dt id="dt:interface-definition"><b>Interface definition</b></dt><dd>Define a C++ preprocessor macro to tie the interface above to an object.
+  </dd><dt id="dt:interface-method-implementation"><b>Interface method implementation</b></dt><dd>Implement the declared C++ methods for the interface.
+  </dd><dt id="dt:interface-registration"><b>Interface registration</b></dt><dd>Register the interfaces witht the <code>ClassDef</code> object.
+  </dd></dl><p></p><h3 class="jdocu"><a name="Interface-declarations">7.1 Interface declarations</a></h3>
+<p>Your instance class needs to define C++ methods that implement the
+    different methods in the interface, as well as an interface
+    declaration.
+</p><p>
+    For example:
+  </p><pre class="jdocu_small">class sample_interface : public simics::SimicsObject {
+  public:
+    explicit sample_interface(simics::SimicsObjectRef o)
+        : simics::SimicsObject(o) { }
+
+    // interface method declarations
+    int map(addr_space_t memory_or_io, map_info_t map_info);
+    exception_type_t operation(generic_transaction_t *mem_op,
+                               map_info_t map_info);
+    // interface declaration
+    typedef simics::io_memory_interface&lt;
+        sample_interface,
+        &amp;sample_interface::map,
+        &amp;sample_interface::operation&gt; io_memory_iface;
+};
+</pre><p>
+
+</p><p>
+    The interface method declarations are straight-forward. They
+    should have the same signature as the interface method has in
+    the <em>Simics Reference Manual</em> (or as shown with the
+    Simics command <b>api-help</b>), except that the first C
+    argument of type <code>conf_object_t *</code> is left out, as it
+    corresponds to the C++ class instance.
+</p><p>
+    The interface declaration consists of a typedef of a template
+    class (<code>simics::io_memory_interface</code> in the example). The
+    name of the class is the name of the interface, suffixed
+    with <code>_interface</code>. The template arguments are the instance
+    class followed by the interface methods in the order they appear
+    in the interface definition. The typedef name can be anything and
+    will be used later to refer to this declaration.
+
+</p><h3 class="jdocu"><a name="Interface-definition">7.2 Interface definition</a></h3>
+<p>
+
+</p><p>
+    The interface definition is a C++ preprocessor macro call that
+    ties the interface declaration above to an object that is used to
+    register the interface with the model's <code>ClassDef</code>:
+  </p><pre class="jdocu_small">DEFINE_IO_MEMORY_INTERFACE(dev_io_memory, sample_interface::io_memory_iface);
+</pre><p>
+
+</p><p>
+    This creates a <i>dev_io_memory</i> object tied to the
+    interface defined by the <i>io_memory_iface</i> typedef in the
+    instance class.
+</p><p>
+    The macro corresponding to the <i>name</i> interface is
+    called <code>DEFINE_</code><i>NAME</i><code>_INTERFACE</code>.
+
+</p><h3 class="jdocu"><a name="Interface-method-implementation">7.3 Interface method implementation</a></h3>
+<p>
+
+</p><p>
+    The interface methods are normal C++ methods:
+  </p><pre class="jdocu_small">exception_type_t sample_interface::operation(
+    generic_transaction_t *mop,
+    map_info_t info)
+{
+    // implement behavior here
+    return Sim_PE_No_Exception;
+}
+</pre><p>
+
+
+</p><h3 class="jdocu"><a name="Interface-registration">7.4 Interface registration</a></h3>
+<p>
+
+</p><p>
+    Interfaces are registered with the <code>ClassDef</code> object
+    using the <code>&lt;&lt;</code> operator, just like attributes:
+  </p><pre class="jdocu_small">extern "C" void
+init_local()
+{
+    simics::ClassDef&lt;sample_interface&gt;("sample_interface_v1",
+                                       "sample interface", "N/A")
+        &lt;&lt; dev_io_memory;
+}
+</pre><p>
+
+    Here, <i>dev_io_memory</i> is the object defined using
+    the <code>DEFINE_IO_MEMORY_INTERFACE</code> macro above.
+
+</p><h3 class="jdocu"><a name="User-defined-interface">7.5 User defined interface</a></h3>
+<p>
+ 
+</p><p>
+The C++ bindings for interfaces are only available for standard Simics
+interfaces. If there is a need to support additional interfaces the
+C-API has to be used. Refer to the <em>Model Builder User's
+Guide</em> and the <em>API Reference Manual</em> for
+more information about defining and calling user defined
+interfaces. The following example shows how an "example" interface can be
+defined and redirected to a method in the <b>SimicsObject</b>
+object.
+ </p><pre class="jdocu_small">class sample_user_interface : public simics::SimicsObject {
+  public:
+    explicit sample_user_interface(simics::SimicsObjectRef o)
+        : simics::SimicsObject(o) { }
+
+    // Interface method declarations
+    void iface_callback() {
+        // TODO: implement
+    }
+};
+
+extern "C" {
+// Interface definition
+SIM_INTERFACE(example) {
+    void (*iface_fun)(conf_object_t*);
+};
+
+// Interface callback to convert call to C++ object method
+static void
+iface_callback(conf_object_t *o)
+{
+    dynamic_cast&lt;sample_user_interface&amp;&gt;(
+        simics::SimicsObjectRef(o).as_simics_object()).iface_callback();
+}
+
+void
+init_local()
+{
+    simics::ClassDef&lt;sample_user_interface&gt; dev(
+            "sample_user_interface_v1",
+            "sample user interface",
+            "N/A");
+
+    conf_class_t *cls = dev.register_with_simics();
+    static example_interface_t example;
+    example.iface_fun = iface_callback;
+    SIM_register_interface(cls, "example", &amp;example);
+}
+}
+</pre><p>
+
+
+</p><h3 class="jdocu"><a name="Port-registration">7.6 Port registration</a></h3>
+<p>
+
+</p><p>
+    Ports are registered by first creating an instance of
+    the <code>simics::Port</code> class, which in turn is registered
+    with the <code>ClassDef</code> object using the <code>&lt;&lt;</code>
+    operator. The <code>Port</code> constructor takes one argument,
+    the port's name. You also add interfaces to the port
+    object using the <code>&lt;&lt;</code> operator:
+  </p><pre class="jdocu_small">    simics::Port bus_a_port("BUS_A");
+    bus_a_port &lt;&lt; bus_a_io_memory;
+
+    simics::ClassDef&lt;sample_interface&gt;("sample_port_interface",
+                                       "sample interface with port",
+                                       "N/A")
+        &lt;&lt; bus_a_port;
+</pre><p>
+
+    Here, <i>bus_a_io_memory</i> is an interface definition object.
+
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Notices-amp-Disclaimers">8 Notices &amp; Disclaimers</a></h2>
+<p>
+
+</p><p>
+</p><div class="jdocu_copyright">
+<p>
+No product or component can be absolutely secure.
+</p><p>
+Intel technologies may require enabled hardware, software or
+service activation.
+</p><p>
+Your costs and results may vary.
+</p><p>
+Intel does not control or audit third-party data. You should
+consult other sources to evaluate accuracy.
+</p><p>
+You may not use or facilitate the use of this document in
+connection with any infringement or other legal analysis concerning
+Intel products described herein. You agree to grant Intel a
+non-exclusive, royalty-free license to any patent claim thereafter
+drafted which includes subject matter disclosed herein.
+</p><p>
+No license (express or implied, by estoppel or otherwise) to any
+intellectual property rights is granted by this document.
+</p><p>
+All product plans and roadmaps are subject to change without
+notice.
+</p><p>
+The products described may contain design defects or errors known
+as errata which may cause the product to deviate from published
+specifications. Current characterized errata are available on
+request.
+</p><p>
+Intel disclaims all express and implied warranties, including
+without limitation, the implied warranties of merchantability, fitness
+for a particular purpose, and non-infringement, as well as any
+warranty arising from course of performance, course of dealing, or
+usage in trade.
+</p><p>
+© 2010–2023 Intel Corporation. Intel, the Intel logo,
+and other Intel marks are trademarks of Intel Corporation or its
+subsidiaries. Other names and brands may be claimed as the property of
+others.
+</p><p>
+
+
+</p></div>
+<p>
+
+</p>
+<div class="chain">
+<span></span>
+</div>

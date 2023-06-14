@@ -1,0 +1,277 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10.1 Probes Command Set</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="probes.html">10 Probes</a>
+<a href="probe-monitor.html">10.2 Probe Monitor</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="probes.html">10 Probes</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Probes-Command-Set">10.1 Probes Command Set</a></h1>
+<p>
+  
+  To look at the available probes, the probe-feature must first be
+  enabled, which can be done with the <b>enable-probes</b>
+  command.  When the feature is enabled all probes in the system is
+  detected and/or implicitly created. Also, any further creation or
+  deletion of Simics object is monitored, keeping the list of
+  known probes in sync with the simulated system.
+</p><p>
+  When the probes framework is enabled, a singleton object
+  called <code>probes</code> is created, which holds all commands to
+  examine probes. For example the <b>probes.list</b> command
+  gives an overview of the probes that is available in the system, and
+  the amount of objects for each probe name.
+  See figure <a class="reference" href="#probe-example1">22</a> for some examples.
+</p><p>
+  </p><div class="figure" id="probe-example1">
+
+    <pre class="jdocu_small">$&gt; <b>./simics targets/qsp-x86/firststeps.simics num_cores=2</b>
+simics&gt; <b>enable-probes</b>
+simics&gt; <b>probes.list</b>
+┌─────────┬──────────────────────────────────┬─────────────────────┬───┬──────────────────────────────────────────────┐
+│  Row #  │            Probe Name            │    Display Name     │Num│                 Description                  │
+├─────────┼──────────────────────────────────┼─────────────────────┼───┼──────────────────────────────────────────────┤
+│        1│cell.cycles                       │Cycles               │  1│Total number of expired cycles in all         │
+│         │                                  │                     │   │processor in a specific cell                  │
+├─────────┼──────────────────────────────────┼─────────────────────┼───┼──────────────────────────────────────────────┤
+│        2│cell.esteps                       │Esteps               │  1│Total number of executed steps (~instructions)│
+│         │                                  │                     │   │on all processor in a specific cell, ignoring │
+│         │                                  │                     │   │any halt steps                                │
+├─────────┼──────────────────────────────────┼─────────────────────┼───┼──────────────────────────────────────────────┤
+│        3│cell.exec_mode.hypersim_percent   │HYP%                 │  1│Percent of instructions executed in hypersim  │
+│         │                                  │                     │   │mode in a specific cell                       │
+├─────────┼──────────────────────────────────┼─────────────────────┼───┼──────────────────────────────────────────────┤
+│        4│cell.exec_mode.hypersim_steps     │Hypersim steps       │  1│Total number of instruction executed in       │
+│         │                                  │                     │   │hypersim mode for all processors in a specific│
+│         │                                  │                     │   │cell                                          │
+├─────────┼──────────────────────────────────┼─────────────────────┼───┼──────────────────────────────────────────────┤
+...
+simics&gt; <b>probes.list substr = cpu. -active</b>
+┌─────┬────────────────────────────┬─────────────────────┬───┬────────────────────────────────────────────────────┐
+│Row #│         Probe Name         │    Display Name     │Num│                    Description                     │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│    1│cpu.cycles                  │Cycles               │  2│Number of cycles expired on this processor          │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│    2│cpu.disabled_reason         │Disabled reason      │  2│Reports the current reason why a processor is not   │
+│     │                            │                     │   │running instructions (as a string)                  │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│    3│cpu.esteps                  │Esteps               │  2│Number of executed steps (~instructions) on this    │
+│     │                            │                     │   │processor, ignoring any halt steps                  │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│    4│cpu.exec_mode.hypersim_steps│Hypersim steps       │  2│Number of steps executed in hypersim execution mode.│
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│    5│cpu.picoseconds             │picoseconds          │  2│Number of picoseconds expired on this processor     │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│    6│cpu.steps                   │Steps                │  2│Number of steps (~instructions) consumed by this    │
+│     │                            │                     │   │processor, including any halt steps                 │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│    7│cpu.time.virtual            │Virtual-Time         │  2│The virtual time of this 'cpu'                      │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│    8│cpu.vmp.vmexits.histogram   │vmp.vmexits.histogram│  2│Histogram of vmexits                                │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│    9│cpu.vmp.vmexits.total       │vmp.vmexits.total    │  2│Total number of vmexits                             │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│   10│cpu.vmp.vmrets.total        │vmp.vmrets.total     │  2│Total number of vmrets                              │
+├─────┼────────────────────────────┼─────────────────────┼───┼────────────────────────────────────────────────────┤
+│Sum  │                            │                     │ 20│                                                    │
+└─────┴────────────────────────────┴─────────────────────┴───┴────────────────────────────────────────────────────┘
+simics&gt; <b>probes.list -objects substr = cpu.steps</b>
+┌─────┬──────────┬────────────┬───┬────────────────────────────────────────┬─────────────────────────────────────────┐
+│Row #│Probe Name│Display Name│Num│                Objects                 │               Description               │
+├─────┼──────────┼────────────┼───┼────────────────────────────────────────┼─────────────────────────────────────────┤
+│    1│cpu.steps │Steps       │  2│board.mb.cpu0.core[0][0], board.mb.cpu0.│Number of steps (~instructions) consumed │
+│     │          │            │   │core[1][0]                              │by this processor, including any halt    │
+│     │          │            │   │                                        │steps                                    │
+├─────┼──────────┼────────────┼───┼────────────────────────────────────────┼─────────────────────────────────────────┤
+│Sum  │          │            │  2│                                        │                                         │
+└─────┴──────────┴────────────┴───┴────────────────────────────────────────┴─────────────────────────────────────────┘
+</pre><p>
+</p><div class="caption">Figure 22. Example of probe.list commands</div>
+</div>
+  
+<p>
+  
+  The <b>probes.list-details</b> list further information on
+  each individual probes, including the different objects where
+  the probes are located and their current values.
+  See figure <a class="reference" href="#probe-example2">23</a> for some examples.
+  </p><p>
+  </p><div class="figure" id="probe-example2">
+
+    <pre class="jdocu_small">
+simics&gt; <b>disable-vmp</b>
+simics&gt; <b>run-seconds 1</b>
+simics&gt; <b>probes.list-details substr = cpu. -active</b>
+┌─────┬────────────────────────────┬───────────────────────────┬────────────────────────┬───────────────┐
+│Row #│         Probe Name         │        Categories         │     Source Object      │Formatted Value│
+├─────┼────────────────────────────┼───────────────────────────┼────────────────────────┼───────────────┤
+│    1│cpu.time.virtual            │cpu time                   │board.mb.cpu0.core[0][0]│    00:00:01.00│
+│    2│cpu.disabled_reason         │cpu disabled               │board.mb.cpu0.core[0][0]│               │
+│    3│cpu.esteps                  │cpu instructions steps     │board.mb.cpu0.core[0][0]│      588903799│
+│    4│cpu.exec_mode.hypersim_steps│hypersim performance steps │board.mb.cpu0.core[0][0]│      163570386│
+│    5│cpu.steps                   │cpu instructions steps     │board.mb.cpu0.core[0][0]│      588903799│
+│    6│cpu.vmp.vmexits.total       │vmp performance            │board.mb.cpu0.core[0][0]│              0│
+│    7│cpu.picoseconds             │cpu cycles time picoseconds│board.mb.cpu0.core[0][0]│  1000000000000│
+│    8│cpu.cycles                  │cpu cycles time            │board.mb.cpu0.core[0][0]│     2000000000│
+│    9│cpu.vmp.vmrets.total        │vmp performance            │board.mb.cpu0.core[0][0]│              0│
+│   10│cpu.vmp.vmexits.histogram   │vmp performance            │board.mb.cpu0.core[0][0]│               │
+│   11│cpu.steps                   │cpu instructions steps     │board.mb.cpu0.core[1][0]│      193224419│
+│   12│cpu.esteps                  │cpu instructions steps     │board.mb.cpu0.core[1][0]│      193224419│
+│   13│cpu.vmp.vmrets.total        │vmp performance            │board.mb.cpu0.core[1][0]│              0│
+│   14│cpu.picoseconds             │cpu cycles time picoseconds│board.mb.cpu0.core[1][0]│  1000000000000│
+│   15│cpu.cycles                  │cpu cycles time            │board.mb.cpu0.core[1][0]│     2000000000│
+│   16│cpu.time.virtual            │cpu time                   │board.mb.cpu0.core[1][0]│    00:00:01.00│
+│   17│cpu.disabled_reason         │cpu disabled               │board.mb.cpu0.core[1][0]│            HLT│
+│   18│cpu.exec_mode.hypersim_steps│hypersim performance steps │board.mb.cpu0.core[1][0]│      192780981│
+│   19│cpu.vmp.vmexits.total       │vmp performance            │board.mb.cpu0.core[1][0]│              0│
+│   20│cpu.vmp.vmexits.histogram   │vmp performance            │board.mb.cpu0.core[1][0]│               │
+└─────┴────────────────────────────┴───────────────────────────┴────────────────────────┴───────────────┘
+simics&gt; <b>probes.list-details categories = time -active</b>
+┌─────┬───────────────────┬───────────────────────────┬────────────────────────┬───────────────┐
+│Row #│    Probe Name     │        Categories         │     Source Object      │Formatted Value│
+├─────┼───────────────────┼───────────────────────────┼────────────────────────┼───────────────┤
+│    1│host.time.wallclock│host time                  │-                       │    00:05:10.43│
+│    2│sim.time.virtual   │time                       │-                       │    00:00:01.00│
+│    3│cpu.time.virtual   │cpu time                   │board.mb.cpu0.core[0][0]│    00:00:01.00│
+│    4│cpu.picoseconds    │cpu cycles time picoseconds│board.mb.cpu0.core[0][0]│  1000000000000│
+│    5│cpu.cycles         │cpu cycles time            │board.mb.cpu0.core[0][0]│     2000000000│
+│    6│cpu.picoseconds    │cpu cycles time picoseconds│board.mb.cpu0.core[1][0]│  1000000000000│
+│    7│cpu.cycles         │cpu cycles time            │board.mb.cpu0.core[1][0]│     2000000000│
+│    8│cpu.time.virtual   │cpu time                   │board.mb.cpu0.core[1][0]│    00:00:01.00│
+└─────┴───────────────────┴───────────────────────────┴────────────────────────┴───────────────┘
+</pre><p>
+</p><div class="caption">Figure 23. Examples of probes.list-details</div>
+</div>
+  
+  <p>
+  Some probes are not active by default, typically because there
+  could be overhead in maintaining their values. To activate a
+  probe the <b>probes.subscribe</b> can be used. As long
+  as there are at least one subscriber on a probe, it will be
+  active, and when the subscribers goes down to zero, the probe
+  becomes deactivated again. 
+        </p><p>
+  An individual probe can also be read out and used in a CLI script
+  using the <b>probes.read</b> command.
+  Figure <a class="reference" href="#probe-example3">24</a> shows some examples where
+  probes first needs to be subscribed in order to be read later.
+</p><p>
+  </p><div class="figure" id="probe-example3">
+
+    <pre class="jdocu_small">
+simics&gt; <b>probes.list-details categories = performance</b>
+┌───────┬──────────────────────────────────┬───────────────────────────────────────────────────┬────────────────────────┬───────────────┐
+│ Row # │            Probe Name            │                    Categories                     │     Source Object      │Formatted Value│
+├───────┼──────────────────────────────────┼───────────────────────────────────────────────────┼────────────────────────┼───────────────┤
+│      1│sim.module_profile                │performance                                        │-                       │       inactive│
+│      2│sim.vmp.vmexits.histogram         │vmp performance                                    │-                       │       inactive│
+│      3│sim.exec_mode.hypersim_steps      │hypersim performance steps                         │-                       │       inactive│
+│      4│sim.exec_mode.interpreter_steps   │interpreter performance steps                      │-                       │       inactive│
+│      5│sim.time.schedule                 │performance                                        │-                       │       inactive│
+│      6│sim.exec_mode.interpreter_percent │performance instructions steps interpreter cpu     │-                       │       inactive│
+│      7│sim.mips                          │steps host performance instructions cpu time       │-                       │       inactive│
+│      8│sim.exec_mode.jit_steps           │jit performance                                    │-                       │       inactive│
+│      9│sim.exec_mode.vmp_steps           │vmp performance steps                              │-                       │       inactive│
+│     10│sim.exec_mode.hypersim_percent    │cpu hypersim performance instructions steps        │-                       │       inactive│
+│     11│sim.exec_mode.vmp_percent         │instructions vmp performance steps cpu             │-                       │       inactive│
+│     12│sim.exec_mode.jit_percent         │jit steps performance instructions cpu             │-                       │       inactive│
+│     13│cell.exec_mode.hypersim_steps     │hypersim performance steps                         │board.cell              │       inactive│
+│     14│cell.exec_mode.interpreter_steps  │interpreter performance steps                      │board.cell              │       inactive│
+│     15│cell.vmp.vmexits.histogram        │vmp performance                                    │board.cell              │       inactive│
+│     16│cell.exec_mode.jit_steps          │jit performance                                    │board.cell              │       inactive│
+│     17│cell.mips                         │steps performance instructions cpu                 │board.cell              │       inactive│
+│     18│cell.exec_mode.vmp_steps          │vmp performance steps                              │board.cell              │       inactive│
+│     19│cell.schedule_percent             │cell performance instructions steps cpu            │board.cell              │       inactive│
+│     20│cell.exec_mode.hypersim_percent   │cpu hypersim cell performance instructions steps   │board.cell              │       inactive│
+│     21│cell.exec_mode.interpreter_percent│cell performance instructions steps interpreter cpu│board.cell              │       inactive│
+│     22│cell.exec_mode.jit_percent        │jit cell performance instructions steps cpu        │board.cell              │       inactive│
+│     23│cell.exec_mode.vmp_percent        │cell instructions vmp performance steps cpu        │board.cell              │       inactive│
+│     24│cpu.time.schedule                 │performance                                        │board.mb.cpu0.core[0][0]│       inactive│
+│     25│cpu.exec_mode.interpreter_steps   │interpreter performance steps                      │board.mb.cpu0.core[0][0]│       inactive│
+│     26│cpu.exec_mode.hypersim_steps      │hypersim performance steps                         │board.mb.cpu0.core[0][0]│      163570386│
+│     27│cpu.vmp.vmrets.total              │vmp performance                                    │board.mb.cpu0.core[0][0]│              0│
+│     28│cpu.vmp.vmexits.histogram         │vmp performance                                    │board.mb.cpu0.core[0][0]│               │
+│     29│cpu.vmp.vmexits.total             │vmp performance                                    │board.mb.cpu0.core[0][0]│              0│
+│     30│cpu.mips                          │steps performance instructions cpu                 │board.mb.cpu0.core[0][0]│       inactive│
+...
+simics&gt; <b>probes.subscribe probe = sim.mips</b>
+simics&gt; <b>probes.subscribe probe = sim.module_profile</b>
+simics&gt; <b>run-seconds 10</b>
+simics&gt; <b>probes.read sim.module_profile</b>
+x86-intel64.so                          94   45%
+x86-p4e JIT                             32   15%
+libsimics-common.so                     19    9%
+libc.so.6                               16    8%
+ICH10.so                                 8    4%
+libwx_gtk2u_core-3.0.so.0.4.0            8    4%
+libX11.so.6.4.0                          6    3%
+libpython3.7m.so.1.0                     5    2%
+x86_tlb.so                               4    2%
+libvtutils.so                            4    2%
+X58-devices.so                           3    1%
+_core.cpython-37m-x86_64-linux-gnu.so    3    1%
+pcie-downstream-port.so                  2    1%
+siplib.cpython-37m-x86_64-linux-gnu.so   1    0%
+libgdk-x11-2.0.so.0.2400.33              1    0%
+libwx_baseu-3.0.so.0.4.0                 1    0%
+simics&gt; <b>probes.read sim.mips</b> 
+1447864673.0263705
+simics&gt; <b>probes.read sim.mips -formatted</b>
+1.45 G
+simics&gt; <b>probes.read sim.mips -raw-value</b>
+1.86e+09 / 1.28e+00
+= 1.45e+09 (1447864673.03)
+simics&gt; <b>$p = (probes.read sim.mips)</b>
+simics&gt; <b>echo $p</b>
+1447864673.0263705
+simics&gt; <b>$p = (probes.read sim.mips -raw-value)</b>
+simics&gt; <b>echo $p</b>
+[1856871575, 1.282489730976522]
+</pre><p>
+</p><div class="caption">Figure 24. Examples of probes.read</div>
+</div>
+  
+<p>
+  Without any formatting switches to <b>read</b> command, the
+  calculated value of the probe is returned so it can be used in CLI
+  scripts doing additional calculations.
+</p><p>
+  The <code>-formatted</code> flag, formats the value according to the
+  probe's properties. The <code>-raw-value</code> flag returns internal
+  representation of advanced types. This can be useful for understanding
+  the source-values for a calculated value. 
+</p>
+<div class="chain">
+<a href="probes.html">10 Probes</a>
+<a href="probe-monitor.html">10.2 Probe Monitor</a>
+</div>

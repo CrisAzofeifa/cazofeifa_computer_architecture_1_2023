@@ -1,0 +1,125 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>execute</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_exec_trace.html">exec_trace</a>
+<a href="__rm_interface_execute_control.html">execute_control</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_execute">execute</a></h1>
+<p>
+
+<a name="execute"></a><a name="execute_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>execute</code> interface is implemented by objects that
+   drive a simulation, which is often processor models. The object
+   does not have to implement <code>cycle</code> or
+   <code>step</code>.
+<p>
+   An object implementing the <code>execute</code> interface must be
+   coupled with one object implementing the <code>cycle</code>
+   interface. It can be the same object that implements the
+   <code>cycle</code> interface.
+</p><p>
+   The <b><i>run</i></b> function is called when the simulator starts or
+   restarts the execution.
+</p><p>
+   The implementation of the <b><i>run</i></b> function is responsible
+   for maintaining the simulators view of the current objects
+   implementing the <code>processor_info</code> and
+   <code>step</code> interfaces. It does
+   that by using the appropriate functions in the
+   <code>cell_inspection</code> interface. The current objects must
+   always be correctly set when either the <b><i>run</i></b> function
+   returns, when any API method is called, or when any other object is
+   called through an interface. Several Simics features, such as CLI
+   commands, device logging, and hap handling make use of the current
+   objects.
+</p><p>
+   To handle asynchronous events, and thus allow for reasonable interactive
+   performance, the implementor of <code>execute</code> needs to either make
+   sure that <b><i>run</i></b> returns after not having run for too long, or
+   preferably regularly call the <b><i>VT_check_async_events</i></b> method. In
+   the Simics library CPU models, <b><i>VT_check_async_events</i></b> is called
+   after servicing events from the <code>cycle</code> or <code>step</code>
+   interfaces.
+</p><p>
+   The simulator core will call <b><i>stop</i></b> when it detects a
+   condition that should interrupt the simulation. The callee should
+   stop as soon as possible when in a stable state, typically when the
+   current executing instruction is finished after getting a request
+   to stop. In some cases the callee might receive multiple stop
+   requests in a rapid sequence. Conditions leading to a stop request
+   include <b><i>SIM_break_simulation</i></b> being called from a device
+   or hap-handler, breakpoint triggered, low-memory situations, the
+   user interrupting the simulation with Ctrl-C, and the Simics core
+   halting the object when it is at the end of the allowed time window
+   in temporal decoupled simulation. It is forbidden to do anything in
+   the <b><i>stop</i></b> function that can lead to a new stop request,
+   this includes posting events, printing <b><i>SIM_log</i></b>-messages,
+   etc. Before returning from the <b><i>run</i></b> method, the
+   <b><i>VT_stop_event_processing</i></b> function should be called. The
+   requirement to call <b><i>VT_stop_event_processing</i></b> is likely
+   to be lifted in future versions of Simics.
+</p><p>
+   The <b><i>switch_in</i></b> function is called whenever the
+   execute object is about to gain control of the simulation
+   from some other execute object in the cell. Similarly,
+   <b><i>switch_out</i></b> is invoked before control is relinquished.
+   It should be noted that these functions are called in a
+   deterministic manner which is not true for <b><i>run</i></b>.
+</p><p>
+   The <b><i>switch_in</i></b> and <b><i>switch_out</i></b> functions
+   are not called at simulation start (or checkpoint load), in
+   general.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(execute) {
+        void (*run)(conf_object_t *obj);
+        void (*stop)(conf_object_t *obj);
+
+        void (*switch_in)(conf_object_t *obj);
+        void (*switch_out)(conf_object_t *obj);
+};
+
+#define EXECUTE_INTERFACE "execute"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_exec_trace.html">exec_trace</a>
+<a href="__rm_interface_execute_control.html">execute_control</a>
+</div>

@@ -1,0 +1,228 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>42 Inspecting and Controlling the Virtual System</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="probes-api.html">41 Probes API</a>
+<a href="memory-and-timing.html">43 Memory Tracing and Timing</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="extension-builder.html">VII Extending Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Inspecting-and-Controlling-the-Virtual-System">42 Inspecting and Controlling the Virtual System</a></h1>
+<p>
+
+One advantage of a simulated target is the ability to inspect and control it
+in ways that are not possible on real hardware. The Simics hap system gives
+the user access to important events in the system and there are ways to trace
+all memory accesses and for processor initiated accesses even adjust their
+timing. Similarly, network packets and other bus traffic can be inspected. It
+is often also possible to inject and change data in the system, both for
+debugging and testing purposes, such as sending or modifying network packages,
+changing register values or memory contents. This chapter and the text
+describes some of the mechanisms available and also gives examples of how they
+can be used, but there are many other possibilities, such as creating real
+world connections, covered in more detail in chapter
+<a class="reference" href="external-world.html">44</a>.
+</p><p>
+</p><h2 class="jdocu"><a name="Using-Haps-to-Catch-Simulator-Events">42.1 Using Haps to Catch Simulator Events</a></h2>
+<p>
+
+<a name="haps"></a>
+As described in the <em>Simics User's Guide</em>, a hap is an event in
+Simics that, when occurring, will call any callback functions installed for it.
+The rich collection of haps in Simics for both simulator and target related
+events, including new, user-defined haps, provides the user with powerful
+control and inspection capabilities.
+</p><p>
+Some haps are system global, such as the hap triggered when the simulator
+exits, but most are associated with an object. For such haps it is possible to
+install the callback to trigger for all objects or only for a selected one.
+</p><p>
+It is important to know that hap callbacks are run at once when the hap is
+triggered. For example, this may be in <em>Cell Context</em>,
+when the simulation is running and many API functions can not be run.
+(The <em>API Reference
+Manual</em> includes a description of all execution contexts and their
+restrictions and the reference manuals lists the allowed execution contexts for
+all API functions.) To overcome these restrictions, Simics provides several
+functions for posting callbacks that are run when the simulator is in a less
+restricted state, such as
+<b><i>SIM_run_alone</i></b> and <b><i>SIM_run_unrestricted</i></b>.
+</p><p>
+</p><h3 class="jdocu"><a name="Reacting-to-Haps">42.1.1 Reacting to Haps</a></h3>
+<p>
+
+<a name="SIM_hap_add_callback"></a>
+</p><p>
+When you want your code to react to a hap occurrence, you can register a
+callback function for the specific hap.
+</p><p>
+</p><pre class="jdocu_small"><b># In Python</b>
+SIM_hap_add_callback(hap, func, user_data)
+
+<b>// In C</b>
+hap_handle_t
+SIM_hap_add_callback(const char *hap, obj_hap_func_t func, lang_void *data);
+</pre><p>
+</p><p>
+The parameters of <b><i>SIM_hap_add_callback()</i></b> are:
+</p><ul>
+<li><i>hap</i>—The name of the hap to install a callback
+function on.</li>
+<li><i>func</i>—The function to be called when the hap is
+triggered. The signature for this callback function differs between haps.</li>
+<li><i>user_data</i>—User data that will be passed as-is by
+Simics to the callback function.</li>
+</ul>
+<p>
+The function returns a handle which can be used to manipulate the hap callback
+later on, typically used to disable it. There are additionally several other
+functions that can be used to register a hap callback The <code>_obj</code> kind
+installs a callback that only reacts on haps triggered by a specific object.
+The <code>_index</code> and <code>_range</code> kinds are used for haps that have an
+index associated with them, and is used to only trigger the hap for one or a
+range of the indexes. The names of these other functions are
+<b><i>SIM_hap_add_callback_index()</i></b>,
+<b><i>SIM_hap_add_callback_range()</i></b>, <b><i>SIM_hap_add_callback_obj()</i></b>,
+<b><i>SIM_hap_add_callback_obj_index()</i></b> and
+<b><i>SIM_hap_add_callback_obj_range()</i></b>. See the <em>API Reference
+Manual</em> for more information about the differences between them.
+</p><p>
+A list of all haps can be found in the <em>Simics Reference Manual</em>,
+including the signatures for the callback functions. The list can also be
+retrieved on the command line using the <b>list-haps</b> command. This
+command can also be used to print detailed information about a hap:
+</p><pre class="jdocu_small">simics&gt; <b>list-haps hap = Core_Simulation_Stopped</b> 
+<b>Name</b>
+   Core_Simulation_Stopped
+
+<b>Callback Type</b>
+   void (*)(lang_void *callback_data, conf_object_t *trigger_obj,
+            integer_t exception, char *error_string);
+
+<b>Index</b>
+   exception
+
+<b>Installed Handlers</b>
+   5
+
+<b>Description</b>
+   Triggered when the simulation stops. exception will always be
+   SimExc_No_Exception, and error_string will always be NULL. After this hap,
+   simulation will not advance (triggering Core_Continuation) until
+   SIM_continue() is called again. Callbacks called in Global Context.
+</pre><p>
+</p><p>
+The following is an example of using a hap from C and from Python:
+</p><pre class="jdocu_small"><b># In Python</b>
+def stopped(user_data, obj, exception, errstr):
+    print("Stopped")
+
+def started(user_data, obj):
+    print("Started")
+
+handle1 = SIM_hap_add_callback("Core_Continuation", started, None);
+handle2 = SIM_hap_add_callback("Core_Simulation_Stopped", stopped, (2, "str"))
+<i>[…]</i>
+
+<b>// In C</b>
+static void
+stopped(void *user_data, conf_object_t *obj, int64 exception, char *errstr)
+{
+        pr("Stopped\n");
+}
+
+static void
+started(void *user_data, conf_object_t *obj)
+{
+        pr("Started\n");
+}
+
+static hap_handle_t h1, h2;
+
+void
+init_local()
+{
+        <i>[…]</i>
+        h1 = SIM_hap_add_callback("Core_Continuation", started, NULL);
+        h2 = SIM_hap_add_callback("Core_Simulation_Stopped", stopped, NULL);
+        <i>[…]</i>
+}
+</pre><p>
+</p><p>
+When you no longer want to be notified when a hap triggers, the callback can
+be canceled using one of the functions
+<b><i><a name="SIM_hap_delete_callback">SIM_hap_delete_callback</a>()</i></b>,
+<b><i>SIM_hap_delete_callback_obj()</i></b>,
+<b><i>SIM_hap_delete_callback_id()</i></b> and
+<b><i>SIM_hap_delete_callback_obj_id()</i></b>. See the <em>API Reference
+Manual</em> for the differences. The signature for
+<b><i>SIM_hap_delete_callback()</i></b> is:
+</p><p>
+</p><pre class="jdocu_small">SIM_hap_delete_callback(hap, func, user_data)
+</pre><p>
+Where the parameters are the same as for installing the hap callback. The
+exact same parameter must be used as the callback was registered with.
+</p><p>
+To continue the above example:
+</p><p>
+</p><pre class="jdocu_small"><b># In Python</b>
+def at_end():
+    # using the callback parameters
+    SIM_hap_delete_callback("Core_Simulation_Stopped", stopped, NULL);
+    # using the hap handle
+    SIM_hap_delete_callback_id("Core_Simulation_Stopped", handle2)
+
+<b>// In C</b>
+void
+at_end()
+{
+        // Using the callback parameters
+        SIM_hap_delete_callback("Core_Simulation_Stopped", stopped, NULL);
+        // Using the hap handle
+        SIM_hap_delete_callback_id("Core_Simulation_Stopped", h2);
+}
+</pre><p>
+
+
+</p><h2 class="jdocu"><a name="Tracing-Memory-Accesses">42.2 Tracing Memory Accesses</a></h2>
+<p>
+
+Simics, when running in <em>stall mode</em> provides tracing mechanisms for
+memory accesses, both instruction fetches and data accesses. Most
+processor-initiated accesses can also be stalled as a way to control the timing
+of the memory sub-system. All of chapter <a class="reference" href="memory-and-timing.html">43</a> is
+dedicated to memory tracing and timing in Simics since this is an extensive
+subject.
+
+</p>
+<div class="chain">
+<a href="probes-api.html">41 Probes API</a>
+<a href="memory-and-timing.html">43 Memory Tracing and Timing</a>
+</div>

@@ -1,0 +1,107 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10 Probes</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="device-register-coverage.html">9.6 Device Register Coverage</a>
+<a href="probes-command-set.html">10.1 Probes Command Set</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="probes">10 Probes</a></h1>
+<p>
+  
+  <a name="probes"></a>
+</p><p>
+  This section describes the <em>Probes Framework</em> in Simics.
+    </p><p>
+  Simics' Probes framework provides a generic mechanism for measuring
+  counters and other statistics in Simics. The probe measurement points
+  are distributed across the entire simulated system.
+</p><p>
+  Probes can be related to target processors, device models, the host
+  system (where Simics runs), instrumentation tools etc. There are also
+  probes which presents sums of other probes in the system on cell or
+  global level.
+</p><p>
+  Currently, most probes have been added for the purpose of measuring
+  and understanding the performance of Simics. Additional probes could
+  focus more on the target hardware and software aspects.
+</p><p>
+  A probe offers a simple way to extract the value, and also contains
+  type information and formatting hints on the probe itself to present
+  the value of the probe, in an uniform and user-readable format.
+  </p><p>
+  A probe is identified by a probe name, which is a string with a
+  hierarchical namespaces separated with dots (<code>.</code>). For
+  example, <code>cpu.cycles</code> would be found in each processor model
+  in the system and represents how many cycles that has elapsed on the
+  specific processor. The <code>cell.cycles</code> probes are related to the
+  cell objects and this returns the sum of executed cycles of
+  processors which located under the specific cell.
+  Finally, <code>sim.cycles</code> is not related to any object but form a
+  singelton sum of all the processor's cycles elapsed.
+</p><p>
+  Probes can also be derived from other probes, offering a some
+  calculated metric. For example <code>sim.slowdown</code> is calculated
+  as the fraction between <code>sim.time.virtual</code>
+  and <code>sim.time.wallclock</code>, providing an indication how fast
+  the virtual time elapsed compared to the real wallclock time on the
+  system which Simics runs on.
+  </p><p>
+  Simics itself is aware of all probes that currently exist
+  in the system, allowing commands to list the probes or read out
+  their values from Simics command line interface.
+</p><p>
+  Probes may either be explicitly implemented in the various
+  Simics objects, or can implicitly created by the probes
+  framework itself. For example, Simics may detect that a new
+  object is created which implement the <code>cycle</code> interface
+  and then automatically create probes for accessing their
+  cycle information.  
+  </p><p>
+  
+              
+              
+</p>
+<ul class="subsections">
+<li>
+<a href="probes-command-set.html">10.1 Probes Command Set</a>
+</li>
+<li>
+<a href="probe-monitor.html">10.2 Probe Monitor</a>
+</li>
+<li>
+<a href="probe-streamer.html">10.3 Probe Streamer</a>
+</li>
+</ul>
+<div class="chain">
+<a href="device-register-coverage.html">9.6 Device Register Coverage</a>
+<a href="probes-command-set.html">10.1 Probes Command Set</a>
+</div>

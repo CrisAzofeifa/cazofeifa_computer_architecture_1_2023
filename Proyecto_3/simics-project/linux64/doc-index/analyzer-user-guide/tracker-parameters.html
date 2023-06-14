@@ -1,0 +1,45 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.7 Tracker Parameters</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="event-system.html">2.6 Event system</a>
+<a href="os-awareness-configuration.html">2.8 Tracker Configuration</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="tracker-parameters">2.7 <a href="#tracker-parameters">Tracker Parameters</a></h1>
+<p>Most trackers will need parameters in order to be able to track software. The parameter file contains information about which tracker should be used, and additional information required by the tracker in order to track the target software. This can be anything from offsets into structs to the name of the system. Often the parameter files will be provided with the target system and they may be loaded in the target scripts. The <code>load-parameters</code> command is used to load parameters.</p>
+<p>When parameters are loaded the <code>os-awareness</code> object will automatically create a tracker composition object based on the parameters if one does not already exist.</p>
+<p>For many systems the parameters can only be detected when the operating system is booted on the target. For example, the Linux tracker object provides a <code>detect-parameters</code> command to be able to retrieve parameters for the current system. See section <a class="reference" href="linux-tracker.html#system-configuration">2.13.6</a> for more information about configuring the Linux tracker.</p>
+
+<div class="chain">
+<a href="event-system.html">2.6 Event system</a>
+<a href="os-awareness-configuration.html">2.8 Tracker Configuration</a>
+</div>

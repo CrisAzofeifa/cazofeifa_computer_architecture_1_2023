@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-memory-profiler</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-new-mem-traffic-meter.html">new-mem-traffic-meter</a>
+<a href="rm-cmd-new-micron-mtfc128gap-emmc-card.html">new-micron-mtfc128gap-emmc-card</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="new-memory-profiler"></a>
+<h1 id="new-memory-profiler"><a href="#new-memory-profiler">new-memory-profiler</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>new-memory-profiler</b> [<i>"name"</i>] ([ <i>processors</i> ... ] | list of <i>processors</i>) [<i>parent</i>] [-connect-all] [<i>"group"</i>] [-read-physical] [-read-logical] [-write-physical] [-write-logical] [-execute-physical] [-execute-logical] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Creates a new memory profiler tool object which can be connected to processors which support instrumentation.<br>
+<br>
+The optional <i>name</i> argument can be used to set a name of the created object. If no name is given, a default name <i>mprof</i> followed by a sequence number is generated (<i>mprof0</i>, <i>mprof1</i>,...).<br>
+<br>
+ The optional <i>processors</i> argument, supports connecting one or several processors directly. With the optional <i>parent</i> argument a hierarchical object can be specified and all processors below this object matching the provider requirements will be connected to the tool. The <tt>-connect-all</tt> flag can be given to add a connection to all supported processors in the configuration.<br>
+<br>
+The optional argument <i>group</i> let a user specify a named instrumentation group to use for the connection. (See <code>add-instrumentation-group</code> for details on named groups.)<br>
+<br>
+Each new connection to the memory profiler can be configured by supplying the following flags: <br>
+<tt>-read-physical</tt> : Enabling profiling of reads to physical addresses <br>
+<tt>-read-logical</tt> : Enabling profiling of read to logical addresses <br>
+<tt>-write-physical</tt> : Enabling profiling of writes to physical addresses <br>
+<tt>-write-logical</tt> : Enabling profiling of writes to logical addresses <br>
+<tt>-execute-physical</tt> : Enabling profiling of instruction execution of physical addresses. <br>
+<tt>-execute-logical</tt> : Enabling profiling of instruction execution of logical addresses.
+<p>
+At least one flag must be specified when connecting.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.memory-profiler.html">memory-profiler</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-new-mem-traffic-meter.html">new-mem-traffic-meter</a>
+<a href="rm-cmd-new-micron-mtfc128gap-emmc-card.html">new-micron-mtfc128gap-emmc-card</a>
+</div>

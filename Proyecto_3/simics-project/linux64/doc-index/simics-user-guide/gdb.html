@@ -1,0 +1,149 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>14 Using Simics with GDB</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="going-further.html">13.2 Going Further</a>
+<a href="using-gdb-with-simics.html">14.1 Remote GDB and Shared Libraries</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="low-level-debugging.html">III Low-Level Debugging</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="gdb">14 Using Simics with GDB</a></h1>
+<p>
+
+<a name="debuggingremote"></a>
+<a name="debuggingsymbolic"></a>
+<a name="debuggingGDB"></a>
+<a name="remote-GDB"></a>
+</p><p>
+This chapter describes how to use <b>gdb-remote</b>, a
+Simics module that lets you connect a GDB session running on your host
+machine to the simulated machine using GDB's remote debugging
+protocol, and use GDB to debug software running on the target machine.
+</p><p>
+If you load the <b>gdb-remote</b> module in Simics, you can
+use the remote debugging feature of <a name="GDB">GDB</a>, the GNU debugger,
+to connect one or more GDB processes to Simics over TCP/IP. In order
+to do this, you need a GDB compiled to support the simulation's target
+architecture on whichever host you're running. The
+<b><a name="gdb-remote">gdb-remote</a></b> module has been tested with several
+different versions of GDB 6 and 7.
+</p><p>
+A prebuilt GDB is distributed in the Simics GDB (#1031) package. In a Simics
+project, the <b>bin/gdb</b> command (<b>bin\gdb.bat</b> on Windows) can
+be used to launch GDB.
+</p><div class="note">
+<b>Note:</b>
+The <b>bin/gdb</b> or <b>bin\gdb.bat</b> commands will only work
+if Simics GDB (#1031) is installed and available as addon package in the
+Simics project.</div>To connect a GDB session to Simics, start your Simics session and run
+the <b>new-gdb-remote</b> command, optionally followed by a TCP/IP
+port number, which defaults to 9123 otherwise. This will automatically
+load the <b>gdb-remote</b> module. You can also specify
+which processor or context the remote debugger should be attached to with
+the <i>cpu</i> and <i>context</i> arguments.
+<p>
+When a configuration is loaded, Simics will start listening to
+incoming TCP/IP connections on the specified port. Run the simulated
+machine up to the point where you want to connect GDB. To inspect a
+user process or dynamically loaded parts of the kernel, the easiest
+solution might be to insert magic instructions at carefully chosen
+points. For static kernel debugging, a simple breakpoint on a suitable
+address will solve the problem.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+When debugging the start-up phase of an operating system, it
+might happen that gdb gets confused by the machine state and
+disconnects when you try to connect. In this case, execute a few
+instructions and try again. </div>Once Simics is in the desired state, start your GDB session, load any
+debugging information into it, and then connect it to Simics using the
+<b>target remote <i>host</i>:<i>port</i></b> command,
+where <i>host</i> is the host Simics is running on, and
+<i>port</i> is the TCP/IP port number as described above. Here is
+a short sample session using <i>firststeps</i>:
+<p>
+</p><pre class="jdocu_small">(gdb) <b>symbol-file targets/qsp-x86/images/yocto_linux/yocto-1.8-vmlinux</b>
+Reading symbols from targets/qsp-x86/images/yocto_linux/yocto-1.8-vmlinux...done.
+(gdb) <b>set endian little</b>
+The target is assumed to be little endian
+(gdb) <b>target remote localhost:9123</b>
+Remote debugging using localhost:9123
+0x000000000000fff0 in unicast_sock ()
+(gdb) 
+</pre><p>
+</p><p>
+Note that yocto-1.8-vmlinux is internal file and not distributed in the package, so
+the reader cannot run the example in simics.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The GDB supplied with Simics has builtin support for several target
+architectures. The architecture will be set automatically when GDB connects,
+but for little-endian architectures (such as x86 and x86_64), the following GDB
+command has to be issued: <code>set endian little</code>.</div>From this point, you can use GDB to control the target machine by
+entering normal GDB commands such as <b>continue</b>,
+<b>step</b>, <b>stepi</b>, <b>info regs</b>,
+<b>breakpoint</b>, etc.
+<p>
+</p><div class="note">
+<b>Note:</b>
+GDB does not expect the target state to change while it is in control and has
+  asked for the simulation to be stopped. If the simulation is started from
+  another frontend (e.g., by the <b>continue</b> or <b>reverse</b>
+  commands from the Simics command line) then GDB will not be notified and will
+  still use cached information about the program location and register values.
+  To recover from such a situation, issue a GDB command that makes the
+  simulation run.
+</div>To force Simics to close a connection, use the <b>gdb0.disconnect</b>
+command.
+<p>
+The <b>gdb-remote</b> module does not have any
+high-level information about the OS being run inside Simics. This
+means that in order to examine memory or disassemble code, the data or
+code you want to look at has to be in the active TLB.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+When using <b>gdb-remote</b> with targets supporting
+multiple address sizes (such as x86-64 and SPARC), you must have a GDB
+compiled for the larger address size. For SPARC, run GDB's configure
+script with the <code>--target=sparc64-sun-solaris2.8</code>
+option.</div>
+<p>
+</p>
+<ul class="subsections">
+<li>
+<a href="using-gdb-with-simics.html">14.1 Remote GDB and Shared Libraries</a>
+</li>
+</ul>
+<div class="chain">
+<a href="going-further.html">13.2 Going Further</a>
+<a href="using-gdb-with-simics.html">14.1 Remote GDB and Shared Libraries</a>
+</div>

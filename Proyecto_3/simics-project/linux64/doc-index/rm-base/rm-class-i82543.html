@@ -1,0 +1,1313 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i82543</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-i8254.html">i8254</a>
+<a href="rm-class-i82546.html">i82546</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="i82543"><a href="#i82543">i82543</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+This class models the Intel® 82543 Gigabit Ethernet Controller. Limitations on all i8254x:<ul><li>flow control functionality is missing. FCAH, FCT, FCRTH, FCRTL, and FCTTV (bug 1107)</li><li>test mode is missing. FTR0-7, FCR, and TRC. (bug 1108)</li><li>ACPI/Power management is missing. (bug 1109)</li><li>FIFO related diagnostic registers are missing. RDFH, RDFT, TDFH. (bug 1110)</li><li>config data should be read from eeprom, and not hardcoded. (bug 1111)</li><li>The transmit-interrupt-delay (TIDV) is unimplemented (bug 1125)</li><li>Receive descriptors with NULL data pointers not supported (bug 1623)</li></ul>
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, pci_device, io_memory, ethernet_common
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-i82543.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-i82543.print-pci-config-regs.html">print-pci-config-regs</a>
+ – <i>deprecated</i> print PCI configuration registers</li>
+<li>
+<a href="rm-cmd-i82543.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:pci_bus">
+<i>pci_bus</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The PCI bus this device is connected to, implementing the <tt>pci-bus</tt> interface.</dd>
+<dt id="dt:interrupt_pin">
+<i>interrupt_pin</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iiii]</code>
+<br>State of the interrupt pin.</dd>
+<dt id="dt:config_registers">
+<i>config_registers</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{64}]</code>
+<br>The 64 PCI configuration registers, each 32 bits in size.</dd>
+<dt id="dt:write_masks">
+<i>write_masks</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ii]*]</code>
+<br>Write masks for all registered configuration registers. The format for each entry is (offset, mask).</dd>
+<dt id="dt:mappings">
+<i>mappings</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i{5:8}]|[iiiiiiiio|nii]*]</code>
+<br>List of all current PCI IO and memory mappings.</dd>
+<dt id="dt:expansion_rom">
+<i>expansion_rom</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|[oii]</code>
+<br>ROM object, map size, and map function number for the Expansion ROM.</dd>
+<dt id="dt:config_register_info">
+<i>config_register_info</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[isii]*]</code>
+<br>Register info for all registered configuration registers. The format for each entry is (offset, name, size, write-mask).</dd>
+<dt id="dt:link">
+<i>link</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The Ethernet link that the network device is connected to.</dd>
+<dt id="dt:model_crc">
+<i>model_crc</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Deprecated. Do not use.</dd>
+<dt id="dt:tx_bandwidth">
+<i>tx_bandwidth</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The transmit bandwidth of the network interface in bits per second. The network interface will limit the rate at which it sends packets to remain below this bandwidth. Set to 0 for unlimited bandwidth.</dd>
+<dt id="dt:tx_next_time">
+<i>tx_next_time</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>The earliest time at which that the network interface may send another packet. Used for transmit bandwidth limitation.</dd>
+<dt id="dt:network">
+<i>network</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Obsolete attribute. Use link instead.</dd>
+<dt id="dt:inject_packet">
+<i>inject_packet</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>d</code>
+<br>Attribute used to send a packet to the network device. Writing this attribute at any time injects a new packet into the device (without involving the network simulation). Injecting a packet copies the packet data, allowing the caller to reuse or dispose of the buffer used for creating the packet, after the attribute is written.</dd>
+<dt id="dt:add_crc_on_inject">
+<i>add_crc_on_inject</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Frames injected using the 'inject_packet' will get a correctly calculated CRC added at the end when this attribute is set to 1 (default). When set to 0, the user has to supply a CRC field with the injected frame. Note that you must always provide room for the CRC field, even when this attribute is set to 1.</dd>
+<dt id="dt:device_id">
+<i>device_id</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>This uniquely identifies the Ethernet controller.</dd>
+<dt id="dt:subsystem_id">
+<i>subsystem_id</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Subsystem ID.</dd>
+<dt id="dt:subsystem_vendor_id">
+<i>subsystem_vendor_id</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Subsystem vendor ID.</dd>
+<dt id="dt:phy_device">
+<i>phy_device</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>IEEE 802.3 physical device (exporting the MII interface).</dd>
+<dt id="dt:gbic_device">
+<i>gbic_device</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Unused.</dd>
+<dt id="dt:eeprom">
+<i>eeprom</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Serial 4-wire EEPROM.</dd>
+<dt id="dt:interrupt">
+<i>interrupt</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set to 1 when an interrupt is pending.</dd>
+<dt id="dt:media_type">
+<i>media_type</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Media type ("copper" or "fiber").</dd>
+<dt id="dt:memory">
+<i>memory</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>d</code>
+<br>Contents of mapped memory (including register set).</dd>
+<dt id="dt:receive_fifo">
+<i>receive_fifo</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[id]*]</code>
+<br>Receive FIFO contents.</dd>
+<dt id="dt:icr">
+<i>ICR</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt Cause Read</dd>
+<dt id="dt:tdt">
+<i>TDT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Descriptor Tail</dd>
+<dt id="dt:ctrl">
+<i>CTRL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Device Control</dd>
+<dt id="dt:status">
+<i>STATUS</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Device Status</dd>
+<dt id="dt:eecd">
+<i>EECD</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>EEPROM/Flash Control</dd>
+<dt id="dt:eerd">
+<i>EERD</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>EEPROM Read</dd>
+<dt id="dt:ctrl_ext">
+<i>CTRL_EXT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Extended Device Control</dd>
+<dt id="dt:fla">
+<i>FLA</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flash Access</dd>
+<dt id="dt:mdic">
+<i>MDIC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>MDI Control</dd>
+<dt id="dt:fcal">
+<i>FCAL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flow Control Address Low</dd>
+<dt id="dt:fcah">
+<i>FCAH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flow Control Address High</dd>
+<dt id="dt:fct">
+<i>FCT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flow Control Type</dd>
+<dt id="dt:vet">
+<i>VET</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>VLAN Ether Type</dd>
+<dt id="dt:itr">
+<i>ITR</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt Throttling Rate</dd>
+<dt id="dt:ics">
+<i>ICS</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt Cause Set</dd>
+<dt id="dt:ims">
+<i>IMS</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt Mask Set</dd>
+<dt id="dt:imc">
+<i>IMC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt Mask Clear</dd>
+<dt id="dt:rctl">
+<i>RCTL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Control</dd>
+<dt id="dt:fcttv">
+<i>FCTTV</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flow Control Transmit Timer Value</dd>
+<dt id="dt:txcw">
+<i>TXCW</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Configuration Word</dd>
+<dt id="dt:rxcw">
+<i>RXCW</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Configuration Word</dd>
+<dt id="dt:tctl">
+<i>TCTL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Control</dd>
+<dt id="dt:tipg">
+<i>TIPG</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Inter-packet gap</dd>
+<dt id="dt:tbt">
+<i>TBT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Burst Timer</dd>
+<dt id="dt:ait">
+<i>AIT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Adaptive Interframe Spacing Throttle</dd>
+<dt id="dt:ledctl">
+<i>LEDCTL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>LED Control</dd>
+<dt id="dt:pba">
+<i>PBA</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packet Buffer Allocation</dd>
+<dt id="dt:fcrtl">
+<i>FCRTL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flow Control Receive Threshold Low</dd>
+<dt id="dt:fcrth">
+<i>FCRTH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flow Control Receive Threshold High</dd>
+<dt id="dt:rdbal">
+<i>RDBAL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Descriptor Base Address Low</dd>
+<dt id="dt:rdbah">
+<i>RDBAH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Descriptor Base Address High</dd>
+<dt id="dt:rdlen">
+<i>RDLEN</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Descriptor Length</dd>
+<dt id="dt:rdh">
+<i>RDH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Descriptor Head</dd>
+<dt id="dt:rdt">
+<i>RDT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Descriptor Tail</dd>
+<dt id="dt:rdtr">
+<i>RDTR</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Delay Timer</dd>
+<dt id="dt:rxdctl">
+<i>RXDCTL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Descriptor Control</dd>
+<dt id="dt:radv">
+<i>RADV</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Interrupt Absolute Delay Timer</dd>
+<dt id="dt:rsrpd">
+<i>RSRPD</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Small Packet Detect</dd>
+<dt id="dt:txdmac">
+<i>TXDMAC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX DMA Control</dd>
+<dt id="dt:tdfh">
+<i>TDFH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Data FIFO Head</dd>
+<dt id="dt:tdft">
+<i>TDFT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Data FIFO Tail</dd>
+<dt id="dt:tdfhs">
+<i>TDFHS</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Data FIFO Head Saved</dd>
+<dt id="dt:tdfts">
+<i>TDFTS</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Data FIFO Tail Saved</dd>
+<dt id="dt:tdfpc">
+<i>TDFPC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Data FIFO Packet Count</dd>
+<dt id="dt:tdbal">
+<i>TDBAL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Descriptor Base Address Low</dd>
+<dt id="dt:tdbah">
+<i>TDBAH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Descriptor Base Address High</dd>
+<dt id="dt:tdlen">
+<i>TDLEN</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Descriptor Length</dd>
+<dt id="dt:tdh">
+<i>TDH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Descriptor Head</dd>
+<dt id="dt:tidv">
+<i>TIDV</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Interrupt Delay Value</dd>
+<dt id="dt:txdctl">
+<i>TXDCTL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Descriptor Control</dd>
+<dt id="dt:tadv">
+<i>TADV</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX Interrupt Absolute Delay Val</dd>
+<dt id="dt:tspmt">
+<i>TSPMT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TCP Segmentation PAD and Min Threshold</dd>
+<dt id="dt:crcerrs">
+<i>CRCERRS</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>CRC Error Count</dd>
+<dt id="dt:algnerrc">
+<i>ALGNERRC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Alignment Error Count</dd>
+<dt id="dt:symerrs">
+<i>SYMERRS</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Symbol Error Count</dd>
+<dt id="dt:rxerrc">
+<i>RXERRC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Receive Error Count</dd>
+<dt id="dt:mpc">
+<i>MPC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Missed Packet Count</dd>
+<dt id="dt:scc">
+<i>SCC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Single Collision Count</dd>
+<dt id="dt:ecol">
+<i>ECOL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Excessive Collision Count</dd>
+<dt id="dt:mcc">
+<i>MCC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Multiple Collision Count</dd>
+<dt id="dt:latecol">
+<i>LATECOL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Late Collision Count</dd>
+<dt id="dt:colc">
+<i>COLC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Collision Count</dd>
+<dt id="dt:dc">
+<i>DC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Defer Count</dd>
+<dt id="dt:tncrs">
+<i>TNCRS</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TX-No CRS</dd>
+<dt id="dt:sec">
+<i>SEC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Sequence Error Count</dd>
+<dt id="dt:cexterr">
+<i>CEXTERR</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Carrier Extension Error Count</dd>
+<dt id="dt:rlec">
+<i>RLEC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Receive Length Error Count</dd>
+<dt id="dt:xonrxc">
+<i>XONRXC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>XON RX Count</dd>
+<dt id="dt:xontxc">
+<i>XONTXC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>XON TX Count</dd>
+<dt id="dt:xoffrxc">
+<i>XOFFRXC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>XOFF RX Count</dd>
+<dt id="dt:xofftxc">
+<i>XOFFTXC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>XOFF TX Count</dd>
+<dt id="dt:fcruc">
+<i>FCRUC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flow Control RX Unsupported Count</dd>
+<dt id="dt:prc64">
+<i>PRC64</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets RX (64 bytes)</dd>
+<dt id="dt:prc127">
+<i>PRC127</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets RX (65-127 bytes)</dd>
+<dt id="dt:prc255">
+<i>PRC255</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets RX (128-255 bytes)</dd>
+<dt id="dt:prc511">
+<i>PRC511</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets RX (255-511 bytes)</dd>
+<dt id="dt:prc1023">
+<i>PRC1023</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets RX (512-1023 bytes)</dd>
+<dt id="dt:prc1522">
+<i>PRC1522</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets RX (1024-1522 bytes)</dd>
+<dt id="dt:gprc">
+<i>GPRC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Good Packets RX Count</dd>
+<dt id="dt:bprc">
+<i>BPRC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Broadcast Packets RX Count</dd>
+<dt id="dt:mprc">
+<i>MPRC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Multicast Packets RX Count</dd>
+<dt id="dt:gptc">
+<i>GPTC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Good Packets TX Count</dd>
+<dt id="dt:gorcl">
+<i>GORCL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Good Octets RX Count Low</dd>
+<dt id="dt:gorch">
+<i>GORCH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Good Octets RX Count High</dd>
+<dt id="dt:gotcl">
+<i>GOTCL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Good Octets TX Count Low</dd>
+<dt id="dt:gotch">
+<i>GOTCH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Good Octets TX Count High</dd>
+<dt id="dt:rnbc">
+<i>RNBC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX No Buffers Count</dd>
+<dt id="dt:ruc">
+<i>RUC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Undersize Count</dd>
+<dt id="dt:rfc">
+<i>RFC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Fragment Count</dd>
+<dt id="dt:roc">
+<i>ROC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Oversize Count</dd>
+<dt id="dt:rjc">
+<i>RJC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Jabber Count</dd>
+<dt id="dt:mgtprc">
+<i>MGTPRC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Management Packets RX Count</dd>
+<dt id="dt:mgtpdc">
+<i>MGTPDC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Management Packets Dropped Count</dd>
+<dt id="dt:mgtptc">
+<i>MGTPTC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Management Packets TX Count</dd>
+<dt id="dt:torl">
+<i>TORL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total Octets RX Low</dd>
+<dt id="dt:torh">
+<i>TORH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total Octets RX High</dd>
+<dt id="dt:totl">
+<i>TOTL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total Octets TX Low</dd>
+<dt id="dt:toth">
+<i>TOTH</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total Octets TX High</dd>
+<dt id="dt:tpr">
+<i>TPR</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total Packets RX</dd>
+<dt id="dt:tpt">
+<i>TPT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total Packets TX</dd>
+<dt id="dt:ptc64">
+<i>PTC64</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets TX (64 bytes)</dd>
+<dt id="dt:ptc127">
+<i>PTC127</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets TX (65-127 bytes)</dd>
+<dt id="dt:ptc255">
+<i>PTC255</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets TX (128-255 bytes)</dd>
+<dt id="dt:ptc511">
+<i>PTC511</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets TX (256-511 bytes)</dd>
+<dt id="dt:ptc1023">
+<i>PTC1023</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets TX (512-1023 bytes)</dd>
+<dt id="dt:ptc1522">
+<i>PTC1522</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Packets TX (1024-1522 Bytes)</dd>
+<dt id="dt:mptc">
+<i>MPTC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Multicast Packets TX Count</dd>
+<dt id="dt:bptc">
+<i>BPTC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Broadcast Packets TX Count</dd>
+<dt id="dt:tsctc">
+<i>TSCTC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TCP Segmentation Context TX</dd>
+<dt id="dt:tsctfc">
+<i>TSCTFC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TCP Segmentation Context TX Fail</dd>
+<dt id="dt:rxcsum">
+<i>RXCSUM</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RX Checksum Control</dd>
+<dt id="dt:mta">
+<i>MTA</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Multicast Table Array</dd>
+<dt id="dt:ra">
+<i>RA</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Receive Address</dd>
+<dt id="dt:vfta">
+<i>VFTA</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>VLAN Filter Table Array</dd>
+<dt id="dt:wuc">
+<i>WUC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Wakeup Control</dd>
+<dt id="dt:wufc">
+<i>WUFC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Wakeup Filter Control</dd>
+<dt id="dt:wus">
+<i>WUS</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Wakeup Status</dd>
+<dt id="dt:manc">
+<i>MANC</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Management Control</dd>
+<dt id="dt:ipav">
+<i>IPAV</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>IP Address Valid</dd>
+<dt id="dt:ip4at">
+<i>IP4AT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>IPv4 Address Table</dd>
+<dt id="dt:ip6at">
+<i>IP6AT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>IPv6 Address Table</dd>
+<dt id="dt:wupl">
+<i>WUPL</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Wakeup Packet Length</dd>
+<dt id="dt:wupm">
+<i>WUPM</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Wakeup Packet Memory</dd>
+<dt id="dt:fflt">
+<i>FFLT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flexible Filter Length Table</dd>
+<dt id="dt:ffmt">
+<i>FFMT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flexible Filter Mask Table</dd>
+<dt id="dt:ffvt">
+<i>FFVT</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flexible Filter Value Table</dd>
+<dt id="dt:receive_address_array">
+<i>receive_address_array</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[s*]</code>
+<br>Receive address array.</dd>
+<dt id="dt:debug_statistics">
+<i>debug_statistics</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[ii]</code>
+<br>Number of packets received and transmitted. Setting the attribute will clear all counters.</dd>
+<dt id="dt:txd_context">
+<i>txd_context</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[ii]</code>
+<br>On chip TCP/IP transmit context.</dd>
+<dt id="dt:stat_packets_rx">
+<i>stat_packets_rx</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of packets received.</dd>
+<dt id="dt:stat_packets_tx">
+<i>stat_packets_tx</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of packets transmitted.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.i82543.html">i82543</a>
+</section>
+<div class="chain">
+<a href="rm-class-i8254.html">i8254</a>
+<a href="rm-class-i82546.html">i82546</a>
+</div>

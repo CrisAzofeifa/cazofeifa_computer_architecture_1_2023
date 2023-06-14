@@ -1,0 +1,122 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>system-perfmeter</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-system-info.html">system-info</a>
+<a href="rm-cmd-system-perfmeter-summary.html">system-perfmeter-summary</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="system-perfmeter"></a>
+<h1 id="system-perfmeter"><a href="#system-perfmeter">system-perfmeter</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>system-perfmeter</b> [<i>sample_time</i>] [<i>mode</i>] [<i>file</i>] [-deactivate] [-realtime] [-cpu-idle] [-cpu-exec-mode] [-cpu-host-ticks] [-cpu-host-ticks-raw] [-cell-host-ticks] [-cell-host-ticks-raw] [-summary] [-summary-always] [-module-profile] [-window] [-top] [-disabled] [-mips] [-emips] [-multicore-accelerator] [-mem] [-shared] [-io] [-mips-win] [-no-log] [-only-current-cell] [-include-stop-time] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Activates performance measurement on one or more systems running within Simics. The resulting printouts gives an idea on how fast Simics executes and can be useful to identify opportunities for optimization.
+<p>
+The command periodically outputs various performance related counters for the period, called a sample. Counters measure activity during the period, unless otherwise noted. The counters are also accumulated and can be presented in a summary. Each time the command is given, all accumulated counters are reset to zero.
+</p><p>
+The sample output contains a number of columns; <i>Total-vt</i> (virtual time) and <i>Total-rt</i> (real time) is the accumulated number of seconds that has been executed on the system since the command was issued. Similarly, <i>Sample-vt</i> and <i>Sample-rt</i> is the sample time in seconds. <i>Slowdown</i> measures the ratio between the sample virtual time and real time. <i>CPU</i> indicates how much host CPU that was used by Simics during the sample, where 100% equals to one cpu running during the whole sample (as Simics is multi-threaded, this number can be much larger than 100). <i>Idle</i> represent how much all CPUs in the system was in idle during the sample. Instructions that do not compute anything, like the x86 halt instruction, and non-computing loops detected by Simics (see <code>hypersim-status</code>) are defined as idle instructions. A large idle percentage means that Simics can fast-forward time more, and hence gives better performance.
+</p><p>
+Virtual time is measured on the current cycle object (selectable with <code>pselect</code>) when the command is given.
+</p><p>
+To disable the system perfmeter use <tt>-deactivate</tt>.
+</p><p>
+<b>Output Presentation</b>
+</p><p>
+How frequent the measurements should be presented is controlled with the <i>sample_time</i> parameter which represent the time that should elapse for each sample, default is one second. Default is to sample based on virtual time, but using <tt>-realtime</tt> switches the sampling to be based on real (host) time.
+</p><p>
+The system-perfmeter will subtract any time when the simulation is not running from the measured wall-clock time. This allows the simulation to be temporary stopped in the middle of the execution without corrupting the measurement. The <tt>-include-stop-time</tt> flag prevents this subtraction from happening, allowing the actual real-time to be shown.
+</p><p>
+The <tt>-summary</tt> causes a summary report to be printed out each time simulation is stopped. It includes the same counters that you get for each sample, but the numbers are calculated based on the whole run, not just a sample, since the command was issued. The summary also includes performance hints as well as system info about target and host. A summary is only printed if at least one sample has been printed since the last time Simics stopped. The <tt>-summary-always</tt> flag prints the summary information each time Simics stops instead. The <code>system-perfmeter-summary</code> command also prints the summary report.
+</p><p>
+With <tt>-only-current-cell</tt>, metrics are only collected for the cell of the currently selected frontend object at the time when the command is run (selected with <code>pselect</code>). Global metrics such as <i>mem</i> will still include the entire simulation. If <tt>-only-current-cell</tt> is not specified, then metrics are based on all cells.
+</p><p>
+<b>Output Redirection</b>
+</p><p>
+Normally a text line with results is written as an output each measured sample. The <tt>-window</tt> flag opens a separate text window where the continued output is written instead of printing this in the Simics console. If no output is wanted at all, <tt>-no-log</tt> can be used (can be useful when running with only <tt>-top</tt> or <tt>-mips-win</tt>).
+</p><p>
+The console printouts can be sent to a file specified by the <i>file</i> argument. The default is to output the result to the Simics console. If <tt>-window</tt> is used together with a specified <i>file</i>, the output is written both to the file and to the separate window.
+</p><p>
+The <tt>-top</tt> flag opens a separate text window displaying some statistics on the execution, similar to the Linux top utility.
+</p><p>
+Similar, <tt>-mips-win</tt> opens a window displaying only the current MIPS value which can be useful for demonstration.
+</p><p>
+<b>Convenience Argument</b>
+</p><p>
+The optional <i>mode</i> argument can take one of "minimum", "normal" and "detailed" as its value. Each mode selects a number of the flags described below. Using a mode, flags can also be specified separately.<br>
+ - The "minimum" mode includes <tt>-emips</tt>, <tt>-realtime</tt> and <tt>-summary</tt>.<br>
+ - The "normal" mode includes <tt>-cpu-exec-mode</tt>, <tt>-cpu-idle</tt>, <tt>-emips</tt>, <tt>-realtime</tt> and <tt>-summary</tt>.<br>
+ - The "detailed" mode includes <tt>-cpu-exec-mode</tt>, <tt>-cpu-host-ticks</tt>, <tt>-cpu-idle</tt>, <tt>-emips</tt>, <tt>-io</tt>, <tt>-mem</tt>, <tt>-module-profile</tt>, <tt>-realtime</tt> and <tt>-summary</tt>.
+</p><p>
+<b>Counter Selection</b>
+</p><p>
+All of the below flags are used to add various counters to the sample. Instruction mode per cpu and host tick counters are grouped using brackets. An explanation of the label of each column in the brackets is printed when turning on profiling and when the summary is printed.
+</p><p>
+Instructions can be simulated in four different simulator modes: idle, interpreter, JIT, or VMP. For each processor, the percentage run in this mode out of all instructions run on the processor during the sample can be shown. <tt>-cpu-exec-mode</tt> will show numbers for processor instructions in JIT and VMP mode. <tt>-cpu-idle</tt> will show numbers for idle mode instructions. Interpreter mode is not shown, except in the summary. Columns are grouped per mode, and modes are sorted idle, JIT, VMP from left to right. If no instructions at all were executed during the sample, the processor is considered disabled and DIS is shown. Note that the absolute number of instructions may vary per processor (due to CPI, frequency, idle). Also, note that clocks have no instructions and are not shown, but are included in the number of processors in the summary.
+</p><p>
+Another group of values (one value per processor/cell, group placed to the far right) is added by <tt>-cpu-host-ticks</tt>. This shows how much real time each processor/cell takes to simulate. This can either be a percentage value of total host time when processors simulate, or an absolute value, counted in ticks, if using <tt>-cpu-host-ticks-raw</tt>. Execution outside a cell are excluded and such ticks are ignored. Execution inside a cell, but not executing a processor are reported in the "Outside Processors" column. A tick is a time unit defined by the host OS, on Linux usually 10 ms.
+</p><p>
+When running with a multi-cell configuration with many processors, <tt>-cell-host-ticks</tt> or <tt>-cell-host-ticks-raw</tt> can be used similar to the <tt>-cpu-host-ticks</tt>* switches. This provides a more narrow list of how much host processor that is needed to simulate each cell. Execution that falls outside any cell is placed in an "Outside cell" ("oc") column.
+</p><p>
+The <tt>-mips</tt> flag appends some MIPS values indicating how many million instruction per real second Simics has executed. The MIPS number printed is the number of instruction executed, including idle instructions. To see the MIPS value without the idle instructions (where only the instructions that are really executed in Simics are counted) you can use <tt>-emips</tt>.
+</p><p>
+The <tt>-multicore-accelerator</tt> tracks and prints the percentage of execution when Multicore Accelerator is both enabled and actually used. Even when Multicore Accelerator is enabled, it may not actually be used since there is a mechanism that monitors the simulation and falls back to classic non-threaded execution within each cell if there would not be a benefit from additional threading. See the Accelerator User's Guide for more information on Multicore Accelerator.
+</p><p>
+With <tt>-io</tt>, the number of instructions per I/O operation is calculated and presented in the output. An I/O operation is any memory access that is not terminated in a Simics ram or rom object and thus includes memory mapped I/O.
+</p><p>
+In some configurations, processors might be disabled at start and started later by software. To see how many of the processors that are disabled at the end of each sample use <tt>-disabled</tt>. The <i>Disabled</i> column shows how many CPUs and the percent of the total system which are not currently activated.
+</p><p>
+The <tt>-mem</tt> flag show the total amount of memory consumed by all instances of the image class (RAM, disk etc.) at the end of the sample. It is measured as the percentage of the memory-limit. If this number goes down compared to the previous sample it means that memory-limit has been reached and Simics has swapped out dirty pages to disk.
+</p><p>
+Simics can share identical pages across multiple simulated targets, if this feature is enabled. If the targets for instance run the same OS, Simics can keep one copy of a page instead of multiple copies, which consequently reduces host memory consumption. To see how much memory is currently saved at the end of the sample, <tt>-shared</tt> can be used. Notice that this figure only shows how much "image" memory that is saved. The page sharing mechanism can also reduce internal state, but this memory reduction is not accounted for.
+</p><p>
+Specifying <tt>-module-profile</tt> enables profiling of the simulator. Prints the percentage of real time spent in each module. Only printed in summary. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.system-perfmeter.html">system-perfmeter</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-pselect.html">pselect</a>, 
+<a href="rm-cmd-system-perfmeter-summary.html">system-perfmeter-summary</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-system-info.html">system-info</a>
+<a href="rm-cmd-system-perfmeter-summary.html">system-perfmeter-summary</a>
+</div>

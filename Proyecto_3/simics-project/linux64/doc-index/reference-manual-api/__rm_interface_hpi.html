@@ -1,0 +1,95 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>hpi</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_generic_message_link.html">generic_message_link</a>
+<a href="__rm_interface_i2c_bridge.html">i2c_bridge</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_hpi">hpi</a></h1>
+<p>
+
+<a name="hpi"></a><a name="hpi_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface defines HPI, Host Port Interface, which can be 
+   used by a host to access the DSP memory space. The access
+   functions have been designed to resemble the HPI hardware interface.
+<p>
+   The interface consists of three read/write access functions;
+   <b><i>read/write_hpic()</i></b> accesses the HPI controller 
+   register. Typically the host uses <b><i>write_hpic()</i></b> 
+   to clear the HINT bit (writing a one to the bit) when the
+   interrupt has been serviced.
+</p><p>
+   The <b><i>read/write_hpia()</i></b> functions are used to read 
+   or set the address to the memory location which should be later 
+   read or written. Reading HPIA either returns HPIAR or HPIAW
+   depending on if last access to HPID was a read or write.
+   Setting HPIA sets both HPIAR and HPIAW.
+</p><p>
+   Finally, to access the memory the <b><i>read/write_hpid()</i></b>
+   functions are used. These functions have a autoincrement flag
+   allowing the HPIAR or HPIAW to automatically increment the
+   value with 4 after the access is finished.
+</p><p>
+   All access functions assumes that the registers and data are
+   represented in host endianness.
+</p><p>
+   <span class="jdocu_smaller">
+   </span></p><pre class="jdocu_small">SIM_INTERFACE(hpi) {
+        /* HCNTL = 0 */
+        uint32 (*read_hpic)(conf_object_t *obj);
+        void  (*write_hpic)(conf_object_t *obj, uint32 value);
+        
+        /* HCNTL = 1 */
+        uint32 (*read_hpia)(conf_object_t *obj);
+        void  (*write_hpia)(conf_object_t *obj, uint32 value);
+        
+        /* HCNTL = 1 (autoincrement == 0) */
+        /* HCNTL = 2 (autoincrement == 1) */
+        uint32 (*read_hpid)(conf_object_t *obj, int autoincrement);
+        void  (*write_hpid)(conf_object_t *obj, uint32 value,
+                            int autoincrement);        
+};
+
+#define HPI_INTERFACE "hpi"
+</pre><p>
+</p><p>
+   
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_generic_message_link.html">generic_message_link</a>
+<a href="__rm_interface_i2c_bridge.html">i2c_bridge</a>
+</div>

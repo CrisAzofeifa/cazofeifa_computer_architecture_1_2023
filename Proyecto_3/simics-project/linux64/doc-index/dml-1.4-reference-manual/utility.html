@@ -1,0 +1,584 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5 Standard Templates</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="dml-builtins.html">4 Libraries and Built-ins</a>
+<a href="messages.html">A Messages</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="standard-templates">5 <a href="#standard-templates">Standard Templates</a></h1>
+<p>This chapter describes the standard templates included the
+Device Modeling Language (DML)
+library. The templates can be used for both registers and fields. The
+templates can be accessed after importing <code>utility.dml</code>.</p>
+<p>The most common device register functionality is included in the
+standard templates.</p>
+<p>Note that many standard templates has the same functionality and only
+differ by name or log-messages printed when writing or reading
+them. The name of the template help developers to get a quick overview
+of the device functionality. An example are the <em>undocumented</em>
+and <em>reserved</em> templates. Both have the same
+functionality. However, the <em>undocumented</em> template hints that
+something in the device documentation is unclear or missing, and the
+<em>reserved</em> template that the register or field should not be used
+by software.</p>
+<p>The sub-sections use <em>object</em> as a combined name for registers
+and fields. The sub-sections refers to software and hardware reads and
+writes. Software reads and writes are defined as accesses using the
+<code>io_memory</code> interface (write/reads to memory/io mapped
+device). Software reads and writes use the DML built-in read and write
+methods. Hardware read writes are defined as accesses using Simics
+configuration attributes, using the DML built-in set and get
+methods. Device code can still modify a register or device even if
+hardware modification is prohibited.</p>
+<h2 id="templates-for-reset">5.1 <a href="#templates-for-reset">Templates for reset</a></h2>
+<p>Reset behavior can vary quite a bit between different devices. DML
+has no built-in support for handling reset, but there are standard
+templates in <code>utility.dml</code> to cover some common reset
+mechanisms.</p>
+<p>There are three standard reset types:</p>
+<dl><dt id="dt:power-on-reset">
+<p>Power-on reset</p>
+</dt><dd>
+<p>The reset that happens when power is
+first supplied to a device.</p>
+</dd><dt id="dt:hard-reset">
+<p>Hard reset</p>
+</dt><dd>
+<p>Typically triggered by a physical hard
+reset line that can be controlled from various sources, such as
+a watchdog timer or a physical button. Often the same as a
+power-on reset.</p>
+</dd><dt id="dt:soft-reset">
+<p>Soft reset</p>
+</dt><dd>
+<p>This usually refers to a reset induced by
+software, e.g. by a register write. Not all devices have a soft
+reset, and some systems may support more than one type of soft
+reset.</p>
+</dd></dl>
+<p>Usually, the effect of a reset is that all registers are restored to
+some pre-defined value.</p>
+<p>In DML, the reset types can be enabled by instantiating the templates
+<a href="#poreset"><code>poreset</code>, <code>hreset</code> and <code>sreset</code></a>, respectively. These will define
+a port with the corresponding upper-case name (<code>POWER</code>, <code>HRESET</code>, <code>SRESET</code>),
+which implements the <code>signal</code> interface, triggering the corresponding reset
+type on raising edge. This happens by invoking a corresponding method
+(<code>power_on_reset</code>, <code>hard_reset</code> and <code>soft_reset</code>, respectively), in all
+objects implementing a given template (<a href="#power_on_reset"><code>power_on_reset</code>, <code>hard_reset</code> and
+<code>soft_reset</code></a>, respectively). The default is that all
+registers and fields implement these templates, with the default behavior
+being to restore to the value of the <code>init_val</code> parameter.
+The methods <code>signal_raise</code> and <code>signal_lower</code> can be overridden to add additional
+side effects upon device reset. One example would be to track if the reset
+signal is asserted to prevent interaction with the device during reset.</p>
+<p>The default implementation of all reset methods recursively calls
+the corresponding reset method in all sub-objects. Thus, if a reset
+method is overridden in an object without
+calling <code>default()</code>, then reset is effectively suppressed in
+all sub-objects.</p>
+<p>The two most common overrides of reset behavior are:</p>
+<ul>
+<li>
+<p>to reset to a different value. In the general case, this can
+be done with an explicit method override. In the case of soft
+reset, you can also use the standard
+template <a href="#soft_reset_val"><code>soft_reset_val</code></a> which allows you to configure
+the reset value with a parameter <code>soft_reset_val</code>.</p>
+</li>
+<li>
+<p>to suppress reset. This can be done with a standard
+template: <a href="#sticky"><code>sticky</code></a> suppresses soft reset only,
+while <a href="#no_reset"><code>no_reset</code></a> suppresses all resets.</p>
+<p>It is quite common that hard reset and power-on reset behave
+identically. In this case, we recommend that only a <code>HRESET</code> port is
+created; this way, the presence of a <code>POWER</code> port is an indication
+that the device actually provides a distinct behavior on power cycling.</p>
+<p>There are some less common reset use cases:</p>
+</li>
+<li>
+<p>In some devices, the standard reset types may not map well to
+the hardware, typically because there may be more than one reset
+type that could be viewed as a soft reset. In this case, we
+recommend that <code>SRESET</code> is replaced with device-specific port
+names that map better to the hardware, but that the <code>POWER</code> and
+<code>HRESET</code> port names are preserved if they are unambiguous.</p>
+</li>
+<li>
+<p>In some cases, it is desirable to accurately simulate how a
+device acts in a powered-off state. This would typically mean
+that the device does not react to other stimuli until power is
+turned on again.</p>
+<p>The recommended way to simulate a powered-off state, is to let the
+high signal level of the <code>POWER</code> port represent that the device has
+power, and react as if power is down while the signal is
+low. Furthermore, the device is reset when the <code>POWER</code> signal is
+lowered.</p>
+<p>If this scheme is used by a device, then a device will be considered
+turned off after instantiation, so the <code>POWER</code> signal must be raised
+explicitly before the device can function normally.</p>
+<p>Thus, there are two rather different ways to handle devices that
+have a <code>POWER</code> port:</p>
+<ul>
+<li>
+<p><code>POWER</code> can be treated as a pure reset port, which stays low for
+most of the time and is rapidly raised and lowered to mark a
+power-on reset. This is the most convenient way to provide a power
+signal, but it only works if the device only uses <code>POWER</code> for
+power-on reset. If the device models power supply accurately, then
+it will not function as expected, because it will consider power
+to be off.</p>
+</li>
+<li>
+<p><code>POWER</code> can be accurately treated as a power supply, meaning that
+the signal is raised before simulation starts, and lowered when
+power goes down. A reset is triggered by a lower followed by a
+raise. This approach is less convenient to implement, but more
+correct: The device will function correctly both if the device
+does an accurate power supply simulation, and if it only uses
+<code>POWER</code> for power-on reset.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="signal_port">5.1.1 <a href="#signal_port">signal_port</a></h3>
+<section>
+<h4 id="description">5.1.1.1 <a href="#description">Description</a></h4>
+<p>Implements a signal interface with saved state. The current state of the signal
+is stored in the saved boolean <code>high</code>, and a spec-violation message is logged
+on level 2 if the signal is raised or lowered when already high or low. The
+methods <code>signal_raise</code> and <code>signal_lower</code> can be overridden to add additional
+side effects.</p>
+</section>
+<h3 id="signal_connect">5.1.2 <a href="#signal_connect">signal_connect</a></h3>
+<section>
+<h4 id="description-2">5.1.2.1 <a href="#description-2">Description</a></h4>
+<p>Implements a connect with a signal interface, with saved state. The current
+state of the signal is stored in the saved boolean <code>signal.high</code>. If the
+connect is changed while <code>signal.high</code> is <code>true</code> and the device is configured,
+the <code>signal_lower</code> method will be called on the old object, and the
+<code>signal_raise</code> method will be called on the new object. Similarly, if the
+device is created with <code>signal.high</code> set to <code>true</code>, the <code>signal_raise</code> method
+will be called on the connected object in the finalize phase. This behaviour
+can be changed by overriding the <code>set</code> method and/or the <code>post_init</code>
+method. The template defines the following method:</p>
+<ul>
+<li><code>set_level(uint1 high)</code>: Sets the level of the signal, by calling
+<code>signal_raise</code> or <code>signal_lower</code>, as required. Also sets <code>signal.high</code>
+to <code>high</code>.</li>
+</ul>
+<h4 id="related-templates">5.1.2.2 <a href="#related-templates">Related Templates</a></h4>
+<p><a href="#signal_port"><code>signal_port</code></a></p>
+</section>
+<a id="power_on_reset">
+</a><h3 id="power_on_reset-hard_reset-soft_reset">5.1.3 <a id="power_on_reset"></a><a href="#power_on_reset-hard_reset-soft_reset">power_on_reset, hard_reset, soft_reset</a></h3>
+<section>
+<h4 id="description-3">5.1.3.1 <a href="#description-3">Description</a></h4>
+<p>Implemented on any
+object to get a callback on the corresponding reset event.  Automatically
+implemented by registers and fields.</p>
+<h4 id="related-templates-2">5.1.3.2 <a href="#related-templates-2">Related Templates</a></h4>
+<p><a href="#poreset"><code>poreset</code>, <code>hreset</code>, <code>sreset</code></a></p>
+</section>
+<a id="poreset">
+</a><h3 id="poreset-hreset-sreset">5.1.4 <a id="poreset"></a><a href="#poreset-hreset-sreset">poreset, hreset, sreset</a></h3>
+<section>
+<h4 id="description-4">5.1.4.1 <a href="#description-4">Description</a></h4>
+<p>Implemented on the top level to get standard reset behaviour,
+for power-on reset, hard reset and soft reset, respectively.</p>
+<h4 id="related-templates-3">5.1.4.2 <a href="#related-templates-3">Related Templates</a></h4>
+<p><a href="#power_on_reset"><code>power_on_reset</code>, <code>hard_reset</code>, <code>soft_reset</code></a></p>
+</section>
+<h2 id="templates-for-registers-and-fields">5.2 <a href="#templates-for-registers-and-fields">Templates for registers and fields</a></h2>
+<p>The following templates can be applied to both registers and fields.  Most of
+them affect either the write or read operation; if applied on a register it
+will disregard fields. For instance, when applying the
+<a href="#read_unimpl"><code>read_unimpl</code></a> template on a register with fields, then the read
+will ignore any implementations of <code>read</code> or <code>read_field</code> in fields, and return
+the current register value (through <code>get</code>), ignoring any <code>read</code> overrides in
+fields. However, writes will still propagate to the fields.</p>
+<h3 id="soft_reset_val">5.2.1 <a href="#soft_reset_val">soft_reset_val</a></h3>
+<section>
+<h4 id="description-5">5.2.1.1 <a href="#description-5">Description</a></h4>
+<p>Implemented on a register or field. Upon soft reset, the reset value is
+defined by the required <code>soft_reset_val</code> parameter,
+instead of the default <code>init_val</code>.</p>
+<h4 id="related-templates-4">5.2.1.2 <a href="#related-templates-4">Related Templates</a></h4>
+<p><a href="#power_on_reset"><code>soft_reset</code></a></p>
+</section>
+<h3 id="ignore_write">5.2.2 <a href="#ignore_write">ignore_write</a></h3>
+<section>
+<h4 id="description-6">5.2.2.1 <a href="#description-6">Description</a></h4>
+<p>Writes are ignored. This template might also be useful for read-only
+fields inside an otherwise writable register. See the documentation for the
+<a href="#read_only"><code>read_only</code></a> template for more information.</p>
+</section>
+<h3 id="read_zero">5.2.3 <a href="#read_zero">read_zero</a></h3>
+<section>
+<h4 id="description-7">5.2.3.1 <a href="#description-7">Description</a></h4>
+<p>Reads return 0, regardless of register/field value. Writes are
+unaffected by this template.</p>
+<h4 id="related-templates-5">5.2.3.2 <a href="#related-templates-5">Related Templates</a></h4>
+<p><a href="#read_constant"><code>read_constant</code></a></p>
+</section>
+<h3 id="read_only">5.2.4 <a href="#read_only">read_only</a></h3>
+<section>
+<h4 id="description-8">5.2.4.1 <a href="#description-8">Description</a></h4>
+<p>The object value is read-only for software, the object value can be
+modified by hardware.</p>
+<h4 id="log-output">5.2.4.2 <a href="#log-output">Log Output</a></h4>
+<p>First software write results in a spec_violation log-message on
+log-level 1, remaining writes on log-level 2. Fields will only log if the
+written value is different from the old value.</p>
+<p>If the register containing the read-only field also contains writable fields,
+it may be better to use the <a href="#ignore_write"><code>ignore_write</code></a> template instead, since software
+often do not care about what gets written to a read-only field, causing
+unnecessary logging.</p>
+</section>
+<h3 id="write_only">5.2.5 <a href="#write_only">write_only</a></h3>
+<section>
+<h4 id="description-9">5.2.5.1 <a href="#description-9">Description</a></h4>
+<p>The register value can be modified by software but can't be read back, reads
+return 0. Only for use on registers; use <a href="#read_zero"><code>read_zero</code></a> for write-only
+fields.</p>
+<h4 id="log-output-2">5.2.5.2 <a href="#log-output-2">Log Output</a></h4>
+<p>The first time the object is read there is a spec_violation
+log-message on log-level 1, remaining reads on log-level 2.</p>
+</section>
+<h3 id="write_1_clears">5.2.6 <a href="#write_1_clears">write_1_clears</a></h3>
+<section>
+<h4 id="description-10">5.2.6.1 <a href="#description-10">Description</a></h4>
+<p>Software can only clear bits. This feature is often used when
+hardware sets bits and software clears them to acknowledge.
+Software write 1's to clear bits. The new object value is
+a bitwise AND of the old object value and the bitwise
+complement of the value written by software.</p>
+</section>
+<h3 id="clear_on_read">5.2.7 <a href="#clear_on_read">clear_on_read</a></h3>
+<section>
+<h4 id="description-11">5.2.7.1 <a href="#description-11">Description</a></h4>
+<p>Software reads return the object value. The object value is then reset to 0
+as a side-effect of the read.</p>
+</section>
+<h3 id="write_1_only">5.2.8 <a href="#write_1_only">write_1_only</a></h3>
+<section>
+<h4 id="description-12">5.2.8.1 <a href="#description-12">Description</a></h4>
+<p>Software can only set bits to 1.
+The new object value is the bitwise OR of the
+old object value and the value written by software.</p>
+<h4 id="related-templates-6">5.2.8.2 <a href="#related-templates-6">Related Templates</a></h4>
+<p><a href="#write_0_only"><code>write_0_only</code></a></p>
+</section>
+<h3 id="write_0_only">5.2.9 <a href="#write_0_only">write_0_only</a></h3>
+<section>
+<h4 id="description-13">5.2.9.1 <a href="#description-13">Description</a></h4>
+<p>Software can only set bits to 0.
+The new object value is the bitwise AND of the
+old object value and the value written by software.</p>
+<h4 id="related-templates-7">5.2.9.2 <a href="#related-templates-7">Related Templates</a></h4>
+<p><a href="#write_1_only"><code>write_1_only</code></a></p>
+</section>
+<h3 id="read_constant">5.2.10 <a href="#read_constant">read_constant</a></h3>
+<section>
+<h4 id="description-14">5.2.10.1 <a href="#description-14">Description</a></h4>
+<p>Reads return a constant value.</p>
+<p>Writes are unaffected by this template. The read value is unaffected
+by the value of the register or field.</p>
+<p>The template is intended for registers or fields that have a stored value that
+is affected by writes, but where reads disregard the stored value and return a
+constant value. The attribute for the register will reflect the stored value,
+not the value that is returned by read operations. For constant registers or
+fields that do not store a value, use the <a href="#constant"><code>constant</code></a> template instead.</p>
+<h4 id="parameters">5.2.10.2 <a href="#parameters">Parameters</a></h4>
+<p><code>read_val</code>: the constant value</p>
+<h4 id="related-templates-8">5.2.10.3 <a href="#related-templates-8">Related Templates</a></h4>
+<p><a href="#constant"><code>constant</code></a>, <a href="#silent_constant"><code>silent_constant</code></a>,
+<a href="#read_zero"><code>read_zero</code></a></p>
+</section>
+<h3 id="constant">5.2.11 <a href="#constant">constant</a></h3>
+<section>
+<h4 id="description-15">5.2.11.1 <a href="#description-15">Description</a></h4>
+<p>Writes are forbidden and have no effect.</p>
+<p>The object still has backing storage, which affects the value being read.
+Thus, an end-user can modify the constant value by writing to the register's
+attribute. Such tweaks will survive a reset.</p>
+<p>Using the <code>constant</code> template marks that the object is intended to
+stay constant, so the model should not update the register value, and not
+override the <code>read</code> method. Use the template
+<a href="#read_only"><code>read_only</code></a> if that is desired.</p>
+<h4 id="log-output-3">5.2.11.2 <a href="#log-output-3">Log Output</a></h4>
+<p>First write to register or field (if field value is not
+equal to write value) results in a spec_violation log-message on
+log-level 1, remaining writes on log-level 2.</p>
+<h4 id="parameters-2">5.2.11.3 <a href="#parameters-2">Parameters</a></h4>
+<p>init_val: the constant value</p>
+<h4 id="related-templates-9">5.2.11.4 <a href="#related-templates-9">Related Templates</a></h4>
+<p><a href="#read_constant"><code>read_constant</code></a>, <a href="#silent_constant"><code>silent_constant</code></a>,
+<a href="#read_only"><code>read_only</code></a></p>
+</section>
+<h3 id="silent_constant">5.2.12 <a href="#silent_constant">silent_constant</a></h3>
+<section>
+<h4 id="description-16">5.2.12.1 <a href="#description-16">Description</a></h4>
+<p>The object value will remain constant.
+Writes are ignored and do not update the object value.</p>
+<p>The end-user can tweak the constant value; any tweaks will survive a reset.</p>
+<p>By convention, the object value should not be modified by the model; if that
+behaviour is wanted, use the <a href="#ignore_write"><code>ignore_write</code></a> template instead.</p>
+<h4 id="parameters-3">5.2.12.2 <a href="#parameters-3">Parameters</a></h4>
+<p>init_val: the constant value</p>
+<h4 id="related-templates-10">5.2.12.3 <a href="#related-templates-10">Related Templates</a></h4>
+<p><a href="#constant"><code>constant</code></a>, <a href="#read_constant"><code>read_constant</code></a></p>
+</section>
+<h3 id="zeros">5.2.13 <a href="#zeros">zeros</a></h3>
+<section>
+<h4 id="description-17">5.2.13.1 <a href="#description-17">Description</a></h4>
+<p>The object value is constant 0.
+Software writes are forbidden and do not update the object value.</p>
+<h4 id="log-output-4">5.2.13.2 <a href="#log-output-4">Log Output</a></h4>
+<p>First software write to register or field (if field value is not
+equal to write value) results in a spec_violation log-message on
+log-level 1, remaining writes on log-level 2.</p>
+</section>
+<h3 id="ones">5.2.14 <a href="#ones">ones</a></h3>
+<section>
+<h4 id="description-18">5.2.14.1 <a href="#description-18">Description</a></h4>
+<p>The object is constant all 1's.
+Software writes do not update the object value. The
+object value is all 1's.</p>
+<h4 id="log-output-5">5.2.14.2 <a href="#log-output-5">Log Output</a></h4>
+<p>First software write to register or field (if field value is not
+equal to write value) results in a spec_violation log-message on
+log-level 1, remaining writes on log-level 2.</p>
+</section>
+<h3 id="ignore">5.2.15 <a href="#ignore">ignore</a></h3>
+<section>
+<h4 id="description-19">5.2.15.1 <a href="#description-19">Description</a></h4>
+<p>The object's functionality is unimportant. Reads return 0.
+Writes are ignored.</p>
+</section>
+<h3 id="reserved">5.2.16 <a href="#reserved">reserved</a></h3>
+<section>
+<h4 id="description-20">5.2.16.1 <a href="#description-20">Description</a></h4>
+<p>The object is marked reserved and should not be used by software.
+Writes update the object value. Reads return the object value.</p>
+<h4 id="log-output-6">5.2.16.2 <a href="#log-output-6">Log Output</a></h4>
+<p>First software write to register or field (if field value is not
+equal to write value) results in a <code>spec-viol</code> log-message on
+log-level 2. No logs on subsequent writes.</p>
+</section>
+<h3 id="unimpl">5.2.17 <a href="#unimpl">unimpl</a></h3>
+<section>
+<h4 id="description-21">5.2.17.1 <a href="#description-21">Description</a></h4>
+<p>The object functionality is unimplemented. Warn when software is using the
+object. Writes and reads are implemented as default writes and reads.</p>
+<h4 id="log-output-7">5.2.17.2 <a href="#log-output-7">Log Output</a></h4>
+<p>First read from a register results in an unimplemented log-message on
+log-level 1, remaining reads on log-level 3. Reads from a field does
+not result in a log-message. First write to a register results in
+an unimplemented log-message on log-level 1, remaining writes on log-level 3.
+First write to a field (if field value is not equal to write value) results
+in an unimplemented log-message on log-level 1, remaining writes on
+log-level 3.</p>
+<h4 id="related-templates-11">5.2.17.3 <a href="#related-templates-11">Related Templates</a></h4>
+<p><a href="#read_unimpl"><code>read_unimpl</code></a>, <a href="#write_unimpl"><code>write_unimpl</code></a>,
+<a href="#silent_unimpl"><code>silent_unimpl</code></a>, <a href="#design_limitation"><code>design_limitation</code></a></p>
+</section>
+<h3 id="read_unimpl">5.2.18 <a href="#read_unimpl">read_unimpl</a></h3>
+<section>
+<h4 id="description-22">5.2.18.1 <a href="#description-22">Description</a></h4>
+<p>The object functionality associated to a read access is unimplemented. Write
+access is using default implementation and can be overridden (for instance
+by the <a href="#read_only"><code>read_only</code></a> template).</p>
+<h4 id="log-output-8">5.2.18.2 <a href="#log-output-8">Log Output</a></h4>
+<p>First software read to a register results in an unimplemented log-message on
+log-level 1, remaining reads on log-level 3. Software reads to fields does
+not result in a log-message.</p>
+<h4 id="related-templates-12">5.2.18.3 <a href="#related-templates-12">Related Templates</a></h4>
+<p><a href="#unimpl"><code>unimpl</code></a>, <a href="#write_unimpl"><code>write_unimpl</code></a>,
+<a href="#silent_unimpl"><code>silent_unimpl</code></a>, <a href="#design_limitation"><code>design_limitation</code></a></p>
+</section>
+<h3 id="write_unimpl">5.2.19 <a href="#write_unimpl">write_unimpl</a></h3>
+<section>
+<h4 id="description-23">5.2.19.1 <a href="#description-23">Description</a></h4>
+<p>The object functionality associated to a write access is unimplemented. Read
+access is using default implementation and can be overridden (for instance
+by the <a href="#write_only"><code>write_only</code></a> template).</p>
+<h4 id="log-output-9">5.2.19.2 <a href="#log-output-9">Log Output</a></h4>
+<p>First software write to registers results in an unimplemented log-message on
+log-level 1, remaining writes on log-level 3.  First write to a field (if
+field value is not equal to write value) results in an unimplemented
+log-message on log-level 1, remaining writes on log-level 3.</p>
+<h4 id="related-templates-13">5.2.19.3 <a href="#related-templates-13">Related Templates</a></h4>
+<p><a href="#unimpl"><code>unimpl</code></a>, <a href="#read_unimpl"><code>read_unimpl</code></a>,
+<a href="#silent_unimpl"><code>silent_unimpl</code></a>, <a href="#design_limitation"><code>design_limitation</code></a></p>
+</section>
+<h3 id="silent_unimpl">5.2.20 <a href="#silent_unimpl">silent_unimpl</a></h3>
+<section>
+<h4 id="description-24">5.2.20.1 <a href="#description-24">Description</a></h4>
+<p>The object functionality is unimplemented, but do not print a
+lot of log-messages when reading or writing.
+Writes and reads are implemented as default writes and reads.</p>
+<h4 id="log-output-10">5.2.20.2 <a href="#log-output-10">Log Output</a></h4>
+<p>First software read to a register results in an unimplemented log-message on
+log-level 2, remaining reads on log-level 3. Software reads to fields does
+not result in a log-message. First software write to a register results in
+an unimplemented log-message on log-level 2, remaining writes on log-level 3.
+First write to a field (if field value is not equal to write value) results
+in an unimplemented log-message on log-level 2, remaining writes on
+log-level 3.</p>
+<h4 id="related-templates-14">5.2.20.3 <a href="#related-templates-14">Related Templates</a></h4>
+<p><a href="#unimpl"><code>unimpl</code></a>, <a href="#design_limitation"><code>design_limitation</code></a></p>
+</section>
+<h3 id="undocumented">5.2.21 <a href="#undocumented">undocumented</a></h3>
+<section>
+<h4 id="description-25">5.2.21.1 <a href="#description-25">Description</a></h4>
+<p>The object functionality is undocumented or poorly documented.
+Writes and reads are implemented as default writes and
+reads.</p>
+<h4 id="log-output-11">5.2.21.2 <a href="#log-output-11">Log Output</a></h4>
+<p>First software write and read result in a spec_violation log-message on
+log-level 1, remaining on log-level 2.</p>
+</section>
+<h3 id="unmapped">5.2.22 <a href="#unmapped">unmapped</a></h3>
+<section>
+<h4 id="description-26">5.2.22.1 <a href="#description-26">Description</a></h4>
+<p>The register is excluded from the address space of the containing bank.</p>
+</section>
+<h3 id="sticky">5.2.23 <a href="#sticky">sticky</a></h3>
+<section>
+<h4 id="description-27">5.2.23.1 <a href="#description-27">Description</a></h4>
+<p>Do not reset object value on soft-reset, keep current value.</p>
+</section>
+<h3 id="design_limitation">5.2.24 <a href="#design_limitation">design_limitation</a></h3>
+<section>
+<h4 id="description-28">5.2.24.1 <a href="#description-28">Description</a></h4>
+<p>The object's functionality is not in the model's scope and has been
+left unimplemented as a design decision. Software and hardware
+writes and reads are implemented as default writes and reads.
+Debug registers are a prime example of when to use this
+template. This is different from <em>unimplemented</em> which is
+intended to be implement (if required) but is a limitation in
+the current model.</p>
+<h4 id="related-templates-15">5.2.24.2 <a href="#related-templates-15">Related Templates</a></h4>
+<p><a href="#unimpl"><code>unimpl</code></a>, <a href="#silent_unimpl"><code>silent_unimpl</code></a></p>
+</section>
+<h3 id="no_reset">5.2.25 <a href="#no_reset">no_reset</a></h3>
+<section>
+<h4 id="description-29">5.2.25.1 <a href="#description-29">Description</a></h4>
+<p>The register's or field's value will not be changed on a hard or soft reset.</p>
+</section>
+<h2 id="bank-related-templates">5.3 <a href="#bank-related-templates">Bank related templates</a></h2>
+<h3 id="function_mapped_bank">5.3.1 <a href="#function_mapped_bank">function_mapped_bank</a></h3>
+<section>
+<h4 id="description-30">5.3.1.1 <a href="#description-30">Description</a></h4>
+<p>Only valid in <code>bank</code> objects. The bank is recognized as a function mapped bank
+by the <a href="#function_io_memory"><code>function_io_memory</code></a> template, and is mapped to a
+specified function by whoever instantiates that template.</p>
+<h4 id="parameters-4">5.3.1.2 <a href="#parameters-4">Parameters</a></h4>
+<p>function: the function number, an integer</p>
+<h4 id="related-templates-16">5.3.1.3 <a href="#related-templates-16">Related Templates</a></h4>
+<p><a href="#function_io_memory"><code>function_io_memory</code></a></p>
+</section>
+<h3 id="function_io_memory">5.3.2 <a href="#function_io_memory">function_io_memory</a></h3>
+<section>
+<h4 id="description-31">5.3.2.1 <a href="#description-31">Description</a></h4>
+<p>Only valid in <code>implement</code> objects named <code>io_memory</code>. Implements the <code>io_memory</code>
+interface by function mapping: An incoming memory transaction is handled by
+finding a bank that instantiates the
+<a href="#function_mapped_bank"><code>function_mapped_bank</code></a> template, and has a function
+number that matches the memory transaction's. If such a bank exists, the
+transaction is handled by that bank. If no such bank exists, an error message
+is logged and a miss is reported for the access.</p>
+<p>Mapping banks by function number is a deprecated practice, still used by PCI
+devices for legacy reasons. It is usually easier to
+map a bank directly into a memory space, than using a function number as an
+indirection.</p>
+<p>Note also that function numbers as defined by the PCI standard are unrelated
+to the function numbers of banks. They can sometimes coincide, though.</p>
+<h4 id="parameters-5">5.3.2.2 <a href="#parameters-5">Parameters</a></h4>
+<p>function: the function number, an integer</p>
+<h4 id="related-templates-17">5.3.2.3 <a href="#related-templates-17">Related Templates</a></h4>
+<p><a href="#function_mapped_bank"><code>function_mapped_bank</code></a></p>
+</section>
+<h3 id="miss_pattern_bank">5.3.3 <a href="#miss_pattern_bank">miss_pattern_bank</a></h3>
+<section>
+<h4 id="description-32">5.3.3.1 <a href="#description-32">Description</a></h4>
+<p>Only valid in <code>bank</code> objects. Handles unmapped accesses by
+ignoring write accesses, and returning a given value for each unmapped
+byte.</p>
+<h4 id="parameters-6">5.3.3.2 <a href="#parameters-6">Parameters</a></h4>
+<p>miss_pattern: each missed byte in a miss read is set to this value</p>
+</section>
+<h2 id="connect-related-templates">5.4 <a href="#connect-related-templates">Connect related templates</a></h2>
+<h3 id="map_target">5.4.1 <a href="#map_target">map_target</a></h3>
+<p>A <code>connect</code> object can instantiate the template <code>map_target</code>. The template
+provides an easy way to send memory transactions to objects that can be
+mapped into Simics memory maps. It defines a default implementation of <code>set</code>
+which assigns the session variable <code>map_target</code> of type <code>map_target_t *</code>,
+which can be used to issue transactions to the connected object. It also
+defines a default implementation of <code>validate</code> which verifies that the
+object can be used to create a map target, i.e. the Simics API
+<code>SIM_new_map_target</code> returns a valid pointer.</p>
+<p>The template defines the following methods:</p>
+<ul>
+<li>
+<p><code>read(uint64 addr, uint64 size) -&gt; (uint64) throws</code></p>
+<p>Reads <code>size</code> bytes starting at <code>addr</code> in the connected object. Size
+must be 8 or less. Byte order is little-endian. Throws an exception if
+the read fails.</p>
+</li>
+<li>
+<p><code>read_bytes(uint64 addr, uint64 size, uint8 *bytes) throws</code></p>
+<p>Reads <code>size</code> bytes into <code>bytes</code>, starting at <code>addr</code> in the connected
+object. Throws an exception if the read fails.</p>
+</li>
+<li>
+<p><code>write(uint64 addr, uint64 size, uint64 value) throws</code></p>
+<p>Writes <code>value</code> of <code>size</code> bytes, starting at <code>addr</code> in the connected
+object. Size must be 8 or less. Byte order is little-endian. Throws an
+exception if the write fails.</p>
+</li>
+<li>
+<p><code>write_bytes(uint64 addr, uint64 size, const uint8 *bytes) throws</code></p>
+<p>Writes <code>size</code> bytes from <code>bytes</code>, starting at <code>addr</code> in the connected
+object. Throws an exception if the write fails.</p>
+</li>
+<li>
+<p><code>issue(transaction_t *t, uint64 addr) -&gt; (exception_type_t)</code></p>
+<p>Provides a shorthand to the API function <code>SIM_issue_transaction</code>.
+This method is called by the read/write methods in this template. It
+can be overridden, e.g. to add additional atoms to the transactions,
+while still allowing the ease-of-use from the simpler methods.</p>
+</li>
+</ul>
+
+<div class="chain">
+<a href="dml-builtins.html">4 Libraries and Built-ins</a>
+<a href="messages.html">A Messages</a>
+</div>

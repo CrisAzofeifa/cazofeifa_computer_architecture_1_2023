@@ -1,0 +1,222 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i3c_link_endpoint</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-i3c_cable_impl.html">i3c_cable_impl</a>
+<a href="rm-class-i3c_link_impl.html">i3c_link_impl</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="i3c_link_endpoint"><a href="#i3c_link_endpoint">i3c_link_endpoint</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+I3C link endpoint
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, link_endpoint, link_endpoint_v2, i3c_slave, i3c_master, i3c_daa_snoop
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-i3c_link_endpoint.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-i3c_link_endpoint.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:id">
+<i>id</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Endpoint ID. The ID of each endpoint must be unique among the link's endpoints, and it may not be 0 or 0xffffffffffffffff</dd>
+<dt id="dt:link">
+<i>link</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>The link object to which this endpoint belongs.</dd>
+<dt id="dt:delivery_queue">
+<i>delivery_queue</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i[o|n[ii]][iiii]]*]</code>
+<br>The endpoint's queue.</dd>
+<dt id="dt:sorting_key">
+<i>sorting_key</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[bi]</code>
+<br>Internal.</dd>
+<dt id="dt:device">
+<i>device</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o|[os]</code>
+<br>The device connected to this endpoint.</dd>
+<dt id="dt:indirect_delivery">
+<i>indirect_delivery</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If set, deliver link messages to their targets immediately to let them worry about the exact time of delivery. Needed for endpoints attached to follower agents.</dd>
+<dt id="dt:main_master">
+<i>main_master</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Endpoint ID connecting to the device that has overall control of the I3C link.</dd>
+<dt id="dt:current_master">
+<i>current_master</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The endpoint id of current active master, initialized as LINK_NULL_ID which indicates invalid endpoint id</dd>
+<dt id="dt:current_slave">
+<i>current_slave</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The endpoint id of current active slave, initialized as LINK_NULL_ID which indicates invalid endpoint id</dd>
+<dt id="dt:pending_acks">
+<i>pending_acks</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The number of devices we are awaiting a start response</dd>
+<dt id="dt:address">
+<i>address</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Save address status for start request</dd>
+<dt id="dt:slave_list">
+<i>slave_list</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>IDs of endpoints used when more than one slave communicates with master</dd>
+<dt id="dt:slave_list_ack">
+<i>slave_list_ack</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Save the combined response come from slaves in slave_list</dd>
+<dt id="dt:slave_list_counter">
+<i>slave_list_counter</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The number of slaves we are awaiting response in slave_list</dd>
+<dt id="dt:slave_data_list">
+<i>slave_data_list</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ii]*]</code>
+<br>Keeps a list of pair (ID and data) come from slave. The 'data' can be slave daa data when in DAA process, or slave address when slave issues IBI request (hot-join, IBI, secondary master)</dd>
+<dt id="dt:in_daa">
+<i>in_daa</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>True when the endpoint is in DAA process</dd>
+<dt id="dt:ccc">
+<i>ccc</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Save data sent following start request</dd>
+<dt id="dt:secondary_master">
+<i>secondary_master</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Endpoind ID of secondary master</dd>
+<dt id="dt:legacy_write">
+<i>legacy_write</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>True when master is communicating with i2c slaves, or write daa address</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.i3c-link.html">i3c-link</a>
+</section>
+<div class="chain">
+<a href="rm-class-i3c_cable_impl.html">i3c_cable_impl</a>
+<a href="rm-class-i3c_link_impl.html">i3c_link_impl</a>
+</div>

@@ -1,0 +1,243 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>table</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_slaver_message.html">slaver_message</a>
+<a href="__rm_interface_telnet_connection.html">telnet_connection</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_table">table</a></h1>
+<p>
+
+<a name="table"></a><a name="table_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The table interface can be implemented by objects holding data
+   which can be presented in a table by the user interface (through
+   Simics CLI command outputs, Eclipse etc.) 
+<p>
+   By properly implementing the table interface, less object specific code
+   is needed to provide the data to the user. Generic Simics commands
+   (associated with the table interface) allows the data to sorted on 
+   the desired column and printed in a uniform way. 
+   Similarly, the data can be exported to a comma separated value (.csv)
+   file, making it possible to process the result in a spreadsheet program.
+</p><p>
+   The <b><i>data()</i></b> method returns the data as an
+   <code>attr_value_t</code> array where the outer list contains each row and
+   the inner list contains the columns for that row. The number of columns in
+   each row must be exactly the same. The data only holds the actual data, not
+   the headers for each column, which instead is specified in the
+   <b><i>properties()</i></b> method. The data can be unsorted, it is up to the
+   user of the interface to sort it in a suitable way.
+</p><p>
+   The data itself is sufficient for producing a table, but to customize
+   the table layout the <b><i>properties</i></b> method can return hints on
+   how the table should be presented more in detail. For example, specifying
+   which column the table should be sorted on by default, or if a column 
+   preferably should  be printed with hexadecimal numbers instead of decimals.
+   In addition, the <b><i>properties</i></b> also contains the name of the columns
+   as well as additional meta-data such as what each column represents, or 
+   what the entire table represents.
+</p><p>
+   The <b><i>properties</i></b> also returns an <code>attr_value_t</code> type 
+   as a list of key/value pairs. Thus, each list-entry should be exactly
+   two elements long, but the value part can itself be a new list of key/value
+   pairs for some keys.
+</p><p>
+   The table property keys are of <code>table_key_t</code> type:
+   
+</p><pre class="jdocu_small">typedef enum {
+        /* Table property keys */
+        Table_Key_Name = 1,
+        Table_Key_Description,
+        Table_Key_Default_Sort_Column,
+        Table_Key_Columns,
+        Table_Key_Extra_Headers,
+        Table_Key_Stream_Header_Repeat,
+        /* Additional properties might be added in the future.
+           Thus, unknown values should be silently ignored. */
+} table_key_t;</pre><p>
+
+</p><p>
+   This is the definition for each table property:
+   </p><dl><dt id="dt:table_key_name-string"><b><code>Table_Key_Name</code> <i>String</i></b></dt><dd>A short description of what the table represents.</dd><dt id="dt:table_key_description-string"><b><code>Table_Key_Description</code> <i>String</i></b></dt><dd>A longer description what the table represents.</dd><dt id="dt:table_key_default_sort_column-string"><b><code>Table_Key_Default_Sort_Column</code> <i>String</i></b></dt><dd>References the Column_Key_Name (inside the Table_Key_Columns) to tell
+   which column that should be used when sorting the table by
+   default. If the Column_Key_Name contains new-line characters,
+   replace those with spaces. If not specified, the table will
+   be unsorted by default.</dd><dt id="dt:table_key_extra_headers-list-of-additional-header-rows"><b><code>Table_Key_Extra_Headers</code> <i>List of additional header
+   rows</i></b></dt><dd>In addition to the column-headers printed, this property allows
+   additional header rows to be presented before the column headers. These
+   additional header rows can span over multiple columns, providing additional
+   explanation and grouping of columns.
+<p>
+   The format is: list of additional header rows, each identified as a
+   <code>Extra_Header_Key_Row</code>.
+   Each row is defined by a list of the header-elements where each element
+   is a list of the header's key/value pair properties.
+</p><p>
+   The header property keys are of <code>extra_header_key_t</code> type,
+   this is the definition for each extra header property:
+   
+</p><pre class="jdocu_small">typedef enum {
+        /* Header property keys */
+        Extra_Header_Key_Row = 2000,
+        Extra_Header_Key_Name,
+        Extra_Header_Key_Description,
+        Extra_Header_Key_First_Column,
+        Extra_Header_Key_Last_Column,
+} extra_header_key_t;</pre><p>
+
+</p><p>
+   </p><dl><dt id="dt:extra_header_key_row-list-of-header-elements"><b><code>Extra_Header_Key_Row</code> <i>List of header elements</i></b></dt><dd>Identifies a new header row.</dd><dt id="dt:extra_header_key_name-string"><b><code>Extra_Header_Key_Name</code> <i>String</i></b></dt><dd>The name printed for the extra header element.</dd><dt id="dt:extra_header_key_description-string"><b><code>Extra_Header_Key_Description</code> <i>String</i></b></dt><dd>Optional additional text describing the header.</dd><dt id="dt:extra_header_key_first_column-string"><b><code>Extra_Header_Key_First_Column</code> <i>String</i></b></dt><dd>A reference to the column the additional header spans from.</dd><dt id="dt:extra_header_key_last_column-string"><b><code>Extra_Header_Key_Last_Column</code> <i>String</i></b></dt><dd>A reference to the column the additional header spans to.</dd></dl><p></p></dd>If there is only one header element on a row, and neither
+   <code>Extra_Header_Key_First_Column</code> and
+   <code>Extra_Header_Key_Last_Column</code> are set, the header will span the
+   entire table, even if additional columns has been added by the system. In
+   all other cases first/last column always needs to be specified.
+
+   <dt id="dt:table_key_columns-list-of-columns-with-key-value-pairs"><b><code>Table_Key_Columns</code> <i>List of columns, with key/value pairs
+   </i></b></dt><dd>A list of the columns, where each element consists of key/value pairs
+   defining each column with various properties.
+   The column properties are named with Column_Key_* which are listed below.
+   The list size should match the number of columns in the data. List item 1,
+   represents key/value definitions for column 1 etc.
+<p>
+   The column property keys are of <code>column_key_t</code> type:
+   
+</p><pre class="jdocu_small">typedef enum {                
+        /* Column property keys */
+        Column_Key_Name = 1000,       /* Other number series than table-keys */
+        Column_Key_Description,
+        Column_Key_Alignment,
+        Column_Key_Int_Radix,
+        Column_Key_Float_Percent,
+        Column_Key_Float_Decimals,
+        Column_Key_Sort_Descending,
+        Column_Key_Hide_Homogeneous,
+        Column_Key_Generate_Percent_Column,
+        Column_Key_Generate_Acc_Percent_Column,
+        Column_Key_Footer_Sum,
+        Column_Key_Footer_Mean,
+        Column_Key_Int_Grouping,
+        Column_Key_Int_Pad_Width,
+        Column_Key_Metric_Prefix,
+        Column_Key_Binary_Prefix,
+        Column_Key_Time_Format,
+        Column_Key_Unique_Id,
+        Column_Key_Width,
+        Column_Key_Word_Delimiters,
+        /* Additional properties might be added in the future.
+           Thus, unknown values should be silently ignored. */        
+} column_key_t;</pre><p>
+
+   This is the definition for each column property:
+</p><p>
+   </p><dl><dt id="dt:column_key_name-string"><b><code>Column_Key_Name</code> <i>String</i></b></dt><dd>The name for the column, displayed on the first row of the table.
+   Preferably these should be as short as possible while still being 
+   descriptive. 
+   It is possible to break longer strings with a newline character (\n)</dd><dt id="dt:column_key_description-string"><b><code>Column_Key_Description</code> <i>String</i></b></dt><dd>A longer descriptive text describing the column content.</dd><dt id="dt:column_key_alignment-string-left-right-center"><b><code>Column_Key_Alignment</code> <i>String: ["left", "right", "center"]</i>
+   </b></dt><dd>Specifies if the column data should be aligned to the left, right
+   or centered for the entire table data. If not specified strings are
+   left-aligned and numbers right-aligned.</dd><dt id="dt:column_key_word_delimiters-string"><b><code>Column_Key_Word_Delimiters</code> <i>String</i></b></dt><dd>Overrides the default set of character that will be used for word
+   wrapping of long lines. Default is <code>" -_:,."</code>.</dd><dt id="dt:column_key_int_radix-integer-2-10-16"><b><code>Column_Key_Int_Radix</code> <i>Integer: [2,10,16]]</i></b></dt><dd>Specifies the default radix which should be used for when displaying
+   integers numbers, 2 means binary, 10 decimal and 16 hexadecimal.
+   If not specified, the integers will be displayed in the default radix,
+   selectable by the <b>output-radix</b> command.</dd><dt id="dt:column_key_int_grouping-boolean"><b><code>Column_Key_Int_Grouping</code> <i>Boolean</i></b></dt><dd>If False, the current user preferences for integer grouping will be
+   ignored. For example, instead of 12_345 the output will read 12345. If not
+   specified, default grouping is respected. Grouping is set by the
+   <b>output-radix</b> command.</dd><dt id="dt:column_key_pad_width-integer"><b><code>Column_Key_Pad_Width</code> <i>Integer</i></b></dt><dd>Zero-extends values up to N characters. This allows similar width of
+   the column data regardless of the value in each cell. For example,
+   with hexadecimal output and 64-bits value printed, the column might
+   be easier to read with a pad-width of 16.
+   If not specified, the default size used 1 (no-padding).</dd><dt id="dt:column_key_float_percent-boolean"><b><code>Column_Key_Float_Percent</code> <i>Boolean</i></b></dt><dd>If True, any float data in the column will be printed as a 
+   percent value. For example, 0.1234 will be printed as 12.34%.</dd><dt id="dt:column_key_float_decimals-integer"><b><code>Column_Key_Float_Decimals</code> <i>Integer</i></b></dt><dd>Specifies how many decimal digit that should be printed for
+   any floating point values in the column. If not specified 2 decimals
+   are printed by default.</dd><dt id="dt:column_key_metric_prefix-string"><b><code>Column_Key_Metric_Prefix</code> <i>String</i></b></dt><dd>A metric prefix
+   (m, µ, n, p, f, a, z, y, k, M, G, T, P, E, Z, Y) will be added to the value
+   and the value will be adjusted accordingly. If the string is non-empty the
+   string will be interpreted as a unit that will be added after the prefix for
+   each value.</dd><dt id="dt:column_key_binary_prefix-string"><b><code>Column_Key_Binary_Prefix</code> <i>String</i></b></dt><dd>A binary prefix
+   (ki, Mi, Gi, Ti, Pi, Ei, Zi, Yi) will be added to the value
+   and the value will be adjusted accordingly. If the string is non-empty the
+   string will be interpreted as a unit that will be added after the prefix for
+   each value.</dd><dt id="dt:column_key_time_format-boolean"><b><code>Column_Key_Time_Format</code> <i>Boolean</i></b></dt><dd>If True
+   the value (in seconds) will be formatted as <code>HH:MM:SS.ss</code>,
+   where only the used parts are shown.
+   The number of seconds decimals formatted is can be controlled by
+   <code>Column_Key_Float_Decimals</code> property.
+   To compact the width, decimals are dropped when hours are displayed.
+   </dd><dt id="dt:column_key_unique_id-string"><b><code>Column_Key_Unique_Id</code> <i>String</i></b></dt><dd>If the same name is set for multiple columns in a table, this
+   property sets a unique name for a specific column, needed when
+   referencing the column from extra headers.</dd><dt id="dt:column_key_sort_descending-boolean"><b><code>Column_Key_Sort_Descending</code> <i>Boolean</i></b></dt><dd>If True, specifies if a column should be sorted with the 
+   highest values first. If not specified, this is automatically
+   set to True for any numbers and False for other types.</dd><dt id="dt:column_key_hide_homogeneous-integer-float-string"><b><code>Column_Key_Hide_Homogeneous</code> <i>Integer/Float/String</i></b></dt><dd>If this property is specified and the column consists entirely of the
+   given data, the column will not be shown. For example, if the table has a
+   column which only consists of empty strings (""), the column can be
+   discarded from the resulting table.</dd><dt id="dt:column_key_footer_sum-boolean"><b><code>Column_Key_Footer_Sum</code> <i>Boolean</i></b></dt><dd>If True, all columns values are summed up and displayed in
+   a footer row, below the actual table.</dd><dt id="dt:column_key_footer_mean-boolean"><b><code>Column_Key_Footer_Mean</code> <i>Boolean</i></b></dt><dd>If True, an arithmetic mean of the column values are calculated
+   and displayed in a footer row, below the actual table.</dd><dt id="dt:column_key_generate_percent_column-list-of-key-value-pairs-for-new-column"><b><code>Column_Key_Generate_Percent_Column</code>
+   <i>List of key/value pairs for new column.</i></b></dt><dd>If this property is set, an additional column will be created 
+   (to the right of this column) showing the percent values for each row.
+   The list of key/value pairs allows to the created column to be
+   customized, however just giving an empty list should give 
+   understandable default values.
+   </dd><dt id="dt:column_key_generate_acc_percent_column-list-of-key-value-pairs-for-new-column"><b><code>Column_Key_Generate_Acc_Percent_Column</code>
+   <i>List of key/value pairs for new column.</i></b></dt><dd>If this property is set, an additional column will be created 
+   (to the right of this column) showing the accumulated percent values for
+   each row.
+   The list of key/value pairs allows to the created column to be
+   customized, however just giving an empty list should give 
+   understandable default values.
+   </dd></dl><p></p></dd></dl><p></p><pre class="jdocu_small">SIM_INTERFACE(table) {
+        /* Returns all rows and columns in the following format:
+           [[[i|f|s|o|n*]*]] where the outer list is the row
+           and the inner list is the data for each column. */
+        attr_value_t (*data)(conf_object_t *obj);
+        
+        /* Defines the table structure and meta-data for the table
+           using a list of key/value pairs.
+           [[[ia]*]*] where the integer is the key taken from the
+           table_properties_t. The value is key-specific. */
+        attr_value_t (*properties)(conf_object_t *obj);
+
+};
+#define TABLE_INTERFACE "table"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_slaver_message.html">slaver_message</a>
+<a href="__rm_interface_telnet_connection.html">telnet_connection</a>
+</div>

@@ -1,0 +1,149 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.1.1 Check for Supported Network Card PCIe ID</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="target-network-card.html">2.1 Target System Network Card</a>
+<a href="check-pcie-address.html">2.1.2 Check Network Device PCIe Address</a>
+</div>
+<div class="path">
+<a href="index.html">Windows Kernel Debugging</a>
+&nbsp;/&nbsp;
+<a href="network-debugging.html">2 Windows Kernel Debugging Over a Network</a>
+&nbsp;/&nbsp;
+<a href="target-network-card.html">2.1 Target System Network Card</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="supported-pcieid">2.1.1 Check for Supported Network Card PCIe ID</a></h1>
+<p>
+  
+</p><p>
+  To make debug over the network work, the target system needs to use a network
+  card that WinDbg recognizes. The current list can be found at
+  <a class="jdocu" href="https://docs.microsoft.com/windows-hardware/drivers/debugger/supported-ethernet-nics-for-network-kernel-debugging-in-windows-10" rel="noopener noreferrer" target="_top">https://docs.microsoft.com/windows-hardware/drivers/debugger/supported-ethernet-nics-for-network-kernel-debugging-in-windows-10</a>.
+  Basically, all released Intel network cards are supported. The key here is
+  released - models of not-yet released network cards are typically not
+  supported by Windows. Thus, for targets not yet available in hardware you
+  have to add a PCIe-attached network card that WinDbg knows about - like an
+  i350 or i210.
+</p><p>
+  On a Windows target running with a desktop available, you can check the PCIe
+  ID using Windows Device Manager. Find the network device, open properties,
+  and check the details for the hardware IDs. Figure
+  <a class="reference" href="#pcieid-in-windows">2</a> shows an example from
+  Windows 10 on a <i>QSP-x86</i> target.
+</p><p>
+  </p><div class="figure" id="pcieid-in-windows">
+
+    <div style="text-align: center">
+      <img alt="" src="pcieid-in-windows.png">
+      <div class="caption">Figure 2. Checking PCIe ID using Windows Device Manager.</div>
+    </div>
+  </div>
+
+<p>
+  You can also check for the PCI device ID of a network by using the Powershell
+  command <b>Get-PnpDevice</b>. Look for the line "DeviceID" after the name
+  of the network device appears (often, there are many virtual devices that
+  also get listed by this command):
+</p><p>
+  </p><pre class="jdocu_small">&gt; <b>Get-PnpDevice -Class "Net" | fl</b>
+Caption                     : Intel(R) Ethernet Connection (3) I219-LM
+Description                 : Intel(R) Ethernet Connection (3) I219-LM
+InstallDate                 :
+Name                        : Intel(R) Ethernet Connection (3) I219-LM
+Status                      : Unknown
+Availability                :
+ConfigManagerErrorCode      : CM_PROB_PHANTOM
+ConfigManagerUserConfig     : False
+CreationClassName           : Win32_PnPEntity
+DeviceID                    : PCI\VEN_8086&amp;DEV_15D7<img alt="Line break" src="nextline.png">
+&amp;SUBSYS_224517AA&amp;REV_21\3&amp;11583659&amp;0&amp;FE
+  </pre><p>
+</p><p>
+  From Simics side, you can check the PCIe ID using one of the
+  <b>print-pci-config-regs</b> and <b>print-device-regs </b> commands.
+  For example, network card on a <i>QSP-x86</i> target
+  (PCIe ID <code>0x10CD</code> is supported according to Microsoft):
+</p><p>
+  </p><pre class="jdocu_small">simics&gt; <b>board.mb.sb.lan.print-pci-config-regs</b>
+PCI configuration registers for board.mb.sb.lan [class ich10_lan_v2]
+====================================================================
+
+Generic Registers:
+              Vendor ID :     0x8086
+              Device ID :     0x10cd
+                Command :     0x0416
+                 Status :     0x0010
+            Revision ID :       0x00
+             Class Code :   0x020000
+        Cache Line Size :       0x00
+          Latency Timer :       0x00
+            Header Type :       0x00
+                   BIST :       0x00
+         Base Address 0 : 0xf1000000
+         Base Address 1 : 0xf1023000
+         Base Address 2 : 0x00000001
+         Base Address 3 : 0x00000000
+         Base Address 4 : 0x00000000
+         Base Address 5 : 0x00000000
+        Cardbus CIS Ptr : 0x00000000
+    Subsystem Vendor ID :     0x8086
+    Subsystem Device ID :     0x0000
+     Expansion ROM Base : 0x00000000
+       Capabilities Ptr :       0xc8
+         Interrupt Line :       0x00
+          Interrupt Pin :       0x01
+                Min Gnt :       0x00
+                Max Lat :       0x00
+simics&gt; <b>print-device-regs board.mb.sb.lan pattern = "device_id"</b>
+Bank: pci_config
+Offset  Name       Size   Value
+-------------------------------
+   0x2  device_id     2  0x10cd
+
+simics&gt; <b>print-device-regs board.mb.sb.lan pattern = "*id"</b>
+Bank: csr
+Offset  Name  Size  Value
+-------------------------
+0x2c08  raid     4    0x0
+
+Bank: pci_config
+Offset  Name         Size   Value | Offset  Name                 Size   Value
+----------------------------------+------------------------------------------
+   0x0  vendor_id       2  0x8086 |   0x2c  subsystem_vendor_id     2  0x8086
+   0x2  device_id       2  0x10cd |   0x2e  subsystem_id            2     0x0
+   0x8  revision_id     1     0x0 |
+  </pre><p>
+</p><p>
+  </p><div class="note">
+<b>Note:</b>
+Some network card models do not implement <b>print-pci-config-regs</b>
+    command.
+  </div>
+<div class="chain">
+<a href="target-network-card.html">2.1 Target System Network Card</a>
+<a href="check-pcie-address.html">2.1.2 Check Network Device PCIe Address</a>
+</div>

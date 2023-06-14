@@ -1,0 +1,99 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>serial_peripheral_interface_slave</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_serial_peripheral_interface_master.html">serial_peripheral_interface_master</a>
+<a href="__rm_interface_signal.html">signal</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_serial_peripheral_interface_slave">serial_peripheral_interface_slave</a></h1>
+<p>
+
+<a name="serial_peripheral_interface_slave"></a><a name="serial_peripheral_interface_slave_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">
+SIM_INTERFACE(serial_peripheral_interface_slave) {
+        void (*spi_request)(conf_object_t *obj, int first, int last,
+                            int bits, dbuffer_t *payload);
+        void (*connect_master)(conf_object_t *obj, conf_object_t *master,
+                               const char *port,
+                               serial_peripheral_interface_flags_t flags);
+        void (*disconnect_master)(conf_object_t *obj, conf_object_t *master);
+};
+
+#define SERIAL_PERIPHERAL_INTERFACE_SLAVE_INTERFACE \
+        "serial_peripheral_interface_slave"
+</pre><p>
+</p><p>
+
+   The <code>serial_peripheral_interface_slave</code> interface is
+   implemented by all SPI slave devices.
+</p><p>
+   The <b><i>connect_master</i></b> and <b><i>disconnect_master</i></b>
+   functions are used to select which master device is connected. At
+   most one master device can be connected to a slave device at once.
+   The <i>flags</i> parameter to <b><i>connect_master</i></b>
+   should be set according to the documentation of the
+   <code>serial_peripheral_interface_flags_t</code> type.
+</p><p>
+   An SPI transfer consists of a number of consecutive calls to the
+   <b><i>spi_request</i></b> function. The parameters
+   <i>first</i> and <i>last</i> represent the rise and
+   fall of the Slave Select (SS) pin: <i>first</i> is
+   <code>true</code> on the first <b><i>spi_request</i></b> call of a
+   transfer, while <i>last</i> is <code>true</code> on the
+   last call of a transfer.
+</p><p>
+   The <i>bits</i> and <i>payload</i> parameters
+   describe the data sent by the master device. <i>bits</i>
+   defines the number of bits to send, while <i>payload</i>
+   defines the data to transfer. The size of the
+   <i>payload</i> buffer should be <code>ceil(bits / 8)</code>
+   bytes. The first byte corresponds to the first 8 sent bits, and the
+   least significant bit in each byte corresponds to the first sent
+   bit.  For example, the 11-bit sequence (first) <code>11011111101</code>
+   (last) will be represented as two bytes, <code>0xfb</code> followed by
+   <code>0x5</code>.
+</p><p>
+   </p></dd><dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><code>serial_peripheral_interface_master_interface_t</code>,
+     <code>serial_peripheral_interface_flags_t</code>
+   </dd>
+
+
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_serial_peripheral_interface_master.html">serial_peripheral_interface_master</a>
+<a href="__rm_interface_signal.html">signal</a>
+</div>

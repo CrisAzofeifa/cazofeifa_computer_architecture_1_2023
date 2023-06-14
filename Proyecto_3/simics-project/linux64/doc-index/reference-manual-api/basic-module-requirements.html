@@ -1,0 +1,95 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.2 Basic Module Requirements</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="multithreading-overview.html">2.1 Overview</a>
+<a href="multithreading-simulation-cells.html">2.3 Simulation Cells</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rmapi-threading-model.html">2 Threading Model</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Basic-Module-Requirements">2.2 Basic Module Requirements</a></h1>
+<p>
+
+</p><p>
+To use multi-threading in Simics, all modules used in the
+simulation must be thread safe. This section describes what it means
+for a module to be thread safe, and what conditions must be fulfilled.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+In this section, thread safe is used in the sense that models
+  instantiated in different cells can be simulated
+  concurrently without issues. This is a weaker definition than normally used.
+</div>Simics checks each module it loads to see if it has been marked as
+safe. A module is thread safe if it fulfills the following conditions:
+<p>
+</p><ul>
+  <li>It must run without execution context violations.</li>
+  <li>The module makefile variable <i>THREAD_SAFE</i> must be set to
+    <code>yes</code> when compiling the module.</li>
+</ul>
+<p>
+Below is an example makefile for a module marked as thread safe.
+It can be found in the
+<code></code><em>[project]</em><code>/modules/sample-user-decoder</code> directory
+if the <b>sample-user-decoder</b> has been copied to the
+project.
+</p><p>
+</p><pre class="jdocu_small">MODULE_CLASSES = sample-user-decoder
+
+SRC_FILES = sample-user-decoder.c
+
+SIMICS_API := 6
+THREAD_SAFE = yes
+
+include $(MODULE_MAKEFILE)
+</pre><p>
+</p><p>
+To make a module thread safe, global state should be avoided, both in
+the form of global variables and in the form of local static
+variables in C. Having constant global variables are fine. Modules written
+in pure DML do not have this problem since the DML compiler
+does not emit any non-constant global state.
+</p><p>
+Simics checks for some execution context violations during
+run-time and emits warnings if they occur. When running
+with multi-threading disabled, violations result in warnings that can
+optionally be turned off. With multi-threading enabled,
+violations cause hard errors.
+</p><p>
+If a module that is not marked with <code>THREAD_SAFE=yes</code> is
+loaded, multi-threading will be turned off automatically and a warning
+will be shown. The <b>list-modules</b> command will show whether a
+module is marked thread safe or not.
+</p>
+<div class="chain">
+<a href="multithreading-overview.html">2.1 Overview</a>
+<a href="multithreading-simulation-cells.html">2.3 Simulation Cells</a>
+</div>

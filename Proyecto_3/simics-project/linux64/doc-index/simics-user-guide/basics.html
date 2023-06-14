@@ -1,0 +1,84 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>6.1 Basics</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="configuration.html">6 Configuration and Checkpointing</a>
+<a href="checkpointing.html">6.2 Checkpointing</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="configuration.html">6 Configuration and Checkpointing</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Basics">6.1 Basics</a></h1>
+<p>
+
+</p><p>
+As mentioned above, Simics's configuration system is object-oriented. A Simics
+object is instantiated from a Simics <em>class</em>. The core of Simics defines
+some useful classes, but most of the classes (processors, device models,
+statistic gathering extensions) are provided by <em>modules</em> that are
+loaded by the simulator when requested.
+</p><p>
+For example, the <b>x86-p4</b> module defines, not surprisingly, the
+<b>x86-p4</b> class. Note that a module may define several
+classes. Since modules advertise the classes they define, Simics can load
+modules transparently as objects are instantiated.
+</p><p>
+A class defines <em>attributes</em> that represent both the static and dynamic
+state of the instantiated objects. The static state includes information that
+does not change during the simulation (like a version number in a register)
+while the dynamic state covers the part of the device that are affected by the
+simulation (registers, internal state, buffers, etc.).
+</p><p>
+Let us take the example of an x86-p4 processor and have a closer look at how
+it can be configured using attributes:
+</p><p>
+</p><ul>
+
+<li>We can create an object instantiated from the class
+<b>x86-p4</b>. Let us call it <b>cpu0</b></li>
+
+<li>The attribute <i>freq_mhz</i> can be set to 1500. It defines the
+processor clock frequency (in MHz)</li>
+
+<li>The attribute <i>physical_memory</i> can be set to a memory space
+object, such as <b>phys_mem0</b>. This attribute points to the object that
+will answer to the memory accesses coming from the processor.</li>
+
+</ul>
+<p>
+As you noticed, attributes may be of various types. A complete description is
+available in the next section.
+</p><p>
+</p>
+<div class="chain">
+<a href="configuration.html">6 Configuration and Checkpointing</a>
+<a href="checkpointing.html">6.2 Checkpointing</a>
+</div>

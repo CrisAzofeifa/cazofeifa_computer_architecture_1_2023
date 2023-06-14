@@ -1,0 +1,86 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_parameters</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_node_tree_query.html">osa_node_tree_query</a>
+<a href="__rm_interface_osa_tracker_component.html">osa_tracker_component</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_parameters">osa_parameters</a></h1>
+<p>
+
+<a name="osa_parameters"></a><a name="osa_parameters_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_parameters_interface_t2"></a>
+<p>
+   Interface implemented by tracker components that support getting and setting
+   their parameters.
+</p><p>
+   If either method fails it returns a (false, error-string) pair. If
+   get_parameters succeed it returns (true, parameters). If set_parameters
+   succeed it returns (true, nil).
+</p><p>
+   The parameters you pass to set_parameters and thare are returned by
+   get_parameters should be a pair (tracker-kind, parameters-value), where
+   tracker-kind is a string identifying the kind of tracker and parameters-value
+   is the parameters for that kind of tracker. The parameters for an
+   unconfigured tracker are (tracker-kind, nil).
+</p><p>
+   The <i>include_children</i> argument of <b><i>get_parameters</i></b> is
+   only used for stacked tracker and specifies if parameters for guest trackers
+   should be included or filtered out.
+</p><p>
+   The is_kind_supported method returns true if the tracker-kind in a parameter
+   set is of the right kind for the tracker. This is no guarantee that setting
+   these parameters will succeed. If the method returns false the parameters
+   will not work.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(osa_parameters) {
+        attr_value_t (*get_parameters)(conf_object_t *NOTNULL obj,
+                                       bool include_children);
+        attr_value_t (*set_parameters)(conf_object_t *NOTNULL obj,
+                                       attr_value_t parameters);
+        bool (*is_kind_supported)(conf_object_t *NOTNULL obj,
+                                  const char *kind);
+};
+
+#define OSA_PARAMETERS_INTERFACE "osa_parameters"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_node_tree_query.html">osa_node_tree_query</a>
+<a href="__rm_interface_osa_tracker_component.html">osa_tracker_component</a>
+</div>

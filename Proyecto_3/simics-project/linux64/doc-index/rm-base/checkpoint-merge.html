@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.6 checkpoint-merge</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="project-setup.html">2.5 project-setup</a>
+<a href="test-runner.html">2.7 test-runner</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="command-line-tools-and-programs.html">2 Command-Line Tools and Programs</a>
+&nbsp;/&nbsp;</div>
+<h1 id="checkpoint-merge">2.6 <a href="#checkpoint-merge">checkpoint-merge</a></h1>
+<article class="not-numbered not-in-toc doc-item">
+<p></p><h2 id="synopsis"><a href="#synopsis">SYNOPSIS</a></h2>
+<pre><code>checkpoint-merge [options] src dst [paths...]
+</code></pre>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:src"><em>src</em></span><br>
+The checkpoint to merge files from.</li>
+<li><span class="term" id="dt:dst"><em>dst</em></span><br>
+The new checkpoint.</li>
+<li><span class="term" id="dt:paths">paths</span><br>
+Paths to checkpoint files. This parameter may be omitted, in which case
+paths are derived from the source checkpoint.</li>
+</ul>
+</div>
+<h2 id="description"><a href="#description">DESCRIPTION</a></h2>
+<p>Merges all ancestors of a given checkpoint into a new checkpoint. The output
+checkpoint therefore has no dependencies; it is an absolute checkpoint. This
+is useful if you, for example, want to distribute a checkpoint.</p>
+<p>Note that this also merges image files with disk and memory contents, to make
+sure the output checkpoint really is self-contained.</p>
+<p>With the <code>--checkpoints-only</code> option, the resulting checkpoint will still
+have references to initial image files, so it will not really be entirely
+self-contained. However, it is likely to be smaller and the merge itself
+takes less time.</p>
+<p>Any recordings in the given checkpoint, i.e. the most recent source
+checkpoint, are discarded.</p>
+<h2 id="options"><a href="#options">OPTIONS</a></h2>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:c-checkpoints-only"><code>-c, --checkpoints-only</code></span><br>
+Only combine checkpoints, keeping dependencies on base image files.</li>
+<li><span class="term" id="dt:j-n-jobs-n"><code>-j N, --jobs=N</code></span><br>
+Run up to <code>N</code> craff/copy jobs in parallel.</li>
+<li><span class="term" id="dt:h-help"><code>-h, --help</code></span><br>
+Show help message and exit.</li>
+</ul>
+</div>
+<p></p>
+</article>
+
+<div class="chain">
+<a href="project-setup.html">2.5 project-setup</a>
+<a href="test-runner.html">2.7 test-runner</a>
+</div>

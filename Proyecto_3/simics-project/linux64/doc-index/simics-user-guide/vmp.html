@@ -1,0 +1,267 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>16.6 VMP</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="hypersimulation.html">16.5 Hypersimulation</a>
+<a href="performance-tweaks.html">16.7 Performance Tweaks</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="simulation-performance.html">16 Simulation Performance</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="VMP">16.6 VMP</a></h1>
+<p>
+
+<a name="VMP"></a>
+</p><p>
+The VMP add-on for Simics makes use of hardware virtualization support
+to provide vastly improved performance when simulating x86-based
+systems. It is an optional part of the x86-based models.
+</p><p>
+The VMP feature requires that the host machine running Simics has the
+Intel® Virtualization Technology (Intel® VT) for IA-32, Intel® 64
+and Intel® Architecture (Intel® VT-x) enabled in the host machine
+firmware (the BIOS).
+</p><p>
+Almost all Intel® processors since the original Core™ architecture,
+including Xeon® server processors, support the Intel® VT-x feature
+set. See the Intel® ARK at ark.intel.com for information on specific
+products.
+</p><p>
+The Intel® VT-x virtualization feature and the NX execute protection
+feature must also be enabled in the host machine firmware to run VMP. Look for
+options under either <em>Security</em> or <em>Virtualization</em> to find
+where to enable Intel® VT and NX in your firmware. If Intel® Trusted
+Execution Technology (TXT) is enabled in the firmware, it can also happen that
+the Intel® VT-x virtualization feature is restricted to trusted
+applications only; there is usually a special firmware setting controlling
+this behavior. VMP requires Intel® VT-x to be generally available.
+</p><p>
+All major features of Simics, including full inspectability of
+simulated state, ability to model heterogeneous systems, and reverse
+execution, are fully supported when running with VMP.
+</p><p>
+</p><h2 class="jdocu"><a name="installing-vmp">16.6.1 Installing the VMP Kernel Module</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="Linux">16.6.1.1 Linux</a></h3>
+<p>
+
+</p><p>
+Installing and managing VMP kernel modules requires sudo
+privileges. Installing will compile the kernel module and therefore
+also requires an environment to build kernel modules. Which packages
+you need for building kernel modules depend on the distribution of
+Linux that you are using, but at least for certain Red Hat based
+distributions you would
+need <code>gcc-c++</code>, <code>kernel-headers</code>,
+and <code>kernel-devel</code>. Change directory to the Simics Base package
+and run:
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b>bin/vmp-kernel-install</b>
+</pre><p>
+</p><p>
+The script will compile and persistently install the kernel modules
+that are used by VMP. It will echo what needs to be done, which
+involves running scripts in the <code>vmxmon/scripts/</code>
+directory.
+</p><p>
+Disable VMP temporarily by running
+the <code>bin/vmp-kernel-unload</code> script, and enable VMP with
+the <code>bin/vmp-kernel-load</code> script. Permanently uninstall VMP
+from your host by running the <code>bin/vmp-kernel-uninstall</code>
+script.
+</p><p>
+If your installation is read-only, or you for some other reason want
+to have the built VMP artifacts outside of the installation, you can
+give a directory to the relevant VMP scripts, example:
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b>bin/vmp-kernel-install /somewhere/directory</b>
+joe@computer$ <b>bin/vmp-kernel-load /somewhere/directory</b>
+</pre><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="Windows">16.6.1.2 Windows</a></h3>
+<p>
+
+</p><p>
+The kernel module can be loaded and unloaded by running
+the <code>bin\vmp-kernel-load.bat</code>
+respective <code>bin\vmp-kernel-unload.bat</code> scripts as
+administrator. To do that, open a command shell as administrator and run:
+</p><p>
+</p><pre class="jdocu_small"><b>bin\vmp-kernel-load.bat</b>
+</pre><p>
+</p><p>
+Another way to perform the same action would be to right-click on
+<code>vmp-kernel-load.bat</code> and select run as administrator.
+</p><p>
+The /AUTO and /DEMAND options select the start option for the VMP
+service. With /AUTO (default), the service will be available after
+restart whereas with /DEMAND (which used to be the behavior before
+these flags were added) will mean that the service is only available
+until shutdown or reboot and then has to be manually loaded again if
+needed.
+</p><p>
+If the script fails, see the Windows event log for more
+information. The most common reason is that Intel® VT-x technology or the NX
+feature is not enabled in the BIOS. The kernel module will also fail
+to load if Windows is running with the Hyper-V feature enabled.
+
+</p><h3 class="jdocu"><a name="Hyper-V-Interaction">16.6.1.3 Hyper-V Interaction</a></h3>
+<p>
+
+Windows 8 and later can be run with Hyper-V enabled. Hyper-V is a feature
+where the operating system is run as a guest under the control of a hypervisor.
+VMP cannot be used in conjunction with Hyper-V: loading the VMP kernel module
+will fail.
+</p><p>
+There are various ways to disable the Hyper-V feature. Below are instructions
+for adding an additional boot configuration database entry to make it easy
+to boot with Hyper-V disabled:
+</p><p>
+</p><ul>
+<li> Open cmd prompt as <b>administrator</b>. In the admin prompt,
+  run the following command to duplicate the current boot configuration entry:
+<p>
+</p><pre class="jdocu_small"><b>bcdedit /copy {current} /d "Win 8.1 with Hyper-V disabled"</b>
+</pre><p>
+</p><p>
+This will print the id of the newly created entry, e.g.
+</p><p>
+</p><pre class="jdocu_small">The entry was successfully copied to {41f7b750-485b-4f02-9d0e-4c8e3d02c31d}.
+</pre><p>
+</p></li>
+
+<li>
+Run the following command (replace the id below with the id just printed):
+<p>
+</p><pre class="jdocu_small"><b>bcdedit /set {41f7b750-485b-4f02-9d0e-4c8e3d02c31d} hypervisorlaunchtype off</b>
+</pre><p>
+</p></li>
+
+<li>
+Restart the computer with boot option selection (click on Restart while
+holding down the shift key). Windows will present a blue screen where you
+can select the newly created boot entry.
+</li>
+</ul>
+
+<p>
+
+</p><h2 class="jdocu"><a name="Running-with-the-VMP-Add-on">16.6.2 Running with the VMP Add-on</a></h2>
+<p>
+
+</p><p>
+With the VMP kernel modules installed, VMP will be enabled by default
+for each processor. You can disable VMP by running
+the <b>disable-vmp</b> command.
+</p><p>
+Due to details about how the Intel® VT feature that VMP is based on
+works, the acceleration may not kick in. Use the system-perfmeter to
+find out if a processor actually uses the VMP execution mode. To find
+out why VMP is not used, either raise the log level of the CPU in
+question or use the <b>info</b> command on the CPU.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Current-Limitations-of-the-VMP-Add-on">16.6.3 Current Limitations of the VMP Add-on</a></h2>
+<p>
+
+</p><p>
+The VMP packages are currently available and supported for
+Linux and Windows.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Due to bugs in the performance counters on many Intel CPU types,
+precise instruction counting cannot be achieved with VMP. The only CPU
+types that we are aware of that do not have this bug is Intel®
+Core™ Duo/Solo, and Pentium® 4 processors. To still be able
+to use reverse execution with VMP, Simics will automatically adjust
+the timing when re-running to line up with the original forward
+run. However, when running in regular forward mode slight differences
+in timing between runs will appear and cannot be avoided due to the
+bug in the underlying hardware.
+</div><div class="note">
+<b>Note:</b>
+Software using hardware virtualization frequently have problems
+co-existing on a machine. If you are running other software using
+hardware virtualization such as VMware, VirtualBox, KVM, or
+Intel® Hardware Accelerated Execution Manager (Intel® HAXM),
+you may need to unload the driver corresponding to that software before
+using VMP.
+</div>Note that virtualizers such as VMware or Xen in most versions do not
+expose the Intel® VT feature. Even virtualizers that do expose the
+Intel® VT feature are likely to either lack support for the
+performance counters needed to run with VMP, or will have very
+different performance characteristics compared to native solutions. To
+summarize, it is highly recommended that VMP is run in a
+non-virtualized environment.
+<p>
+
+</p><h2 class="jdocu"><a name="Differences-Between-VMP-and-non-VMP">16.6.4 Differences Between VMP and non-VMP</a></h2>
+<p>
+
+VMP is designed to be a transparent performance enhancement. The
+implementation with Intel® VT-x makes that impossible in some areas, and
+in some other areas we have taken the chance to utilize the VMP mode to tweak
+performance further. Enabling features that cannot be emulated using
+Intel® VT-x will automatically disable VMP.
+</p><p>
+VMP is optimized for software development, and the default timing
+parameters used in VMP reflect that. The timing settings can be viewed
+with the <b>info</b> command on the CPU object. As default, VMP
+timing will stall the PAUSE instruction, the RDTSC instruction, and
+each port-mapped I/O access for 10 milliseconds. These stalls are
+added to allow loops containing these operations to consume more
+virtual time per iteration and therefore speed up simulation if the
+loop is terminated after a set virtual time. This is controlled by
+attributes in the CPU object and can be changed if somewhat more
+realistic timing is more important than maximum simulation speed.
+</p><p>
+The hardware performance counters are used to figure out the number of
+executed instructions when running in VMP mode. Since those counters
+count string instructions as one regardless of the number of
+iterations, this is the instruction count model that must be used to
+enable VMP. This is controlled by the one_step_per_string_instruction
+attribute, and setting that to classic counting will disable VMP.
+</p><p>
+The TLB model is bypassed in VMP mode. To simulate a particular
+configuration of the TLB, or listen to the haps that the TLB model
+generates, VMP has to be manually disabled.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="hypersimulation.html">16.5 Hypersimulation</a>
+<a href="performance-tweaks.html">16.7 Performance Tweaks</a>
+</div>

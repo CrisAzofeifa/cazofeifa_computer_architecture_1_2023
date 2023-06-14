@@ -1,0 +1,139 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Capabilities templates</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="capabilities-list.html">List of capability templates</a>
+<a href="extended-capabilities.html">Extended Capabilities templates</a>
+</div>
+<div class="path">
+<a href="index.html">PCIe Modeling Library</a>
+&nbsp;/&nbsp;
+<a href="dml-template-reference.html">DML template reference</a>
+&nbsp;/&nbsp;</div>
+<h1>Capabilities templates</h1>
+<p>These are templates for PCIe Capabilities. They are designed to be applied
+on a <code>group</code>. For convenience there exists a template
+<code>defining_xyz_capability</code> for each capability <code>xyz</code> which defines a group
+<code>xyz</code> with the <code>xyz_capability</code> applied. Most templates only define the
+registers with their standard access restrictions. If additional behavior is
+needed, the user of the template must implement this manually.</p>
+<p>Each capability template uses the following parameters:</p>
+<ul>
+<li><code>base</code>: Base address of the capability header</li>
+<li><code>next_ptr</code>: Value of the next_ptr field in the capability header</li>
+</ul>
+<h2 id="power-management-capability-registers"><a href="#power-management-capability-registers">Power Management Capability registers</a></h2>
+<ul>
+<li>name: <code>pm_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="pci-express-capability-registers"><a href="#pci-express-capability-registers">PCI Express Capability registers</a></h2>
+<ul>
+<li>name: <code>exp_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Parameters:</p>
+<ul>
+<li><code>has_links</code>: Presence of <strong>links</strong> registers, default false</li>
+<li><code>has_slots</code>: Presence of <strong>slots</strong> registers, default false</li>
+<li><code>has_root</code>: Presence of <strong>root</strong> registers, default false</li>
+<li><code>dp_type</code>: Device/port type, as indicated in <code>exp.capability.dpt</code> register field,  default PCIE_DP_Type_EP</li>
+<li><code>cap_version</code>: Version of this capability structure, as indicated in <code>exp.capability.cv</code> register field, default 2</li>
+</ul>
+<h2 id="vpd-capability-registers"><a href="#vpd-capability-registers">VPD Capability registers</a></h2>
+<ul>
+<li>name: <code>vpd_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="message-signaled-interrupts-msi-capability-registers"><a href="#message-signaled-interrupts-msi-capability-registers">Message Signaled Interrupts (MSI) Capability registers</a></h2>
+<ul>
+<li>name: <code>msi_capability</code></li>
+<li>implemented: functional</li>
+</ul>
+<p>Parameters:</p>
+<ul>
+<li><code>is_64bit_capable</code>: Support 64-bit addresses, i.e. <code>address</code> register is
+8 bytes instead of 4.</li>
+<li><code>is_pvm_capable</code>: Support Per-Vector-Masking, i.e. the <code>mask</code> register is
+present.</li>
+<li><code>is_emd_capable</code>: Support extended message data, i.e. the <code>data</code> register
+is 8 bytes instead of 4.</li>
+<li><code>num_vectors</code>: The number of interrupt vectors supported.</li>
+</ul>
+<h3 id="methods"><a href="#methods">Methods</a></h3>
+<h4 id="signal_all_pending"><a href="#signal_all_pending"><code>signal_all_pending()</code></a></h4>
+<p>Signals all pending MSI's</p>
+<h4 id="raise-uint8-i"><a href="#raise-uint8-i"><code>raise(uint8 i)</code></a></h4>
+<p>Raises MSI <code>i</code> if capable and enabled, and signals it if not masked</p>
+<h4 id="lower-uint8-i"><a href="#lower-uint8-i"><code>lower(uint8 i)</code></a></h4>
+<p>Lowers MSI <code>i</code></p>
+<h2 id="message-signaled-interrupts-x-msi-x-capability-registers"><a href="#message-signaled-interrupts-x-msi-x-capability-registers">Message Signaled Interrupts X (MSI-X) Capability registers</a></h2>
+<ul>
+<li>name: <code>msix_capability</code></li>
+<li>implemented: functional</li>
+</ul>
+<p>Parameters:</p>
+<ul>
+<li><code>table_offset_bir</code>: Initial value of the Table Offset/BIR register (at
+offset 0x4 in the MSI-X capability structure).</li>
+<li><code>pba_offset_bir</code>: Initial value of the PBA Offset/BIR register (at
+offset 0x8 in the MSI-X capability structure).</li>
+<li><code>data_bank</code>: The bank which holds the Table and Pending Bits data, which
+must use the template <code>msix_table</code></li>
+<li><code>num_vectors</code>: Number of interrupt vectors supported.</li>
+</ul>
+<h3 id="methods-2"><a href="#methods-2">Methods</a></h3>
+<h4 id="raise-uint16-i"><a href="#raise-uint16-i"><code>raise(uint16 i)</code></a></h4>
+<p>Raises MSI-X <code>i</code> if enabled, and signals it if not masked</p>
+<h4 id="lower-uint16-i"><a href="#lower-uint16-i"><code>lower(uint16 i)</code></a></h4>
+<p>Lowers MSI-X <code>i</code></p>
+<h2 id="subsystem-id-and-subsystem-vendor-id-capability-registers"><a href="#subsystem-id-and-subsystem-vendor-id-capability-registers">Subsystem ID and Subsystem Vendor ID Capability registers</a></h2>
+<ul>
+<li>name: <code>ssid_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="conventional-pci-advanced-features-capability-af-registers"><a href="#conventional-pci-advanced-features-capability-af-registers">Conventional PCI Advanced Features Capability (AF) registers</a></h2>
+<ul>
+<li>name: <code>af_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="enhanced-allocation-ea-capability-registers"><a href="#enhanced-allocation-ea-capability-registers">Enhanced Allocation (EA) Capability registers</a></h2>
+<ul>
+<li>name: <code>ea_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="flattening-portal-bridge-fpb-capability-registers"><a href="#flattening-portal-bridge-fpb-capability-registers">Flattening Portal Bridge (FPB) Capability registers</a></h2>
+<ul>
+<li>name: <code>fpb_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Fields and access restrictions to be added upon request.</p>
+
+<div class="chain">
+<a href="capabilities-list.html">List of capability templates</a>
+<a href="extended-capabilities.html">Extended Capabilities templates</a>
+</div>

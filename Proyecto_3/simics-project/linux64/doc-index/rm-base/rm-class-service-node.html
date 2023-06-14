@@ -1,0 +1,427 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>service-node</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-server-console.html">server-console</a>
+<a href="rm-class-service-node-device.html">service-node-device</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="service-node"><a href="#service-node">service-node</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+This class provides services on an Ethernet network.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, udp, tcp, udp_service
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-service-node.add-host.html">add-host</a>
+ – add host entry</li>
+<li>
+<a href="rm-cmd-service-node.arp.html">arp</a>
+ – inspect and manipulate ARP table</li>
+<li>
+<a href="rm-cmd-service-node.delete-host.html">delete-host</a>
+ – delete host entry</li>
+<li>
+<a href="rm-cmd-service-node.dhcp-add-pool.html">dhcp-add-pool</a>
+ – add DHCP pool</li>
+<li>
+<a href="rm-cmd-service-node.dhcp-leases.html">dhcp-leases</a>
+ – print DHCP leases</li>
+<li>
+<a href="rm-cmd-service-node.disable-real-dns.html">disable-real-dns</a>
+ – disable real DNS</li>
+<li>
+<a href="rm-cmd-service-node.disable-service.html">disable-service</a>
+ – disable network service</li>
+<li>
+<a href="rm-cmd-service-node.enable-ftp-alg.html">enable-ftp-alg</a>
+ – enable FTP ALG</li>
+<li>
+<a href="rm-cmd-service-node.enable-real-dns.html">enable-real-dns</a>
+ – enable real DNS</li>
+<li>
+<a href="rm-cmd-service-node.enable-service.html">enable-service</a>
+ – enable network service</li>
+<li>
+<a href="rm-cmd-service-node.get-ip-address-from-pool.html">get-ip-address-from-pool</a>
+ – pop an IP address from the DHCP pool</li>
+<li>
+<a href="rm-cmd-service-node.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-service-node.list-host-info.html">list-host-info</a>
+ – list host info database</li>
+<li>
+<a href="rm-cmd-service-node.route.html">route</a>
+ – show the routing table</li>
+<li>
+<a href="rm-cmd-service-node.set-tftp-directory.html">set-tftp-directory</a>
+ – set TFTP directory</li>
+<li>
+<a href="rm-cmd-service-node.status.html">status</a>
+ – print status of the object</li>
+<li>
+<a href="rm-cmd-service-node.tcpip-info.html">tcpip-info</a>
+ – show TCP/IP info</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:eth_interfaces">
+<i>eth_interfaces</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[o*]</code>
+<br>The Ethernet interface objects used by this service node.</dd>
+<dt id="dt:recorder">
+<i>recorder</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Recorder device for recording and playback of network traffic.</dd>
+<dt id="dt:routing_table">
+<i>routing_table</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ss|iso]*]</code>
+<br>The routing table used by this service node. The four sub-entries for each routing table entry are <i>network</i>, <i>netmask</i>, <i>gateway</i> and <i>service-node</i>. The network and gateway are specified as IP addresses in dot notation, and the netmask is specified as an IP address or as a prefix length. The service-node is the node connected to the network where the gateway resides. For a route where the destination is reachable on the other service-node's connected network, the gateway should be set to 0.0.0.0. To create a default route, both the network and netmask should be set to 0.0.0.0.</dd>
+<dt id="dt:services">
+<i>services</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>D</code>
+<br>The network services provided by the service-node, as a dictionary, and their enabled/disabled status.</dd>
+<dt id="dt:next_tcp_port">
+<i>next_tcp_port</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Next new local TCP port.</dd>
+<dt id="dt:udp_pcbs">
+<i>udp_pcbs</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[o|ni|si|siiiiiiioi]*]</code>
+<br>UDP PCBs. Do not attempt to setup connections yourself using this attribute, but use functionality in each separate UDP service to do so.</dd>
+<dt id="dt:udp_pcbs_all">
+<i>udp_pcbs_all</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[o|ni|si|siiiiiiioi]*]</code>
+<br>UDP PCBs. This attribute is identical to udp_pcbs with the exception that it can only be read and that it also includes connections that will not be checkpointed.</dd>
+<dt id="dt:tcp_ticks">
+<i>tcp_ticks</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TCP ticks.</dd>
+<dt id="dt:tcp_timer">
+<i>tcp_timer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TCP timer.</dd>
+<dt id="dt:tcp_iss">
+<i>tcp_iss</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TCP initial sequence number.</dd>
+<dt id="dt:tcp_timer_active">
+<i>tcp_timer_active</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>Unused, kept for checkpoint compatibility.</dd>
+<dt id="dt:tcp_pcbs">
+<i>tcp_pcbs</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[o|ni|si|siiisioiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii[d*][d*][d*]]*]</code>
+<br>TCP PCBs. Do not attempt to setup connections yourself using this attribute, but use functionality in each separate TCP service to do so.</dd>
+<dt id="dt:tcp_pcbs_all">
+<i>tcp_pcbs_all</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[o|ni|si|siiisioiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii[d*][d*][d*]]*]</code>
+<br>TCP PCBs. This attribute is identical to tcp_pcbs with the exception that it can only be read and that it also includes connections that will not be checkpointed.</dd>
+<dt id="dt:napt_enable">
+<i>napt_enable</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>When set to non-zero, the service node will provide network address port translation as specified by RFC 3022. The current implementation can only handle TCP NAPT.</dd>
+<dt id="dt:hosts">
+<i>hosts</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[s|n,s,s,s]*]</code>
+<br>(mac, ip, host, domain) The host database used by the DHCP and DNS servers.</dd>
+<dt id="dt:host_pools">
+<i>host_pools</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i,s,s,s[[s|n,s,s,s]*]]*]</code>
+<br>The host database used by the DHCP and DNS servers.</dd>
+<dt id="dt:host_boot_filename">
+<i>host_boot_filename</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ss|n]*]</code>
+<br>Extensions to the host database with the BOOTP/DHCP boot filename. Each entry in the list is a sub list with a client IP address and the boot filename. If no entry exists in the host database for a client boots using BOOTP or DHCP, then the value of the default_boot_filename attribute is used.</dd>
+<dt id="dt:default_boot_filename">
+<i>default_boot_filename</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|n</code>
+<br>Default boot filename supplied in replies from the BOOTP/DHCP server if no client specific filename is configured in the host_boot_filename attribute.</dd>
+<dt id="dt:host_dhcp_options">
+<i>host_dhcp_options</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[s[[id]*]]*]</code>
+<br>Extensions to the host database with client specific DHCP option values that the DHCP server uses in replies. If no client specific option exists, then the value in the default_dhcp_options attribute, if set, is used. There are also a number of built-in DHCP options that the server always replies to. A built-in option can be disabled by specifying an empty value for the option in question. Each entry in the attribute list is a sub list with a client IP address followed by yet one list with two entries: the option number and a byte array with the reply. Vendor specific options can not be defined using this attribute.</dd>
+<dt id="dt:default_dhcp_options">
+<i>default_dhcp_options</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[id]*]</code>
+<br>Extension of the build-in set of DHCP options that the DHCP server uses in replies. These default options are used if no client specific options are set in the host_dhcp_options attribute.</dd>
+<dt id="dt:dhcp_leases">
+<i>dhcp_leases</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ssdii]*]</code>
+<br>The active leases used by the DHCP service. The sub-entries for each lease are <i>ip-address</i>, <i>mac-address</i>, <i>client-id</i>, <i>lease-time</i>, <i>timestamp</i>. The lease time is given in seconds since the lease was issued.</dd>
+<dt id="dt:dhcp_max_lease_time">
+<i>dhcp_max_lease_time</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i|n</code>
+<br>The maximum lease time handed out by the DHCP server. If the value is Nil, or 0xffffffff, infinite leases are allowed.</dd>
+<dt id="dt:dhcp6_serverid">
+<i>dhcp6_serverid</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|d</code>
+<br>The DUID identifying the DHCPv6 server.</dd>
+<dt id="dt:dhcp6_valid_prefixes">
+<i>dhcp6_valid_prefixes</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[is]*]</code>
+<br>The IPv6 prefixes that are valid on the local link. The sub-entries for each prefix are <i>prefix-length</i>, <i>ip-address</i>. <i>ip-address</i> must be an IPv6 address.</dd>
+<dt id="dt:dhcp6_lifetimes">
+<i>dhcp6_lifetimes</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[ii]</code>
+<br>Preferred and valid lifetimes for IPv6 addresses.</dd>
+<dt id="dt:dhcp6_dns_servers">
+<i>dhcp6_dns_servers</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>List of IPv6 addresses to DNS recursive name servers.</dd>
+<dt id="dt:dhcp6_domain_search_list">
+<i>dhcp6_domain_search_list</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>List of domain names representing the domain search list.</dd>
+<dt id="dt:dhcp6_nis_servers">
+<i>dhcp6_nis_servers</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>List of IPv6 addresses to NIS servers.</dd>
+<dt id="dt:dhcp6_nis_domain_name">
+<i>dhcp6_nis_domain_name</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>The NIS domain name.</dd>
+<dt id="dt:dhcp6_nisp_servers">
+<i>dhcp6_nisp_servers</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>List of IPv6 addresses to NIS+ servers.</dd>
+<dt id="dt:dhcp6_nisp_domain_name">
+<i>dhcp6_nisp_domain_name</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>The NIS+ domain name.</dd>
+<dt id="dt:dhcp6_allocated_addresses">
+<i>dhcp6_allocated_addresses</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[sii]*]</code>
+<br>The allocated addresses. The sub-entries for each allocated address are <i>address</i>, <i>commit-flag</i>, <i>decline-flag</i>. <i>address</i> must be an IPv6 address.</dd>
+<dt id="dt:dhcp6_clients">
+<i>dhcp6_clients</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[d[[iii[[sii]*]]*][[i[[sii]*]]*]]*]</code>
+<br>All known clients.</dd>
+<dt id="dt:allow_real_dns">
+<i>allow_real_dns</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, the service node's DNS server will forward queries for unknown hosts to a real DNS server.</dd>
+<dt id="dt:async_real_dns">
+<i>async_real_dns</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, the service node will forward the real DNS lookup in asynchronous mode.</dd>
+<dt id="dt:tftp_sessions">
+<i>tftp_sessions</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iissssi]*]</code>
+<br>The active sessions in the TFTP service. The sub-entries for each session are <i>server TID</i>, <i>client TID</i>, <i>read/write</i>, <i>server IP address</i>, <i>client IP address</i>, <i>file name</i>, <i>last read block</i>. </dd>
+<dt id="dt:tftp_root_directory">
+<i>tftp_root_directory</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|n</code>
+<br>The directory in which files read or written over TFTP are located. If it is null, the Simics search path is used for reading files, and uploaded files are stored in the current directory.</dd>
+<dt id="dt:bootparam_udp_port">
+<i>bootparam_udp_port</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The UDP port currently used for the Sun RPC Bootparam protocol replies. For checkpointing only.</dd>
+<dt id="dt:rpc_bindings">
+<i>rpc_bindings</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]*]</code>
+<br>List of RPC bindings (program, version, protocol, port) that are used by port mapper or RPCBIND services within the service node.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.service-node.html">service-node</a>
+</section>
+<div class="chain">
+<a href="rm-class-server-console.html">server-console</a>
+<a href="rm-class-service-node-device.html">service-node-device</a>
+</div>

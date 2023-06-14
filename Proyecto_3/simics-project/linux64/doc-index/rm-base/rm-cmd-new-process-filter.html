@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-process-filter</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-new-probe-streamer.html">new-probe-streamer</a>
+<a href="rm-cmd-new-process-histogram.html">new-process-histogram</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="new-process-filter"></a>
+<h1 id="new-process-filter"><a href="#new-process-filter">new-process-filter</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>new-process-filter</b> [<i>"name"</i>] <i>software-component</i> [<i>"pattern"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Create a process filter with the name given by the <i>name</i> argument. This object uses OS Awareness to restricts instrumentation tools to be enabled only when certain processes or threads are being executed. A node path pattern is used to specify the process nodes to follow. A pattern can just be a simple string naming a process to track, e.g., "grep" or it can be a more complicated one. For more information about node path patterns see the Analyzer User Guide.
+<p>
+To add a pattern either use the <i>pattern</i> argument or use the <code>&lt;process_pattern&gt;.add-pattern</code> command once a process_filter has been created. If no patterns are given nothing will be instrumented if the filter is added to a tool.
+</p><p>
+The <i>software-component</i> argument specifies which os-awareness object to use.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.process-filter.html">process-filter</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-process_filter.add-pattern.html">&lt;process_filter&gt;.add-pattern</a>, 
+<a href="rm-cmd-process_filter.remove-pattern.html">&lt;process_filter&gt;.remove-pattern</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-new-probe-streamer.html">new-probe-streamer</a>
+<a href="rm-cmd-new-process-histogram.html">new-process-histogram</a>
+</div>

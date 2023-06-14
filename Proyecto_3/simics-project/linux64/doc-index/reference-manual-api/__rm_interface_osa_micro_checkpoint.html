@@ -1,0 +1,80 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_micro_checkpoint</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_mapper_query.html">osa_mapper_query</a>
+<a href="__rm_interface_osa_node_path.html">osa_node_path</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_micro_checkpoint">osa_micro_checkpoint</a></h1>
+<p>
+
+<a name="osa_micro_checkpoint"></a><a name="osa_micro_checkpoint_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_micro_checkpoint_interface_t2"></a>
+<p>
+   This interface is used to get information when micro checkpointing (for
+   reverse execution) starts and stops. The functions will only be called
+   when the tracker framework is enabled.
+</p><p>
+   <a name="startedosa_micro_checkpoint-interface-method"></a>
+   <b><i>started</i></b> is called when a saved state is about to be loaded,
+   before any attributes have been set.
+</p><p>
+   <a name="finishedosa_micro_checkpoint-interface-method"></a>
+   <b><i>finished</i></b> is called once all attributes have been set for all
+   objects. At this point callbacks calls to the machine interfaces can be
+   done.
+</p><p>
+   It is allowed to implement only one of these functions if notification are
+   only wanted before or after setting attributes of a micro checkpoint.
+</p><p>
+   This interface is optional and can be implemented by either a tracker or a
+   mapper.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(osa_micro_checkpoint) {
+        void (*started)(conf_object_t *NOTNULL obj);
+        void (*finished)(conf_object_t *NOTNULL obj);
+};
+
+#define OSA_MICRO_CHECKPOINT_INTERFACE "osa_micro_checkpoint"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_mapper_query.html">osa_mapper_query</a>
+<a href="__rm_interface_osa_node_path.html">osa_node_path</a>
+</div>

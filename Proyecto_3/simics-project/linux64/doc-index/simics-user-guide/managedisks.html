@@ -1,0 +1,162 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7 Moving Data in and out of the Simulation</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="conf-start-scripts.html">6.6 Ready-to-run Configurations</a>
+<a href="matic.html">7.1 File Transfers Using the Simics Agent</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="managedisks">7 Moving Data in and out of the Simulation</a></h1>
+<p>
+
+<a name="disks"></a>
+<a name="CD-ROM"></a>
+</p><p>
+In order to use Simics, you must have <em>images</em> (also called <em>disk
+dumps</em>) with the operating system and the applications you plan to
+run. Depending on the type of machine you are using, these images will
+correspond to the contents of a disk, a flash memory, a CD-ROM, etc. There are
+some images provided that work with the example machines located in the
+<code>targets</code> directory.
+</p><p>
+Simics images are usually stored in a special format called <code>craff</code>
+(for Compressed Random Access File Format) to save disk space. Simics also
+accepts a raw binary dumps as well as VHDX images. The use of a raw dumps
+as images can sometimes be more practical if you
+are manipulating images outside Simics. Simics comes with the
+<code>craff</code> utility to manipulate and convert images in
+<code>craff</code> format (see section <a class="reference" href="working-with-images.html#The-craff-utility">7.2.8</a>).
+</p><p>
+This chapter will explain the following:
+</p><p>
+</p><ul>
+
+<li>How to use Simics Agent to transfer files</li>
+<li>How to use Simics Agent to run commands on target systems</li>
+<li>How to work with images in general</li>
+<li>How to use CD-ROMs and floppies with Simics</li>
+<li>How to use the SimicsFS file system</li>
+<li>How to import the contents of a real disk inside Simics</li>
+
+</ul>
+<p>
+To provide you with a more practical overview, here are the ways you can
+install and modify the operating system and the applications you wish to run:
+</p><p>
+</p><dl><dt id="dt:using-simics"><b>Using Simics:</b></dt><dd><ul>
+
+  <li>You can install a completely new OS or simply copy files using a
+  simulated CD-ROM drive, by linking it to a real CD-ROM drive on your host
+  machine (Linux only) or by using a CD image file (refer to sections <a class="reference" href="cd-roms-and-floppies.html#Accessing-Host-CDROM">7.3.1</a>
+  and <a class="reference" href="cd-roms-and-floppies.html#Accessing-CDROM-image-file">7.3.2</a>).</li>
+
+  <li>You can copy files from the simulated floppy drive by linking it to the
+  real host floppy device (Linux only) or by using a floppy image file (see
+  sections
+  <a class="reference" href="cd-roms-and-floppies.html#Accessing-Host-Floppy">7.3.3</a> and
+  <a class="reference" href="cd-roms-and-floppies.html#Accessing-Floppy-Image-File">7.3.4</a>).</li>
+
+  <li>You can use SimicsFS to directly access your host file systems from the
+  simulated machine (see section <a class="reference" href="simicsfs.html">7.5</a>).</li>
+
+  <li>
+    You can use the <em>Simics Agent</em> application to copy files and
+    directories between host and target systems, as well as issuing commands to
+    be executed in a shell on the target. Full functionality is available from
+    the Simics command line (see section <a class="reference" href="matic.html">7.1</a>).
+<p>
+    You can also run upload and download commands directly from the command-line
+    in the target system shell, using the <em>Simics Agent</em> application.
+  </p></li>
+
+  <li>You can download files over the simulated network (see the <em>Ethernet
+  Networking Technology Guide</em>).</li>
+
+</ul>
+<p>
+<b>Do not forget to read more about <em>images</em> in section <a class="reference" href="working-with-images.html#image-modif-save">7.2.2</a> to learn how to save and re-use your
+changes.</b></p></dd><dt id="dt:using-external-programs"><b>Using External Programs</b></dt><dd><ul>
+
+<li>You can install a new OS along with new programs on a real machine and
+create an image from the real machine storage (disk, flash memory,
+etc.). Section <a class="reference" href="copying-real-disks.html">7.8</a> shows how to perform this with
+a disk.</li>
+
+<li>You can modify a FAT image directly with Mtools (see section <a class="reference" href="working-with-images.html#mtools">7.2.5</a>). (Linux only)</li>
+
+<li>You can modify an image directly via a loopback device (see section <a class="reference" href="working-with-images.html#Loopback-device-access">7.2.6</a>). (Linux only)</li>
+
+<li>Use a tool such as SFMount from PassMark* Software. (Windows only)</li>
+
+</ul></dd></dl><p>
+
+
+
+
+
+
+
+
+</p><p>
+</p>
+<ul class="subsections">
+<li>
+<a href="matic.html">7.1 File Transfers Using the Simics Agent</a>
+</li>
+<li>
+<a href="working-with-images.html">7.2 Working with Images</a>
+</li>
+<li>
+<a href="cd-roms-and-floppies.html">7.3 CD-ROMs and Floppies</a>
+</li>
+<li>
+<a href="usb-disks.html">7.4 USB disks</a>
+</li>
+<li>
+<a href="simicsfs.html">7.5 Using SimicsFS with FUSE</a>
+</li>
+<li>
+<a href="using-tftp.html">7.6 Using TFTP</a>
+</li>
+<li>
+<a href="using-ftp-service.html">7.7 Using FTP service</a>
+</li>
+<li>
+<a href="copying-real-disks.html">7.8 Importing a Real Disk into Simics</a>
+</li>
+<li>
+<a href="foreign-image-formats-including-qemu-and-vmware.html">7.9 Foreign Image Formats Including QEMU and VMware</a>
+</li>
+</ul>
+<div class="chain">
+<a href="conf-start-scripts.html">6.6 Ready-to-run Configurations</a>
+<a href="matic.html">7.1 File Transfers Using the Simics Agent</a>
+</div>

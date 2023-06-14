@@ -1,0 +1,112 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7 Security Considerations</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="open-source-software.html">6 Open Source Software</a>
+</div>
+<div class="path">
+<a href="index.html">Installation Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Security-Considerations">7 Security Considerations</a></h1>
+<p>
+
+</p><p>
+Simics runs as a user application with standard privileges and is
+secure at its core. However, it has some features that present potential
+vulnerabilities which are good to be aware of before enabling
+them. None of them are enabled by default.
+</p><p>
+</p><ul>
+  <li>
+    Access to the Simics command line provides access to arbitrary
+    shell commands on the simulation host (as the user running
+    Simics). Hence usage of <b>telnet-frontend</b> potentially opens
+    up shell access to the simulation host to anyone with network access to it.
+  </li>
+  <li>
+    Similarly, access to the simulated target system may potentially be used to
+    obtain access to the host (as the user running Simics). The
+    features which provide communication between target and Simics,
+    and which therefore could introduce this type of risk,
+    are <b>SimicsFS</b>, <b>Simics Agent</b>, the host serial
+    connections in the <b>host-serial-console</b> and <b>textcon</b>
+    modules, and the debugging functionality in <b>tcf-agent</b>.
+    In general, bugs in Simics devices can lead
+    to crashes or similar that results in access to the simulation host.
+  </li>
+  <li>
+    Some features may provide access to the simulated target system to
+    users who have network access to the simulation host. By the
+    previous point, this may be exploited to access the simulation
+    host. These features are the VNC server in the <b>graphcon</b>
+    module, the telnet servers in the <b>telnet-console</b>
+    and <b>textcon</b> modules, the <b>gdb-remote</b> module,
+    distributed simulation and all types of real network connections
+    using the <b>real-network</b> module.
+  </li>
+  <li>
+    The connection modules mentioned above can be configured to use
+    restrictive connection types, domain sockets on Linux and named
+    pipes on Windows, that do not make the simulation host accessible
+    over the network.
+  </li>
+  <li>
+    Real network connections in particular should be used with care,
+    as they also allow the target system to initiate connections to
+    the network that the simulation host is connected to. This can
+    potentially expose information about the target. Moreover,
+    the <b>Ethernet bridging</b> type of real network connection makes
+    it possible for Simics users as well as software at the simulated
+    target machine to access raw Ethernet frames on the local network
+    of the host. In particular, do not use the Simics network services
+    (the <b>service-node</b>) when bridging networks, as this exposes
+    those services to the host network, which is both a security
+    concern and can also lead to conflicts with other similar services
+    on the network. Also, Ethernet bridging uses TAP which requires
+    administrator privileges to setup, an additional risk.
+  </li>
+  <li>
+    It is recommended to only use any of the features mentioned above
+    when the simulation host is on a secure network.
+  </li>
+  <li>
+    <b>VMP</b> is a kernel module that must be installed with
+    administrator privileges and that runs in supervisor mode. Hence,
+    bugs in Simics processor models can potentially crash the host
+    when running in VMP mode.
+  </li>
+</ul>
+<p>
+Simics packages often include software intended to run in the
+simulated target systems. This software is supplied for demonstration
+and training purposes only and is not intended to be used as part of
+production setups.
+</p><p>
+</p>
+<div class="chain">
+<a href="open-source-software.html">6 Open Source Software</a>
+</div>

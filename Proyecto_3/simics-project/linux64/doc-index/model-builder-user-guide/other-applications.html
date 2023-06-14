@@ -1,0 +1,160 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>46 Integrating with Other Applications</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="time-synchronization-library.html">45 Time Synchronization Library</a>
+<a href="writing-hypersim-patterns.html">47 Writing Hypersim Patterns</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="extension-builder.html">VII Extending Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="other-applications">46 Integrating with Other Applications</a></h1>
+<p>
+
+</p><p>
+Simics provides support to cooperate with other applications, either by linking
+Simics in the other application, or by making the other application a part of
+Simics.
+</p><p>
+</p><h2 class="jdocu"><a name="Linking-Simics-into-Another-Application">46.1 Linking Simics into Another Application</a></h2>
+<p>
+
+</p><p>
+Simics has been built so it can be embedded into another application: it
+consists in a small <code>simics</code> binary and several libraries, such as
+<code>libsimics-common</code>, which contains the core functionality. The main
+binary can be replaced so that, by integrating the Simics libraries, all Simics
+functionality can be included as a part of another application.
+</p><p>
+The Simics Base package contains the source code of a Simics binary replacement
+located in <code>src/misc/simple-simics/</code>. The following files are
+included:
+</p><p>
+</p><dl><dt id="dt:makefile-linux"><b><code>Makefile.linux</code></b></dt><dd>Skeleton makefile showing how to build
+the example on a Linux system.</dd><dt id="dt:makefile-mingw"><b><code>Makefile.mingw</code></b></dt><dd>Skeleton makefile showing how to build
+the example on Windows with the MinGW compiler.</dd><dt id="dt:simple-simics-c"><b><code>simple-simics.c</code></b></dt><dd>Code linking in the Simics libraries
+to provide the full simulation functionality.</dd></dl><p>The <code>simple-simics</code> illustrates the main steps to integrated Simics:
+</p><p>
+</p><ol>
+
+<li>Call <b><i>SIM_init_environment()</i></b>.</li>
+
+<li>Create a list of <code>init_arg_t</code> structures, filling it with
+initialization arguments and their values. Make sure the last entry has NULL
+fields. The structure is described in the <em>API Reference Manual</em>.
+</li>
+
+<li>Call <b><i>SIM_init_simulator2()</i></b> with the list as parameter.</li>
+
+</ol>
+<p>
+Once there, there are two ways of controlling the simulation. 
+</p><p>
+Simics can run its own main loop, which can be done by
+calling <b><i>SIM_init_command_line()</i></b> followed
+by <b><i>SIM_main_loop()</i></b>. Once this is done, Simics will not return
+control to the caller, so other means of communication must be put into place
+if the calling application needs to react to simulation events. For example, a
+dedicated Simics extension might be taking over.
+</p><p>
+Simics can also accept commands one at a time,
+with <b><i>SIM_run_command()</i></b>. In that case, the interface stays in
+control of the calling application.
+</p><p>
+There are a few caveats that needs to be taken into account when embedding
+Simics:
+</p><p>
+</p><ul>
+
+<li>The paths that contain Simics libraries and their dependencies must be in
+the search path for libraries. This is usually done in the Simics start
+scripts, so when embedding Simics, the controlling application has to make the
+necessary configuration changes itself:
+<p>
+</p><ul><li>On Linux, this concerns <code>[simics]/</code><em>host</em><code>/bin</code> (the
+Simics libraries) and <code>[simics]/</code><em>host</em><code>/sys/lib</code> (system
+dependencies provided along with Simics).</li>
+
+<li>On Windows, all libraries and dependencies are
+in <code>[simics]\win64\bin</code>.</li></ul></li>
+
+<li>Even when embedded, Simics uses the standard and error outputs for its
+messages, which might interfere with the controlling application's output.</li>
+
+<li>When starting the simulation via <b><i>SIM_run_command()</i></b>, Simics
+does not return control to the application until the simulation is somehow
+stopped. This makes it important, if not indispensable, to place appropriate
+callbacks in the simulation to keep control of what is going on. Callbacks can
+be placed in real-time, via <b><i>SIM_realtime_event()</i></b>, or directly in the
+simulation using haps and events.</li>
+
+</ul>
+<p>
+
+</p><h2 class="jdocu"><a name="Integrating-Another-Application-into-Simics">46.2 Integrating Another Application into Simics</a></h2>
+<p>
+
+</p><p>
+To integrate another application into Simics you need to be able to
+build the application as a Simics module or at least as a shared
+library you can load from a Simics module. If this is not possible see
+chapter <a class="reference" href="external-world.html">44</a> for how to connect your
+application to Simics.
+</p><p>
+The communication between Simics and the application needs to use the
+Simics APIs. The exact nature of the communication depends on what the
+embedded application does.
+</p><p>
+If your application runs its own simulation which needs to be
+integrated with the Simics simulation you should use the Simics Device
+API and the Model-to-Model and Model-to-Simulator interfaces to
+integrate with Simics. This basically makes the module containing the
+application a normal model module, as described in the <em>Model
+Builder User's Guide</em>.
+</p><p>
+If the application simulates one or more processors which you want to
+appear as processors in the Simics simulation use the Processor API,
+documented in the <em>Processor Model Integration Guide</em>, instead.
+</p><p>
+Your application can also integrate with Simics as an extension module
+using the Simulator API and Simulator-to-Simulator interfaces as
+described earlier in this document.
+</p><p>
+Of course, these categories of applications are not rigid. An
+application may need to use parts of the Simulator API to do its work,
+for example it may need to use <b><i>SIM_register_work</i></b>
+or <b><i>SIM_thread_safe_callback</i></b> even though it is mostly a
+model.
+</p><p>
+
+</p>
+<div class="chain">
+<a href="time-synchronization-library.html">45 Time Synchronization Library</a>
+<a href="writing-hypersim-patterns.html">47 Writing Hypersim Patterns</a>
+</div>

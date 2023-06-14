@@ -1,0 +1,86 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>signal-bus</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-set-memory.html">set-memory</a>
+<a href="rm-class-signal_link_endpoint.html">signal_link_endpoint</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="signal-bus"><a href="#signal-bus">signal-bus</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The <tt>signal-bus</tt> class implements a signal bus that distributes a signal from one or more initiators to a configured list of targets. Both the signal bus itself and all targets implement the <tt>signal</tt> interface. The initiator must also comply to the <tt>signal</tt> interface, with the exception that multiple initiators are allowed for <tt>signal-bus</tt> class.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-signal-bus.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-signal-bus.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:input_inverted">
+<i>input_inverted</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>True if the input signal should be inverted before sent out to the connected targets. Default is False.</dd>
+<dt id="dt:targets">
+<i>targets</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[o|[o,n|s]|[o,n|s,b]*]</code>
+<br>Signal target objects, implementing one or more instances of the <tt>signal</tt> interface. The third argument in the target sub-list can be set to True if the target should get the signal inverted.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.signal-bus.html">signal-bus</a>
+</section>
+<div class="chain">
+<a href="rm-class-set-memory.html">set-memory</a>
+<a href="rm-class-signal_link_endpoint.html">signal_link_endpoint</a>
+</div>

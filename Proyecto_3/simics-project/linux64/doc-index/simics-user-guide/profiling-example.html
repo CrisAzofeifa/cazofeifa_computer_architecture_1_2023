@@ -1,0 +1,478 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>9.5 Profiling Example</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="exporting-instrumentation-data.html">9.4 Exporting Instrumentation Data</a>
+<a href="device-register-coverage.html">9.6 Device Register Coverage</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="instrumentation.html">9 Instrumentation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Profiling-Example">9.5 Profiling Example</a></h1>
+<p>
+  
+</p><p>
+  This chapter describes a sample session when using some of the
+  instrumentation tools. Refer to the command descriptions for details
+  on each individual command.
+</p><p>
+  As a basis for this example, the
+  Coremark <a class="jdocu" href="https://www.eembc.org/coremark/" rel="noopener noreferrer" target="_top">www.eembc.org/coremark/</a> benchmark
+  will be run and analyzed in Simics. The source code is downloadable
+  with an Apache license and very easy to compile and run.
+  In this example Coremark will be run on a x86 QSP system running
+  Linux.
+  </p><p>
+  </p><h2 class="jdocu"><a name="Profiling-Setup">9.5.1 Profiling Setup</a></h2>
+<p>
+  
+  The Coremark binary was compiled on standard x86 Linux host system
+  and in this example we are using the simics-agent to transfer
+  the binary to the target system.
+  The script in figure <a class="reference" href="#setup-instrumentation">12</a> shows
+  how the binary is uploaded to the target, enabling instrumentation
+  only for the coremark executable and starting coremark and
+  waiting for it to be finished.
+  </p><div class="figure" id="setup-instrumentation">
+
+    <pre class="jdocu_small">run-command-file "targets/qsp-x86/firststeps.simics"
+
+script-branch {
+    local $con = board.serconsole.con
+    local $bin = coremark.exe
+    local $params = " 0x0 0x0 0x66 10000 7 1 2000"    # run1 parameters (10000 iterations)
+    local $prompt = "# "
+
+    # Wait for a linux prompt to appear and then upload our binary
+    # to the target system using simics-agent
+    bp.console_string.wait-then-write $con $prompt "simics-agent &amp;\n"
+    $am = (start-agent-manager)
+    $m  = ($am.connect-to-agent)
+    $m.change-directory "/root"
+    $j = ($m.upload -executable $bin)
+    $m.wait-for-job $j
+
+    # Create and connect instrumentation tools
+    $ihn = (new-instruction-histogram -connect-all view = x86-normalized)
+    $ihs = (new-instruction-histogram -connect-all view = size)
+    $bp = (new-x86-branch-profiler -connect-all)
+    $mp = (new-memory-profiler -connect-all -read-logical -write-logical -execute-logical)
+
+    # Only let the instrumentation tools monitor our process
+    $pattern ="name='" + $bin + "'"
+    $pf = (new-process-filter software-component = board.software pattern = $pattern)
+    $ihn.add-filter filter = $pf
+    $ihs.add-filter filter = $pf
+    $bp.add-filter filter = $pf
+    $mp.add-filter filter = $pf
+
+    # Start the process, wait for it to finish, and then stop simulation
+    $con.input "\n"
+    bp.console_string.wait-then-write $con $prompt ("./" + $bin + $params + "\n")
+    $con.bp-wait-for-string $prompt
+    stop
+}
+run
+    </pre><p>
+    </p><div class="caption">Figure 12. Setup Script</div>
+  </div>
+
+  In this setup four instrumentation tools are enabled:
+  <ul>
+    <li>An instruction histogram which takes a look at each
+      instruction being executed and analyzes the x86 disassembly
+      string.  Registers such as EAX, EDX are replaced with "r32"
+      indicating they operating on a normal 32 bit
+      registers. Similarly immediate values are replaced with an "imm"
+      marker.</li>
+    <li>Another instruction histogram which instead groups the
+      instructions by their instruction sizes in bytes.</li>
+    <li>An x86 branch-profiler tool which monitors common branch
+      instructions and checks if conditional branches take the jumps
+      of falls-through.</li>
+    <li>A memory profiler which monitors all instruction and data
+      accesses from the processor and keeps track of how many
+      reads/writes and executes there are on each logical memory
+      location being accessed.</li>
+  </ul>    
+      <p>
+  The instrumentation data gathered by these tools will be analyzed a
+  bit in the next chapters. To get a bit more readable big numbers,
+  the following commands splits the numbers with underscores
+  on logical units; <b>digit-grouping 10 3</b> for decimal
+  values and <b>digit-grouping 16 4</b> for hexadecimal
+  values.
+
+  </p><h2 class="jdocu"><a name="Instruction-Profiling">9.5.2 Instruction Profiling</a></h2>
+<p>
+  
+  First lets take a look of which instructions that are most commonly
+  executed shown in figure <a class="reference" href="#instruction-mix">13</a>.
+  </p><div class="figure" id="instruction-mix">
+
+    <div style="text-align: center">
+      <pre class="jdocu_small">simics&gt; <b>ihist0.histogram max = 10</b>
+┌─────────┬────────────────────────────────┬─────────────┬───────┬───────────┐
+│  Row #  │         x86 normalized         │    Count    │ Count%│Accumulated│
+│         │                                │             │       │   Count%  │
+├─────────┼────────────────────────────────┼─────────────┼───────┼───────────┤
+│        1│mov r32,r32                     │  330_467_974│  9.60%│      9.60%│
+│        2│jne imm                         │  308_597_223│  8.96%│     18.56%│
+│        3│mov r64,r64                     │  204_178_395│  5.93%│     24.49%│
+│        4│je imm                          │  190_302_166│  5.53%│     30.01%│
+│        5│add r32,r32                     │  142_190_315│  4.13%│     34.14%│
+│        6│test r64,r64                    │  140_221_077│  4.07%│     38.21%│
+│        7│mov r64,qword ptr [r64]         │  139_282_002│  4.04%│     42.26%│
+│        8│and r32,imm                     │  130_455_258│  3.79%│     46.05%│
+│        9│cmp r8,imm                      │  123_723_347│  3.59%│     49.64%│
+│       10│movsx r32,word ptr [r64+r64*imm]│  123_120_000│  3.58%│     53.22%│
+├─────────┼────────────────────────────────┼─────────────┼───────┼───────────┤
+│# 10/425 │                                │             │       │           │
+│Sum (all)│                                │3_443_579_955│100.00%│           │
+│Sum shown│                                │1_832_537_757│ 53.22%│           │
+└─────────┴────────────────────────────────┴─────────────┴───────┴───────────┘
+      </pre><p>
+      </p><div class="caption">Figure 13. Instruction mix</div>
+    </div>
+  </div>
+
+  Here the 10 most commonly executed instruction combination is
+  listed.  A total of 425 different instruction variants was
+  identified when running the coremark benchmark. With 10,000
+  iterations in coremark, roughly 3 billion instructions was executed
+  in total.
+  SSE registers are marked as x128 in the disassembly, lets see if any
+  of these where executed in figure <a class="reference" href="#sse-instructions">14</a>.
+  <div class="figure" id="sse-instructions">
+
+    <div style="text-align: center">
+      <pre class="jdocu_small">simics&gt; <b>ihist0.histogram sort-on-column = "x86 normalized" instruction-regexp = ".*x128"</b>
+ Table reduced from 425 to 29 rows
+┌─────┬──────────────────────────────────┬─────┐
+│Row #│          x86 normalized          │Count│
+├─────┼──────────────────────────────────┼─────┤
+│    1│cvtsi2sd(64) x128,r64             │    5│
+│    2│divsd x128,[rip+imm]              │    4│
+│    3│divsd x128,x128                   │    1│
+│    4│movapd x128,x128                  │    1│
+│    5│movaps xmmword ptr [r64+imm],x128 │   16│
+│    6│movd r64,x128                     │   10│
+│    7│movd x128,r32                     │   42│
+│    8│movd x128,r64                     │    6│
+│    9│movdqa x128,x128                  │   71│
+│   10│movdqa x128,xmmword ptr [r64+imm] │    1│
+│   11│movdqu x128,xmmword ptr [r64+imm] │   45│
+│   12│movdqu x128,xmmword ptr [r64]     │   48│
+│   13│movsd [r64+imm],x128              │    1│
+│   14│movsd [r64-imm],x128              │    2│
+│   15│movsd x128,[r64+imm]              │    1│
+│   16│movsd x128,[r64]                  │    2│
+│   17│movsd x128,[rip+imm]              │    1│
+│   18│pcmpeqb x128,x128                 │  178│
+│   19│pcmpeqb x128,xmmword ptr [r64+imm]│    9│
+│   20│pcmpeqb x128,xmmword ptr [r64]    │    1│
+│   21│pminub x128,[r64+imm]             │    3│
+│   22│pmovmskb r32,x128                 │  103│
+│   23│por x128,x128                     │   85│
+│   24│pshufd x128,x128,imm              │   41│
+│   25│punpcklbw x128,x128               │   41│
+│   26│punpcklwd x128,x128               │   41│
+│   27│pxor x128,x128                    │   68│
+│   28│ucomisd x128,[rip+imm]            │    1│
+│   29│ucomisd x128,x128                 │    1│
+├─────┼──────────────────────────────────┼─────┤
+│Sum  │                                  │  829│
+└─────┴──────────────────────────────────┴─────┘
+      </pre><p>
+      </p><div class="caption">Figure 14. SSE instructions</div>
+    </div>
+  </div>
+  
+  So a few instructions, but they are not used in the body of the
+  benchmark at all, since they are executed so few times.
+  Now lets investigate the instruction sizes of the executed
+  instructions, which is gathered by the other instruction-histogram
+  shown in figure <a class="reference" href="#instruction-sizes">15</a>.
+  <div class="figure" id="instruction-sizes">
+
+    <div style="text-align: center">
+      <pre class="jdocu_small">simics&gt; <b>ihist1.histogram</b>
+┌─────┬───────┬─────────────┬───────┬───────────┐
+│Row #│  Size │    Count    │ Count%│Accumulated│
+│     │(bytes)│             │       │   Count%  │
+├─────┼───────┼─────────────┼───────┼───────────┤
+│    1│      3│1_552_922_442│ 45.10%│     45.10%│
+│    2│      2│  867_469_439│ 25.19%│     70.29%│
+│    3│      4│  575_089_349│ 16.70%│     86.99%│
+│    4│      5│  253_701_408│  7.37%│     94.35%│
+│    5│      6│  145_314_324│  4.22%│     98.57%│
+│    6│      1│   34_766_864│  1.01%│     99.58%│
+│    7│      7│    9_451_053│  0.27%│     99.86%│
+│    8│      8│    4_273_215│  0.12%│     99.98%│
+│    9│      9│      550_962│  0.02%│    100.00%│
+│   10│     10│       40_428│  0.00%│    100.00%│
+│   11│     11│          456│  0.00%│    100.00%│
+│   12│     12│           14│  0.00%│    100.00%│
+├─────┼───────┼─────────────┼───────┼───────────┤
+│Sum  │       │3_443_579_954│100.00%│           │
+└─────┴───────┴─────────────┴───────┴───────────┘
+Average size of executed instruction: 3.187071 (25 bits)
+      </pre><p>
+      </p><div class="caption">Figure 15. Instruction sizes</div>
+    </div>
+  </div>
+  
+  Three byte instructions are by far the most common instruction
+  size when executing this benchmark.
+<p>
+  The branch-profiler will report more details on the
+  branch instructions shown in figure <a class="reference" href="#branch-instructions">16</a>.
+  </p><div class="figure" id="branch-instructions">
+
+    <div style="text-align: center">
+      <pre class="jdocu_small">simics&gt; <b>bprof0.histogram max = 15</b>
+┌─────────┬───────────┬───────────┬───────────┬───────────┬───────┬───────────┐
+│  Row #  │   Branch  │   Taken   │  Non-taken│   Total   │ Total%│Accumulated│
+│         │Instruction│           │           │           │       │   Total%  │
+├─────────┼───────────┼───────────┼───────────┼───────────┼───────┼───────────┤
+│        1│jne        │273_402_780│ 35_194_443│308_597_223│ 47.44%│     47.44%│
+│        2│je         │ 10_877_292│179_424_874│190_302_166│ 29.25%│     76.69%│
+│        3│jmp        │ 34_532_902│          -│ 34_532_902│  5.31%│     82.00%│
+│        4│ja         │  6_862_422│ 15_880_527│ 22_742_949│  3.50%│     85.50%│
+│        5│call       │ 20_884_324│          -│ 20_884_324│  3.21%│     88.71%│
+│        6│ret        │ 20_884_320│          -│ 20_884_320│  3.21%│     91.92%│
+│        7│jbe        │ 14_880_208│  2_120_535│ 17_000_743│  2.61%│     94.53%│
+│        8│jg         │  6_640_020│  6_320_100│ 12_960_120│  1.99%│     96.52%│
+│        9│jb         │  7_021_647│    880_696│  7_902_343│  1.21%│     97.74%│
+│       10│js         │  3_991_228│  2_330_079│  6_321_307│  0.97%│     98.71%│
+│       11│jle        │  2_665_772│  2_280_227│  4_945_999│  0.76%│     99.47%│
+│       12│jae        │    360_746│  3_080_521│  3_441_267│  0.53%│    100.00%│
+│       13│jns        │         29│         10│         39│  0.00%│    100.00%│
+│       14│jl         │         14│          4│         18│  0.00%│    100.00%│
+│       15│jcxz       │          0│          0│          0│  0.00%│    100.00%│
+├─────────┼───────────┼───────────┼───────────┼───────────┼───────┼───────────┤
+│# 15/22  │           │           │           │           │       │           │
+│Sum (all)│           │403_003_704│247_512_016│650_515_720│100.00%│           │
+│Sum shown│           │403_003_704│247_512_016│650_515_720│100.00%│           │
+└─────────┴───────────┴───────────┴───────────┴───────────┴───────┴───────────┘
+      </pre><p>
+      </p><div class="caption">Figure 16. Branch instructions</div>
+    </div>
+  </div>
+    
+  Here we see the most commonly used branch instruction with information
+  if the branches were taken or not. Unconditional jumps, of course,
+  always jumps.
+  Finally, we can get instruction information from the memory-profiler
+  shown in figure <a class="reference" href="#instruction-profile-4k">17</a>.
+  <div class="figure" id="instruction-profile-4k">
+
+    <div style="text-align: center">
+      <pre class="jdocu_small">simics&gt; <b>mprof0.profile view = execute-logical max = 10</b>
+┌─────────┬────────────────┬────────────────┬─────────────┬───────┬───────────┐
+│  Row #  │     Start      │      Stop      │    Count    │ Count%│Accumulated│
+│         │                │                │             │       │   Count%  │
+├─────────┼────────────────┼────────────────┼─────────────┼───────┼───────────┤
+│        1│     0x0040_1000│     0x0040_1fff│2_454_100_308│ 71.27%│     71.27%│
+│        2│     0x0040_2000│     0x0040_2fff│  909_181_060│ 26.40%│     97.67%│
+│        3│     0x0040_0000│     0x0040_0fff│   80_070_862│  2.33%│     99.99%│
+│        4│0x7ff1_b614_4000│0x7ff1_b614_4fff│       56_044│  0.00%│    100.00%│
+│        5│0x7ff1_b65d_c000│0x7ff1_b65d_cfff│       48_656│  0.00%│    100.00%│
+│        6│0x7ff1_b65d_e000│0x7ff1_b65d_efff│       29_808│  0.00%│    100.00%│
+│        7│0x7ff1_b65e_b000│0x7ff1_b65e_bfff│       22_112│  0.00%│    100.00%│
+│        8│0x7ff1_b65d_b000│0x7ff1_b65d_bfff│       15_855│  0.00%│    100.00%│
+│        9│0x7ff1_b65e_3000│0x7ff1_b65e_3fff│        8_683│  0.00%│    100.00%│
+│       10│0x7ff1_b609_b000│0x7ff1_b609_bfff│        7_780│  0.00%│    100.00%│
+├─────────┼────────────────┼────────────────┼─────────────┼───────┼───────────┤
+│# 10/90  │                │                │             │       │           │
+│Sum (all)│                │                │3_443_579_954│100.00%│           │
+│Sum shown│                │                │3_443_541_168│100.00%│           │
+└─────────┴────────────────┴────────────────┴─────────────┴───────┴───────────┘
+      </pre><p>
+      </p><div class="caption">Figure 17. Instruction executed in memory (4K granularity)</div>
+    </div>
+  </div>
+      
+  Here we can see where we have executed most, using the logical addresses.
+  By default, the range between start and stop is set to 4K, but this can
+  be controlled through a command argument. So the coremark binary executed
+  on a total of 90 4K pages, but 99.9% of its execution was only in three
+  pages.
+  The memory-profiler will count the first byte of an instruction as executed.
+  So if we decrease the granularity to just one byte shown in figure
+  <a class="reference" href="#instruction-profile-1b">18</a>.
+  <div class="figure" id="instruction-profile-1b">
+
+    <div style="text-align: center">
+      <pre class="jdocu_small">  
+simics&gt; <b>mprof0.profile view = execute-logical granularity = 1 max = 10</b>
+┌──────────┬───────────┬───────────┬─────────────┬───────┬───────────┐
+│  Row #   │   Start   │    Stop   │    Count    │ Count%│Accumulated│
+│          │           │           │             │       │   Count%  │
+├──────────┼───────────┼───────────┼─────────────┼───────┼───────────┤
+│         1│0x0040_1333│0x0040_1333│   61_200_000│  1.78%│      1.78%│
+│         2│0x0040_1336│0x0040_1336│   61_200_000│  1.78%│      3.55%│
+│         3│0x0040_1339│0x0040_1339│   61_200_000│  1.78%│      5.33%│
+│         4│0x0040_133c│0x0040_133c│   61_200_000│  1.78%│      7.11%│
+│         5│0x0040_133f│0x0040_133f│   61_200_000│  1.78%│      8.89%│
+│         6│0x0040_1330│0x0040_1330│   59_160_000│  1.72%│     10.60%│
+│         7│0x0040_112a│0x0040_112a│   29_160_000│  0.85%│     11.45%│
+│         8│0x0040_112d│0x0040_112d│   29_160_000│  0.85%│     12.30%│
+│         9│0x0040_1950│0x0040_1950│   29_160_000│  0.85%│     13.14%│
+│        10│0x0040_1953│0x0040_1953│   29_160_000│  0.85%│     13.99%│
+├──────────┼───────────┼───────────┼─────────────┼───────┼───────────┤
+│# 10/12542│           │           │             │       │           │
+│Sum (all) │           │           │3_443_579_954│100.00%│           │
+│Sum shown │           │           │  481_800_000│ 13.99%│           │
+└──────────┴───────────┴───────────┴─────────────┴───────┴───────────┘
+      </pre><p>
+      </p><div class="caption">Figure 18. Instruction executed in memory (1 byte granularity)</div>
+    </div>
+  </div>
+        
+  This produces the top-list of the most executed instruction of the
+  benchmark. A total of 12542 unique instructions (in memory) have
+  been executed.
+
+  <h2 class="jdocu"><a name="Data-Profiling">9.5.3 Data Profiling</a></h2>
+<p>
+  
+  For the same coremark run, now examine a bit on how many data
+  accesses that happened, using the memory-profile tool again
+  shown in figure <a class="reference" href="#read-profile-4k">19</a>.
+  </p><div class="figure" id="read-profile-4k">
+
+    <div style="text-align: center">
+      <pre class="jdocu_small">simics&gt; <b>mprof0.profile view = read-logical max = 10</b>
+┌─────────┬────────────────┬────────────────┬─────────────┬───────┬───────────┐
+│  Row #  │     Start      │      Stop      │    Count    │ Count%│Accumulated│
+│         │                │                │             │       │   Count%  │
+├─────────┼────────────────┼────────────────┼─────────────┼───────┼───────────┤
+│        1│     0x0060_5000│     0x0060_5fff│2_064_749_345│ 76.15%│     76.15%│
+│        2│0x7fff_15e5_e000│0x7fff_15e5_efff│  646_513_938│ 23.84%│     99.99%│
+│        3│          0x0000│          0x0fff│       79_652│  0.00%│     99.99%│
+│        4│0x7ff1_b67f_3000│0x7ff1_b67f_3fff│       48_740│  0.00%│     99.99%│
+│        5│0x7fff_15e5_d000│0x7fff_15e5_dfff│       24_501│  0.00%│     99.99%│
+│        6│0x7ff1_b67f_6000│0x7ff1_b67f_6fff│       12_934│  0.00%│     99.99%│
+│        7│0x7ff1_b67f_0000│0x7ff1_b67f_0fff│       12_375│  0.00%│    100.00%│
+│        8│0x7ff1_b63c_6000│0x7ff1_b63c_6fff│       10_768│  0.00%│    100.00%│
+│        9│0x7ff1_b67f_5000│0x7ff1_b67f_5fff│        5_678│  0.00%│    100.00%│
+│       10│0x7ff1_b63c_4000│0x7ff1_b63c_4fff│        4_988│  0.00%│    100.00%│
+├─────────┼────────────────┼────────────────┼─────────────┼───────┼───────────┤
+│# 10/88  │                │                │             │       │           │
+│Sum (all)│                │                │2_711_569_260│100.00%│           │
+│Sum shown│                │                │2_711_462_919│100.00%│           │
+└─────────┴────────────────┴────────────────┴─────────────┴───────┴───────────┘
+      </pre><p>
+      </p><div class="caption">Figure 19. Read profile (4K granularity)</div>
+    </div>
+  </div>
+          
+  Here we can see that the reads to memory is pretty much only
+  associated to one heap-page, and one stack-page. The memory-profiler
+  here annotates each byte as being read. So if the software performs a 32 bit
+  read, the four bytes will all have an increased counter.
+  The similar for command for write-accesses is shown in figure
+  <a class="reference" href="#write-profile-4k">20</a>.
+  <div class="figure" id="write-profile-4k">
+
+    <div style="text-align: center">
+      <pre class="jdocu_small">  
+simics&gt; <b>mprof0.profile view = write-logical max = 10</b>
+┌─────────┬─────────────────────┬─────────────────────┬─────────────┬───────┬───────────┐
+│  Row #  │        Start        │         Stop        │    Count    │ Count%│Accumulated│
+│         │                     │                     │             │       │   Count%  │
+├─────────┼─────────────────────┼─────────────────────┼─────────────┼───────┼───────────┤
+│        1│          0x0060_5000│          0x0060_5fff│  595_005_622│ 53.23%│     53.23%│
+│        2│     0x7fff_15e5_e000│     0x7fff_15e5_efff│  522_602_567│ 46.75%│     99.99%│
+│        3│0xffff_8801_f35a_f000│0xffff_8801_f35a_ffff│       81_720│  0.01%│     99.99%│
+│        4│     0x7fff_15e5_d000│     0x7fff_15e5_dfff│       22_052│  0.00%│    100.00%│
+│        5│     0x7ff1_b63c_6000│     0x7ff1_b63c_6fff│        5_924│  0.00%│    100.00%│
+│        6│     0x7ff1_b602_3000│     0x7ff1_b602_3fff│        4_093│  0.00%│    100.00%│
+│        7│     0x7ff1_b67f_3000│     0x7ff1_b67f_3fff│        3_690│  0.00%│    100.00%│
+│        8│     0x7ff1_b65d_2000│     0x7ff1_b65d_2fff│        2_893│  0.00%│    100.00%│
+│        9│     0x7ff1_b63c_4000│     0x7ff1_b63c_4fff│        2_712│  0.00%│    100.00%│
+│       10│     0x7ff1_b67e_e000│     0x7ff1_b67e_efff│        2_512│  0.00%│    100.00%│
+├─────────┼─────────────────────┼─────────────────────┼─────────────┼───────┼───────────┤
+│# 10/31  │                     │                     │             │       │           │
+│Sum (all)│                     │                     │1_117_752_782│100.00%│           │
+│Sum shown│                     │                     │1_117_733_785│100.00%│           │
+└─────────┴─────────────────────┴─────────────────────┴─────────────┴───────┴───────────┘
+      </pre><p>
+      </p><div class="caption">Figure 20. Write profile (4K granularity)</div>
+    </div>
+  </div>
+        
+<p>
+  Not very surprisingly, the writes goes to the same two pages, but
+  writes are less frequent than reads.
+  And finally say that we are interested in the distribution of the writes on the most
+  commonly read stack-page, this is shown in figure <a class="reference" href="#read-stack">21</a>.
+  </p><div class="figure" id="read-stack">
+
+    <div style="text-align: center">
+      <pre class="jdocu_small">simics&gt; <b>mprof0.profile view = read-logical start = 0x7fff_15e5_e000 stop = 0x7fff_15e5_efff<img alt="Line break" src="nextline.png">
+ granularity = 128 sort-on-column = Start</b>
+┌─────┬────────────────┬────────────────┬───────────┐
+│Row #│     Start      │      Stop      │   Count   │
+├─────┼────────────────┼────────────────┼───────────┤
+│    1│0x7fff_15e5_e000│0x7fff_15e5_e07f│        700│
+│    2│0x7fff_15e5_e080│0x7fff_15e5_e0ff│      9_029│
+│    3│0x7fff_15e5_e100│0x7fff_15e5_e17f│     14_585│
+│    4│0x7fff_15e5_e180│0x7fff_15e5_e1ff│     17_138│
+│    5│0x7fff_15e5_e200│0x7fff_15e5_e27f│     10_315│
+│    6│0x7fff_15e5_e280│0x7fff_15e5_e2ff│414_573_166│
+│    7│0x7fff_15e5_e300│0x7fff_15e5_e37f│171_369_107│
+│    8│0x7fff_15e5_e380│0x7fff_15e5_e3ff│ 56_832_627│
+│    9│0x7fff_15e5_e400│0x7fff_15e5_e47f│  1_004_298│
+│   10│0x7fff_15e5_e480│0x7fff_15e5_e4ff│  2_681_185│
+│   11│0x7fff_15e5_e500│0x7fff_15e5_e57f│        746│
+│   12│0x7fff_15e5_e580│0x7fff_15e5_e5ff│        408│
+│   13│0x7fff_15e5_e600│0x7fff_15e5_e67f│        240│
+│   14│0x7fff_15e5_e680│0x7fff_15e5_e6ff│        220│
+│   15│0x7fff_15e5_e700│0x7fff_15e5_e77f│         76│
+│   16│0x7fff_15e5_e780│0x7fff_15e5_e7ff│         98│
+├─────┼────────────────┼────────────────┼───────────┤
+│Sum  │                │                │646_513_938│
+└─────┴────────────────┴────────────────┴───────────┘
+      </pre><p>
+      </p><div class="caption">Figure 21. Distribution of stack reads on a 4K page</div>
+    </div>
+  </div>
+            
+  In this case we listed the addresses in address-order using the
+  granularity of 128 bytes.
+
+
+<div class="chain">
+<a href="exporting-instrumentation-data.html">9.4 Exporting Instrumentation Data</a>
+<a href="device-register-coverage.html">9.6 Device Register Coverage</a>
+</div>

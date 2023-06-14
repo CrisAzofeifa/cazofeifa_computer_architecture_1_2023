@@ -1,0 +1,166 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2 The DML compiler</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="language.html">3 Device Modeling Language, version 1.4</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="the-dml-compiler">2 <a href="#the-dml-compiler">The DML compiler</a></h1>
+<p>A DML source file can be compiled into a runnable device model using
+the DML compiler, <code>dmlc</code>. The main output of the compiler is a C file, that
+can be compiled into a Simics module.</p>
+<p>The DML compiler and its libraries are available as part of the
+<em>Simics Base</em> package.</p>
+<h2 id="building-dmlc">2.1 <a href="#building-dmlc">Building dmlc</a></h2>
+<p>The <code>dmlc</code> compiler can be build locally. This requires an
+installation of the Simics 6 base package.</p>
+<p>In order to build the compiler, checkout <a href="https://github.com/intel/device-modeling-language" rel="noopener noreferrer" target="_top">the DML repository
+</a> into the
+into the <code>modules/dmlc</code> subdirectory of your Simics project. The compiler
+can be built using the <code>make dmlc</code> command. The build result ends up
+in <code><em>host</em>/bin/dml</code> (where <em><code>host</code></em> is <code>linux64</code> or
+<code>win64</code>), and consists of three parts:</p>
+<ul>
+<li>
+<p><code><em>host</em>/bin/dml/python</code> contains the Python module that
+implements the compiler</p>
+</li>
+<li>
+<p><code><em>host</em>/bin/dml/1.4</code> contains the standard libraries
+required to compile a device</p>
+</li>
+<li>
+<p><code><em>host</em>/bin/dml/api</code> contains <code>.dml</code> files that
+expose the Simics API</p>
+</li>
+</ul>
+<p>In order to use a locally built version of <code>dmlc</code> to compile your
+devices, you can add the following line to your <code>config-user.mk</code> file:</p>
+<pre><code>DMLC_DIR = $(SIMICS_PROJECT)/$(HOST_TYPE)/bin
+</code></pre>
+<h2 id="running-dmlc">2.2 <a href="#running-dmlc">Running dmlc</a></h2>
+<p>The syntax for running <code>dmlc</code> from the command line is:</p>
+<pre>dmlc [<em>options</em>] <em>input</em> [<em>output-base</em>]
+</pre>
+<p>where <em>input</em> should be the name of a DML source file. If
+<em>output-base</em> is provided, it will be used to name the created
+files. The name of a DML source file should normally have the suffix
+"<code>.dml</code>". The <em>input</em> file must contain a
+<a href="language.html#device-declaration"><code>device</code> declaration</a>.</p>
+<p>The main output of <code>dmlc</code> is a C file named
+<code><em>&lt;output-base&gt;</em>.c</code>, which that can be compiled and
+linked into a Simics module using the <code>gcc</code> compiler. The compiler
+also produces some other helper files with <code>.h</code> and <code>.c</code> suffix, which
+the main output file includes.</p>
+<h2 id="command-line-options">2.3 <a href="#command-line-options">Command Line Options</a></h2>
+<p>The following are the available command line options to
+<code>dmlc</code>:</p>
+<dl><dt id="dt:h-help">
+<p>-h, --help</p>
+</dt><dd>
+<p>Print usage help.</p>
+</dd><dt id="dt:i-path">
+<p>-I <em>path</em></p>
+</dt><dd>
+<p>Add <em>path</em> to the search path for imported
+modules.</p>
+</dd><dt id="dt:d-name-definition">
+<p>-D <em>name</em>=<em>definition</em></p>
+</dt><dd>
+<p>Define a compile-time parameter.  The definition
+must be a literal expression, and can be a quoted
+string, a boolean, an integer, or a floating point
+constant. The parameter will appear in the top-level scope.</p>
+</dd><dt id="dt:dep">
+<p>--dep</p>
+</dt><dd>
+<p>Output makefile rules describing dependencies.</p>
+</dd><dt id="dt:t">
+<p>-T</p>
+</dt><dd>
+<p>Show tags on warning messages. The tags can be used with
+the <code>--nowarn</code> and <code>--warn</code> options.</p>
+</dd><dt id="dt:g">
+<p>-g</p>
+</dt><dd>
+<p>Generate artifacts that allow for easier source-level debugging.
+This generates a DML debug file leveraged by debug-simics, and
+causes generated C code to follow the DML code more closely.</p>
+</dd><dt id="dt:coverity">
+<p>--coverity</p>
+</dt><dd>
+<p>Adds Synopsys® Coverity® analysis annotations to suppress common false positives
+in generated C code created from DML 1.4 device models.</p>
+</dd><dt id="dt:warn-tag">
+<p>--warn=<em>tag</em></p>
+</dt><dd>
+<p>Enable selected warnings. The tags can be found using
+the <code>-T</code> option.</p>
+</dd><dt id="dt:nowarn-tag">
+<p>--nowarn=<em>tag</em></p>
+</dt><dd>
+<p>Suppress selected warnings. The tags can be found using
+the <code>-T</code> option.</p>
+</dd><dt id="dt:werror">
+<p>--werror</p>
+</dt><dd>
+<p>Turn all warnings into errors.</p>
+</dd><dt id="dt:strict">
+<p>--strict</p>
+</dt><dd>
+<p>Report errors for some constructs that will be forbidden in
+future versions of the DML language</p>
+</dd><dt id="dt:noline">
+<p>--noline</p>
+</dt><dd>
+<p>Suppress line directives for the C preprocessor so
+that the C code can be debugged.</p>
+</dd><dt id="dt:info">
+<p>--info</p>
+</dt><dd>
+<p>Enable the output of an XML file describing register layout.</p>
+</dd><dt id="dt:version">
+<p>--version</p>
+</dt><dd>
+<p>Print version information.</p>
+</dd><dt id="dt:simics-api-version">
+<p>--simics-api=<em>version</em></p>
+</dt><dd>
+<p>Use Simics API version <em>version</em>.</p>
+</dd><dt id="dt:max-errors-n">
+<p>--max-errors=<em>N</em></p>
+</dt><dd>
+<p>Limit the number of error messages to <em>N</em>.</p>
+</dd></dl>
+
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="language.html">3 Device Modeling Language, version 1.4</a>
+</div>

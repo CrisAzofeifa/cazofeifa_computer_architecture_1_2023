@@ -1,0 +1,216 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>gdb-remote</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-g-cache.html">g-cache</a>
+<a href="rm-class-generic-flash-memory.html">generic-flash-memory</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="gdb-remote"><a href="#gdb-remote">gdb-remote</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The <tt>gdb-remote</tt> module allows a GDB session to connect to Simics and control the execution. An object of class <tt>gdb-remote</tt> is used to accept incoming GDB connection requests.
+<p>
+A GDB binary capable of debugging many Simics target machines is included in the Simics Base package. If you want to build your own gdb, read on.
+</p><p>
+The following table lists, for each target architectures supported by <tt>gdb-remote</tt>, the string to give to <tt>configure</tt> as the <tt>--target</tt> parameter when building GDB, and any command you may have to enter at the GDB command prompt before connecting to Simics:
+</p><p>
+</p><dl><dt id="dt:ppc64">ppc64</dt><dd><tt>--target powerpc64-elf-linux</tt><br>
+command: <tt>set architecture powerpc:common64</tt></dd><dt id="dt:risc-v64">risc-v64</dt><dd><tt>--target riscv64-linux-gnu</tt><br>
+command: <tt>set architecture riscv</tt></dd><dt id="dt:h8300">h8300</dt><dd><tt>--target h8300-elf</tt><br>
+command: <tt>set architecture h8300(s|h)</tt></dd><dt id="dt:x86-64">x86-64</dt><dd><tt>--target x86_64-pc-linux-gnu</tt><br>
+command: <tt>set architecture i386:x86-64</tt></dd><dt id="dt:mips64be">mips64be</dt><dd><tt>--target mips64-elf64-linux64</tt><br>
+command: <tt>set architecture mips:isa64r2</tt></dd><dt id="dt:arc600">arc600</dt><dd><tt>--target arc-elf32</tt><br>
+command: <tt>set architecture opella-target arc600</tt></dd><dt id="dt:arm64">arm64</dt><dd><tt>--target aarch64-elf</tt><br>
+</dd><dt id="dt:sparc-v8">sparc-v8</dt><dd><tt>--target sparc-unknown-linux-gnu</tt><br>
+command: <tt>set architecture sparc:v8plus</tt></dd><dt id="dt:mips64le">mips64le</dt><dd><tt>--target mips64el-elf64-linux64</tt><br>
+command: <tt>set architecture mips:isa64r2</tt></dd><dt id="dt:ppce500">ppce500</dt><dd><tt>--target powerpc64-elf-linux</tt><br>
+command: <tt>set architecture powerpc:e500</tt></dd><dt id="dt:ppc32">ppc32</dt><dd><tt>--target powerpc64-elf-linux</tt><br>
+command: <tt>set architecture powerpc:common</tt></dd><dt id="dt:x86">x86</dt><dd><tt>--target x86_64-pc-linux-gnu</tt><br>
+command: <tt>set architecture i386</tt></dd><dt id="dt:armle">armle</dt><dd><tt>--target armle-unknown-linux-gnu</tt><br>
+</dd><dt id="dt:risc-v32">risc-v32</dt><dd>command: <tt>set architecture riscv:rv32</tt></dd><dt id="dt:xtensa">xtensa</dt><dd><tt>--target xtensa</tt><br>
+command: <tt>set architecture xtensa</tt></dd><dt id="dt:arc700">arc700</dt><dd><tt>--target arc-elf32</tt><br>
+command: <tt>set architecture ARC700</tt></dd><dt id="dt:armbe">armbe</dt><dd><tt>--target armbe-unknown-linux-gnu</tt><br>
+</dd><dt id="dt:mips32le">mips32le</dt><dd><tt>--target mips-elf-linux</tt><br>
+command: <tt>set architecture mips:isa32r2</tt></dd><dt id="dt:mips32be">mips32be</dt><dd><tt>--target mips-elf-linux</tt><br>
+command: <tt>set architecture mips:isa32r2</tt></dd><dt id="dt:nios2">nios2</dt><dd><tt>--target nios2-elf</tt><br>
+</dd><dt id="dt:m68k">m68k</dt><dd><tt>--target m68k</tt><br>
+command: <tt>set architecture m68k</tt></dd></dl>
+<p>
+Note that these <tt>--target</tt> flags are not the only ones that will work, just examples of ones that do work.
+</p><h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, external_connection_events
+<h3 id="port-objects">
+<a href="#port-objects">Port Objects</a>
+</h3>
+<dl>
+<dt id="dt:tcp">tcp</dt>
+<dd>
+<a href="rm-class-tcp-server.html#tcp-server">tcp-server</a>
+ – gdb-remote TCP server</dd>
+<dt id="dt:unix_socket">unix_socket</dt>
+<dd>
+<a href="rm-class-unix-socket-server.html#unix-socket-server">unix-socket-server</a>
+ – gdb-remote Unix domain socket server</dd>
+</dl>
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-gdb-remote.disconnect.html">disconnect</a>
+ – disconnect from the remote gdb</li>
+<li>
+<a href="rm-cmd-gdb-remote.follow-context.html">follow-context</a>
+ – <i>deprecated</i> follow context</li>
+<li>
+<a href="rm-cmd-gdb-remote.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-gdb-remote.signal.html">signal</a>
+ – tell remote gdb we got a signal</li>
+<li>
+<a href="rm-cmd-gdb-remote.target.html">target</a>
+ – set target CPU for gdb connection</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:use_ipv4">
+<i>use_ipv4</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Determines if connections should be restricted to IPv4. Default is FALSE</dd>
+<dt id="dt:listen">
+<i>listen</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set to start listening for incoming GDB connections on the specified port. If 0 is specified, an arbitrary available port will be used. Read to get the port currently listened on, or 0 if none.</dd>
+<dt id="dt:processor">
+<i>processor</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Processor to connect the GDB stub to.</dd>
+<dt id="dt:architecture">
+<i>architecture</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Architecture of target.</dd>
+<dt id="dt:disconnect">
+<i>disconnect</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>b</code>
+<br>Disconnects the remote GDB</dd>
+<dt id="dt:connected">
+<i>connected</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>b</code>
+<br>Returns true if the gdb-remote object is connected to a GDB session, false if not.</dd>
+<dt id="dt:signal">
+<i>signal</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>Sends a signal to the remote GDB. This makes GDB think the program it is debugging has received a signal. See the <tt>signal(7)</tt> man page for a list of signal numbers.</dd>
+<dt id="dt:send_packet">
+<i>send_packet</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s</code>
+<br>Sends a raw packet from gdb-remote to GDB. The string that this attribute is written with will be sent as a packet to GDB.</dd>
+<dt id="dt:large_operations">
+<i>large_operations</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set to non-zero if memory operations received from GDB should be performed as single operations instead of bytewise</dd>
+<dt id="dt:follow_context">
+<i>follow_context</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set to non-zero if context should be followed.</dd>
+<dt id="dt:context_object">
+<i>context_object</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Context object that this GDB session is attached to.</dd>
+<dt id="dt:send_target_xml">
+<i>send_target_xml</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Should an XML target description be sent to GDB, default is true, but can be disabled since it can confuse some clients (e.g. Eclipse on a Linux host).</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.gdb-remote.html">gdb-remote</a>
+</section>
+<div class="chain">
+<a href="rm-class-g-cache.html">g-cache</a>
+<a href="rm-class-generic-flash-memory.html">generic-flash-memory</a>
+</div>

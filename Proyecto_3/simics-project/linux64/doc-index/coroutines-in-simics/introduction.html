@@ -1,0 +1,118 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>1 Introduction</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="index.html">Python Coroutines in Simics</a>
+<a href="snoop-refman.html">Snoop module reference</a>
+</div>
+<div class="path">
+<a href="index.html">Python Coroutines in Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 id="introduction">1 <a href="#introduction">Introduction</a></h1>
+<p>Coroutines are a language mechanism that allows suspension and resumption of a
+subroutine. Coroutines are a useful tool when writing tests for target
+software, since it allows test logic to be expressed in a linear manner,
+typically by waiting for the system to enter a particular state, inject a
+stimuli, awaiting a reaction and validate that reaction.</p>
+<p>The recommended way to implement coroutines in the Python language is through
+the <code>async</code>/<code>await</code> syntax, and the <code>asyncio</code> library.</p>
+<p>This document presents two libraries that together leverage <code>asyncio</code>-style
+Python coroutines in Simics: The <em><code>snoop</code></em> library, which provides a unified
+representation of simulation events, and the <em><code>sloop</code></em> library which allows
+snoopers to be used within <code>asyncio</code>.</p>
+<h2 id="snoopers">1.1 <a href="#snoopers">Snoopers</a></h2>
+<p>A <em>snooper</em> is a Python object responsible for monitoring a particular
+kind of simulation event. Snoopers offer a unified API for registering
+callbacks.</p>
+<p>The primary operation of a snooper is its <code>add_callback</code> method, which
+registers a callback on the snooped event. The callback will then be called
+repeatedly until it is <em>canceled</em>, which is done by calling the <code>cancel</code> method
+on the <code>Handle</code> object returned by <code>add_callback</code>. The <code>add_callback</code> method is
+typically not called directly; for most use cases there are utilities
+that manage things like cancellations automatically in a safe manner.</p>
+<h2 id="sloop">1.2 <a href="#sloop">Sloop</a></h2>
+<p>The <code>sloop</code> library is an integration of Python's <code>asyncio</code> library with the
+Simics scheduler. The library provides means to create and run tasks based on
+coroutine functions (declared in Python using the <code>async def</code> syntax), but
+where the progression of an <code>asyncio</code> coroutine typically depends on
+asynchronous operating system events on the host machine, the progression of a
+<code>sloop</code> coroutine instead depends on simulation events. The API of the <code>sloop</code>
+library generally imitates <code>asyncio</code>, but only supports a subset of all
+functions available in <code>asyncio</code>. Most notably, <code>sloop.create_task</code> spawns a
+task which can await simulation events, and <code>sloop.run_until_complete</code> runs
+simulation until a sloop-based awaitable yields, similar to the <code>run-until</code>
+commands in Simics CLI.</p>
+<p>The <code>sloop</code> library also contains some primitives specific to Simics, in
+particular:</p>
+<ul>
+<li><code>wait(snp)</code> is a coroutine that returns the next value yielded by a snooper
+<code>snp</code>.</li>
+<li>The <code>timeout</code> asynchronous context manager is similar to its <code>asyncio</code>
+counterpart, but the timeout is specified by a snooper rather than a number
+of host seconds. For instance, <code>async with timeout(snoop.Seconds(conf.cpu0, 1)):</code> gives a timeout if the block is not exited within one simulated second.</li>
+<li>The <code>Tracer</code> asynchronous context manager and the <code>trace</code> coroutine are used
+to collect a sequence of values from a snooper into an asynchronous iterator
+and list, respectively.</li>
+</ul>
+<h2 id="integration-with-script-branches">1.3 <a href="#integration-with-script-branches">Integration with script-branches</a></h2>
+<p>Script branches serve a similar purpose as <code>sloop</code> coroutines; just like
+coroutines, script branches are Python subroutines that run piecewise in Global
+Context to provide an asynchronous behaviour. Thanks to this similarity, the
+<code>script_branch</code> module provides a two-way integration between script-branches
+and <code>sloop</code> coroutines; this permits gradual migration of script-branches to
+<code>sloop</code> coroutines:</p>
+<ul>
+<li>
+<p>A snooper <code>script_branch.ScriptBranch(f, *args, **kwargs)</code> starts a script
+branch that repeatedly calls <code>f(*args, **kwargs)</code>, where <code>f</code> is a script
+branch function, and yields each return value. This is typically useful to
+call a <code>sb_wait_*</code> call from a <code>sloop</code> coroutine; e.g., the expression <code>await wait(ScriptBranch(script_branch.sb_wait_log(obj)))</code> is roughly equivalent to
+<code>await wait(snoop.Log(obj))</code>.</p>
+</li>
+<li>
+<p>The function <code>script_branch.sb_wait_for_sloop_awaitable(awaitable, loop=sloop.loop)</code> can be used within a script branch to await a task or
+coroutine. Similarly, <code>sb_wait_for_snooper</code> can be used to wait directly
+for a snooper inside a script branch.</p>
+</li>
+</ul>
+<h2 id="integration-with-the-breakpoint-manager">1.4 <a href="#integration-with-the-breakpoint-manager">Integration with the Breakpoint Manager</a></h2>
+<p>The breakpoint manager, represented by the <code>bp</code> configuration object, provides
+a number of <em>breakpoint types</em>, which are similar in spirit to snoopers: Like a
+snooper, a breakpoint type represents an observable simulation event, and
+provides various options for awaiting or tracing this event. The <code>bp-manager</code>
+module provides a generic wrapper that turns a breakpoint type into a snooper:
+The Python class <code>simmod.bp_manager.bp_type.BP(obj, *args, **kwargs)</code> is a
+snooper based on the breakpoint type represented by the configuration object
+<code>obj</code>, where <code>args</code> and <code>kwargs</code> are interpreted as CLI arguments to the
+breakpoint type. For instance, the command <code>bp.log.run-until substr = "a.*b" -regexp</code>, which has a direct Python wrapping
+<code>conf.bp.log.cli_cmds.run_until(substr='a.*b', regexp=True)</code>, can be wrapped in
+a snooper as <code>simmod.bp_manager.bp_type.BP(conf.bp.log, substr='a.*b', regexp=True)</code>.</p>
+
+<div class="chain">
+<a href="index.html">Python Coroutines in Simics</a>
+<a href="snoop-refman.html">Snoop module reference</a>
+</div>

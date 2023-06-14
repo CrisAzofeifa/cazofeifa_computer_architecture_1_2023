@@ -1,0 +1,115 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.6 Understanding the Statistics of Simple Cache</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="using-simple-cache.html">5.5 Using Simple Cache</a>
+<a href="feature-list-stall-cache.html">6 Processor-specific Features and Limitations</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="caches.html">5 Cache Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 id="understanding-the-statistics-of-simple-cache">5.6 <a href="#understanding-the-statistics-of-simple-cache">Understanding the Statistics of Simple Cache</a></h1>
+<p>The following statistics are available in a <code>simple_cache</code>:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:read-accesses">Read accesses</span><br>
+Total number of read accesses</li>
+<li><span class="term" id="dt:read-misses">Read misses</span><br>
+Total number of read accesses</li>
+<li><span class="term" id="dt:write-accesses">Write accesses</span><br>
+Total number of write accesses</li>
+<li><span class="term" id="dt:write-misses">Write misses</span><br>
+Total number of write misses</li>
+<li><span class="term" id="dt:write-backs">Write backs</span><br>
+Total number of write backes to this caches (from previous level)</li>
+<li><span class="term" id="dt:write-backs-misses">Write backs misses</span><br>
+Total number of write backes misses to this caches (from previous level)</li>
+<li><span class="term" id="dt:request-for-write-accesses">Request for write accesses</span><br>
+previous level wants to write to this line but missed and now request it for writing at this level</li>
+<li><span class="term" id="dt:request-for-write-misses">Request for write misses</span><br>
+previous level wants to write to this line but missed and now request it for writing at this level but misses</li>
+<li><span class="term" id="dt:prefetch-accesses">Prefetch accesses</span><br>
+Prefetches from either hardware prefetching or from instructions (software)</li>
+<li><span class="term" id="dt:prefetch-misses">Prefetch misses</span><br>
+Prefetches from either hardware prefetching or from instructions (software) that misses</li>
+<li><span class="term" id="dt:request-for-write-prefetch-accesses">Request for write prefetch accesses</span><br>
+previous level wants to prefetch a write to this line but missed and now request it for write prefetching at this level</li>
+<li><span class="term" id="dt:request-for-write-prefetch-misses">Request for write prefetch misses</span><br>
+previous level wants to prefetch a write to this line but missed and now request it for write prefetching at this level, and misses</li>
+<li><span class="term" id="dt:prefetches-used">Prefetches used</span><br>
+Prefetches that was later used for reading or writing, i.e., not wasted prefetches</li>
+<li><span class="term" id="dt:prefetch-instructions">Prefetch instructions</span><br>
+Number of prefetch instructions directed to the cache</li>
+<li><span class="term" id="dt:instruction-fetch-accesses">Instruction fetch accesses</span><br>
+Total number of instruction fetches</li>
+<li><span class="term" id="dt:instruction-fetch-misses">Instruction fetch misses</span><br>
+Total number of instruction fetches misses</li>
+<li><span class="term" id="dt:evicted-modified">Evicted modified</span><br>
+Total number of evicted cache lines that was modified and needed to be written back to the next level</li>
+<li><span class="term" id="dt:evicted-total">Evicted total</span><br>
+Total number of evicted cache lines (including evicted modified)</li>
+<li><span class="term" id="dt:evicted-total-2">Evicted total</span><br>
+Total number of evicted cache lines (including evicted modified)</li>
+<li><span class="term" id="dt:cache-flush-instructions">Cache flush instructions</span><br>
+Number of cache flush instructions for flushing entire cache, inv and wbinvd</li>
+<li><span class="term" id="dt:cache-line-flushs">Cache line flushs</span><br>
+Number of cache lins flush instructions (clflush)</li>
+<li><span class="term" id="dt:uncachable-reads">Uncachable reads</span><br>
+Total number of non-cacheable reads</li>
+<li><span class="term" id="dt:uncachable-writes">Uncachable writes</span><br>
+Total number of non-cacheable writes</li>
+</ul>
+</div>
+<p>Here is an example of the statistics using the print-statistics command:</p>
+<pre><code>
+simics&gt; board.mb.cpu0.cache[0].l1d.print-statistics
+Using the 'board.mb.cpu0.core[0][0]' processor for the Steps/Count column
+┌─────┬───────────────────────────────────┬─────────┬─────┐
+│Row #│              Counter              │  Value  │  %  │
+├─────┼───────────────────────────────────┼─────────┼─────┤
+│    1│read accesses                      │724945650│     │
+│    2│read misses                        │  2678946│ 0.37│
+│    3│write accesses                     │555916819│     │
+│    4│write misses                       │ 12439648│ 2.24│
+│    5│prefetch accesses                  │  8120411│     │
+│    6│prefetch misses                    │  5158065│63.52│
+│    7│prefetched lines used              │  3533041│43.51│
+│    8│prefetch instructions              │   298374│     │
+│    9│evicted modified lines             │ 13465148│66.41│
+│   10│evicted total lines                │ 20275891│     │
+│   11│uncachable read accesses           │ 56576127│     │
+│   12│uncachable write accesses          │ 39916459│     │
+└─────┴───────────────────────────────────┴─────────┴─────┘
+</code></pre>
+<p>Counts with a value of zero are not printed.</p>
+
+<div class="chain">
+<a href="using-simple-cache.html">5.5 Using Simple Cache</a>
+<a href="feature-list-stall-cache.html">6 Processor-specific Features and Limitations</a>
+</div>

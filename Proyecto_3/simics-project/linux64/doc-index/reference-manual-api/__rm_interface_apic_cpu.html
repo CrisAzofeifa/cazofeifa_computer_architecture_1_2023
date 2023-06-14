@@ -1,0 +1,101 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>apic_cpu</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_apic_bus.html">apic_bus</a>
+<a href="__rm_interface_arinc429_bus.html">arinc429_bus</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_apic_cpu">apic_cpu</a></h1>
+<p>
+
+<a name="apic_cpu"></a><a name="apic_cpu_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is implemented by the local APIC device and is used by the
+   processor and machine initialization code to interact with the local APIC.
+<p>
+   The <b><i>tpr_r</i></b> and <b><i>tpr_w</i></b> methods read and write the task
+   priority register. The format of the <i>tpr</i> argument and the
+   returned value from <b><i>tpr_r</i></b> is the same as for CR8, meaning
+   TPR[bits 7:4], zero extended to 64 bits.
+</p><p>
+   Interrupts coming from the CPU itself are passed via the
+   <b><i>local_int</i></b> function. The type of interrupt is one of the constants
+   defined in <code>local_apic_interrupt_t</code>.
+</p><p>
+   
+</p><pre class="jdocu_small">typedef enum {
+        Apic_CMCI = 0x2f0,
+        Apic_Performance_Counter = 0x340,
+        Apic_Thermal_Sensor = 0x330
+} local_apic_interrupt_t;</pre><p>
+
+</p><p>
+   The <b><i>init</i></b> function is called by the CPU when it receives the INIT
+   signal. The APIC should only update its internal state and not propagate
+   this signal further. Both the CPU and the APIC should reset their pending
+   interrupt flags when this function is called. The <b><i>init</i></b> function
+   is not called at instantiation time.
+</p><p>
+   The <b><i>power_on</i></b> function is called at machine creation time, and the
+   call initializes the APIC to the power on state. The <i>bsp</i> argument
+   is true if the APIC is connected to the boot processor, and false
+   otherwise. The initial APIC ID is set through the <i>apic_id</i>
+   argument. The <b><i>power_on</i></b> function would typically be called from
+   component code for the processor that includes the APIC.
+</p><p>
+   The <b><i>enabled_r</i></b> method returns bit 11 from the APIC BASE MSR, and
+   is used by the processor to return the correct status for CPUID.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(apic_cpu) {
+        uint64 (*tpr_r)(conf_object_t *NOTNULL obj);
+        void (*tpr_w)(conf_object_t *NOTNULL obj, uint64 tpr);
+        void (*local_int)(conf_object_t *NOTNULL obj,
+                          local_apic_interrupt_t int_type);
+        void (*power_on)(conf_object_t *NOTNULL obj, bool bsp, int apic_id);
+        void (*init)(conf_object_t *NOTNULL obj);
+        bool (*enabled_r)(conf_object_t *NOTNULL obj);
+};
+
+#define APIC_CPU_INTERFACE "apic_cpu"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_apic_bus.html">apic_bus</a>
+<a href="__rm_interface_arinc429_bus.html">arinc429_bus</a>
+</div>

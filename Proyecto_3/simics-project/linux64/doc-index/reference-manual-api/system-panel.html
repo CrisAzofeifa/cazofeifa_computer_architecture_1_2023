@@ -1,0 +1,330 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10.6 System Panel</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="flash-memory.html">10.5 Flash Memory</a>
+<a href="python-api-testing.html">10.7 Testing</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="python-api.html">10 Python API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="System-Panel">10.6 System Panel</a></h1>
+<p>
+  
+</p><p>
+  The System Panel API is a set of Python functions and classes that is used to
+  create system panels.  Further documentation can be found in the <em>Model
+  Builder User's Guide</em>, chapter <em>Creating a System Panel</em>.
+</p><p>
+  The <em>API</em> section covers the generic API for the system panel
+  infrastructure and a couple of helper functions; the <em>Widget Types</em>
+  section describes the specifics of each type of widget that can be included
+  in a panel.
+</p><p>
+  </p><h2 class="jdocu"><a class="not-numbered" name="API">API</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="Standard-Widgets-Colors">Standard Widgets Colors</a></h3>
+<p>
+ 
+ </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_Standard-Widgets-Colors"></a>standard color names</dd>
+<dt class="jdocu_descitem">NAMESPACE</dt><dd>
+<code>systempanel.widgets</code></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The standard widgets colors are used for creating LED widgets with
+    different colors.
+  </dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">systempanel.widgets.BLUE
+systempanel.widgets.GREEN
+systempanel.widgets.PURPLE
+systempanel.widgets.RED
+systempanel.widgets.WHITE
+systempanel.widgets.YELLOW
+    </pre><p>
+  </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_systempanel.widgets.Led">systempanel.widgets.Led</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.SystemPanel">systempanel.SystemPanel</a></h3>
+<p><a name="SystemPanel"></a> <a name="systempanel-Python-moduleSystemPanel"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.SystemPanel"></a><b>SystemPanel</b> — Base class for system panel components</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A base class for system panels. A system panel class should
+inherit from this and set the 'layout' class variable to describe
+the contents of the panel.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.SystemPanelException">systempanel.SystemPanelException</a></h3>
+<p><a name="SystemPanelException"></a> <a name="systempanel-Python-moduleSystemPanelException"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.SystemPanelException"></a><b>SystemPanelException</b> — System panel error</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Exception thrown for various errors in the system_panel module</dd>
+</dl><p>
+  </p><h2 class="jdocu"><a class="not-numbered" name="Widget-Types">Widget Types</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.BitfieldImageOutput">systempanel.widgets.BitfieldImageOutput</a></h3>
+<p>
+  
+  <a name="BitfieldImageOutput"></a> <a name="systempanelwidgets-Python-moduleBitfieldImageOutput"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.BitfieldImageOutput"></a><b>BitfieldImageOutput</b> — Multiple two-state image outputs driven by a single integer state</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">BitfieldImageOutput(obj_name, contents)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+An output consisting of multiple two-state images, driven by a
+single integer state. such that each two-state image is driven by
+a single bit in the integer.  Useful e.g. when creating 7-segment
+displays.
+<p>
+The <i>contents</i> parameter is a list of tuples <code>(mask, x, y,
+[off_filename, on_filename])</code>, where the integer <code>mask</code> is a
+power of two, <code>x</code> and <code>y</code> are integer offsets, and
+<code>off_filename</code> and <code>on_filename</code> are file names given on the
+same form as in the <b>Image</b> class. The <code>off_filename</code>
+image is shown at the given offset whenever the bit indicated by
+<code>mask</code> is 0; <code>on_filename</code> is shown otherwise.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.BitmapButton">systempanel.widgets.BitmapButton</a></h3>
+<p><a name="BitmapButton"></a> <a name="systempanelwidgets-Python-moduleBitmapButton"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.BitmapButton"></a><b>BitmapButton</b> — A bitmap-based button</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">BitmapButton(obj_name, off_bitmap, on_bitmap)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A bitmap-based button. Similar to the standard <b>Button</b>
+class, but can be put inside a <b>Canvas</b>, and the appearance is
+based on custom images. The bitmap parameters are filenames of the same
+type as in the <b>Image</b> class.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.BitmapLed">systempanel.widgets.BitmapLed</a></h3>
+<p><a name="BitmapLed"></a> <a name="systempanelwidgets-Python-moduleBitmapLed"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.BitmapLed"></a><b>BitmapLed</b> — A bitmap-based LED</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">BitmapLed(obj_name, off_bitmap, on_bitmap)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A bitmap-based LED. Same as the standard <b>Led</b> class, but
+can be put inside a <b>Canvas</b>, and custom images can be
+supplied.  The bitmap constructor parameters are file names of the same
+type as in the <b>Image</b> class.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.BitmapToggleButton">systempanel.widgets.BitmapToggleButton</a></h3>
+<p><a name="BitmapToggleButton"></a> <a name="systempanelwidgets-Python-moduleBitmapToggleButton"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.BitmapToggleButton"></a><b>BitmapToggleButton</b> — A bitmap-based toggle button</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">BitmapToggleButton(obj_name, off_bitmap, on_bitmap)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A bitmap-based toggle button. Similar to the standard
+<b>ToggleButton</b> class, but can be put inside a
+<b>Canvas</b>, and the appearance is based on custom images. The
+bitmap parameters are file names of the same type as in the
+<b>Image</b> class.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.Button">systempanel.widgets.Button</a></h3>
+<p><a name="Button"></a> <a name="systempanelwidgets-Python-moduleButton"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.Button"></a><b>Button</b> — A standard button</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">Button(obj_name, label)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A button, that can be pressed. The button state is propagated using the
+<code>signal</code> interface, and can be raised or lowered. Raising and
+lowering the signal is frontend specific.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.Canvas">systempanel.widgets.Canvas</a></h3>
+<p><a name="Canvas"></a> <a name="systempanelwidgets-Python-moduleCanvas"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.Canvas"></a><b>Canvas</b> — A canvas (i.e bitmap container)</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">Canvas(contents)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A canvas for painting bitmap-based widgets.  A canvas contains multiple
+bitmap-based widgets, each drawn at a specified offset.  The
+<i>contents</i> parameter is a list of elements on the form
+<i>(x, y, widget)</i>.  Here <i>x</i> and <i>y</i>
+are integers, and <i>widget</i> is an instance of one of
+<b>Image</b>, <b>BitmapLed</b>, <b>BitmapButton</b>,
+<b>BitmapToggleButton</b>,
+<b>MultiImageOutput</b>, <b>Canvas</b>, or a subclass
+thereof.  The items are rendered in the same order as they appear in the
+list; this means that if any widgets overlap, the last one will be drawn on
+top.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.Column">systempanel.widgets.Column</a></h3>
+<p><a name="Column"></a> <a name="systempanelwidgets-Python-moduleColumn"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.Column"></a><b>Column</b> — A one-dimensional widget container</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">Column(contents)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A container for normal (non bitmap-based) widgets. The
+<b>Column</b> container is a special case of <b>Grid</b>
+container; the contained widgets are laid out vertically.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.Empty">systempanel.widgets.Empty</a></h3>
+<p><a name="Empty"></a> <a name="systempanelwidgets-Python-moduleEmpty"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.Empty"></a><b>Empty</b> — An empty widget</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">Empty()</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+An empty widget, used to fill containers for layout purposes.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.Grid">systempanel.widgets.Grid</a></h3>
+<p><a name="Grid"></a> <a name="systempanelwidgets-Python-moduleGrid"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.Grid"></a><b>Grid</b> — A two-dimensional widget container</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">Grid(contents, columns)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A two-dimensional widget container.  Containers are used to group other
+widgets, and enforce a specific layout scheme.  The <i>contents</i>
+constructor parameter is a list of widget objects; it can contain any other
+widget except for bitmap-based ones.  Widgets are laid out from left to
+right, top to bottom. Use the <b>Empty</b> class to fill empty
+cells. The number of rows in a <b>Grid</b> container is implicitly
+defined by the length of the <i>contents</i> list and the number of
+columns specified when creating the container.  See also the
+<b>Column</b> and <b>Row</b> containers, which are
+convenience classes for the one-dimensional cases. Containers can contain
+other containers.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.Image">systempanel.widgets.Image</a></h3>
+<p><a name="Image"></a> <a name="systempanelwidgets-Python-moduleImage"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.Image"></a><b>Image</b> — An image</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">Image(filename)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+An image, that can be put inside a <b>Canvas</b>
+class. Currently the only supported file format is PNG, but with full
+support for transparency. See <b>Canvas</b> class for more
+information.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.Label">systempanel.widgets.Label</a></h3>
+<p><a name="Label"></a> <a name="systempanelwidgets-Python-moduleLabel"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.Label"></a><b>Label</b> — An label</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">Label(label)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A label, used to present static text.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.LabeledBox">systempanel.widgets.LabeledBox</a></h3>
+<p><a name="LabeledBox"></a> <a name="systempanelwidgets-Python-moduleLabeledBox"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.LabeledBox"></a><b>LabeledBox</b> — A container with a label and box drawn around it</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">LabeledBox(label, container)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A single-element container with a text label and a box drawn around
+it. The single widget given by the <i>container</i> parameter can
+be of any widget type, but it is typically of a container type.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.Led">systempanel.widgets.Led</a></h3>
+<p><a name="Led"></a> <a name="systempanelwidgets-Python-moduleLed"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.Led"></a><b>Led</b> — A standard LED</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">Led(obj_name, color=None)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A LED, which can be on or off. Driven by the <code>signal</code>
+interface. The parameter <i>color</i> specifies the color of
+the LED, all supported colors are described in <em>Standard Widgets
+Colors</em>. The look-and-feel of the LED is frontend specific.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_Standard-Widgets-Colors">Standard Widgets Colors</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.MultiImageOutput">systempanel.widgets.MultiImageOutput</a></h3>
+<p><a name="MultiImageOutput"></a> <a name="systempanelwidgets-Python-moduleMultiImageOutput"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.MultiImageOutput"></a><b>MultiImageOutput</b> — A bitmap-based output that toggles between multiple images</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">MultiImageOutput(obj_name, images)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+An output that toggles between multiple custom images.  This
+can be used, among other things, for multi-coloured LEDs or
+seven-segment display elements.  The <i>images</i>
+parameter is a list of paths to image filenames, each one given on
+the same form as in the <b>Image</b> class.  Numeric input
+to the panel object via the <code>uint64_state</code> interface
+is used as a 0-based index in the image list.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.NumberInput">systempanel.widgets.NumberInput</a></h3>
+<p><a name="NumberInput"></a> <a name="systempanelwidgets-Python-moduleNumberInput"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.NumberInput"></a><b>NumberInput</b> — An input text field for integer numbers</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">NumberInput(obj_name)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+An input text field for integer numbers, provided by the panel user. The
+value is propagated to the model using the <code>uint64_state</code>
+interface.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.NumberOutput">systempanel.widgets.NumberOutput</a></h3>
+<p><a name="NumberOutput"></a> <a name="systempanelwidgets-Python-moduleNumberOutput"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.NumberOutput"></a><b>NumberOutput</b> — An output text field for integer numbers</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">NumberOutput(obj_name)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+An output text field for integer numbers, presenting integer state from
+the model. Driven by the <code>uint64_state</code> interface.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.Row">systempanel.widgets.Row</a></h3>
+<p><a name="Row"></a> <a name="systempanelwidgets-Python-moduleRow"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.Row"></a><b>Row</b> — A one-dimensional widget container</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">Row(contents)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A container for normal (non bitmap-based) widgets. The
+<b>Row</b> container is a special case of <b>Grid</b>
+container; the contained widgets are laid out horizontally.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="systempanel.widgets.ToggleButton">systempanel.widgets.ToggleButton</a></h3>
+<p><a name="ToggleButton"></a> <a name="systempanelwidgets-Python-moduleToggleButton"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_systempanel.widgets.ToggleButton"></a><b>ToggleButton</b> — A toggle button</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">ToggleButton(obj_name, label)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A toggle button, that can be pressed or released. The button state is
+propagated using the <code>signal</code> interface. When button is
+pressed, signal is raised. When button is released, signal is lowered. The
+button must have a label indicating its purpose.</dd>
+</dl><p>
+</p>
+<div class="chain">
+<a href="flash-memory.html">10.5 Flash Memory</a>
+<a href="python-api-testing.html">10.7 Testing</a>
+</div>

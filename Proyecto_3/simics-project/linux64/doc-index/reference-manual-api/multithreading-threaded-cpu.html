@@ -1,0 +1,333 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.7 Threaded Device Model</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="multithreading-standard-device-model.html">2.6 Standard Device Model</a>
+<a href="multithreading-threads.html">2.8 Foreign Threads</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rmapi-threading-model.html">2 Threading Model</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="multithreading-threaded-cpu">2.7 Threaded Device Model</a></h1>
+<p>
+
+An object using one of the concurrency modes
+<code>Sim_Concurrency_Mode_Serialized_Memory</code> or 
+<code>Sim_Concurrency_Mode_Full</code> is called a <em>thread-aware</em>
+model. The Threaded Device Model must be followed by such objects.
+</p><p>
+Thread-aware models run mostly in Threaded Context.
+</p><p>
+This section primarily discusses thread-aware models, but much of the
+contents also applies to code invoked directly from a "foreign" thread.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+A CPU is the typical example of a thread-aware model. Most devices should
+  rather use the Standard Device Model.
+</div><h2 class="jdocu"><a name="Programming-Model">2.7.1 Programming Model</a></h2>
+<p>Thread-aware models need to take the following into account:
+</p><dl><dt id="dt:incoming-interface-calls"><b>Incoming Interface Calls</b></dt><dd>Interfaces implemented by thread-aware models can be invoked in
+    Threaded Context rather than Cell Context, and the thread
+    domain associated with the object cannot be assumed to be held on entry.
+    <p>
+    It is the responsibility of the model to ensure that its state is
+    protected, usually by calling <b><i>SIM_ACQUIRE_OBJECT</i></b>
+    from its interface methods, as in the following example:
+    </p><pre class="jdocu_small">      static void
+      some_interface_method(conf_object *obj)
+      {
+          domain_lock_t *lock;
+          SIM_ACQUIRE_OBJECT(obj, &amp;lock);
+          /* ... internal state is protected by the TD ... */
+          SIM_RELEASE_OBJECT(obj, &amp;lock);
+      }
+    </pre><p>
+    No extra protection is needed for interfaces which are only available
+    in OEC. All thread domains are already held on entry.
+    </p><p>
+    </p><div class="note">
+<b>Note:</b>
+There are a few situations when the model is invoked with
+      its thread domain already held:
+      <ul>
+	<li>
+	  The <b><i>run</i></b> method of the <code>execute</code>
+	  interface is invoked with the object's thread domain held.
+	  The model should not acquire the domain again, since this
+	  would block the signaling mechanism used to notify the model
+	  when another thread tries to acquire the domain.
+	</li>
+	<li>
+	  The methods in the the <code>direct_memory_update</code>
+	  interface are always invoked with the thread domain held.
+	</li>
+      </ul>
+    </div></dd><dt id="dt:outgoing-interface-calls"><b>Outgoing Interface Calls</b></dt><dd>When a thread-aware model invokes an interface method on an
+    object which is not known to reside in the same thread domain,
+    then the call must be protected with <b><i>SIM_ACQUIRE_TARGET</i></b>,
+    with the interface object provided as an argument.
+    This ensures that Cell Context is entered, when necessary.
+<p>
+    Example of an "outgoing" interface call:
+    </p><pre class="jdocu_small">      domain_lock_t *lock;
+      /* incoming interface calls may occur here */
+      SIM_ACQUIRE_TARGET(target_obj, &amp;lock);
+      some_interface-&gt;some_method(target_obj, ...);
+      SIM_RELEASE_TARGET(target_obj, &amp;lock);
+    </pre><p>
+</p><p>
+    </p><div class="note">
+<b>Note:</b>
+If the target object is thread-aware, then
+      <b><i>SIM_ACQUIRE_TARGET</i></b> will actually be a no-op.</div><div class="note">
+<b>Note:</b>
+If the cell TD is busy when <b><i>SIM_ACQUIRE_TARGET</i></b> is executed,
+      then the model may see incoming interface calls while waiting for the
+      domain, since all held domains are temporarily released while
+      waiting.
+    </div></dd><dt id="dt:api-calls"><b>API Calls</b></dt><dd>Cell Context must be entered before any API function can be called
+    which requires this context. The context is entered with
+    the <b><i>SIM_ACQUIRE_CELL</i></b> primitive, as in this example:
+    <pre class="jdocu_small">      domain_lock_t *lock;
+      /* incoming interface calls may occur here */
+      SIM_ACQUIRE_CELL(obj, &amp;lock);
+      /* this code runs in Cell Context */
+      breakpoint_id = SIM_breakpoint(...);
+      SIM_RELEASE_CELL(obj, &amp;lock);
+    </pre><p>
+    Some functions that need this protection:
+    </p><ul>
+      <li>HAP functions (<b><i>SIM_hap_add_callback</i></b>, ...)</li>
+      <li><b><i>SIM_breakpoint</i></b>, <b><i>SIM_delete_breakpoint</i></b></li>
+      <li><b><i>SIM_issue_transaction</i></b></li>
+    </ul>
+<p>
+    There are, however, many functions that can be called directly
+    in Threaded Context, e.g.
+    </p><ul>
+      <li>functions performing logging (<b><i>SIM_log_info</i></b>, ...)</li>
+      <li>functions returning constant object properties
+	(<b><i>SIM_object_name</i></b>, <b><i>SIM_get_interface</i></b>, ...)</li>
+      <li>allocations (<b><i>MM_MALLOC</i></b>,
+	<b><i>SIM_alloc_attr_list</i></b>, ...)</li>
+      <li>accessors (<b><i>SIM_attr_integer</i></b>,
+	<b><i>SIM_transaction_is_read</i></b>, ...)</li>
+      <li>dbuffer API (but the dbuffer itself is <b>not</b> thread safe)</li>
+      <li><b><i>SIM_run_unrestricted</i></b>, <b><i>SIM_run_alone</i></b></li>
+    </ul>
+    Some API functions can be called directly, as long as the TD has
+    been acquired for the object in question:
+    <ul>
+      <li>event related functions (<b><i>SIM_event_post_cycle</i></b>, ...)</li>
+      <li>time related functions (<b><i>SIM_time</i></b>,
+	<b><i>SIM_cycle_count</i></b>, ...)</li>
+    </ul>
+  </dd><dt id="dt:callbacks"><b>Callbacks</b></dt><dd>Callbacks triggered by the model are often expected to
+    be dispatched in Cell Context. The model must
+    enter Cell Context using <b><i>SIM_ACQUIRE_CELL</i></b>
+    before dispatching such callbacks.
+<p>
+    </p><div class="note">
+<b>Note:</b>
+Events registered with the <code>Sim_Event_No_Serialize</code> flag
+      and callbacks used by the CPU instrumentation framework do not need to be
+      protected. For these callbacks, it is the callee's responsibility to be
+      aware that the context can be more limited than Cell Context.
+      This is a performance optimization to allow fast callbacks with
+      minimal overhead.
+    </div></dd><dt id="dt:attributes"><b>Attributes</b></dt><dd>Registered attribute setters and getters are automatically protected;
+    an object's thread domain is always held when attribute setters and getters
+    are invoked.
+<p>
+    </p><div class="note">
+<b>Note:</b>
+Attributes should be used for configuration and to hold
+      state. Attributes should <b>never</b> be used for communication between
+      objects during simulation.
+    </div></dd></dl><p>
+</p><h2 class="jdocu"><a name="Domain-Boundary-Crossings">2.7.2 Domain Boundary Crossings</a></h2>
+<p>
+
+Whenever a thread-domain boundary is crossed, already held
+domains may temporarily be released to avoid deadlock situations.
+This allows unrelated, incoming, interface calls to occur at such points.
+</p><p>
+A thread-aware model must ensure that potential state changes caused
+by incoming interface calls are taken into account. This is one of the
+challenging points when writing a thread-aware model.
+</p><p>
+In Cell Context, boundary crossings are not an issue, since this
+context is prioritized exactly to avoid unexpected
+interface calls. Thread-aware models, running in Threaded Context,
+are not as fortunate and need to be aware of the possibility.
+</p><p>
+It is recommended that incoming interface calls are kept as
+simple as possible for thread-aware models. If possible,
+the interface action should be deferred and handled from an
+inner loop, especially for CPUs. For instance, a RESET interface
+should not perform the reset immediately, but instead set a flag that
+a reset should be performed before dispatching the next instruction.
+
+</p><h2 class="jdocu"><a name="Mixing-Thread-Domains-and-Mutexes">2.7.3 Mixing Thread Domains and Mutexes</a></h2>
+<p>
+
+It is easy to run into problems when different locking schemes
+are combined. This is also the case when mixing <em>mutexes</em>
+and <em>thread domains</em>. The following examples illustrate some
+pitfalls:
+</p><p>
+</p><dl><dt id="dt:example-1"><b>Example 1</b></dt><dd>Acquiring a thread domain while holding a lock:
+    <pre class="jdocu_small">      Thread 1                  Thread 2
+      Locks Mutex1              Acquires TD1
+      Acquires TD1 (blocks)     Locks Mutex1 (blocks)
+    </pre><p>
+    Thread 1 will never be able to acquire TD1 since this domain is held by
+    thread 2 which blocks on Mutex1.
+</p><p>
+    Note that the above example will also cause a deadlock if two mutexes
+    are used rather than one mutex and one thread domain, whereas no
+    no deadlock occurs with two thread domains.
+  </p></dd><dt id="dt:example-2"><b>Example 2</b></dt><dd>Waiting for a condition variable while holding a thread domain:
+    <pre class="jdocu_small">      Thread 1               Thread 2
+      Acquires TD1           .
+      Waits for COND1	     Acquires TD1 (blocks)
+                             Releases TD1 (not reached)
+	                     .
+                             Signals COND1 (not reached)
+    </pre><p>
+    Sleeping on a condition while holding a thread domain easily
+    leads to deadlocks. Threads requiring the thread domain
+    will get stuck and potentially prevent the condition from being
+    signaled.
+  </p></dd></dl><p>In practice, code can seldom make assumptions about which thread domains
+are held. For instance, an interface function can be invoked with an
+unknown set of thread domains already acquired. The domain retention mechanism
+also makes the picture more complex.
+</p><p>
+To avoid deadlocks, the following general principles are encouraged:
+</p><ul>
+  <li>Do not acquire a thread domain while holding a lock</li>
+  <li>Do not sleep while holding a thread domain</li>
+  <li>Use thread domains to prevent concurrent simulation</li>
+  <li>Use mutexes to protect specific data structures</li>
+</ul>
+When needed, it is possible to drop all thread domains,
+which is illustrated in the following example:
+<pre class="jdocu_small">  domain_lock_t *lock;
+  SIM_DROP_THREAD_DOMAINS(&amp;lock);
+  /* no thread domains are held here... */
+  SIM_REACQUIRE_THREAD_DOMAINS(&amp;lock);
+</pre><p>
+</p><div class="note">
+<b>Note:</b>
+Avoid empty drop/reacquire pairs. If the intention is allowing
+  other objects to access held domains, then
+  <b><i>SIM_yield_thread_domains</i></b> should be used instead. The yield
+  function, besides being faster, guarantees that all waiting
+  threads are given an opportunity to acquire the held domains.
+</div>
+<h2 class="jdocu"><a name="Thread-Aware-CPUs">2.7.4 Thread-Aware CPUs</a></h2>
+<p>
+
+Thread-aware CPUs have a few extra things to consider.
+</p><dl><dt id="dt:execution"><b>Execution</b></dt><dd>CPU models are driven from the <b><i>run</i></b> method
+    of the <code>execute</code> interface. The method
+    is invoked in Threaded Context, with the CPU thread
+    domain already held.
+<p>
+    The thread calling <b><i>run</i></b> is a simulation thread 
+    managed by the Simics scheduler. It is possible that this thread
+    is used to simulate more than one model.
+</p><p>
+    The model is not guaranteed that the <b><i>run</i></b> function is always
+    invoked by the same thread.
+  </p></dd><dt id="dt:signaling"><b>Signaling</b></dt><dd>Whenever another CPU, or a device model, tries to acquire the
+    CPU domain, the CPU is notified through the <code>execute_control</code>
+    interface.
+<p>
+    When a CPU is signaled in this way, it should <b>as soon as possible</b>
+    call <b><i>SIM_yield_thread_domains</i></b>. The yield function ensures
+    that pending direct memory update messages are delivered and allows
+    other threads to invoke interfaces on the CPU object.
+</p><p>
+    The signaling methods are invoked asynchronously, and the implementation
+    must not acquire any thread domains or call API functions.
+</p><p>
+    The signaling only occurs when the CPU's thread domain is the only
+    domain held. Acquiring an additional domain, even the already held domain,
+    temporarily blocks the signaling mechanism. Due to this, it is
+    important that the CPU thread domain is <b>not</b> acquired in the
+    <code>run</code> method, since it is already held on entry.
+</p><p>
+    </p><div class="note">
+<b>Note:</b>
+To minimize the waiting time for other threads, it is important
+      that the signaling is detected quickly.
+    </div></dd><dt id="dt:direct-memory"><b>Direct Memory</b></dt><dd>The methods of the <code>direct_memory_update</code> interface
+    are invoked with the CPU thread domain already acquired.
+    The model should service requests quickly and without
+    acquiring additional thread domains.
+  </dd></dl><p>
+</p><h2 class="jdocu"><a name="Thread-Domain-Contention">2.7.5 Thread Domain Contention</a></h2>
+<p>
+
+Statistics about thread-domain acquisition can be collected with the
+<b>enable-object-lock-stats</b> command. This functionality is useful
+when a model is optimized to avoid unnecessary thread-domain
+crossings or to investigate thread-domain contention.
+</p><p>
+There is a definite overhead associated with collecting the
+statistics; it should not be turned on by default.
+</p><p>
+The collected statistics can be shown with the
+<b>print-object-lock-stats</b> command:
+</p><pre class="jdocu_small">┌─────┬───────┬─┬────────────────────────────┬─────────────────────────────────┐
+│Count│Avg(us)│ │          Function          │               File              │
+├─────┼───────┼─┼────────────────────────────┼─────────────────────────────────┤
+│  396│   1.94│ │get_cycles                  │core/clock/clock.c:172           │
+│  369│   1.91│ │post                        │core/clock/clock.c:254           │
+│   27│   2.00│C│handle_event                │core/clock/clock-src.c:211       │
+│   12│   2.33│ │pb_lookup                   │core/common/image.c:3965         │
+│    7│   2.86│C│cpu_access                  │cpu/cpu-common/memory.c:508      │
+│    8│   2.38│C│perform_io                  │cpu/x86/x86-io.c:128             │
+│    6│   1.83│ │dml_lookup                  │core/common/memory-page.c:431    │
+│    3│   3.00│C│call_hap_functions_serialize│core/common/hap.c:1410           │
+│    3│   2.33│ │cancel                      │core/clock/clock.c:280           │
+└─────┴───────┴─┴────────────────────────────┴─────────────────────────────────┘
+</pre><p>
+The command basically displays the location in the source where thread
+domains have been acquired, and how quickly the domains were acquired.
+The 'C' indicates that Cell Context was entered.
+
+</p>
+<div class="chain">
+<a href="multithreading-standard-device-model.html">2.6 Standard Device Model</a>
+<a href="multithreading-threads.html">2.8 Foreign Threads</a>
+</div>

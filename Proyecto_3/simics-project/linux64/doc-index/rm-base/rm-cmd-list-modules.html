@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>list-modules</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-list-length.html">list-length</a>
+<a href="rm-cmd-list-namespaces.html">list-namespaces – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="list-modules"></a>
+<a name="module-list"></a>
+<h1 id="list-modules"><a href="#list-modules">list-modules</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>list-modules</b> [<i>"substr"</i>] [<i>package-number</i>] [-l] [-v] [<i>thread-safe</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Lists all modules that can be loaded into Simics. If the <i>substr</i> argument is specified, only modules with a matching name will be listed. If a <i>package-number</i> is specified, only modules from that package will be listed.
+<p>
+Use <tt>-l</tt> to only list loaded modules and <tt>-v</tt> to enable verbose output, which includes the module file system path, package name if the module comes from a package, and if the module shadows another module (which will be listed by <code>list-failed-modules</code>).
+</p><p>
+"Build ID" is the module-specific build ID, defaulting to the build-ID of the Simics package that the module was compiled with. The full build-ID reads for example "namespace:1234", except for Simics modules which displays just the integer part.
+</p><p>
+The "ABI" column is the build-ID of the Simics package that the module was compiled with.
+</p><p>
+The "Compat" column is the oldest Simics ABI version the module is binary compatible with. Note that a module with a low "compat" value may still require a later version of Simics for API functions that were introduced later on.
+</p><p>
+The "API" column is the API version that was set in the modules' makefile.
+</p><p>
+The "Thread-safe" column shows whether the module has been tagged as thread safe, "Yes" or "No". Use the <i>thread-safe</i> argument to filter on this column.
+</p><p>
+The "User Version" column shows the user defined version string (if any) which was provided in the MODULE_USER_VERSION variable in the module's <tt>Makefile</tt>.
+</p><p>
+When used in an expression, a list of module names is returned, or a list of [&lt;module name&gt;, &lt;loaded status&gt;, &lt;build ID&gt;, &lt;ABI&gt;, &lt;compat&gt;, &lt;API&gt;, &lt;thread-safe&gt;, &lt;user version&gt;, &lt;path&gt;] entries if <tt>-v</tt> is specified.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-list-failed-modules.html">list-failed-modules</a>, 
+<a href="rm-cmd-module-list-refresh.html">module-list-refresh</a>, 
+<a href="rm-cmd-load-module.html">load-module</a>, 
+<a href="rm-cmd-add-module-directory.html">add-module-directory</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-list-length.html">list-length</a>
+<a href="rm-cmd-list-namespaces.html">list-namespaces – deprecated</a>
+</div>

@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>16.3 Platform Effects</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="multithreaded-simulation-profiling-and-tuning.html">16.2 Multithreaded Simulation Profiling and Tuning</a>
+<a href="workload-characteristics.html">16.4 Workload Characteristics</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="simulation-performance.html">16 Simulation Performance</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Platform-Effects">16.3 Platform Effects</a></h1>
+<p>
+
+</p><p>
+Starting with the most important, consider these factors when choosing
+a platform to run Simics on:
+</p><p>
+</p><dl><dt id="dt:cpu-speed"><b>CPU Speed</b></dt><dd>Simulation is a very compute intensive application. As a general
+rule, a machine with higher compute performance will outperform a
+lower compute performance machine unless the simulation is starved for
+memory. The SPECint2006 benchmark suite (<code>www.spec.org</code>) is a
+good indicator of compute performance and can be used to compare
+systems with different processors. Both processor architecture and
+clock frequency affects the performance. Within an architecture
+performance scales almost linearly with clock frequency.
+<p>
+Other CPU features such as the size of the caches does affect
+performance, but less so than the architecture and the clock
+frequency.
+</p></dd><dt id="dt:memory-size"><b>Memory Size</b></dt><dd>The simulator can operate with less memory than the simulated
+memory size. It does that by allocating pages only when used and
+swapping out pages to disk when running low on memory. The memory size
+needs to be large enough so that the paging of memory to disk does not
+hurt performance too much.</dd><dt id="dt:number-of-cores"><b>Number of Cores</b></dt><dd>Simics Accelerator will utilize multiple host threads to simulate
+in parallel. If all simulated processors require equal amounts of time
+to simulate, then the simulator can theoretically utilize as many host
+cores as there are simulated processors. In practice, the workload is
+always skewed, meaning that fewer host cores can be effectively
+utilized. It is more efficient to use multiple cores or processors on
+a single machine compared to distributing the simulation across
+multiple host machines.</dd><dt id="dt:file-system"><b>File System</b></dt><dd>Running from local disk is faster than running over a network file
+system. When running low on memory, make sure that the swap directory
+used by the memory limit feature is located on local disk. Also, solid
+state disks (SSDs) are highly preferred over traditional rotating
+disks.</dd></dl><p></p>
+<div class="chain">
+<a href="multithreaded-simulation-profiling-and-tuning.html">16.2 Multithreaded Simulation Profiling and Tuning</a>
+<a href="workload-characteristics.html">16.4 Workload Characteristics</a>
+</div>

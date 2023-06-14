@@ -1,0 +1,89 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>instrumentation_filter_master</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_instrumentation_connection.html">instrumentation_connection</a>
+<a href="__rm_interface_instrumentation_filter_slave.html">instrumentation_filter_slave</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_instrumentation_filter_master">instrumentation_filter_master</a></h1>
+<p>
+
+<a name="instrumentation_filter_master"></a><a name="instrumentation_filter_master_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is intended to be implemented by instrumentation filters.
+   Instrumentation filters should enable the associated slaves, which
+   themselves are associated with instrumentation connections.
+<p>
+   The <b><i>set_source_id</i></b> method supplies the filter with an unique
+   source number for the filter. This function should only be called once,
+   the filter needs to store this number so it can be used when 
+   calling the <code>instrumentation_filter_slave</code> interface
+   methods.
+</p><p>
+   The <b><i>add_slave</i></b> method informs the filter that it should enable or
+   disable this slave too. The <i>slave</i> object should implement the
+   <code>instrumentation_filter_slave</code> interface which should be
+   used. The <i>provider_obj</i> parameter is the provider object that
+   is located behind the slave and its connection.  Depending on how the filter
+   works, it may or may not make use of this parameter. For example, the
+   process-filter might detect that the filtered process is now running on a
+   particular processor, then it can enable this particular connection only,
+   given that it can match the <i>provider_obj</i> with the processor
+   currently running the tracked process.
+</p><p>
+   The <b><i>remove_slave</i></b> method removes a slave from the filter, so
+   it should not call it anymore.
+</p><p>
+   The <b><i>short_filter_config</i></b> method should return a short textual
+   description on how the filter is currently set up. This information
+   is used in various print commands.
+   </p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(instrumentation_filter_master) {
+        void (*set_source_id)(conf_object_t *obj, unsigned source_id);
+        bool (*add_slave)(conf_object_t *obj, conf_object_t *slave,
+                          conf_object_t *provider_obj);
+        void (*remove_slave)(conf_object_t *obj, conf_object_t *slave,
+                             conf_object_t *provider_obj);
+        char *(*short_filter_config)(conf_object_t *obj);
+};
+#define INSTRUMENTATION_FILTER_MASTER_INTERFACE "instrumentation_filter_master"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_instrumentation_connection.html">instrumentation_connection</a>
+<a href="__rm_interface_instrumentation_filter_slave.html">instrumentation_filter_slave</a>
+</div>

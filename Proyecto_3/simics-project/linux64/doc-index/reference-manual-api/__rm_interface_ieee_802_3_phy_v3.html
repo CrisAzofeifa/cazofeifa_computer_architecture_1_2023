@@ -1,0 +1,89 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ieee_802_3_phy_v3</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ieee_802_3_phy_v2.html">ieee_802_3_phy_v2</a>
+<a href="__rm_interface_interrupt_ack.html">interrupt_ack</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ieee_802_3_phy_v3">ieee_802_3_phy_v3</a></h1>
+<p>
+
+<a name="ieee_802_3_phy_v3"></a><a name="ieee_802_3_phy_v3_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">#define IEEE_802_3_PHY_V3_INTERFACE "ieee_802_3_phy_v3"
+SIM_INTERFACE(ieee_802_3_phy_v3) {
+        int (*send_frame)(
+                conf_object_t *obj, const frags_t *frame, int replace_crc);
+        int (*check_tx_bandwidth)(conf_object_t *obj);
+};
+</pre><p>
+</p><p>
+
+   Interface that should be implemented by 802.3 physical layers.
+</p><p>
+   The <b><i>send_frame</i></b> function is used by a device to send an Ethernet
+   frame. The frame should be a <code><a name="frags_t">frags_t</a></code> containing a
+   complete Ethernet frame, excluding the preamble and SFD, but including space
+   for the CRC field. The passed <i>frame</i> must not be modified by
+   the called function.
+</p><p>
+   The <i>replace_crc</i> flag indicates whether the CRC field contents
+   can be modified by the implementing object: if <i>replace_crc</i> is
+   not set, the implementing object will leave the CRC field untouched; if
+   <i>replace_crc</i> is set, the implementing object is free to
+   rewrite the CRC field according to the link constraints. Note that in many
+   cases, setting <i>replace_crc</i> to true will allow the link to
+   assume the CRC field to be matching the frame contents, thus skipping CRC
+   calculation and improving simulation performance. <i>replace_crc</i>
+   should only be set to false when the device wants to send a frame with a CRC
+   field not matching the frame contents.
+</p><p>
+   If the function return 0, the frame was sent to the link; In case
+   -1 is returned, there was not enough bandwidth available right now,
+   and the frame could not be sent. The PHY should call the
+   <b><i>tx_bandwidth_available</i></b> in the <code>ieee_802_3_mac_v3</code>
+   interface at the MAC, when the frame can be sent.
+</p><p>
+   The <b><i>check_tx_bandwidth</i></b> can also be used to check that there
+   is bandwidth available, without sending a frame. It returns 0 if there
+   is no bandwidth available, and a positive value if the frame can be
+   sent right away.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ieee_802_3_phy_v2.html">ieee_802_3_phy_v2</a>
+<a href="__rm_interface_interrupt_ack.html">interrupt_ack</a>
+</div>

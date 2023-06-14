@@ -1,0 +1,71 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>save-recorded-session</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-save-preferences.html">save-preferences</a>
+<a href="rm-cmd-script-barrier-limit.html">script-barrier-limit</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="save-recorded-session"></a>
+<h1 id="save-recorded-session"><a href="#save-recorded-session">save-recorded-session</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>save-recorded-session</b> <i>file</i> [-z|-u] [-independent-checkpoint] <i>"bookmark"</i> [<i>"comment"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Save the current session to a checkpoint file named <i>file</i>. The checkpoint starts at the virtual time represented by <i>bookmark</i> and will include all asynchronous input recorded since then and to the current point in time. It may take some time to save a session, since the current implementation of the command will replay it, starting at <i>bookmark</i>.
+<p>
+Use the <tt>-u</tt> flag to store uncompressed files when saving image data in craff format.
+</p><p>
+Use the <tt>-independent-checkpoint</tt> flag for saving the complete image data independent of earlier checkpoints, instead of just the modified data (which is the default).
+</p><p>
+To add a description to the checkpoint, use the <i>comment</i> argument. The comment is saved in the <tt>info</tt> file in the checkpoint bundle. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-read-configuration.html">read-configuration</a>, 
+<a href="rm-cmd-write-configuration.html">write-configuration</a>, 
+<a href="rm-cmd-record-session.html">record-session</a>, 
+<a href="rm-cmd-set-bookmark.html">set-bookmark</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-save-preferences.html">save-preferences</a>
+<a href="rm-cmd-script-barrier-limit.html">script-barrier-limit</a>
+</div>

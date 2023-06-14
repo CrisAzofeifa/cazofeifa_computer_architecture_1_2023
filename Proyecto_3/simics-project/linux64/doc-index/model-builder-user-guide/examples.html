@@ -1,0 +1,371 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>30 Examples</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="create-customer-packages.html">29 Create Customer Packages</a>
+<a href="limitations.html">31 Limitations</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-packages-creation.html">V Creating Own Packages</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Examples">30 Examples</a></h1>
+<p>
+
+</p><h2 class="jdocu"><a name="Simics-Distribution-License-Example">30.1 Simics Distribution License Example</a></h2>
+<p>
+
+</p><p>
+The two most common forms of Simics Distribution License usage are
+building Simics functionality into another application, as documented
+in the section <a class="reference" href="extension-builder.html">VII</a>, and augmenting Simics
+with additional functionality and then distributing to a customer or
+contractor. This example concerns the latter case, specifically as it
+relates to the use of Customer Packages.
+</p><p>
+For purposes of this example we will
+assume that the Virtual Platform is the Firststeps platform
+and that the customer has extended the Firsteps platform with a device
+named <code>secondstep</code> and that the new platform is called
+<code>thirdstep</code>. Additionally we will assume that customer's
+license file is named <code>license.lic</code> and that the license
+file containing the license to be distributed is
+named <code>distribute.lic</code>. Finally, we assume that the goal is
+to distribute a single <code>.tar.gz</code> file containing a shell
+script to run Simics with all options as chosen by the distributing
+customer.
+</p><p>
+
+</p><div class="note">
+<b>Note:</b>
+This example is shown using a Linux command line. All steps work
+exactly the same way under Windows, though with the usual \ for /
+replacements and additions of <code>.bat</code> extension.</div><h3 class="jdocu"><a name="Install-Simics-for-Development">30.1.1 Install Simics for Development</a></h3>
+<p>Install Simics Base and QSP-x86, and copy the license file.
+</p><p>
+</p><pre class="jdocu_small">:~/example$ <b>tar -xf simics-pkg-1000-6.0.0-linux64.tar</b>
+:~/example$ <b>tar -xf simics-pkg-2096-6.0.0-linux64.tar</b>
+:~/example$ <b>cd simics-6-install/</b>
+:~/example/simics-6-install$ <b>./install-simics.pl</b>
+...
+</pre><p>
+</p><p>
+The installation process is described in Simics' <em>Installation
+Guide</em>. In this example, install to folder <code>../install</code>.
+</p><p>
+</p><pre class="jdocu_small">:~/example/simics-6-install$ <b>cd ../</b>
+:~/example$ <b>cp license.lic install/6.0.0/licenses/</b>
+:~/example$
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="Create-a-Development-Project-and-Develop-a-Device-Model">30.1.2 Create a Development Project and Develop a Device Model</a></h3>
+<p>
+
+</p><p>
+Set up a Simics project as well as create and compile a sample device.
+</p><p>
+</p><pre class="jdocu_small">:~/example$ <b>./install/simics-6.0.0/bin/project-setup project</b>
+Project created successfully
+:~/example$ <b>cd project/</b>
+:~/example/project$ <b>./bin/project-setup --device secondstep</b>
+Skeleton for module 'secondstep' successfully created.
+:~/example/project$ <b>make</b>
+=== Environment Check ===
+'/home/joe/example/project' is up-to date
+gcc version 10
+=== Building module "secondstep" ===
+        module_id.c
+DEP     module_id.d
+DML-DEP secondstep.dmldep
+DMLC    secondstep-dml.c
+DEP     secondstep-dml.d
+DMLC    secondstep-dml.c
+PYC     module_load.py
+CC      secondstep-dml.o
+CC      module_id.o
+CCLD    secondstep.so
+:~/example/project$
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="Create-the-Target-System-Scripts">30.1.3 Create the Target System Scripts</a></h3>
+<p>
+
+</p><p>
+Copy target scripts from the installation of QSP-x86 to the targets folder,
+and edit one of them.
+</p><p>
+</p><pre class="jdocu_small">:~/example/project$ <b>mkdir targets/thirdstep</b>
+:~/example/project$ <b>cp targets/qsp-x86/qsp-clear-linux.simics <img alt="Line break" src="nextline.png">
+ targets/thirdstep/thirdstep.simics</b>
+:~/example/project$
+</pre><p>
+</p><p>
+From <code>targets/thirdstep/thirdstep.simics</code> file, remove any lines
+reading "# Auto-generated file. ...". Such lines will prevent the file from
+being included in the upcoming package. Optionally, update the <code>decl</code>
+block if it exists, or add such a block. Finally edit the parameter
+to <b>run-command-file</b> as shown.
+</p><p>
+</p><pre class="jdocu_small">decl {
+    params from "%simics%/targets/qsp-x86/qsp-clear-linux.simics"
+    default system_info = "Thirdstep - Linux"
+    default ip_address = "10.10.0.4"
+}
+
+run-command-file "%simics%/targets/qsp-x86/qsp-clear-linux.simics"
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="Convert-the-Project-to-a-Package">30.1.4 Convert the Project to a Package</a></h3>
+<p>
+
+</p><p>
+Create a Simics package based on the project.
+</p><p>
+</p><pre class="jdocu_small">:~/example/project$ <b>./bin/project-packager</b>
+Descriptive Name [Customer Package] <b>ThirdStep Package with Second Step Device</b>
+Package Name (no spaces) [Customer-Package] <b>thirdstep</b>
+Package Number [200000]
+Version [6.0.0]
+Host Type (linux64/win64) [linux64]
+Build ID Namespace [customer]
+Build ID [6123]
+Edit Files? (y/n) [n]
+:~/example/project$
+</pre><p>
+</p><p>
+A <code>packageinfo/thirdstep-linux64.tar.gz</code> file has been created. The
+package include the sample device based on <code>secondstep</code>, the target
+script and some other files.
+</p><p>
+</p><h3 class="jdocu"><a name="Test-Install-the-Thirdstep-Package">30.1.5 Test Install the Thirdstep Package</a></h3>
+<p>
+
+</p><p>
+Install the new package and associate it with Simics Base.
+</p><p>
+</p><pre class="jdocu_small">:~/example/project$ <b>cd ../install/</b>
+:~/example/install$ <b>tar -xzf ../project/packageinfo/thirdstep-linux64.tar.gz</b>
+:~/example/install$ <b>./simics-6.0.0/bin/addon-manager -s <img alt="Line break" src="nextline.png">
+ simics-thirdstep-6.0.0/</b>
+
+Simics 6 Add-on Package Manager
+=================================
+
+This script will configure this Simics installation to use optional
+Simics add-on packages.
+
+Default alternatives are enclosed in square brackets ([ ]).
+
+=== Using the package list in Simics installation <img alt="Line break" src="nextline.png">
+ (~/example/install/simics-6.0.0) ===
+
+Configured add-on packages:
+   QSP-x86              6.0.0   ../simics-qsp-x86-6.0.0
+
+The following operations will be performed:
+   -&gt; Add  thirdstep    6.0.0   ../simics-thirdstep-6.0.0
+
+New package list:
+   QSP-x86              6.0.0   ../simics-qsp-x86-6.0.0
+   thirdstep            6.0.0   ../simics-thirdstep-6.0.0
+
+Do you want to update the package list? (y/n) [y]
+Package list updated
+:~/example/install$
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="Create-a-Test-Project-and-Test-the-Install">30.1.6 Create a Test Project and Test the Install</a></h3>
+<p>
+
+</p><p>
+Create a Simics project and run the newly created package briefly.
+</p><p>
+</p><pre class="jdocu_small">:~/example$ <b>cd ../</b>
+:~/example$ <b>./install/simics-6.0.0/bin/project-setup test-project</b>
+Project created successfully
+:~/example$ <b>cd test-project/</b>
+:~/example/test-project$ <b>./simics targets/thirdstep/thirdstep.simics -e quit</b>
+Simics 6 (build 6123 linux64) © 2022 Intel Corporation
+
+Use of this software is subject to appropriate license.
+Type 'copyright' for details on copyright and 'help' for on-line documentation.
+
+:~/example/test-project$
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+In this case the test was successful because there were no error
+  messages. In a real environment actual test code should be run.
+</div><h3 class="jdocu"><a name="Create-a-Clean-Install-for-Distribution">30.1.7 Create a Clean Install for Distribution</a></h3>
+<p>Install Simics Base and QSP-x86 to a clean location. Copy needed files and
+install the newly created package as well as associate it with Simics
+Base. In this example, install to folder <code>../test-install</code>.
+</p><p>
+</p><pre class="jdocu_small">:~/example/test-project$ <b>cd ../example/simics-6-install/</b>
+:~/example/simics-6-install$ <b>./install-simics.pl</b>
+...
+
+:~/example/simics-6-install$ <b>cd ../test-install/</b>
+:~/example/test-install$ <b>cp ../distribute.lic simics-6.0.0/licenses/</b>
+:~/example/test-install$ <b>tar -xzf ../project/packageinfo/thirdstep-linux64.tar.gz</b>
+:~/example/test-install$ <b>./simics-6.0.0/bin/addon-manager <img alt="Line break" src="nextline.png">
+ -s simics-thirdstep-6.0.0/</b>
+...
+:~/example/test-install$
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="Confirm-the-.package-list-File-Contains-only-Relative-Paths">30.1.8 Confirm the .package-list File Contains only Relative Paths</a></h3>
+<p>
+
+</p><p>
+Check that the <code>.package-list</code> lists only relative file
+paths. Otherwise, edit paths accordingly.
+</p><p>
+</p><pre class="jdocu_small">:~/example/test-install$ <b>cat simics-6.0.0/.package-list</b>
+../simics-thirdstep-6.0.0
+../simics-qsp-x86-6.0.0
+:~/example/test-install$
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="Create-a-Script-to-Start-Simics">30.1.9 Create a Script to Start Simics</a></h3>
+<p>
+
+</p><p>
+Create a script <code>start_simics.sh</code> that contains:
+</p><p>
+</p><pre class="jdocu_small">#!/bin/bash
+./simics-6.0.0/bin/simics <img alt="Line break" src="nextline.png">
+ simics-thirdstep-6.0.0/targets/thirdstep/thirdstep.simics
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="Create-a-Distributable-File">30.1.10 Create a Distributable File</a></h3>
+<p>
+
+</p><p>
+Create a file archive including the newly created package, Simics Base and
+QSP-x86.
+</p><p>
+</p><pre class="jdocu_small">:~/example/test-install$ <b>cd ../</b>
+:~/example$ <b>tar -czf distribution.tar.gz test-install/</b>
+:~/example$
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Creating-an-Encrypted-Package-for-the-Simics-Installer">30.2 Creating an Encrypted Package for the Simics Installer</a></h2>
+<p>
+
+</p><p>
+On Linux, the <code>project-packager</code> script can create an encrypted
+Simics package based on the files of the project, that can be installed
+directly with the Simics installer.
+</p><p>
+</p><h3 class="jdocu"><a name="Create-Encrypted-Package">30.2.1 Create Encrypted Package</a></h3>
+<p>
+
+</p><p>
+Run the <code>project-packager</code> script with the flag <code>-e</code>
+(<code>--encrypt</code>) and provide a key with 64 hexadecimal digits.
+</p><p>
+</p><pre class="jdocu_small">:~/example/project$ <b>./bin/project-packager -e</b>
+Descriptive Name [Customer Package] <b>Encrypted Thirdstep package</b>
+Package Name (no spaces) [Customer-Package] <b>Encrypted-ThirdStep</b>
+Package Number [200000] 200001
+Version [6.0.0]
+Host Type (linux64/win64) [linux64]
+Build ID Namespace [customer]
+Build ID [6123]
+Edit Files? (y/n) [n]
+Key [0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF]
+:~/example/project$
+</pre><p>
+</p><p>
+Now the <code>packageinfo</code> directory will contain the non-encrypted
+tar-files, that could be added to the installation with
+the <code>addon-manager</code> script as previously described, and encrypted
+Simics packages.
+</p><p>
+</p><h3 class="jdocu"><a name="Install-Encrypted-Package">30.2.2 Install Encrypted Package</a></h3>
+<p>
+
+</p><p>
+Copy the files for the encrypted package into the
+<code>simics-6-install</code> folder, and install.
+</p><p>
+</p><pre class="jdocu_small">:~/example$ <b>cd simics-6-install/</b>
+:~/example$ <b>cp project/packageinfo/package-200001-6.0.0-linux64.* .</b>
+:~/example/simics-6-install$ <b>./install-simics.pl</b>
+...
+</pre><p>
+</p><p>
+Now it is possible to test the installed packages as in the earlier example.
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Additional-project-packager-Script-Parameters">30.3 Additional project-packager Script Parameters</a></h2>
+<p>
+
+</p><p>
+The <code>project-packager</code> could be run with a number of
+additional parameters. For a complete documentation of these
+parameters as well as a description of the normal usage of the script,
+run it with the <i>-h</i> parameter (or using the verbatim version of the
+same parameter: <i>--help</i>):
+</p><p>
+</p><pre class="jdocu_small">:~/project$ <b>./bin/project-packager -h</b></pre><p>
+</p><p>
+Here is the description of some parameters:
+</p><p>
+The <i>-n</i> parameter (verbatim <i>--dry-run</i>) runs the script
+without producing and output files. This makes it possible to test what inputs
+the script needs without creating any real files.
+</p><p>
+The <i>-d</i> parameter (verbatim <i>--debug</i>) gives some additional
+debug information when running the script, for example on what directory the
+script is run in and what the default values and names of the results of
+the script are.
+</p><p>
+The <i>-b</i> parameter (verbatim <i>--batch</i>) lets the user run
+the script without any interactive input. The script will then be run with
+the same default values and names that will be printed running the script
+interactively.
+</p><p>
+The <i>-s</i>, <i>-t</i> and <i>-z</i> parameters
+(verbatim <i>--suppress</i>, <i>--tar</i> and <i>--zip</i>) handle
+what type of compression (if any) that should be used to create
+the user packages. On Linux, the default is to use "tar" and "gz" and create
+".tar.gz" packages. For Windows, the default is to create ".zip" packages.
+</p><p>
+
+</p>
+<div class="chain">
+<a href="create-customer-packages.html">29 Create Customer Packages</a>
+<a href="limitations.html">31 Limitations</a>
+</div>

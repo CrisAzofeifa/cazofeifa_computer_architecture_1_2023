@@ -1,0 +1,94 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>fmn_station_control_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_fmn_station_control.html">fmn_station_control</a>
+<a href="__rm_interface_frequency.html">frequency</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_fmn_station_control_v2">fmn_station_control_v2</a></h1>
+<p>
+
+<a name="fmn_station_control_v2"></a><a name="fmn_station_control_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>fmn_station_control_v2</code> interface is implemented by Fast
+   Messaging Network stations for the XLP II processor.
+<p>
+   For all functions, the <i>thread_id</i> parameter denotes the thread
+   id for the core that invokes the call.
+</p><p>
+   The <b><i>send_message</i></b> function is called when the processor executes
+   the <code>msgsnd</code> instruction. The <i>rt_value</i> parameter
+   contains the value of the <code>rt</code> register. The function must return
+   the value to be written into the <code>rd</code> register.
+</p><p>
+   The <b><i>load_message</i></b> function is called when the processor executes
+   the <code>msgld</code> instruction. The <i>rt_value</i> parameter
+   contains the value of the <code>rt</code> register. The function must return
+   the value to be written into the <code>rd</code> register.
+</p><p>
+   The <b><i>wait</i></b> function is called when the processor executes the
+   <code>msgwait</code> instruction. The <i>rt_value</i> parameter contains
+   the value of the <code>rt</code> register. The function should return <code>1</code>
+   if the receive queues are empty, <code>0</code> if not. If the receive queues
+   are empty the station must wake the thread by raising the signal on the
+   <em>wakeup</em> port of the thread when the next message arrives to one of
+   the receive queues.
+</p><p>
+   The <b><i>sync</i></b> function is called when the processor executes the
+   <code>msgsync</code> instruction.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(fmn_station_control_v2) {
+        uint64 (*send_message)(conf_object_t *NOTNULL obj,
+                               uint32 thread_id,
+                               uint64 rt_value);
+        uint64 (*load_message)(conf_object_t *NOTNULL obj,
+                               uint32 thread_id,
+                               uint64 rt_value);
+        int (*wait)(conf_object_t *NOTNULL obj,
+                    uint32 thread_id,
+                    uint64 rt_value);
+        void (*sync)(conf_object_t *NOTNULL obj,
+                     uint32 thread_id);
+};
+#define FMN_STATION_CONTROL_V2_INTERFACE "fmn_station_control_v2"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_fmn_station_control.html">fmn_station_control</a>
+<a href="__rm_interface_frequency.html">frequency</a>
+</div>

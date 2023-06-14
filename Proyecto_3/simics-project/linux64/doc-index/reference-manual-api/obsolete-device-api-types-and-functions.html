@@ -1,0 +1,609 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.4 Obsolete Device API Types and Functions</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="device-api-functions.html">3.3 Device API Functions</a>
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="device-api.html">3 Device API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Obsolete-Device-API-Types-and-Functions">3.4 Obsolete Device API Types and Functions</a></h1>
+<p>
+    
+</p><p>
+    
+
+    The following types and functions are still available when a module is
+    compiled for an obsolete API. Compiling for an obsolete API is described
+    in the <em>Model Builder User's Guide</em>.
+</p><p>
+    The DBuffer library is part of the Simics API.  Up to Simics 4.0, it was
+    the preferred method to transfer data blocks, such as network packets,
+    inside the simulation. For code using the new link based on the link
+    library, and for new models, we recommend using the <code>frags_t</code>
+    data type instead.
+
+</p><p>
+    </p><h2 class="jdocu"><a name="Obsolete-Device-API-Types">3.4.1 Obsolete Device API Types</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_t">dbuffer_t</a></h3>
+<p>
+   
+   
+   <a name="dbuffer_t2"></a>
+   </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_t"></a>dbuffer_t</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<span class="jdocu_smaller">
+   
+<pre class="jdocu_small">typedef struct dbuffer dbuffer_t;</pre><p>
+
+   
+   </p></span></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This type is used to store blocks of binary data.  It is optimized
+   for fast adding and removing of data, and does fast copying between
+   buffers using copy-on-write semantics.
+<p>
+   The type is not inherently thread safe, so each instance must have a single
+   thread as owner, and only the owner can read or write from the instance,
+   however ownership can be transferred to another thread. To share the data
+   with other threads, the instance must first be cloned using
+   <b><i>dbuffer_clone</i></b>.
+   </p></dd>
+</dl><p>
+   </p><h3 class="jdocu"><a class="not-numbered" name="init_prefs_t">init_prefs_t</a></h3>
+<p>
+   
+   
+   <a name="init_prefs_t2"></a>
+   </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_init_prefs_t"></a>init_prefs_t</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<span class="jdocu_small">
+   
+   
+<pre class="jdocu_small">typedef struct {
+        bool batch_mode;
+        bool quiet;
+        bool verbose;
+        bool python_verbose;
+        bool disable_istc;
+        bool disable_dstc;
+        bool module_cache_enable;
+        bool rdp;
+        bool sign_module;
+        const char *log_file;
+
+        /* The Simics project to use */
+        const char *project;       // NULL to use saved prefs value
+        const char *workspace;     // Deprecated, do not use
+
+        gui_mode_t gui_mode;       // GUI_Mode_Default to use saved prefs value
+        cpu_variant_t cpu_mode;    // CPU_Any to use saved prefs value
+
+        const char *package_list;  // internal, do not use
+
+        const char *license_file;  // NULL to use saved prefs value
+        const char *expire_time;
+
+        bool no_windows;
+        bool fail_on_warnings;
+        const char *deprecation_level; // see sim-&gt;warn_deprecated
+        bool warn_deprecated;       // same as deprecation_level == 2
+        bool no_warn_deprecated;    // same as deprecation_level == 0
+
+        bool warn_multithread;  /* deprecated and ignored (bug 21597) */
+        bool check_ifaces;
+        bool no_global_settings;    // do not read preferences and recent-files
+
+        const char *alt_settings_dir; // internal - for test usage
+
+        /* the following should be -1 if not set by command line options
+           to tell SIM_init_simulator() to use the saved preference value */
+        int log_enable;
+
+        bool allow_license_gui; // internal, do not use
+
+        const char *eclipse_params; // internal, do not use
+} init_prefs_t;</pre><p>
+
+   
+   
+</p><pre class="jdocu_small">typedef enum {
+        GUI_Mode_None,
+        GUI_Mode_Mixed,
+        GUI_Mode_Only,
+        GUI_Mode_Default
+} gui_mode_t;</pre><p>
+
+   
+   
+</p><pre class="jdocu_small">typedef enum {
+        Cpu_None, /* internal, do not use */
+        Cpu_Any,
+        Cpu_Fast,
+        Cpu_Stall
+} cpu_variant_t;</pre><p>
+
+   
+   </p></span></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <code>init_prefs_t</code>, <code>gui_mode_t</code> and
+   <code>cpu_variant_t</code> types are deprecated and should not be used in
+   new code.
+   </dd>
+</dl><p>
+   </p><h3 class="jdocu"><a class="not-numbered" name="log_type_t">log_type_t</a></h3>
+<p>
+   
+   
+   <a name="log_type_t2"></a>
+   </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_log_type_t"></a>log_type_t</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<span class="jdocu_smaller">
+   
+   
+<pre class="jdocu_small">typedef enum {
+        Sim_Log_Info,           // Normal informational message
+        Sim_Log_Error,          // Simics error
+        Sim_Log_Spec_Violation, // target program violates the specification
+        Sim_Log_Unimplemented,  // not implemented in Simics
+        Sim_Log_Critical,       // Critical error stopping Simics
+        Sim_Log_Trace,          // Breakpoint trace messages
+        Sim_Log_Num_Types,      // Do not use
+} log_type_t;</pre><p>
+
+   
+   </p></span></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This type defines different log types that are used by the logging
+   facility to categorise messages.
+   </dd>
+</dl><p>
+   
+    </p><p>
+    </p><h2 class="jdocu"><a name="Obsolete-Device-API-Functions">3.4.2 Obsolete Device API Functions</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_append">dbuffer_append()</a></h3>
+<p>
+
+<a name="dbuffer_append2"></a><a name="dbuffer_prepend"></a><a name="dbuffer_insert"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_append"></a><b>dbuffer_append</b><b>, dbuffer_prepend</b><b>, dbuffer_insert</b> — Add data to a dbuffer</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">uint8 *
+dbuffer_append(dbuffer_t *dbuffer, size_t len);
+</pre><p></p><pre class="jdocu_small">uint8 *
+dbuffer_prepend(dbuffer_t *dbuffer, size_t len);
+</pre><p></p><pre class="jdocu_small">uint8 *
+dbuffer_insert(dbuffer_t *dbuffer, size_t offset, size_t len);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+These functions will extend the dbuffer with <i>len</i>
+   bytes and return a pointer to the added bytes.  The
+   <b><i>dbuffer_insert</i></b> function adds the new data at
+   <i>offset</i> in the buffer, while the
+   <b><i>dbuffer_prepend</i></b> and <b><i>dbuffer_append</i></b> functions
+   add it at the beginning and end, respectively.
+<p>
+   The returned pointer points to a memory area that is only guaranteed to
+   contain valid data for the newly added bytes, and it is illegal to
+   reference data before it or more than <i>len</i>-1 bytes ahead.
+   The new memory area is not guaranteed to be initialized.
+</p><p>
+   The returned pointer is also only valid until the next operation on
+   the dbuffer function, except for calling <b><i>dbuffer_len</i></b>.</p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_append_external_data">dbuffer_append_external_data()</a></h3>
+<p>
+
+<a name="dbuffer_append_external_data2"></a><a name="dbuffer_prepend_external_data"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_append_external_data"></a><b>dbuffer_append_external_data</b><b>, dbuffer_prepend_external_data</b> — Add static data</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">uint8 *
+dbuffer_append_external_data(dbuffer_t *dbuffer, void *data,
+                             size_t len, bool adopt);
+</pre><p></p><pre class="jdocu_small">uint8 *
+dbuffer_prepend_external_data(dbuffer_t *dbuffer, void *data,
+                              size_t len, bool adopt);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+These functions work similar to <b><i>dbuffer_append</i></b> and
+   <b><i>dbuffer_prepend</i></b>, but with the difference that the data
+   isn't copied.  Instead, the buffer will reference the data pointed
+   to directly.
+ <p>
+   If the <i>adopt</i> flag is true, the control of the data
+   block is transferred to the dbuffer.  It is assumed to be a block
+   allocated with <b><i>MM_MALLOC</i></b>, and will be freed with
+   <b><i>MM_FREE</i></b> when the dbuffer is released.
+ </p><p>
+   If the <i>adopt</i> flag is false, the dbuffer will not free the
+   memory. Since there is no way to control the lifetime of the external
+   reference if the dbuffer reference has been passed to another function, this
+   option should never be used to point to memory on the stack or to memory
+   that will eventually deallocated. Pointing to static memory is usually
+   safe. This should also only be used for buffers that will only be read from,
+   since there is no way to know when the external pointer is used, and when a
+   copy is used.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_dbuffer_append">
+       dbuffer_append
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_append_value">dbuffer_append_value()</a></h3>
+<p>
+
+<a name="dbuffer_append_value2"></a><a name="dbuffer_prepend_value"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_append_value"></a><b>dbuffer_append_value</b><b>, dbuffer_prepend_value</b> — Add data with uniform content</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">uint8 *
+dbuffer_append_value(dbuffer_t *dbuffer, int value, size_t len);
+</pre><p></p><pre class="jdocu_small">uint8 *
+dbuffer_prepend_value(dbuffer_t *dbuffer, int value, size_t len);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This adds data to a dbuffer and sets all the added bytes to
+   <i>value</i>.  It has the same effect as using
+   <b><i>dbuffer_append</i></b> or <b><i>dbuffer_append</i></b> and calling
+   <b><i>memset</i></b> to set the contents.
+<p>
+   The return value is a pointer to the data just added.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_dbuffer_append">
+       dbuffer_append
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_clone">dbuffer_clone()</a></h3>
+<p>
+
+<a name="dbuffer_clone2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_clone"></a><b>dbuffer_clone</b> — Make a full copy of another buffer</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">dbuffer_t *
+dbuffer_clone(dbuffer_t *dbuffer);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function returns a new dbuffer that contains the same data as
+   the buffer given in the <i>dbuffer</i> parameter.  This
+   doesn't involve copying any memory, since they can share the same
+   storage initially.  However, they are still completely independent,
+   and operations on one buffer has no effect on the other.
+<p>
+   The returned dbuffer should be released with
+   <b><i>dbuffer_free</i></b> when it is no longer needed.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_new_dbuffer">
+       new_dbuffer</a>, <a class="jdocu" href="#__jdocu_seealso_dbuffer_free"> dbuffer_free
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_copy_append">dbuffer_copy_append()</a></h3>
+<p>
+
+<a name="dbuffer_copy_append2"></a><a name="dbuffer_copy_prepend"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_copy_append"></a><b>dbuffer_copy_append</b><b>, dbuffer_copy_prepend</b> — Copy data from a dbuffer</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+dbuffer_copy_append(dbuffer_t *dst, dbuffer_t *src, size_t offset, size_t len);
+</pre><p></p><pre class="jdocu_small">void
+dbuffer_copy_prepend(dbuffer_t *dst, dbuffer_t *src, size_t offset, size_t len);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+These functions copies <i>len</i> bytes from the dbuffer
+   <i>src</i>, at offset <i>offset</i>, and adds it to
+   the beginning or end of the dbuffer <i>dst</i>.
+<p>
+   This can often be done without actually copying any memory, so it
+   is usually very efficient.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_dbuffer_append">
+       dbuffer_append
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_free">dbuffer_free()</a></h3>
+<p>
+
+<a name="dbuffer_free2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_free"></a><b>dbuffer_free</b> — Release a dbuffer</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+dbuffer_free(dbuffer_t *dbuffer);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Release a dbuffer that will not be used anymore.  This will also
+   free any data in the buffer that isn't also used by other buffers.
+   After calling this function, the dbuffer must not be used anymore.
+<p>
+   See also src/include/simics/util/dbuffer.h</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_new_dbuffer">
+       new_dbuffer
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_len">dbuffer_len()</a></h3>
+<p>
+
+<a name="dbuffer_len2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_len"></a><b>dbuffer_len</b> — Get the size of a dbuffer</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">size_t
+dbuffer_len(const dbuffer_t *dbuffer);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function returns the amount of data stored in a dbuffer.  This
+   is the number of bytes that will be returned by
+   <b><i>dbuffer_read_all</i></b>.</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_read">dbuffer_read()</a></h3>
+<p>
+
+<a name="dbuffer_read2"></a><a name="dbuffer_read_all"></a><a name="dbuffer_read_some"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_read"></a><b>dbuffer_read</b><b>, dbuffer_read_all</b><b>, dbuffer_read_some</b> — Extract data for reading</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">const uint8 *
+dbuffer_read(dbuffer_t *dbuffer, size_t offset, size_t len);
+</pre><p></p><pre class="jdocu_small">const uint8 *
+dbuffer_read_all(dbuffer_t *dbuffer);
+</pre><p></p><pre class="jdocu_small">const uint8 *
+dbuffer_read_some(dbuffer_t *dbuffer, size_t offset, size_t len,
+                  size_t *actual_len);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <i>offset</i> and <i>len</i> parameters specify
+   a region of the buffer to read from.  The returned pointer is
+   guaranteed to point to a contiguous block of memory of size
+   <i>len</i>.  It is illegal to write to the block return by
+   these functions, since they may be shared by other dbuffers.  Use
+   the <b><i>dbuffer_update</i></b> functions if you need to both read
+   and write to the dbuffer.
+ <p>
+   The returned pointer is only valid until the next operation on the
+   dbuffer, except for calling <b><i>dbuffer_len</i></b>.
+</p><p>
+   The <i>offset</i> and <i>len</i> must specify a
+   valid region, so that the end of the region is not past the end of
+   the dbuffer.
+ </p><p>
+   The <b><i>dbuffer_read_some</i></b> function takes an
+   <i>actual_len</i> parameter, and may return a smaller
+   buffer than requested.  The actual number of valid bytes in the
+   returned buffer is stored in *<i>actual_len</i>.  It will
+   return a smaller buffer if it would have had to copy memory to
+   return a pointer to the whole region.  This means that you can use
+   this function repeatedly to extract all the requested data in the
+   most efficient way.  If <code>NULL</code> is passed for
+   <i>actual_len</i>, it will return the full region.
+ </p><p>
+   The <b><i>dbuffer_read_all</i></b> function assumes 0 for
+   <i>offset</i>, and <code>buffer_len(dbuffer)</code> for
+   <i>len</i>.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_dbuffer_update">
+       dbuffer_update</a>, <a class="jdocu" href="#__jdocu_seealso_dbuffer_replace"> dbuffer_replace
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_remove">dbuffer_remove()</a></h3>
+<p>
+
+<a name="dbuffer_remove2"></a><a name="dbuffer_remove_head"></a><a name="dbuffer_remove_tail"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_remove"></a><b>dbuffer_remove</b><b>, dbuffer_remove_head</b><b>, dbuffer_remove_tail</b> — Remove data from a dbuffer</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+dbuffer_remove(dbuffer_t *dbuffer, size_t offset, size_t remove_len);
+</pre><p></p><pre class="jdocu_small">void
+dbuffer_remove_head(dbuffer_t *dbuffer, size_t remove_len);
+</pre><p></p><pre class="jdocu_small">void
+dbuffer_remove_tail(dbuffer_t *dbuffer, size_t remove_len);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+These functions will remove <i>remove_len</i> bytes from
+   <i>dbuffer</i>.  The <b><i>dbuffer_remove</i></b> function will remove
+   data starting at <i>offset</i>, while the other functions will
+   remove data from the beginning or end of the buffer.
+<p>
+   This usually doesn't involve moving any memory contents, and should
+   be very efficient even if the buffer is large.
+</p><p>
+   The size of data to remove must be available in the buffer. For example
+   <i>offset</i> + <i>remove_len</i> must not be greater than
+   the buffers length. Similarly for the <b><i>dbuffer_truncate</i></b> function
+   there must be at least <i>new_size</i> bytes in the current buffer.</p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_replace">dbuffer_replace()</a></h3>
+<p>
+
+<a name="dbuffer_replace2"></a><a name="dbuffer_replace_all"></a><a name="dbuffer_replace_some"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_replace"></a><b>dbuffer_replace</b><b>, dbuffer_replace_all</b><b>, dbuffer_replace_some</b> — Replace data</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">uint8 *
+dbuffer_replace(dbuffer_t *dbuffer, size_t offset, size_t len);
+</pre><p></p><pre class="jdocu_small">uint8 *
+dbuffer_replace_all(dbuffer_t *dbuffer);
+</pre><p></p><pre class="jdocu_small">uint8 *
+dbuffer_replace_some(dbuffer_t *dbuffer, size_t offset, size_t len,
+                     size_t *actual_len);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <i>offset</i> and <i>len</i> parameters specify
+   a region of the buffer to write to.  The returned pointer is
+   guaranteed to point to a contiguous block of memory of size
+   <i>len</i>, but is not guaranteed to contain the existing
+   data in the buffer.  Use these functions when completely replacing
+   a region of the buffer with new data.
+ <p>
+   The returned pointer is only valid until the next operation on the
+   dbuffer, except for calling <b><i>dbuffer_len</i></b>.
+</p><p>
+   The <i>offset</i> and <i>len</i> must specify a
+   valid region, so that the end of the region is not past the end of
+   the dbuffer.
+</p><p>
+   The <b><i>dbuffer_replace_some</i></b> function takes an
+   <i>actual_len</i> parameter, and may return a smaller
+   buffer than requested.  The actual number of valid bytes in the
+   returned buffer is stored in *<i>actual_len</i>.  It will
+   return a smaller buffer if it would have had to copy memory to
+   return a pointer to the whole region.  This means that you can use
+   this function repeatedly to write all the requested data in the
+   most efficient way.  If <code>NULL</code> is passed for
+   <i>actual_len</i>, it will return the full region.
+ </p><p>
+   The <b><i>dbuffer_replace_all</i></b> function assumes 0 for
+   <i>offset</i>, and <code>buffer_len(dbuffer)</code> for
+   <i>len</i>.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_dbuffer_read">
+       dbuffer_read</a>, <a class="jdocu" href="#__jdocu_seealso_dbuffer_update"> dbuffer_update
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_split">dbuffer_split()</a></h3>
+<p>
+
+<a name="dbuffer_split2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_split"></a><b>dbuffer_split</b> — Split a dbuffer</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">dbuffer_t *
+dbuffer_split(dbuffer_t *dbuffer, size_t offset);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function returns a new dbuffer that contains the
+   <i>offset</i> first bytes from <i>dbuffer</i>, and
+   removes those bytes from <i>dbuffer</i>  The effect is that
+   the dbuffer is split in two halves, leaving the second half in the
+   original dbuffer and returning the first half as a new dbuffer.
+<p>
+
+   The returned dbuffer should be released with
+   <b><i>dbuffer_free</i></b> when it is no longer needed.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_new_dbuffer">
+       new_dbuffer</a>, <a class="jdocu" href="#__jdocu_seealso_dbuffer_free"> dbuffer_free
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="dbuffer_update">dbuffer_update()</a></h3>
+<p>
+
+<a name="dbuffer_update2"></a><a name="dbuffer_update_all"></a><a name="dbuffer_update_some"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_dbuffer_update"></a><b>dbuffer_update</b><b>, dbuffer_update_all</b><b>, dbuffer_update_some</b> — Extract data for updating</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">uint8 *
+dbuffer_update(dbuffer_t *dbuffer, size_t offset, size_t len);
+</pre><p></p><pre class="jdocu_small">uint8 *
+dbuffer_update_all(dbuffer_t *dbuffer);
+</pre><p></p><pre class="jdocu_small">uint8 *
+dbuffer_update_some(dbuffer_t *dbuffer, size_t offset, size_t len,
+                    size_t *actual_len);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <i>offset</i> and <i>len</i> parameters specify
+   a region of the buffer to access.  The returned pointer is
+   guaranteed to point to a contiguous block of memory of size
+   <i>len</i>.  The block can be used for reading and writing
+   data to the dbuffer.
+ <p>
+   The returned pointer is only valid until the next operation on the
+   dbuffer, except for calling <b><i>dbuffer_len</i></b>.
+</p><p>
+   The <i>offset</i> and <i>len</i> must specify a
+   valid region, so that the end of the region is not past the end of
+   the dbuffer.
+ </p><p>
+   The <b><i>dbuffer_update_some</i></b> function takes an
+   <i>actual_len</i> parameter, and may return a smaller
+   buffer than requested.  The actual number of valid bytes in the
+   returned buffer is stored in *<i>actual_len</i>.  It will
+   return a smaller buffer if it would have had to copy memory to
+   return a pointer to the whole region.  This means that you can use
+   this function repeatedly to access all the requested data in the
+   most efficient way.  If <code>NULL</code> is passed for
+   <i>actual_len</i>, it will return the full region.
+ </p><p>
+   The <b><i>dbuffer_update_all</i></b> function assumes 0 for
+   <i>offset</i>, and <code>buffer_len(dbuffer)</code> for
+   <i>len</i>.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_dbuffer_read">
+       dbuffer_read</a>, <a class="jdocu" href="#__jdocu_seealso_dbuffer_replace"> dbuffer_replace
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="new_dbuffer">new_dbuffer()</a></h3>
+<p>
+
+<a name="new_dbuffer2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_new_dbuffer"></a><b>new_dbuffer</b> — Create a new dbuffer</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">dbuffer_t *
+new_dbuffer(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function returns an empty dbuffer. Use it when you need a new
+   dbuffer, and call <b><i>dbuffer_free</i></b> when it isn't needed
+   anymore.
+<p>
+   See also src/include/simics/util/dbuffer.h</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_dbuffer_free">
+       dbuffer_free</a>, <a class="jdocu" href="#__jdocu_seealso_dbuffer_clone"> dbuffer_clone
+   </a></dd>
+</dl><p>
+
+</p>
+<div class="chain">
+<a href="device-api-functions.html">3.3 Device API Functions</a>
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+</div>

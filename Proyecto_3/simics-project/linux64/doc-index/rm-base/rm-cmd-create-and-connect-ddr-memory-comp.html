@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>create-and-connect-ddr-memory-comp</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-create-and-connect-ddr-memory.html">create-and-connect-ddr-memory – deprecated</a>
+<a href="rm-cmd-create-brody.html">create-brody</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="create-and-connect-ddr-memory-comp"></a>
+<h1 id="create-and-connect-ddr-memory-comp"><a href="#create-and-connect-ddr-memory-comp">create-and-connect-ddr-memory-comp</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>create-and-connect-ddr-memory-comp</b> <i>"system"</i> <i>memory_megs</i> <i>"organization"</i> [<i>"slot_name"</i>] [<i>ranks_per_module</i>] [<i>min_module_size</i>] [<i>max_module_size</i>] [<i>ecc</i>] [<i>"ddr_type"</i>] [<i>"module_type"</i>] [-h] [<i>columns</i>] [<i>rows</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Create and connect DDR memory modules to the <i>system</i>. The <i>memory_megs</i> attribute defines the total module memory size in MB.
+<p>
+It is possible to create different kind of module combinations with the <i>organization</i> parameter. The <i>organization</i> is a string. Each character in the string represents a module. The first character is module 0, second character is module 1, etc. Supported characters are a-d and A-D. Two modules can have the same character. An equal upper case character means that the modules must be of identical size. An equal lower case character means that the modules must be identical or unpopulated. The character '-' indicates that the slot should not contain any modules. A maximum of 8 characters are supported, i.e. maximum number of DIMMs is 8.
+</p><p>
+Example 1: AB Create one or two modules with any size (all slots need not be populated).
+</p><p>
+Example 2: AA Create two modules with identical size.
+</p><p>
+Example 3: aa Create one module or two modules with identical size.
+</p><p>
+Setting <i>ecc</i> argument to 1 enables ECC in the SPD data, which means <tt>ecc_width</tt> will be set to 8 and <tt>module_data_with</tt> to 72 for the underlying ddrN-memory-module component.
+</p><p>
+<i>ddr_type</i> may be set to one of 'DDR' (default), 'DDR2' or 'DDR3'. Default <i>module_type</i> is 'UDIMM' but may be set to a valid type for the given <i>ddr_type</i>.
+</p><p>
+The <tt>-h</tt> flag (hierarchical) will put the created memory component in the slot named <em>memoryX</em> in <i>system</i>, where <em>X</em> is the DIMM number.
+</p><p>
+Optional arguments are <i>slot_name</i>, <i>ranks_per_module</i>, <i>min_module_size</i>, <i>max_module_size</i>, <i>columns</i> and <i>rows</i>. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.memory-comp.html">memory-comp</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-create-and-connect-ddr-memory.html">create-and-connect-ddr-memory – deprecated</a>
+<a href="rm-cmd-create-brody.html">create-brody</a>
+</div>

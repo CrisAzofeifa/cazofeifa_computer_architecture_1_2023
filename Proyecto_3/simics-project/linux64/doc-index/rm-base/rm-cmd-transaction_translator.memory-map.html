@@ -1,0 +1,89 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;transaction_translator&gt;.memory-map</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-transaction.wait-for-write.html">&lt;transaction&gt;.wait-for-write</a>
+<a href="rm-cmd-translator.memory-map.html">&lt;translator&gt;.memory-map</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="transaction_translator.memory-map"></a>
+<h1 id="transaction_translator.memory-map"><a href="#transaction_translator.memory-map">&lt;transaction_translator&gt;.memory-map</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;transaction_translator&gt;.memory-map</b> [<i>"class"</i>] [<i>"interface"</i>] [-r|-w|-x] [-recurse|-local] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Displays the physical memory map for a processor or a translator (e.g. a memory-space). The map of the currently selected frontend processor is shown, unless the <i>object</i> argument selects another processor or a specific translator in the system.
+<p>
+The <i>interface</i> and <i>class</i> arguments can be used to filter the output, only including objects of a certain class, or implementing a certain interface.
+</p><p>
+If possible, the memory map will be probed using 'rwx' access mode. Otherwise, the mode specified by either of the <tt>-r</tt>, <tt>-w</tt> or <tt>-x</tt> flags is used, default is <tt>-r</tt>.
+</p><p>
+The command can probe the memory map recursively, or it can show the local map only. This can be controlled using the flags <tt>-recurse</tt> and <tt>-local</tt>. The default behavior of the non-namespaced version of this command is to probe recursively, while the default behaviour of the namespaced version is to probe the local memory map only.
+</p><p>
+The output table minimally shows these columns:<br>
+ - <tt>Start</tt> and <tt>End</tt> are the start and the end of the mapping<br>
+ - <tt>Device</tt> is the destination device<br>
+
+</p><p>
+Optional columns, which are shown when required, are:<br>
+ - <tt>Offset</tt> is the offset in the destination device<br>
+ - <tt>Access</tt> is the access type for which the entry is valid<br>
+ - <tt>Fn</tt> is the (deprecated) function number for the entry<br>
+ - <tt>Target</tt> is the default target of the entry, which is used when <tt>device</tt> is a <tt>translator</tt>. This can only occur if <tt>-local</tt> was used or the command ended prematurely
+</p><p>
+When the command is used in an expression, a list is returned with entries describing individual mappings. Each entry describing an individual mapping is a list in the form [start, end, device, offset, access].
+</p><p>
+The list items are:<br>
+ - <tt>start</tt> and <tt>end</tt> are the start and the end of the mapping<br>
+ - <tt>device</tt> is the destination device<br>
+ - <tt>offset</tt> is the offset in the destination device<br>
+ - <tt>access</tt> is the bitmap of the <tt>access_t</tt> values showing for which access types the entry is valid.
+</p><p>
+Please note that the list describing an individual mapping may grow in future Simics versions, but the currently defined fields will not change. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-probe-address.html">probe-address</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-transaction.wait-for-write.html">&lt;transaction&gt;.wait-for-write</a>
+<a href="rm-cmd-translator.memory-map.html">&lt;translator&gt;.memory-map</a>
+</div>

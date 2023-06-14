@@ -1,0 +1,486 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>13 Adding New Commands</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="python-in-modules.html">12 Using Python in a Simics module</a>
+<a href="writing-module-with-c.html">14 Modeling with C</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="new-commands">13 Adding New Commands</a></h1>
+<p>
+
+</p><p>
+<a name="adding-command"></a><a name="command-line-interfaceadding-commands"></a>
+<a name="commandsadding"></a>
+<a name="new_command"></a><a name="cli-Python-modulenew_command"></a>
+</p><p>
+This chapter describes how to add new Simics CLI commands. By adding
+such commands you can extend what a user can do from the Simics
+command line. For example, you can add new ways for a user to inspect
+and control device models you have written.
+</p><p>
+Commands in Simics are written in Python. They are normally
+implemented by accessing the interface functions and attributes of
+configuration objects, and by calling Simics API functions. Commands
+are easy to write, and let the user conveniently perform tasks that
+otherwise would require detailed knowledge of the attributes in your
+device.
+</p><p>
+Most commands are related to a specific class or interface, and are
+declared when the corresponding module is loaded. For example,
+the <code>sample-device-dml</code> module registers the
+commands <b>&lt;sample_device_dml&gt;.info</b>
+and <b>&lt;sample_device_dml&gt;.status</b> when the module is
+loaded.
+</p><p>
+Commands can also be registered globally. For example,
+the <code>sample-components</code> module defines
+the <b>new-sample-pci-card</b> command. For device models, global
+commands are usually defined when the module loads. However, commands
+can also be defined when Simics is started. Doing so makes the command
+available without loading the module, but it also makes Simics startup a
+bit slower.
+</p><p>
+For a simple device, it is sufficient to declare all commands in a
+single Python file, called <code>module_load.py</code>. In some cases
+it can make sense to split up this file into multiple files; either in
+order to improve readability, to simplify unit testing, or to enable
+code sharing between Simics modules. Chapter <a class="reference" href="python-in-modules.html">12</a> discusses in detail how Python files are added to a module.
+</p><p>
+</p><h2 class="jdocu"><a name="Example-of-a-New-Command">13.1 Example of a New Command</a></h2>
+<p>
+
+</p><p>
+This is an example on how to add a new Simics command using Python, as it would
+appear in the <code>module_load.py</code> file of a module's source code
+subdirectory:
+</p><p>
+</p><pre class="jdocu_small"># this line imports definitions needed below
+import cli
+
+# this is my Python function that will be called when the
+# command is invoked from the Simics prompt.
+def my_command_fun(int_arg, str_arg, flag_arg):
+    print(f"My integer: {int_arg}")
+    print(f"My string: {str_arg}")
+    print(f"Flag is {'' if flag_arg else 'not '}given")
+    return int_arg
+
+# register our new command
+cli.new_command("my-command", my_command_fun,
+                args  = [cli.arg(cli.int_t, "arg", "?", 10),
+                         cli.arg(cli.str_t, "name"),
+                         cli.arg(cli.flag_t, "-f")],
+                alias = "mc",
+                type  = "[my-module-commands]",
+                short = "my command does it",
+                doc_items = [("NOTE", "This command is best")],
+                see_also = ["my_other_command"],
+                doc = """
+&lt;b&gt;my-command&lt;/b&gt; is best.
+This is its documentation. &lt;arg&gt;arg&lt;/arg&gt;
+is the first argument...""")
+</pre><p>
+</p><p>
+The code above will define a command called <b>my-command</b>. When the
+command is invoked from the Simics command line interface, the function
+<b><i>my_command_fun()</i></b> will be called. The function must take exactly as
+many arguments as the command; in this case, three: an integer, a string, and a
+flag. The first command argument is called "<i>arg</i>" and is optional,
+ indicated by <code>"?"</code>. If omitted by the user, the command function will
+be called with the default value, 10. The second argument is called "name" and
+is required (since there is no <code>"?"</code>, there is no default value). The
+last argument is a flag and will have a value of 1 if the flag is given,
+otherwise 0. Flags are thus always optional.
+</p><p>
+If the command function returns a value (a string or an integer) Simics will
+print this value on the terminal or pass it on to other commands as input
+arguments, e.g., <b>print -x (my-command 15 foo)</b>.
+</p><p>
+Writing <b>help my-command</b> at the Simics prompt will display:
+</p><p>
+</p><pre class="jdocu_small">NAME
+   my-command - my command does it
+SYNOPSIS
+   my-command [arg] name [-f]
+ALIAS
+   mc
+DESCRIPTION
+   my-command is best. This is its documentation. <i>arg</i> is the first argument.
+NOTE
+   This command is best
+SEE ALSO
+   my_other_command
+</pre><p>
+</p><p>
+
+The command can be invoked in different ways, here are some examples:
+</p><p>
+</p><pre class="jdocu_small">simics&gt;  <b>my-command 2 foo -f</b>
+My integer: 2
+My string: foo
+Flag is given
+2
+simics&gt;  <b>my-command bar</b>
+My integer: 10
+My string: bar
+Flag is not given
+10
+simics&gt;  <b>my-command 20 -f</b>
+Argument error: argument number 2 is missing in 'my-command', string expected.
+SYNOPSIS: my-command [arg] name [-f]
+simics&gt;  <b>print -x (mc -f name="hello there!" arg = 23)</b>
+My integer: 23
+My string: hello there!
+Flag is given
+0x17
+</pre><p>
+</p><p>
+In the last case the alias is used and the command is passed to the
+print command that outputs the value in hexadecimal notation.
+
+</p><h2 class="jdocu"><a name="The-new_command-Function">13.2 The new_command Function</a></h2>
+<p>
+
+</p><p>
+The <b><i>new_command</i></b> function defines a new command that can be
+used on the command line and in scripts. The definition includes
+descriptions of the command parameters, its documentation, and the
+Python function to call when the command is run.
+</p><p>
+The parameters to the function are described below.
+</p><p>
+</p><dl><dt id="dt:name-string-required"><b><b>name</b> — string (required)</b></dt><dd>First argument (no
+need to write <code>name =</code>) and the name of the command. May
+include digits and underscores as well as dashes. Must begin with a
+letter.</dd><dt id="dt:fun-function-required"><b><b>fun</b> — function (required)</b></dt><dd>The command
+handler function that will be called when the command is executed. The
+number of arguments must match the list <code><b>args</b></code>,
+described below.  Since new_command is executed when the
+<code>module_load.py</code> file is loaded into Python, the function must
+be defined before the new_command call, as in the example.</dd><dt id="dt:args-list-of-argument-specifiers-required"><b><code><b>args</b></code> — list of argument specifiers (required)</b></dt><dd>This is a list of the arguments given to the command, and must match the
+arguments of the function described above. An argument specifier is created by
+calling the function <b><i>arg()</i></b>. See below for its documentation.
+</dd><dt id="dt:doc-string-required-if-not-doc_with-is-used"><b><b>doc</b> — string (required if not doc_with is used)</b></dt><dd><a name="help-systemdocumenting-commands"></a>
+This is the documentation of the command. Simics standard is to use
+<code>&lt;arg&gt;</code> for arguments and <code>&lt;tt&gt;</code> for flags.
+Other simple, HTML markup can be used, such as <code>&lt;i&gt;</code>,
+<code>&lt;b&gt;</code> and <code>&lt;br/&gt;</code> for italic, bold and line-break. A
+blank line separates paragraphs. Italic does not usually work in terminals so
+underlining will be used instead.
+</dd><dt id="dt:type-list-of-strings-optional"><b><b>type</b> — list of strings (optional)</b></dt><dd>This is the command categories that the command belongs to. All
+categories will be listed when the <b>help</b> command is used.
+<b>help</b> <em>category</em> will list all commands in that category.
+<p>
+For backwards compatibility a single string is supported instead of a list
+containing one string.
+</p></dd><dt id="dt:short-string-recommended"><b><b>short</b> — string (recommended)</b></dt><dd>A short description of the command used when listing commands
+(e.g., <b>command-list</b>). The short description should start
+with a lower-case letter and should not end with a period.
+</dd><dt id="dt:repeat-function-optional"><b><b>repeat</b> — function (optional)</b></dt><dd>If such a function is supplied, it will be called when the user
+enters an empty line (i.e., just presses enter) after this command has
+been run. The arguments passed to the <b>repeat</b> function will be
+the same as those of <b>fun</b> (see above). This is used to implement
+the behavior of commands like <b>disassemble</b>, where pressing
+enter after having run one <b>disassemble</b> command disassembles
+the instructions following the last one of the previous command.</dd><dt id="dt:cls-string-optional"><b><b>cls</b> — string (optional)</b></dt><dd>Makes the command apply to objects of the named configuration class,
+which must be defined by the time <b><i>new_command</i></b> is called.
+<p>
+Command will take the
+form <code></code><em>object</em><code>.</code><em>command</em><code></code>. For example,
+if <b>cls</b> is <code>recorder</code> and <code>board.rec0</code> is a
+recorder object, then the command is invoked
+as <code>board.rec0.playback-start</code>.
+</p><p>
+The command handler function will get the configuration object as
+first argument, followed by the rest of the arguments.
+</p><p>
+Other parts of CLI will refer to the command with the name
+&lt;cls&gt;.name, e.g., <code>&lt;recorder&gt;.playback-start</code>.
+</p></dd><dt id="dt:iface-string-optional"><b><b>iface</b> — string (optional)</b></dt><dd>Similar to the <b>cls</b> parameter above, but makes the command apply
+to objects of all classes that implement the specified interface. For
+example, if <b>iface</b> is <code>breakpoint</code>, then the command will
+be applied both to all <b>memory-space</b> objects and to all
+CPU objects.
+<p>
+It is not allowed to pass both the <b>iface</b> and <b>cls</b>
+parameters together in the same <b><i>new_command</i></b> invocation.
+</p></dd><dt id="dt:doc_with-string-optional"><b><b>doc_with</b> — string (optional)</b></dt><dd>This argument
+can be specified if a command should be documented together with
+another one. For example the <b>disable</b> command is documented
+with the <b>enable</b> command since they are tightly coupled
+together. So the doc argument is missing for the disable command and
+all documentation is written in the enable command. Note:
+<b>doc_with</b> together with a namespace command  must be
+given as "&lt;class_or_interface&gt;.command" </dd><dt id="dt:alias-string-or-list-of-strings-optional"><b><b>alias</b> — string or list of strings (optional)</b></dt><dd>Specify aliases for this command. Does not work with namespace commands.</dd></dl><p>
+</p><h2 class="jdocu"><a name="The-arg-Function">13.3 The arg Function</a></h2>
+<p>
+
+</p><p>
+The <b><i>arg</i></b> function  is used
+to define parameters to commands. It is used to populate the list in
+the <i>args</i> in the <b><i>new_command</i></b> function.
+</p><p>
+The parameters to the function are described below.
+</p><p>
+</p><dl><dt id="dt:handler"><b><i>handler</i></b></dt><dd>The "type" of the parameter. Examples of available types
+      are <code>int_t</code>, <code>str_t</code>, <code>addr_t</code>,
+      <code>filename_t()</code>, <code>obj_t()</code>, and <code>flag_t</code>.
+      These types are in fact functions that are called to handle
+      the command line input. See the API reference manual
+      for more information about types.</dd><dt id="dt:name"><b><i>name</i></b></dt><dd>The name of the command parameter. This way the documentation of
+      the argument list (<b>help</b> command) will use these names
+      and also makes it possible to enter the argument in any order at
+      the command line, e.g.,
+<pre class="jdocu_small">command file = "/tmp/bar" value = 17
+</pre><p>
+</p><p>
+      The <code>flag_t</code> type requires the name to be specified
+      and the name must begin with a hyphen,
+      e.g., <code>–all</code>.</p></dd><dt id="dt:spec"><b><i>spec</i></b></dt><dd>This is a string that defines if this parameter is required or
+      optional, or if it accepts more than one argument on the
+      command line. Possible values are
+      <dl><dt id="dt:1"><b><code>"1"</code></b></dt><dd>This is the default, and means that the parameter is
+            required, and that there is a single value.</dd><dt id="dt:"><b><code>"?"</code></b></dt><dd>This is the most common alternative. It means that the parameter is
+            optional, and that the default value is used if no argument is
+            given on the command line.</dd><dt id="dt:-2"><b><code>"*"</code></b></dt><dd>This means that it will accept zero or more arguments on
+        the command line and pass them to the command function in a
+        list.  This argument also accepts a CLI list as input.</dd><dt id="dt:-3"><b><code>"+"</code></b></dt><dd>This means that it will accept one or more arguments on
+        the command line and pass them to the command function in a
+        list.  This argument also accepts a CLI list of at least one
+        element as input.</dd></dl><p></p></dd><dt id="dt:default"><b><i>default</i></b></dt><dd>The default value used when <i>spec</i> is <code>"?"</code>.</dd><dt id="dt:doc"><b><i>doc</i></b></dt><dd>The command documentation uses the
+      parameter <i>name</i> in the command synopsis. When it
+      is defined as a <em>polyvalue</em> (see below), the synopsis
+      will be a combination of the names. If the parameter has no
+      name, it will be shown as <em>arg1</em>, <em>arg2</em> etc.
+      The <i>doc</i> parameter to <b><i>arg</i></b> is a string
+      that will be used instead of the default.</dd><dt id="dt:expander"><b><i>expander</i></b></dt><dd>This parameter specifies an argument completion (expander)
+      function. This function will be called when the user
+      presses the TAB key while entering the argument value. The
+      expander function takes an argument representing the text the
+      user has written for the argument so far. For example, if the user
+      presses TAB after typing <b>command cpu = ultr</b>,
+      the expander function will be passed <code>"ultr"</code> and
+      should return a list of strings completing <code>"ultr"</code>. Here
+      is an example of an expander function: 
+<p>
+</p><pre class="jdocu_small">def exp_fun(comp):
+    return get_completions(comp, ["ultraI", "ultraII",
+                                  "ultraIII", "pentium"])
+</pre><p>
+</p><p>
+    When called with <code>"ultr"</code>, it will return <code>["ultraI",
+    "ultraII", "ultraIII"]</code>. The <b><i>get_completions</i></b>
+    function is a utility function that filters the list and keeps
+    elements with prefix <i>comp</i>. Expander functions currently
+    only works for arguments of type string, object, boolean, or file.
+</p><p>
+    Expander functions may take one, two or three arguments. The first
+    argument is the completion string, as previously described. The
+    second argument is used for namespace commands and contains a
+    reference to the object corresponding to the namespace. This
+    argument is <code>None</code> for non-namespace commands. The third
+    argument is a list of all command argument values, as strings,
+    that the user has entered on the command line so far. The length
+    of the list is the same as the number of arguments for the
+    command. A value of <code>None</code> is used in the list for command arguments
+    that have not been entered on the command line.
+</p></dd></dl><p>
+</p><h2 class="jdocu"><a name="Polyvalues">13.4 Polyvalues</a></h2>
+<p>
+
+</p><p>
+A command argument can be of multiple types as well
+(<i>polyvalues</i>). For example,
+</p><p>
+</p><pre class="jdocu_small">new_command(<i>…</i>,
+    args = [ arg((str_t, int_t, flag_t), ("cpu","value","-all"), "?",
+                 (int_t, 0, "value"), expander = (exp1, exp2, None)) ],
+    <i>…</i>)</pre><p>
+will create an argument that is either a string, an integer, or a
+flag. The argument passed to the command handler function is a tuple
+specifying the argument type, the value, and the name of the
+argument. E.g., <b>command foo</b> will pass <code>(str_t, "foo",
+"cpu")</code> to the command handler function. This is why the default
+value looks the way it does. If given the corresponding expander function will
+also be used. <b>command cpu = abc&lt;tab&gt;</b> will use the
+<code>exp1</code> expander.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Command-Errors">13.5 Command Errors</a></h2>
+<p>
+
+</p><p>
+Command functions signal errors by raising the <code><a name="CliError">CliError</a></code>
+exception, with an error message string as argument. For example:
+</p><pre class="jdocu_small">    if not valid(argument):
+        raise CliError("invalid argument")
+</pre><p>
+Signalling errors with <code>CliError</code> ensures that the error will be reported in a correct way to the user.
+</p><p>
+Commands frequently read or write attributes in configuration
+objects. When doing so it is especially important to catch exceptions
+generated by the attribute access and handle it appropriately, perhaps
+by raising a <code>CliError</code>. Any uncaught attribute exception will
+cause a Python stacktrace to be shown in the Simics user
+interface. The stacktrace is not likely to be helpful to the user and
+should be thought of as a programming error by the command
+implementer.
+</p><p>
+</p><pre class="jdocu_small">def my_command(obj):
+    try:
+        val = obj.value
+    except simics.SimExc_General, e:
+        raise cli.CliError('Could not retrieve attribute "value" in object'
+                           ' %s: %s' % (obj.name, str(e)))
+    return cli.command_return(
+        message = "Value of %s is %s." % (obj.name, str(val)),
+        value   = val)
+</pre><p>
+</p><p>
+The exceptions that an attribute access may trigger is highly
+dependent on the accessed attribute and the context of the
+command. For instance, some commands only operate on objects whose
+type is known, and on attributes that cannot under any circumstances
+cause an exception. On the other hand, some commands operate on
+objects that may not even have the attribute the command is trying to
+access. The level of information available about the object and its
+attributes needs to be taken into consideration when deciding what
+exceptional conditions the command needs be able to handle.
+</p><p>
+For information on what exceptions an attribute access can trigger,
+refer to <b><i>SIM_get_attribute</i></b> and <b><i>SIM_set_attribute</i></b>
+in the reference manual.
+</p><p>
+For information on how to implement an attribute to raise exceptions
+in a correct way, refer to section <a class="reference" href="programming-with-dml.html#dml-attribute-errors">5.3.3</a>
+and <a class="reference" href="writing-module-with-c.html#c-attribute-errors">14.4.3</a>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Human-readable-Messages">13.6 Human-readable Messages</a></h2>
+<p>
+
+</p><p>
+When run interactively at the Simics prompt, a command will get its return
+value printed to the user. Sometimes, however, a more human-friendly message is
+desirable. To achieve this, the command's function should return an object of
+the special type <a name="cli-Python-modulecommand_return"></a>
+<code><a name="command_return">command_return</a></code>:
+</p><p>
+</p><pre class="jdocu_small">import cli, platform
+
+def platform_fun():
+    sysname = platform.system()
+    return cli.command_return(
+        message = "This machine is running %s." % (sysname,),
+        value   = sysname)
+
+cli.new_command("get-os-type", platform_fun)
+</pre><p>
+</p><p>
+The <b>get-os-type</b> command will now return the name of the operating
+system when used in an expression, but print a human-readable message when used
+as a top-level interactive command.
+</p><p>
+</p><pre class="jdocu_small">simics&gt;  <b>get-os-type</b>
+This machine is running Linux.
+simics&gt;  <b>$os_type = (get-os-type)</b>
+simics&gt;  <b>echo $os_type</b>
+"Linux"
+</pre><p>
+</p><p>
+In the same way, you can also use <code>cli.command_quiet_return</code> to
+completely suppress the interactive message.
+</p><p>
+For more information, see the documentation on <code>cli.command_return</code>,
+<code>cli.command_quiet_return</code> and
+<code>cli.command_verbose_return</code> in the <em>Simics Reference
+Manual</em>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="info-and-status-commands">13.7 Info and Status Commands</a></h2>
+<p>
+
+Every model should have an <b><a name="info">info</a></b> command, giving
+static information about the device, and a
+  <b><a name="status">status</a></b> command, that gives dynamic
+  information.
+</p><p>
+To simplify the creation of <b>info</b> and <b>status</b>
+commands, there are a couple of helper functions that make it easy to
+add these commands and have the output formatted in a standard
+fashion.
+<a name="cli-Python-modulenew_command2"></a>
+<a name="cli-Python-modulenew_info_command"></a>
+<a name="cli-Python-modulenew_status_command"></a>
+Instead of calling <b><i><a name="new_command2">new_command</a></i></b>
+directly, you call <b><i><a name="new_info_command">new_info_command</a></i></b> and
+<b><i><a name="new_status_command">new_status_command</a></i></b>.  The functions you provide to
+these functions should not print anything directly, instead they should
+return the information to be printed.
+</p><p>
+The data returned from <b><i>new_info_command</i></b> and
+<b><i>new_status_command</i></b> should be a list of
+<em>sections</em>, where each section is a tuple of a section title
+and a list of entries.  The section title should be a string or
+<code>None</code>.  An entry is a tuple of a name and a value.  The name
+is a string, and the value can be just about anything.
+</p><p>
+</p><h3 class="jdocu"><a name="Example">13.7.1 Example</a></h3>
+<p>
+
+</p><pre class="jdocu_small">import cli
+
+def get_info(obj):
+    return [("Connections",
+             [("Up",   obj.up),
+              ("Down", obj.down)]),
+            ("Sizes",
+             [("Width",  obj.width),
+              ("Height", obj.height),
+              ("Area",   obj.width * obj.height)])]
+
+cli.new_info_command('sample-device', get_info)
+
+def get_status(obj):
+    return [(None,
+             [("Attribute 'value'", obj.value)])]
+
+cli.new_status_command('sample-device', get_status)
+</pre><p>
+
+
+</p><p>
+</p>
+<div class="chain">
+<a href="python-in-modules.html">12 Using Python in a Simics module</a>
+<a href="writing-module-with-c.html">14 Modeling with C</a>
+</div>

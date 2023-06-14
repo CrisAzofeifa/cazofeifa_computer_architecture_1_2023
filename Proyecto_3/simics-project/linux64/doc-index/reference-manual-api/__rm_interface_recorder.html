@@ -1,0 +1,89 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>recorder</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_probe_subscribe.html">probe_subscribe</a>
+<a href="__rm_interface_recorder_v2.html">recorder_v2</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_recorder">recorder</a></h1>
+<p>
+
+<a name="recorder"></a><a name="recorder_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is <b>deprecated</b>; please use the
+   <code>recorder_v2</code> instead.
+<p>
+   To initiate recording, the object should call the <b><i>attach</i></b> method
+   with the recorder, the object itself, and an input handler as parameters.
+   This is done once, typically when the object instance is created.
+</p><p>
+   When the object receives data from outside the simulator, it should call
+   the <b><i>input</i></b> method with a <code>dbuffer_t</code> containing the
+   raw data in unspecified form, along with an extra word of user data.
+   The <i>data</i> parameter can be <code>NULL</code> if not needed.
+</p><p>
+   The <b><i>input_from_recorder</i></b> function is called with input data to the
+   object. When using live input, it is called with data given to
+   <b><i>input</i></b>; when playing back, it is called with recorded data.
+   An object should never use its input directly but only what it receives
+   from <b><i>input_from_recorder</i></b>.
+</p><p>
+   The <b><i>playback</i></b> function returns true if the recorder is currently
+   playing back recorded data and false if not.
+</p><p>
+   The <code>dbuffer_t</code> parameters retain their respective ownership.
+   The <b><i>input_from_recorder</i></b> function must not modify the contents
+   without cloning it first.
+</p><p>
+   </p><pre class="jdocu_small">typedef void (*recorder_input_handler_t)(conf_object_t *obj, dbuffer_t *data,
+                                         uint32 uint_data);
+
+SIM_INTERFACE(recorder) {
+        recorder_t *(*attach)(conf_object_t *rec, conf_object_t *obj,
+                              recorder_input_handler_t input_from_recorder);
+        void (*detach)(conf_object_t *rec, recorder_t *r);
+        void (*input)(conf_object_t *rec, recorder_t *r,
+                      dbuffer_t *data, uint32 uint_data);
+        bool (*playback)(conf_object_t *rec);
+};
+#define RECORDER_INTERFACE "recorder"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_probe_subscribe.html">probe_subscribe</a>
+<a href="__rm_interface_recorder_v2.html">recorder_v2</a>
+</div>

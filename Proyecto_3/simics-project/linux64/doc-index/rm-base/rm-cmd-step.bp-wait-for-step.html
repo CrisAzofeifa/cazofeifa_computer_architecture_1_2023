@@ -1,0 +1,66 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;step&gt;.bp-wait-for-step</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-step.bp-trace-step.html">&lt;step&gt;.bp-trace-step</a>
+<a href="rm-cmd-step.wait-for-step.html">&lt;step&gt;.wait-for-step – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="step.bp-wait-for-step"></a>
+<h1 id="step.bp-wait-for-step"><a href="#step.bp-wait-for-step">&lt;step&gt;.bp-wait-for-step</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;step&gt;.bp-wait-for-step</b> <i>step</i> [-absolute] [-reverse] [-always] [<i>timeout</i>] [<i>timeout-rt</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Postpones execution of a script branch until the processor has executed <i>step</i> number of steps. If <tt>-absolute</tt> is specified, the branch will instead be suspended until the processor reaches the specified step in the simulation.
+<p>
+If no processor is specified, the currently selected frontend processor is used. If <i>timeout</i> is a positive number, the command will run for at most that many seconds of virtual time.
+</p><p>
+If <i>timeout-rt</i> is a positive number, the command will run for at most that many seconds of real time.
+</p><p>
+A time-out will be signaled by throwing a CLI exception, which can be captured using try/except in order to take specific action, or to let it pass unhandled.
+</p><p>
+The command will by default only wait for events that occur when the simulation is running forward. To wait for events in the reverse direction use the <tt>-reverse</tt> flag. Similarly, the <tt>-always</tt> flag tells the command to wait for events in both simulation directions. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.bp-manager.html">bp-manager</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-step.bp-trace-step.html">&lt;step&gt;.bp-trace-step</a>
+<a href="rm-cmd-step.wait-for-step.html">&lt;step&gt;.wait-for-step – deprecated</a>
+</div>

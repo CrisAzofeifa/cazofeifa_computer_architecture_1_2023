@@ -1,0 +1,398 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>27 System Configurations</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="software-domains.html">26 Software Domains</a>
+<a href="part-packages-creation.html">V Creating Own Packages</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-system-modeling.html">IV Creating Virtual Systems</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="machine-creation">27 System Configurations</a></h1>
+<p>
+
+</p><p>
+Simics is often started with ready to run configurations using
+scripts. The configurations define components and objects and how they
+are connected. This chapter discusses how to write new configurations.
+</p><p>
+</p><h2 class="jdocu"><a name="machine-creation-introduction">27.1 Simple Command Script</a></h2>
+<p>
+
+</p><p>
+
+
+The file <code>targets/vacuum/vacuum.simics</code> is a Simics script;
+it contains the same sort of commands that you enter on the Simics
+command line. This script does not contain any components as it is a
+very simple system not simulating anything real. In this section we
+will write a simple Simics script which extends this script and
+creates an instance of the devices we have written. This avoids having
+to write the same sets of commands every time you load Simics.
+</p><p>
+Create a file named
+ <code>[project]/targets/vacuum/my-vacuum.simics</code> with the following
+contents for creating the device object, and mapping it into the physical
+memory:
+</p><pre class="jdocu_small">run-command-file "%script%/vacuum.simics"
+@plugin = pre_conf_object("plugin", "plugin_module")
+@dev1 = pre_conf_object("dev1", "simple_device")
+@dev1.plugin = plugin
+@SIM_add_configuration([dev1, plugin], None)
+phys_mem.add-map dev1.bank.regs 0x1000 0x100
+</pre><p>
+Now, each time you start from the <code>my-vacuum.simics</code> script, your
+device will be automatically loaded and configured. Test this by loading the
+script and manually reading from the register:
+</p><pre class="jdocu_small">project$ <b>./simics targets/vacuum/my-vacuum.simics</b>
+[...]
+simics&gt;  <b>phys_mem.read 0x1000 -l</b>
+[plugin info] Hi there!
+42
+</pre><p>
+</p><p>
+
+</p><h2 class="jdocu"><a name="Creating-New-Machine-Scripts">27.2 Creating New Machine Scripts</a></h2>
+<p>
+
+</p><p>
+Simics includes many scripts representing different configurations of
+systems and machines You can find links to them in your project, at
+<code></code><em>[project]</em><code>/targets/</code><em>architecture</em><code></code>.
+</p><p>
+Each configuration typically consist of at least three script files:
+</p><p>
+</p><dl><dt id="dt:machine-common-simics"><b><code>&lt;machine&gt;-common.simics</code></b></dt><dd>Script that defines a complete simulated machine, i.e., both hardware and
+software, that can be run by Simics directly.  The <code>common</code> script
+uses the <code>-system.include</code> script to define the hardware, and the
+<code>-setup.include</code> script for software configuration. The
+<code>-common.simics</code> scripts may add additional hardware in some cases.
+<p>
+<em>These are the files you want to use to start the standard example machines
+in this directory.</em>
+</p><p>
+&lt;machine&gt; in the script name is either a Linux machine name, or a some
+other name that defines the hardware/software combination.
+</p></dd><dt id="dt:architecture-variant-system-include"><b><code>&lt;architecture-variant&gt;-system.include</code></b></dt><dd>Script that defines the hardware of a machine.  This script can be shared
+by several simulated machines that are based on the same hardware. The hardware
+setup is typically configurable using some standard parameters.
+</dd><dt id="dt:machine-setup-include"><b><code>&lt;machine&gt;-setup.include</code></b></dt><dd>Script that defines the software and possibly configures the machine to
+run the selected software, for example setting boot path, and scripting
+automatic login.
+</dd></dl><p>You can find example configuration scripts in
+<code></code><em>[simics]</em><code>/targets/sample/</code>. The sample
+configuration uses the x58-ich10-comp component as a base and sets up
+a simple system to boot Linux. It also creates an instance of
+the <b>sample-component</b> described in section
+<a class="reference" href="device-modeling-overview.html#component-building">4.4.1</a>.
+</p><p>
+The configuration is loaded by starting Simics with
+<code>sample-linux-common.simics</code>. The script name contains
+<i>linux</i> as the machine runs Linux. This is the contents of the
+script:
+</p><pre class="jdocu_small">run-command-file "%script%/sample-system.include"
+
+instantiate-components
+
+run-command-file "%script%/sample-linux-setup.include"
+</pre><p>
+</p><p>
+The first line of the script executes
+<code>sample-system.include</code>. This script adds all components
+and possible objects for the configuration. This is what is required
+to add a <b>sample-pci-card</b> component:
+</p><pre class="jdocu_small">load-module sample-components
+$card = (create-sample-pci-card integer_attribute = $int_val)
+</pre><p>
+To connect it to a PCI slot use:
+</p><pre class="jdocu_small">connect "board.mb.sb.pci_slot[0]" $card.pci_bus
+</pre><p>
+</p><p>
+Note that the <i>system</i> script is operating system
+independent. The <b>instantiate-components</b> command creates real
+instances of all components previously defined.
+</p><p>
+The last line of <code>sample-linux-common.simics</code> executes
+<code>sample-linux-setup.include</code>. This script loads operating
+system binaries and defines script branches. Note that this can not be
+done before instantiating the components, as there are no memory to
+load the binaries into prior to that point.
+</p><p>
+Follow this pattern when creating your own machine scripts, i.e,
+divide the machine into three scripts: one to create non-instantiated
+components for the hardware of the system, one to load software onto
+the machine, and one which uses the other two scripts to create the
+entire system with both hardware and software.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Multi-Machine-Scripts">27.3 Multi-Machine Scripts</a></h2>
+<p>
+
+</p><p>
+One advantage of Simics is that you can simulate several machines
+simultaneously. To take advantage of this feature you need to make
+sure that you can create several instances of your machines. This
+imposes certain requirements on your machine scripts. If the
+components used in the script do not use the new component system
+with hierarchical namespaces you must give each machine its own name
+prefix with the
+<b>set-component-prefix</b> command:
+</p><p>
+</p><pre class="jdocu_small">set-component-prefix machine1
+run-command-file -local "%script%/<em>machine-script</em>.simics"
+set-component-prefix machine2
+run-command-file -local "%script%/<em>machine-script</em>.simics"
+</pre><p>
+</p><p>
+The <b>set-component-prefix</b> sets a name prefix which the
+component system applies to all objects it creates. Already created
+objects are not affected.
+</p><p>
+If the script uses new components you do not have to use the <b>set-component-prefix</b> command:
+</p><p>
+</p><pre class="jdocu_small">run-command-file -local "%script%/<em>machine-script</em>.simics"
+run-command-file -local "%script%/<em>machine-script</em>.simics"
+</pre><p>
+</p><p>
+Note that we run the machine scripts with the <code>-local</code> flag
+to <b>run-command-file</b>. It makes the script run with local
+copies of all global variables. This provides two-way
+protection: the script is insulated from changes to the global
+variables and the global variables are protected from changes in the
+script.
+</p><p>
+Your scripts must make no assumption about the names of components and
+objects it creates. This means that you should not use hard coded
+object names in your scripts. Use variables to get references to the
+parts of the system you need to access and use these variables
+instead:
+</p><p>
+</p><pre class="jdocu_small">$system = create-<em>my-system-component</em>
+$pci_card = create-<em>my-pci-card</em>
+connect $system.connector_pci_slot1 $pci_card.pci_bus
+</pre><p>
+</p><p>
+Do the same when accessing parts of a component:
+</p><p>
+</p><pre class="jdocu_small">$part = $system.<em>system_part</em>
+</pre><p>
+</p><p>
+If you use script branches in your script additional care must be
+taken. The script branch will run after your script has returned. By
+using local copies of the variables you use in your script branch you
+can insulate it from changes to the values of the global variables.
+</p><p>
+</p><pre class="jdocu_small">script-branch "sample script branch" {
+    local $con = $con0
+    $con.wait-for-string "booted"
+}
+</pre><p>
+</p><p>
+Here we made a local copy <i>$con</i> of the global variable
+<i>$con0</i>, which means that the script branch is protected from
+changes to <i>$con0</i>. Always program script branches in machine
+scripts in this way.
+</p><p>
+As always, test your script by booting several instances of your
+machine in parallel. Each instance should be created properly and all
+script branches should work properly for all the machines.
+</p><p>
+When creating multi-machine setups by running the same machine script
+several times you often need to set parameters for the machine
+script. To make sure the parameters do not pollute the namespace of
+the script instantiating the machines, you should create a block which
+create local variables for the parameters, sets the component prefix
+and runs the machine script. If you do not have a natural block which
+contains this code you can use a if statement to create the block:
+</p><p>
+</p><pre class="jdocu_small">if (1) {
+    local $ip_address = "10.10.0.50"
+    local $host_name = "t1000"
+    # The next line should only be used with old non-hierarchical components
+    set-component-prefix $host_name + "_"
+    run-command-file -local "%script%/<em>machine-script</em>.simics"
+}
+</pre><p>
+</p><p>
+If a simulated system contains multiple machines, Simics can in many
+cases speed up the simulation using multithreading; this is
+particularly useful if the host system has multiple processor
+cores. More details are available in the "Multithreading" section of
+the <em>API Reference Manual</em>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Testing-Machines">27.4 Testing Machines</a></h2>
+<p>
+
+</p><p>
+Exactly how to test your machine varies based on its configuration and
+the software you intend to run on it. However, there are a couple of
+test libraries in Simics you can use to find some errors in the way
+the machine handles checkpointing and reverse execution. These tests
+will only ensure the basics of being able to handle checkpointing and
+reverse execution and will not exercises all possibilities. They are
+still good to ensure that the target can handle at least the basics of
+checkpointing and reverse execution.
+</p><p>
+The way these libraries works means that it is important that the target
+software uses the devices in the target around the points in time the
+tests are run.
+</p><p>
+</p><h3 class="jdocu"><a name="Checkpoint-Test">27.4.1 Checkpoint Test</a></h3>
+<p>
+
+</p><p>
+Since one major feature in Simics is its ability to checkpoint the
+system, a basic test library to see how a target handles checkpointing is
+provided. This test library requires that you have a complete
+target, with models and target software which uses the models. It
+checks that the behavior of the target remains the same after a
+certain point in time, whether you run up to that point from a target
+script, run up to that point and save a checkpoint, or run from a
+checkpoint saved at that point. The library runs Simics several
+times.
+</p><p>
+Here is an example which creating checkpoint test suite for target
+<code>qsp-x86</code>.
+</p><p>
+</p><ol>
+<li> A target represents as a subdirectory in the <code>targets</code>
+directory of your project. First, we need to create a suite directory
+to add tests inside it, e.g. <code>targets/qsp-x86/ckpt-test</code>.
+A file <code>targets/qsp-x86/ckpt-test/SUITEINFO</code> should also be
+created to indicate it is a test suite directory.</li>
+
+<li>Create a new file <code>targets/qsp-x86/ckpt-test/tests.py</code>
+which can be used to define the test suite.
+<p>
+</p><pre class="jdocu_small"># contents of tests.py
+from vptest_utils import add_checkpoint_tests
+def tests(suite):
+    add_checkpoint_tests(suite,
+                         'qsp-x86',
+                         'firststeps.simics',
+                         10000000,
+                         10000000,
+                         assert_objs = ['board.mb.cpu0.core[0][0]'],
+                         check_cycles_and_steps_in_sync = False)
+</pre><p>
+</p><p>
+It will create checkpoint tests for target <code>qsp-x86</code> based on
+the Simics script <code>firststeps.simics</code>.
+You can also add several checkpoint tests by calling
+<b><i>add_checkpoint_tests</i></b> more than once.
+</p></li>
+
+<li>You can now check if the tests have been created properly by listing
+the test suite:
+<p>
+</p><pre class="jdocu_small">  $ <b>./bin/test-runner</b> -t --suite=targets/qsp-x86/ckpt-test
+  Suite: targets/qsp-x86/ckpt-test
+      qsp-x86/firststeps.simics-cleanup()
+      qsp-x86/firststeps.simics-initial-setup()
+      qsp-x86/firststeps.simics-after-config-write()
+      qsp-x86/firststeps.simics-after-config-read()
+      qsp-x86/firststeps.simics-after-config-from-config()
+      qsp-x86/firststeps.simics-multi-checkpoint()
+</pre><p>
+</p></li>
+<li>Then the tests can be easily run by:
+<pre class="jdocu_small">$ <b>./bin/test-runner</b> --suite=targets/qsp-x86/ckpt-test
+......
+Ran 6 tests in 1 suites in 14.976005 seconds.
+</pre><p>
+</p></li>
+</ol>
+<p>
+Please refer to <em>Simics Reference Manual</em> for more
+information about the checkpoint test library and <code>Test Framework</code>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Reverse-Execution-Test">27.4.2 Reverse Execution Test</a></h3>
+<p>
+
+</p><p>
+The reverse execution test library checks that a target
+handles reverse execution in a particular interval of time.  It has
+several parameters you can set to get it to target a time interval
+when a large part of the system is used.
+</p><p>
+The reverse execution library is written to be used from within
+Simics, here are the steps to create reverse execution test for target
+<code>qsp-x86</code>.
+</p><p>
+</p><ol>
+<li>Create a test suite <code>targets/qsp-x86/reverse-test</code> in
+the your target directory.</li>
+
+<li>Instead of having a <code>tests.py</code>, just add a Simics test
+by adding a file named <code>s-reverse-execution.py</code> and edit it
+to use the reverse execution library:
+<p>
+</p><pre class="jdocu_small"># contents of s-reverse-execution.py
+import reverse_execution
+import simics
+import os
+
+simics.SIM_run_command_file(
+        os.path.join('..', 'firststeps.simics'), False)
+rt = reverse_execution.reverse_execution_test(start = 1000000,
+                                              totlen = 1000000)
+rt.runtest()
+</pre><p>
+</p></li>
+
+The test use a relative path to find the target script. This depends
+on the test suite being a subdirectory of the target
+directory. Alternatively you can use the <i>sim.project</i>
+attribute to find the script.
+
+<li>Now it's able to check and run the test.
+<pre class="jdocu_small">$ <b>./bin/test-runner</b> -t --suite=targets/qsp-x86/reverse-test
+Suite: targets/qsp-x86/reverse-test
+    s-reverse-execution
+
+$ <b>./bin/test-runner</b> -t --suite=targets/qsp-x86/reverse-test
+.
+Ran 1 tests in 1 suites in 30.647487 seconds.
+</pre><p>
+</p></li>
+</ol>
+<p>
+More information about the reverse execution testing library, please
+refer to <em>Simics Reference Manual</em>.
+</p><p>
+
+</p><p>
+
+</p>
+<div class="chain">
+<a href="software-domains.html">26 Software Domains</a>
+<a href="part-packages-creation.html">V Creating Own Packages</a>
+</div>

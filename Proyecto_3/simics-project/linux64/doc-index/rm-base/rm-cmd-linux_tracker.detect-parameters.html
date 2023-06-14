@@ -1,0 +1,86 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;linux_tracker&gt;.detect-parameters</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-linux_mapper.status.html">&lt;linux_mapper&gt;.status</a>
+<a href="rm-cmd-linux_tracker.info.html">&lt;linux_tracker&gt;.info</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="linux_tracker.detect-parameters"></a>
+<h1 id="linux_tracker.detect-parameters"><a href="#linux_tracker.detect-parameters">&lt;linux_tracker&gt;.detect-parameters</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;linux_tracker&gt;.detect-parameters</b> [<i>param-file</i>] [<i>"version-string"</i>] [<i>base-address</i>] [<i>symbol-file</i>] [-load] [-overwrite] [-real-time] [<i>ram-base</i>] [<i>randomize-base</i>] [<i>kernel-modules</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+
+<p>
+Detect the parameters to use with the Linux tracker. For this to work, Linux must be up and running on the simulated machine. If more than one possible solution is found (the tracker could not identify which is correct), each possible solution will be saved, by adding a suffix to the given parameter file name.
+</p><p>
+The optional <i>param-file</i> argument is used to specify where to save the parameters, the default is 'detect.params'. If this argument is left out and the <tt>-load</tt> flag is used then no parameters will be saved.
+</p><p>
+The <tt>-load</tt> flag can be used to load the newly detected parameters directly after detection.
+</p><p>
+The optional <i>version-string</i> argument can be used to specify information about the Linux version running on the system. This will be the name of the root node in the node tree.
+</p><p>
+The optional <i>base-address</i> argument can be used to specify the kernel base address. Unless this option is given, the tracker will use a set of predefined values, which are platform dependent. For 32-bit x86 kernels, the tracker will use the symbols, if provided, to determine the kernel base address. If the target is running a kernel with a kernel base that is not part of the default values (usually 0xc0000000) the user may specify this option in order to get a successful parameter detection. It can also be provided in order to speed up the detection on some platforms.
+</p><p>
+The optional <i>ram-base</i> argument can be used to specify the physical address for the base of the ram in which the kernel is loaded. This is currently only used when tracking Linux on ARM systems.
+</p><p>
+For many targets it is possible to detect parameters without providing any symbols. For other targets, the tracker will require the user to provide debug information by using the <i>symbol-file</i> argument. Debug information can normally be found in the <tt>vmlinux</tt> file when the kernel is compiled with debug information.
+</p><p>
+For some targets it may be enough to provide plain symbols, such as <tt>/proc/kallsyms</tt> on the target or the <tt>System.map</tt> file associated with the kernel. The exact needs depends on platform and kernel version.
+</p><p>
+The optional <tt>-real-time</tt> argument should be used when detecting parameters for a real-time kernels if only plain symbols are given. If this is not used for that case then the detection can fail to understand that this is a real-time kernel and the detected parameters may be incorrect for that kernel. If <tt>vmlinux</tt> symbols are given this argument should not be needed.
+</p><p>
+The optional <i>randomize-base</i> forces the detection to either treat the kernel as having randomised base (the <tt>RANDOMIZE_BASE</tt> configuration option for the kernel) or to not have, depending on if this argument is set to TRUE or FALSE. If this argument is not set then the detector will try to determine whether or not the kernel has randomized base.
+</p><p>
+The optional <i>kernel-modules</i> argument is used to either leave out detection of kernel modules, when FALSE, or to force kernel modules to be detected, when TRUE. If TRUE and kernel module parameters cannot be found then detect will fail. If this is not set then kernel module parameters will be included if found, but detection will not fail if such parameters are not found.
+</p><p>
+The optional <tt>-overwrite</tt> flag specifies that the parameters file should be overwritten if it exists. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.linux-tracker.html">linux-tracker</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-osa_parameters.load-parameters.html">&lt;osa_parameters&gt;.load-parameters</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-linux_mapper.status.html">&lt;linux_mapper&gt;.status</a>
+<a href="rm-cmd-linux_tracker.info.html">&lt;linux_tracker&gt;.info</a>
+</div>

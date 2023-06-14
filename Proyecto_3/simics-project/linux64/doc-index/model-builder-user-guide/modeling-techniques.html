@@ -1,0 +1,582 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2 Modeling Techniques</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="build-environment.html">3 Build Environment</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="introduction-and-preparation.html">I Introduction and Preparation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="modeling-techniques">2 Modeling Techniques</a></h1>
+<p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="Device-Modeling-Methodology">2.1 Device Modeling Methodology</a></h2>
+<p>
+
+</p><p>
+Since the introduction of Simics in 1998, the process of building virtual
+systems has refined into the following fundamental design principles:
+</p><p>
+
+</p><ul>
+  <li>Follow the hardware</li>
+  <li>Follow the software</li>
+  <li>Do not model unnecessary detail</li>
+  <li>Reuse and adapt existing components</li>
+  <li>Develop device models in DML</li>
+</ul>
+<p>
+</p><h3 class="jdocu"><a name="Follow-the-Hardware">2.1.1 Follow the Hardware</a></h3>
+<p>
+
+</p><p>
+The overriding goal of Simics is to ensure that the software developed
+on the simulated system will run on the physical hardware and vice
+versa.  A main design principle for the creation of Simics models for a
+system should be to follow the structure of the physical hardware closely,
+while abstracting functionality where possible. This includes variations of
+the hardware configuration. Thus, all software-visible functions have
+to be accurately represented in the simulation, and the easiest way to
+ensure this is to design the simulation model using the same component
+and communications structure as the physical hardware.
+</p><p>
+The components to use as the basis for understanding and decomposing
+the hardware system design are typically entire chips for a board
+design, and function blocks inside a System-on-a-Chip (SoC). From a
+Simics perspective, an SoC or a board are really equivalent - they
+both group a number of devices together with a set of processors, and
+provide interconnects between them. From a practical perspective, a
+board often contains some SoC devices, and this leads to a recursive
+process where the board is broken down into SoCs, and the SoCs into
+devices. Dividing the SoC helps the reuse of the devices when creating a
+new SoC.
+</p><p>
+The starting point is thus the layout of a board and the block diagram
+for a SoC, as presented by the programmer's reference manuals
+(PRMs). An important source is the memory map typically found in the
+PRM for both boards and SoCs, showing how devices are presented to the
+core processor(s) in the system.
+</p><p>
+Note that some components might be addressed indirectly and not have
+their own slot in the memory map. A common example is serial EEPROMs
+accessed over I2C from an I2C controller. The EEPROM is not visible in
+the memory map, but it is still accessible to the processor and needs
+to be considered in the model.
+</p><p>
+The ultimate goal is to have a list of the devices that make up a
+system and a map of how they are interconnected.
+</p><p>
+The interconnections between devices also need to be considered in
+order to have a good breakdown of a system for modeling. Some
+inter-connections are usually invisible to the software, and thus do
+not need to be modeled in Simics. A good example are on-chip device
+interconnects like AMBA, CoreConnect, and OcEAN used in various SoC
+designs. These interconnects are implemented using complex crossbar
+technology and bus arbitration which is not visible at all in
+Simics. Also, the hierarchy of buses used in interconnects like AMBA
+with its high-speed and low-speed buses is invisible. Simics goes
+straight to the resulting memory map.
+</p><p>
+As far as Simics is concerned, interconnects just transport bytes from
+one place to another. This transport (and any relevant byte swapping)
+is modeled by adding devices to the memory map of a processor,
+interconnect configuration simply becomes a matter of editing the
+mapping. PCI and other interconnects that can remap sub sets of the
+memory map of a processor are modeled by cascading another memory map as
+discussed above.
+</p><p>
+Interconnects that do not provide memory mapped access to devices do need to be modeled
+explicitly. Typical examples are I2C and Ethernet networks,
+where it makes sense to model infrastructure that transports addressed packets
+around as an entity in its own right. 
+</p><p>
+
+</p><h3 class="jdocu"><a name="Follow-the-Software">2.1.2 Follow the Software</a></h3>
+<p>
+
+</p><p>
+Implementing every available function of a system in order to be
+complete in following the hardware is usually not necessary in order
+to run a particular software load. Instead is only necessary to
+implement the functions actually used by the software running on the
+system. This is commonly the case with integrated chips and SoC
+devices which contain more functions than are used in any particular
+case.
+</p><p>
+One example: the Freescale MPC8548 SoC was used as a controller chip
+for a custom ASIC on a custom board. The MPC8548 has a rich set of
+external connections such as PCI express, RapidIO, Ethernet, I2C,
+MDIO, and others. In this particular case, the RapidIO functionality
+of the MPC8548 was not used, and thus that function could be left out
+from the initial modeling effort for the MPC8548. When other systems
+appeared that used RapidIO, the function was added.
+</p><p>
+Another example is the Marvell MV64360 integrated system
+controller. This controller contains a memory controller for a PowerPC
+processor, along with some generally useful functions like PCI, serial
+ports, and Ethernet. Many boards using this controller do not use the
+built-in Ethernet port, but instead they use an external Ethernet chip
+connected over PCI. In this case, the built-in Ethernet controller
+does not need to be included in the model of the board.
+</p><p>
+Sometimes, the software explicitly turns off such functions, and in
+such cases one or more control registers have to be implemented that
+accept the "off" setting, and give a warning if any other status is
+written.
+</p><p>
+It is also good practice to include registers corresponding to
+unimplemented functionality in the model. Such registers should
+simply log a warning when they are accessed. This serves to explicitly
+document design assumptions in the model source code and provides an
+obvious indication when the assumptions are violated.
+</p><p>
+Within a device, only the functionality which is actually used by the
+software should be modeled. This typically means focusing on a few
+operation modes or functions of a device, and leaving the rest
+unimplemented, but explicitly so, as discussed below. Often, modeling
+starts with a completely unimplemented device, looking at how the
+software interacts with the device to determine what actually needs to
+be implemented.
+</p><p>
+For example, a PCI Express bridge like the PEX PLX 8524 can operate
+ports in both transparent and non-transparent mode. However, if
+non-transparent mode is not actually used in a system, it can be left
+unimplemented.
+</p><p>
+The device model can be simplified by reducing the number of states
+that the device can be in. Look for states that, from the
+software's perspective, are only there to optimize performance.
+Here are some examples:
+</p><ul>
+<li>SCSI devices can become disconnected, and when disconnected they
+behave differently than when connected.  In most cases, we can
+ignore the disconnected state, and let the device be connected all
+the time.</li>
+
+<li>Some network devices can be put in "early interrupt" mode,
+where interrupts are sent some time before a buffer fills up, to
+give the driver more time to handle the data.  It may be possible
+to ignore the early interrupt state, if the driver can handle the
+load anyway.  In this case, it is a good idea to warn the user
+(using <code>log unimpl</code>) when the driver tries to put the
+device in early interrupt mode.</li>
+
+<li>Some devices cache data to speed things up, and provide some means
+to query whether the cached value is valid.  The simplest way to
+model this is to ignore this state, and always report "no, the
+cache is not valid".</li>
+</ul>
+<p>
+<a name="approximation"></a> Even if the software uses a functionality of
+the hardware you may be able to use an approximate model. For example
+for performance meters and diagnostic functions, which can be complex
+to implement with full fidelity. Diagnostic registers which are read
+can often just say that everything is okay. Performance meters can
+calculate approximate values when they are accessed which satisfies
+the software.
+</p><p>
+<a name="driversource-code"></a>If you find that the driver reads
+values from, e.g., a JTAG port, you can look at the driver source
+code and try to figure out what values it expects to find (look at
+what it compares the data to), and make the model supply some
+values that are acceptable.
+</p><p>
+Sometimes it is necessary to model a bit more.  One particular
+architecture provides interfaces to access <a name="parity-bits">parity bits</a> and
+<a name="checksums">checksums</a> in the caches.  In its boot sequence, the OS
+performs a self-test on the caches by writing flawed parity bits and
+checking that the cache handles them gracefully (reporting error or
+auto-correcting the data).  The model of this cache thus needs to
+simulate the parity bits.  To increase performance, however, it is
+sufficient to simulate this only on cache lines where the parity bits
+have been accessed.
+</p><p>
+When approximate or invented values are being returned from the
+model, it is good practice to issue a warning to the user, and/or
+print a message to the appropriate log file.
+</p><p>
+Note that an effect of this style of modeling is that even though a
+device model exists, it might not fulfill the requirements of use in a
+different system from the one which it was developed for. As time goes
+on, a device typically gains functionality as it is subject to
+different uses from different target system configurations and
+software stacks.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Do-Not-Model-Unnecessary-Detail">2.1.3 Do Not Model Unnecessary Detail</a></h3>
+<p>
+
+</p><p>
+It is easy to fall into the trap of modeling detailed aspects of the
+hardware that are invisible to the software. The overhead of modeling
+this detail can significantly slow the simulation. A trivial example
+is a counter that counts down on each clock cycle and interrupts when
+it gets to zero. An obvious way to model this is to model the counter
+register and decrement it on each clock cycle until it gets to
+zero. Simics will waste a lot of processing resources accurately
+maintaining the value of the counter. But this is not necessary. The
+counter is only visible to the software if it is explicitly read. A
+much better implementation is for the model to sleep until the
+appropriate time to interrupt arrives. If, in the meantime, the
+software reads the register then a calculation will need to be done to
+work out what would be in the register at that point. Since this
+probably happens rarely, if at all, the overhead of this is minimal.
+</p><p>
+<em>A good Simics model implements the what and not the how of device
+functionality.</em> The goal is to match the specification of the
+functionality of a device, and not the precise implementation details
+of the hardware. A good example of abstraction is offered by network
+devices. In the physical world, an Ethernet device has to clock out
+the bits of a packet one at a time onto the physical medium using a
+5/4 encoding process. In Simics, this can be abstracted to delivering
+the entire packet as a unit to the network link simulation, greatly
+simplifying the implementation. As far as the software is concerned,
+this makes no difference.
+</p><p>
+Timing of the hardware can also often be simplified to make more
+efficient and simple device models. For example, caches can usually be
+ignored, since they only affect how long it takes to access memory.
+</p><p>
+DMA controllers are another example of abstraction. In Simics, DMA is
+typically modeled by moving the entire block of memory concerned at
+once, and delaying notification to the processor (or other requesting
+device) until the time when the full transfer would have completed on
+the physical hardware. The bus contention between the processor and
+the DMA controller is not modeled, since this is not visible to the
+software. For a system architect with bandwidth concerns, a more
+detailed model can be created that logs the amount of data pushed,
+allowing bandwidth usage to be computed.
+</p><p>
+Abstraction can also manifest itself by making entire devices into
+dummy devices. For example, a memory controller might have a large
+number of configuration registers and reporting registers for factors
+like DDR latencies, number of banks open, timing adjustments, and
+similar low-level issues. The effects of these are not visible in
+Simics, and thus they can be modeled as a set of dummy registers that
+report sensible values to the software.
+</p><p>
+Error states is another area which can often be simplified. Error
+states that do not occur under normal conditions should never be
+entered. Most errors are hardware induced; e.g., parity errors,
+failure to read firmware ROM data, etc. These will never occur in
+Simics, because the virtual hardware is controlled by the
+simulator. Not having to model these error states simplifies the model.
+</p><p>
+Sometimes, though, the errors are the interesting parts of the model.
+If the model is to be used in developing the error handling in a
+device driver, the error states need to be modeled in more detail (and
+some means of triggering the errors must be added).  Fault-injection
+in simulated networks is another example.
+</p><p>
+A nice side effect of Simics-style modeling with focus on the abstract
+function, is that it makes it easy to reuse models of device functions
+across multiple implementations of the functionality. As an example,
+the standard PC architecture contains a cascaded 8259 interrupt
+controller. Over time, the hardware implementation of the 8259 has
+changed from being a separate chip to becoming a small part of modern
+south bridges like the Intel® 6300ESB. But despite this huge change in
+implementation, the same Simics model can be used in both cases, since
+the functionality exposed to the software is the same.
+</p><p>
+Sometimes, abstraction goes too far in an initial implementation, and
+it is later realized that details have to be added. For example, some
+Ethernet network device models did not implement CRC error detection,
+but assumed that all packets delivered were correct. When the time
+came to model a system where the handling of erroneous network packets
+was a key concern, this was obviously not sufficient. Thus, the
+handling of CRC computation and flagging CRC errors had to be added to
+the models.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Reuse-and-Adapt-Existing-Components">2.1.4 Reuse and Adapt Existing Components</a></h3>
+<p>
+
+</p><p>
+Once a system has been analyzed and its devices and interconnections
+listed, it is time to start implementing all the required devices. At
+this point, reusing existing device models is very important to
+shorten the modeling time. Simics provides a large library of device
+models which can be used to quickly fill in large parts of the
+functionality of a system.
+</p><p>
+Sometimes, the precise devices are not available in the library, but
+similar devices are. If your license agreement allows it,
+you can use the source code to these similar devices contained in
+source packages as a
+starting point and adapt and extend them to create a model of the
+new devices. Such adaptations of existing devices typically follow the
+path of hardware designers as they design successive generations of
+products.
+</p><p>
+The IBM Ethernet controllers found on the PPC 440GP and PPC 440GX
+SoCs, and also being sold as BlueLibrary IP blocks form one example of
+how one model has been reused and adapted to successive generations of
+hardware. Another example is found in Intel® chipsets for Pentium®
+processors; successive product generation share a significant amount
+of device functionality, even if the names of the chips change and the
+functionality is moved around between different chips.
+</p><p>
+Typically, adapting a device model involves either adding or removing
+registers, depending on whether moving to a less capable or more
+capable device. It is also commonly the case that some details in the
+memory map of the device changes. Thus, the work of adapting a device
+starts with comparing the programmer's manuals for the old and new
+device, and determining the following:
+</p><p>
+</p><dl><dt id="dt:identical-registers"><b>Identical registers</b></dt><dd>For an adaptation to be worthwhile,
+  most registers should fall in this category.</dd><dt id="dt:superfluous-registers"><b>Superfluous registers</b></dt><dd>Functions in the existing model
+  which are not found in the new device. These have to be deleted.</dd><dt id="dt:missing-registers"><b>Missing registers</b></dt><dd>Must be added to the new device
+  model.</dd><dt id="dt:different-registers"><b>Different registers</b></dt><dd>Registers with the same function or
+  name, but where the bit layout is different between the old and new
+  device.</dd><dt id="dt:differences-in-register-layout"><b>Differences in register layout</b></dt><dd>The offsets at which
+  various registers are mapped in the device memory map are
+  different.</dd><dt id="dt:differences-in-the-number-of-functions"><b>Differences in the number of functions</b></dt><dd>Some devices
+  contain repeats of the same functionality, and the difference between
+  devices is the number of functions implemented. For example, a
+  different number of DMA channels or Ethernet controller ports. In this
+  case, simply changing a parameter in the device model may be
+  sufficient.</dd></dl><p>If there are too many differences, it may be more expedient and safer
+to implement the new device from scratch. As in all software
+development, doing too many changes to a DML model might be more work
+to get right than to implement the complete functionality from scratch,
+maybe borrowing some key source code from the old device model.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Develop-Device-Models-Using-DML">2.1.5 Develop Device Models Using DML</a></h3>
+<p>
+
+</p><p>
+Finally, once existing devices have been reused and adapted and all
+devices not used in the system are ignored, it is time to create device
+models for the remaining devices. The document that describes how to
+program a device is often called the Programmer's Reference Manual
+(PRM) and the basic methodology of writing <a name="DML">DML</a> models is
+that of implementing the PRM.
+</p><p>
+As previously mentioned, the primary interface between software and
+the devices is the set of device registers. The PRM defines one or
+more register banks that contain the registers laid out at specified
+offsets. The register banks function as an address space for
+registers, such that one four-byte register may occupy the address
+locations 0–3, another four-byte register occupies the address
+locations 4–7, and so on.
+</p><p>
+The method that many users have adapted when developing a new model is
+to work in an iterative fashion to determine the registers and
+functions that actually need to be implemented in a device in order to
+support software by testing the software with incomplete device
+models. DML and Simics support a number of techniques for efficiently
+exploring the needed functionality.
+</p><p>
+First, a model of the complete register map of a device is created,
+and registers are marked as <em>unimplemented</em> or <em>dummy</em>
+or implemented in a limited fashion. This device model is then used
+with the software, and any accesses to missing or incomplete
+functionality is flagged by Simics, neatly pointing out precisely what
+is still missing in the device model.
+</p><p>
+Any access to an <em>unimplemented</em> register prints a warning
+message on the Simics command line. The simulation is allowed to
+continue, since it is possible that the software is content with a
+default reply.
+</p><p>
+<em>Dummy</em> registers are registers that the software is using but
+where the values written can be ignored and any reads return a fixed
+value (or the latest value written). A typical example is an error
+counter in a network device, if errors are not modeled, the error
+counter can be implemented as always reading zero.
+</p><p>
+For functions which are needed, starting with only a single mode or a
+subset of the device functionality, and warning when the software
+moves outside this envelope, is preferred. For example, a timer might
+initially only support the simple count-down mode required to trigger
+periodic interrupts to the operating system, and later adding
+event-counting functions and similar advanced functionality.
+</p><p>
+Another technique is to hard-wire the results of reading or writing
+certain registers to an acceptable result. This is typically done
+based on the observed behavior of the software, providing values that
+the software likes.
+</p><p>
+Unlike a <em>dummy</em> register, the eventual goal here is to
+implement the real functionality of the register. The hard-wired
+results are mainly used early in development. The logging facilities of
+DML allow such hard-wired results to be easily located later and
+upgraded to real implementations.
+</p><p>
+The goal is to get the target software up and running as soon as
+possible, so that problems can be found and the risk of development
+reduced.
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="testing-device-models">2.2 Testing Device Models</a></h2>
+<p>
+
+</p><p>
+Even though you have written tests to test that the device behaves as
+you expect, you still need to verify that it can run the software
+which is intended to run on the real hardware.
+</p><p>
+<a name="driver"></a>How do you test a completed model to
+see if it is both accurate and efficient enough?  Basically, you try to
+find software that stresses the device as much as possible.  Try
+different OS/driver combinations, if this is a requirement.  Find
+programs on top of the OS that exercise the device in different ways.
+Perhaps there are diagnostic programs that verify that the device
+functions correctly.  If possible, it can be valuable to run the programs on real
+hardware prior to driving into model or application details on
+Simics. On more than one occasion 
+developers have debugged a device model only to realize that the
+software did not work on real hardware either.
+</p><p>
+Run the selected programs in Simics, with the device model in
+place, and look for signs of trouble.  Such signs may be
+</p><p>
+</p><ol>
+<li>The device reports accesses to unimplemented features.  These
+will need to be modeled.</li>
+
+<li>The program, OS, or simulated machine behaves strangely,
+indicating flaws in the device model's functional behavior.</li>
+
+<li>Simulation performance is poor.  The model needs to be made
+more efficient.</li>
+</ol>
+<p>
+It is also a good idea to sometimes let the tests run for a longer
+time. This allows you to spot problems with, e.g., memory leaks in the
+model implementation, or diagnose situations where the driver has
+entered some fall-back mode after seeing too many errors.
+</p><p>
+If you find a problem, write a test which reproduces it using Simics's test
+system. Then you can fix the bug and verify that it stays fixed.  More
+information is read in the <em>Debugging User-Developed Simics
+Modules</em> application note.
+</p><p>
+
+</p><h2 class="jdocu"><a name="abstraction-of-time">2.3 Abstraction of Time</a></h2>
+<p>
+
+</p><p>
+Abstraction of <a name="time">time</a> is one of the most important issues in device
+modeling. Simics already abstracts away some details of the timing of
+instruction execution and scheduling in the processor, to achieve better
+performance; see the <em>Understanding Simics Timing</em> application note
+for more information.
+</p><p>
+<a name="driver2"></a>Modern device drivers are often written to be largely
+independent of the detailed timing of the hardware.  This means the
+device model can alter the timing behavior quite a bit without the
+driver noticing.
+</p><p>
+</p><h3 class="jdocu"><a name="Provide-Reaction-Immediately">2.3.1 Provide Reaction Immediately</a></h3>
+<p>
+<a name="immediate-reaction"></a>
+
+</p><p>
+Where possible, the device model should react immediately to
+stimuli, even though the real device would take some time to finish
+the effect.  This improves efficiency, because the model is invoked
+fewer times, and simplifies the implementation since there is no
+need to store transaction state for later or insert things into the
+event queues.
+</p><p>
+For example, a model of a network device can send a packet
+immediately upon request, reading the content directly from main
+memory rather than, e.g., initiating a DMA transfer to an internal
+FIFO, waiting for it to fill up, etc.  Another example is an
+address/data register pair, where the real device requires that the
+data access must not occur within a specified time from the address
+write.  The model does not need to check for this condition, since
+the driver will always wait long enough before attempting to read
+or write the data.
+</p><p>
+It is often useful to have a simple configurable delay for
+hardware events that take time.  Sometimes the software is
+sensitive to things that occur too quickly (e.g., immediately) in
+the model compared to the real world.  Adjusting a delay attribute
+is a simple solution for such problems.
+</p><p>
+Often, hardware reports the completion of an action like a DMA
+transfer, packet transfer, or similar operation with an interrupt
+towards the CPU. In general, the timing of such an interrupt should
+be similar to what one would see on real hardware. Note that some
+driver software crashes if the response comes immediately, as it is
+not built to handle an interrupt in the middle of the send routine --
+it assumes a certain delay before a completion interrupt and does not
+protect itself against it.
+</p><p>
+
+</p><h3 class="jdocu"><a name="cluster-events">2.3.2 Cluster Events</a></h3>
+<p>
+<a name="cluster-events2"></a>
+
+</p><p>
+If the device performs a series of small related events, it is
+desirable to cluster these events into larger chunks, even if the
+simulator cannot respond immediately.  For example, in a DMA
+transfer, rather than moving a few bytes every single cycle, the
+simulated device can move a whole memory page at a time every N
+cycles, where N is adapted to give the same overall transfer rate.
+Again, this means the model is invoked fewer times, and furthermore
+it will trigger other devices less often.
+</p><p>
+
+</p><h3 class="jdocu"><a name="function-of-time">2.3.3 Transform Events into Functions of Time</a></h3>
+<p>
+
+</p><p>
+Continuous events or events that occur regularly should be avoided.
+Instead, their effects should be computed (based on the elapsed CPU
+time) when they become visible.  The archetypal example of this
+is a cycle <a name="counter">counter</a>: instead of invoking the model to update
+the value on every cycle, the model should compute the value on
+demand whenever the counter is read.  If the value is read every N
+cycles, this replaces N increments with one subtraction.  If the
+value is never read, no computation is performed at all.
+</p><p>
+This principle is valid even if the computation takes as much or
+more time than the sum of the individual updates: if the value is
+never needed, it will never be computed, and even if it is, it is
+usually more effective to optimize the model by reducing the number
+of invocations than by reducing the time spent in each invocation.
+</p><p>
+
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="build-environment.html">3 Build Environment</a>
+</div>

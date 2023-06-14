@@ -1,0 +1,139 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>firewire_bus</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_extended_serial.html">extended_serial</a>
+<a href="__rm_interface_firewire_device.html">firewire_device</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_firewire_bus">firewire_bus</a></h1>
+<p>
+
+<a name="firewire_bus"></a><a name="firewire_bus_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(firewire_bus) {
+        int (*connect_device)(conf_object_t *NOTNULL bus,
+                              conf_object_t *NOTNULL dev);
+        int (*disconnect_device)(conf_object_t *NOTNULL bus,
+                                 conf_object_t *NOTNULL dev);
+        void (*set_device_bus_id)(conf_object_t *NOTNULL bus,
+                                  conf_object_t *NOTNULL dev,
+                                  uint16 bus_id);
+
+        void (*set_id_mask)(conf_object_t *NOTNULL bus,
+                            conf_object_t *NOTNULL dev,
+                            uint16 id_mask);
+
+        firewire_ack_code_t (*transfer)(conf_object_t *NOTNULL bus,
+                                        conf_object_t *NOTNULL source,
+                                        dbuffer_t *packet, int crc_calculated);
+
+        int (*register_channel)(conf_object_t *NOTNULL bus,
+                                conf_object_t *NOTNULL dev,
+                                uint32 channel);
+        int (*unregister_channel)(conf_object_t *NOTNULL bus,
+                                  conf_object_t *NOTNULL dev,
+                                  uint32 channel);
+
+        void (*reset)(conf_object_t *NOTNULL bus);
+};
+#define FIREWIRE_BUS_INTERFACE "firewire_bus"
+</pre><p>
+</p><p>
+
+   This interface must be implemented by all firewire buses.
+</p><p>
+   <b><i>connect_device</i></b> is called when a device wants to connect to the
+   bus. The bus should return 0 upon success.
+</p><p>
+   <b><i>disconnect_device</i></b> is called when a device wants to disconnect
+   from the bus. The bus should return 0 upon success.
+   </p><p>
+   <b><i>set_device_bus_id</i></b> sets the bus id for the device. This needs to
+   be called by a device when its Node_IDS[bus_id] field is updated. The
+   new bus id should be placed in bits 15-6 in the bus_id argument.
+</p><p>
+   <b><i>set_id_mask</i></b> can be called by a device to specify a mask that
+   should be applied to the device ID when routing transfers. This can be
+   used to e.g. accept transfers to multiple bus-numbers.
+</p><p>
+   <b><i>transfer</i></b> sends a packet. The bus will
+   route the transfer to the correct device(s). The <i>source</i>
+   parameter should be set to the device which sent the transfer. The bus uses
+   this parameter to avoid sending packets to their sender. If the
+   <i>crc_calculated</i> argument
+   is non-zero the packet's crc fields are filled in.The return code is one
+   of:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef enum {
+        /* Values defined in the FireWire specification */
+        Firewire_Ack_Complete = 1,
+        Firewire_Ack_Pending = 2,
+        Firewire_Ack_Busy_X = 4,
+        Firewire_Ack_Busy_A = 5,
+        Firewire_Ack_Busy_B = 6,
+        Firewire_Ack_Tardy = 0xb,
+        Firewire_Ack_Conflict_Error = 0xc,
+        Firewire_Ack_Data_Error = 0xd,
+        Firewire_Ack_Type_Error = 0xe,
+        Firewire_Ack_Address_Error = 0xf,
+        
+        /* Values not defined in FireWire but used in Simics */
+        Firewire_Ack_No_Destination = 0x10, /* no destination found */
+        Firewire_Ack_No_Ack = 0x11 /* no ack signal sent for packet */
+} firewire_ack_code_t;</pre><p>
+
+</p><p>
+   <b><i>register_channel</i></b> can be called to tell the bus that the device
+   want to receive isochronous transfers to channel <i>channel</i>.
+   channel must be in the range [0, 63).
+   A device can register several channels. It is an error to subscribe a
+   device to a channel it is already subscribed to.
+   Returns 0 on success.
+</p><p>
+   <b><i>unregister_channel</i></b> tells the bus the device is no longer
+   interested in transfers to channel <i>channel</i>. channel must be
+   in the range [0, 63). It is an error to unsubscribe a device from a channel
+   if it isn't subscribing to it. Returns 0 on success.
+</p><p>
+   <b><i>reset</i></b> can be called to cause a bus reset. After the bus reset,
+   all the devices may have received new IDs. 
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_extended_serial.html">extended_serial</a>
+<a href="__rm_interface_firewire_device.html">firewire_device</a>
+</div>

@@ -1,0 +1,159 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.3 Commands</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="nodes.html">2.2 The Node Tree</a>
+<a href="node-tree-patterns.html">2.4 Node path patterns</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="commands">2.3 <a href="#commands">Commands</a></h1>
+<p>This section gives an overview of all commands provided by the <code>software</code> object. Using the <code>help</code> command for a specific command will give more detailed help for that command.</p>
+<h2 id="controlling">2.3.1 <a href="#controlling">Controlling</a></h2>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:enable-tracker">enable-tracker</span><br>
+Enables the OS Awareness framework and associated trackers. This is necessary for most other commands to work. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.enable-tracker</strong>
+OSA control enabled.
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:disable-tracker">disable-tracker</span><br>
+Disables the OS Awareness framework and enabled trackers. This will destroy all node trees. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.disable-tracker</strong>
+OSA control disabled.
+</code></pre>
+</li>
+</ul>
+</div>
+<h2 id="tracking-related">2.3.2 <a href="#tracking-related">Tracking Related</a></h2>
+<p>These commands will require that the tracker is enabled in order to work.</p>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:find">find</span><br>
+Search for a node in the node tree. The output of the command is a list of node path patterns (see <a class="reference" href="node-tree-patterns.html">2.4</a>) matching the search. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.find node="tid=1"</strong>
+/Linux/Userspace/pid=1/tid=1
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:list">list</span><br>
+Prints a list of all processes in the system.</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.list</strong>
+Process         Binary  PID  TID
+systemd                    1    1
+...
+python3                  247  247
+simics-agent             248  248
+systemd                  253  253
+(sd-pam)                 254  254
+bash                     260  260
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:node-info">node-info</span><br>
+Prints the name and value of all properties of the given node. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.node-info "tid=1"</strong>
+
+              Name : systemd
+              Path : /Linux/Userspace/pid=1/tid=1
+                ID : 644
+            Parent : 643
+          Children : []
+          extra_id : tid
+      memory_space : 643
+    multiprocessor : False
+               pid : 1
+               tid : 1
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:node-tree">node-tree</span><br>
+Lists the node trees for an active software trackers. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.node-tree</strong>
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:bp-break-active">bp-break -active</span>
+Break the simulation when a specific node becomes active. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.bp-break -active node-pattern = "tid=1"</strong>
+Added breakpoint 1
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:bp-break-inactive">bp-break -inactive</span><br>
+Break the simulation when a specific node gets deactivated. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.bp-break -inactive node-pattern = "tid=1"</strong>
+Added breakpoint 2
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:bp-delete">bp.delete</span>
+Remove breakpoints that were created by <code>bp-break</code>.</p>
+<pre><code class="language-simics">simics&gt; <strong>bp.delete -all</strong>
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:active-node">active-node</span><br>
+List the node that is active on a certain processor. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.active-node</strong>
+board.mb.cpu0.core[0][0] is active on /Linux/Userspace/pid=1/tid=1
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:bp-wait-for-active">bp-wait-for -active</span><br>
+Similar to <code>bp-break -active</code>, but to be used in a script-branch.</p>
+</li>
+<li>
+<p><span class="term" id="dt:bp-wait-for-inactive">bp-wait-for -inactive</span><br>
+Similar to <code>bp-break -inactive</code>, but to be used in a script-branch.</p>
+</li>
+</ul>
+</div>
+<h2 id="parameter-related">2.3.3 <a href="#parameter-related">Parameter Related</a></h2>
+<p>These commands do not require the tracker to be enabled. </p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:load-parameters">load-parameters</span><br>
+Load configuration parameters for a software tracker from a file.</li>
+<li><span class="term" id="dt:save-parameters">save-parameters</span><br>
+Save the current configuration parameters to a file.</li>
+<li><span class="term" id="dt:supports-parameters">supports-parameters</span><br>
+Tells whether or not a parameters file is supported by the current modules.</li>
+</ul>
+</div>
+
+<div class="chain">
+<a href="nodes.html">2.2 The Node Tree</a>
+<a href="node-tree-patterns.html">2.4 Node path patterns</a>
+</div>

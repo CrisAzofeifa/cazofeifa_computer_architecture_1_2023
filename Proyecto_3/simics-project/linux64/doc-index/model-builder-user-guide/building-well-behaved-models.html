@@ -1,0 +1,760 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>6 Building Well-Behaved Models</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="programming-with-dml.html">5 Programming with DML</a>
+<a href="dml-tips-and-tricks.html">7 DML Tips and Tricks</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="building-well-behaved-models">6 Building Well-Behaved Models</a></h1>
+<p>
+
+</p><p>
+This chapter provides some insights into various guidelines and
+recommendations for how to build high quality models that integrate
+and perform well in Simics. You may also refer to chapter 
+<a class="reference" href="development-checklist.html">8</a> for further guidance.
+</p><p>
+</p><h2 class="jdocu"><a name="Structuring-DML-Code">6.1 Structuring DML Code</a></h2>
+<p>
+
+</p><p>
+The intention of this chapter is to standardize how to write DML
+devices. This includes how to structure the source code and naming DML
+objects, DML files, and devices. The purpose is to learn how to
+produce readable and maintainable code.
+</p><p>
+</p><h3 class="jdocu"><a name="Device-Names">6.1.1 Device Names</a></h3>
+<p>
+
+</p><p>
+The DML device name must contain the modeled device identification
+name. It is not recommended to name the device after the type of
+device (such as "watchdog" or similar), as there can be more than one
+device of that type in Simics.
+</p><p>
+The complete human-readable device name should be set using the
+device's <a name="desc-parameter"></a><code>desc</code> parameter.
+</p><p>
+Example: a <i>TBD4711 watchdog</i> device should be named
+<i>TBD4711</i> and its <code>desc</code> parameter should be set to
+<code>"TBD4711 watchdog"</code>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="File-Names">6.1.2 File Names</a></h3>
+<p>
+
+</p><p>
+Running the <code>project-setup</code> script will give you a DML
+skeleton file and module directory with the same name as the device
+and in general this pattern should be followed. Occasionally when
+modeling a chip with distinct logical units which are not used
+individually it is appropriate to model both devices in one module
+directory, see section <a class="reference" href="advanced-programming-with-dml.html#dividing-device">9.5</a> for
+guidelines. The other case where deviation from standard naming is
+appropriate is when the device name is overly long. In these cases the
+following rules should be followed:
+</p><p>
+</p><ul>
+<li>The full name should be used when naming the module directory</li>
+<li>If the full name is too long name the DML file after a distinct
+shortened version, or the type of device. Example; a DML file for
+a <i>TBD4711 watchdog with blinking lights</i> device should be
+named <code>TBD4711.dml</code> or <code>watchdog.dml</code>.</li>
+<li>When modeling a chip with multiple distinct logical units, name the
+module directory after the chip and name the DML files after the
+logical units. Example; a <i>watchdog</i> unit in the <i>BAR17</i> SoC should
+be named <code>BAR17_watchdog.dml</code> or
+<code>watchdog.dml</code>.</li>
+<li>Try to avoid using company names, or long device specific version
+numbers. Be sure to include this information in the Device Name
+or <code>desc</code> parameter</li>
+</ul>
+<p>
+
+</p><h3 class="jdocu"><a name="Bank-Names">6.1.3 Bank Names</a></h3>
+<p>
+
+</p><p>
+Descriptive bank names are vital to make the DML code easy to
+read. Bank names are also used when mapping regions in
+memory spaces.
+</p><p>
+This is the priority list when naming a bank:
+</p><ol>
+
+<li>Registers are often documented in groups in the Programmer's
+Reference Manual for a device. It is best to use the group name from
+the manual when implementing a device from a user manual.</li>
+
+<li>Name the bank after the logical unit type, if the registers are not
+grouped, or the device is a logical unit in a SoC.</li>
+
+<li>The last alternative is to name the bank <i>regs</i> to highlight
+that the bank contains common registers.</li>
+
+</ol>
+<p>
+
+</p><h3 class="jdocu"><a name="Register-Fields">6.1.4 Register Fields</a></h3>
+<p>
+
+</p><p>
+The register field definitions can be written in several ways. Here
+are some examples of recommended ways to define fields.
+</p><p>
+
+</p><pre class="jdocu_small">register a size 4 @ 0x0 {
+    field Enable   [0:0];
+    field Disable  [4:1];
+    field Trigger [31:11];
+}
+register b size 4 @ 0x4 {
+    field Enable  [0];
+    field Disable [4:1];
+    field Trigger [31:11];
+}
+register c size 4 @ 0x8 {
+    field Trigger [31:11];
+    field Disable [4:1];
+    field Enable  [0];
+}
+</pre><p>
+</p><p>
+
+</p><p>
+The field order should always comply with the device documentation. It
+is otherwise hard to compare code and documentation.
+</p><p>
+It is often better to use <code>@ [0:0]</code> when there are several
+multi-bit fields in the device. But it is better to use <code>@ [0]</code> in a
+register with only single-bit fields.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Structuring-DML-Files">6.1.5 Structuring DML Files</a></h3>
+<p>
+
+</p><p>
+This section proposes a DML file structure that makes DML code easy to
+read.  Keep in mind that you have to adapt these recommendations for
+your own devices.
+</p><p>
+The recommended order is:
+</p><p>
+</p><dl><dt id="dt:file-description"><b><em>file description</em></b></dt><dd>A DML file should always begin with a
+short description of the file in a comment.
+
+<pre class="jdocu_small">// sample-dma-device.dml - sample DML code for a Simics DMA device. In this
+// case used to illustrate how to structure DML code.
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:version-declaration"><b><em>version declaration</em></b></dt><dd>The version declaration is
+required. It defines the DML version this file is written for. A device can
+consist of DML files written for different DML versions.  
+
+<pre class="jdocu_small">dml 1.4;
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:device-declaration"><b><em>device declaration</em></b></dt><dd>A device must contain a device
+declaration when defining a device.
+
+<pre class="jdocu_small">device dml_structure;
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:device-short-description-string"><b><em>device short description string</em></b></dt><dd>Add a short,
+one-line string describing the device.
+
+<pre class="jdocu_small">param desc = "example DMA device";
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:device-documentation-string"><b><em>device documentation string</em></b></dt><dd>Add a string describing
+the device.
+
+<pre class="jdocu_small">param documentation =
+    "Example of a DMA device supporting contiguous memory or scatter-gather "
+    + "lists. The device has a controllable throughput (words per second) "
+    + "and supports either polling mode or interrupt based signalling upon "
+    + "DMA completion.";
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:header"><b><i>header</i></b></dt><dd>Add C code to the beginning of
+the generated C file. Create a new C file and include it if there is a
+lot of code to add. Try to avoid adding C code if you can.  
+<pre class="jdocu_small">header %{
+    static double compute_delay(double throttle, int count);
+%}
+</pre><p>
+</p><p>
+ </p></dd><dt id="dt:import"><b><i>import</i></b></dt><dd>Import additional DML files. Avoid using
+paths when importing files. It is better to add paths to the
+Makefile.
+
+<pre class="jdocu_small">import "utility.dml";
+import "simics/devs/memory-space.dml";
+import "simics/devs/signal.dml";
+</pre><p>
+</p><p>
+
+</p><p>
+<span class="jdocu_small"></span></p><pre class="jdocu_small">#
+# Example Makefile
+#
+<i>[…]</i>
+DMLC_FLAGS = -I$(SIMICS_BASE)/src/import-dir
+</pre><p>
+</p><p>
+See also the documentation on <code>EXTRA_MODULE_VPATH</code> in section
+<a class="reference" href="build-environment.html#makefile-details">3.5.3</a>.
+</p></dd><dt id="dt:extern"><b><code>extern</code></b></dt><dd>Add all extern declarations.
+
+<pre class="jdocu_small">extern double compute_delay(double throttle, int count);
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:types"><b><code>types</code></b></dt><dd>Declare types used in this file
+only. Place common declarations in a DML file and import it
+when it is needed.
+
+<pre class="jdocu_small">typedef layout "big-endian" {
+    uint32 addr;
+    uint16 len;
+    uint16 reserved;
+} sg_list_head_t;
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:constant"><b><i>constant</i></b></dt><dd>Add all constant declarations.
+
+<pre class="jdocu_small">constant DEFAULT_THROTTLE = 1e-6;
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:parameter"><b><i>parameter</i></b></dt><dd>Add all parameter declarations.
+
+<pre class="jdocu_small">param byte_order = "big-endian";
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:loggroup"><b><i>loggroup</i></b></dt><dd>Create log groups for the different
+functional units of the device.
+
+<pre class="jdocu_small">loggroup lg_interrupt;
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:connect"><b><i>connect</i></b></dt><dd>All external connections.
+
+<pre class="jdocu_small">connect target_mem_space {
+    param documentation =
+        "The memory space on which the DMA engine operates. Data will be "
+        + "read from and copied to the memory associated with this memory "
+        + "space.";
+    param configuration = "required";
+    interface memory_space;
+}
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:attribute"><b><i>attribute</i></b></dt><dd>Attributes for the device.
+
+<pre class="jdocu_small">attribute throttle is (double_attr) {
+    param documentation =
+        "Delay in seconds per 32-bit word of memory copied, default is 1μs.";
+    param configuration = "optional";
+}
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:bank-declarations"><b><i>bank declarations</i></b></dt><dd>Basic declarations of the contents of each bank. The purpose of having the
+bank declarations early in the file is to help code readers to get a
+quick overview of the device.  The declaration of a bank should only
+contain basic declarations of its registers, by defining their names, offsets,
+description strings and templates. It is usually recommended to place
+each bank in a separate DML file, but if a device contains smaller banks
+that are tightly coupled, it can be better to place them in the same DML file.
+
+<pre class="jdocu_small">bank regs {
+    param register_size = 4;
+    register DMA_control @ 0x00 "Control register";
+    register DMA_source  @ 0x04 "Source address";
+    register DMA_dest    @ 0x08 "Destination address";
+    register DMA_interrupt_posted is (unmapped)
+        "Internal register to track if interrupts are posted.";
+}
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:implement"><b><i>implement</i></b></dt><dd>The implement declarations often require
+more code than for example the connect or the attribute declarations. It
+is therefore added after the <i>bank declaration</i>.
+
+<pre class="jdocu_small">implement signal {
+    param documentation = "External disable.";
+
+    method signal_raise() {
+        external_disable = true;
+    }
+
+    method signal_lower() {
+        external_disable = false;
+    }
+}
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:event"><b><i>event</i></b></dt><dd>Event declarations are added to this part of
+the file for the same reason as <i>implement declarations</i>.
+
+<pre class="jdocu_small">event delay_transfer is (uint64_time_event) {
+    method event(uint64 data) {
+        <i>[…]</i>
+    }
+}
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:session-saved"><b><i>session</i>/<i>saved</i></b></dt><dd>Always be careful when adding session
+variables. <em>Such variables are not checkpointed with the rest of the
+configuration.</em> Saved variables should be used instead for simple
+checkpointed state; however, the types of saved variables are restricted
+to what is considered <i>serializable</i>, meaning non-pointer types and
+(nested) structs and arrays of such types.
+
+<pre class="jdocu_small">session bool external_disable;
+</pre><p>
+</p><p>
+
+</p><p>
+Never use generic session variables for state data even if attributes save
+and restore the data when checkpointing. It is better to define session
+variables in attributes and write specific get and set methods to save the
+data.
+<span class="jdocu_smaller"></span></p><pre class="jdocu_small">attribute foo {
+    session int bar;
+    method set(attr_value_t attr) {
+        bar = SIM_attr_integer(attr) * 2;
+    }
+}
+<i>[…]</i>
+foo.bar = 4;</pre><p>
+</p></dd><dt id="dt:common-methods"><b><i>common methods</i></b></dt><dd>Define device generic methods. Bank
+specific methods should instead be added to the <i>bank
+definition</i>.
+
+<pre class="jdocu_small">method read_mem(void *dst,
+                physical_address_t src,
+                physical_address_t len) throws {
+    local exception_type_t exc;
+    exc = target_mem_space.memory_space.access_simple(dev.obj,
+                                                src,
+                                                dst,
+                                                len,
+                                                Sim_RW_Read,
+                                                Sim_Endian_Target);
+
+    if (exc != Sim_PE_No_Exception) {
+        log error: "an error occurred when reading target memory";
+        throw;
+    }
+}
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:template"><b><i>template</i></b></dt><dd>Add templates used in this file
+only. Place common templates in a DML file imported everywhere the
+template is used.
+
+<pre class="jdocu_small">template dma_starter is (register) {
+    method write_register(uint64 value, uint64 enabled_bytes, void *aux) {
+        default(value, enabled_bytes, aux);
+        do_dma_transfer();
+    }
+}
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:bank-definition"><b><i>bank definition</i></b></dt><dd>This part defines the actual
+register and field functionality for all banks. Unimplemented register
+templates should be added to the <i>bank declaration</i> not to the
+<i>bank definition</i>. However, registers with unimplemented fields
+should be added here. Non device specific methods should be added to
+the <i>bank definition</i>. This prevents the global scope from being
+clobbered. The <i>bank definition</i> part tends to be very long
+compared to the bank declaration part. The <i>bank definition</i> part
+does not give a good overview of all registers.
+
+<pre class="jdocu_small">bank regs {
+    register DMA_control is (dma_starter) {
+        field EN  @ [31] "Enable DMA";
+        field SWT @ [30] "Software Transfer Trigger";
+        field ECI @ [29] "Enable Completion Interrupt";
+        field TC  @ [28] is (write) "Transfer complete"  {
+            method write(uint64 value) {
+                <i>[…]</i>
+            }
+        }
+        <i>[…]</i>
+    }
+
+    method complete_dma() {
+        // Log that completion is done
+        log info, 2: "DMA transfer completed";
+        <i>[…]</i>
+    }
+}
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:post_init-and-init"><b><b><i>post_init()</i></b> and <b><i>init()</i></b></b></dt><dd>Add the
+<b><i>post_init()</i></b> and <b><i>init()</i></b> methods at bottom of the file if
+the file defines a device. Add the methods to a device generic file and call
+sub methods per file if the device consist of several files. Alternatively,
+objects can instantiate the <code>init</code> or <code>post_init</code> templates, which
+causes any <b><i>init()</i></b> or <b><i>post_init()</i></b> method declared within
+them to be called at the appropriate time.
+
+<pre class="jdocu_small">method post_init() {
+    <i>[…]</i>
+}
+
+method init() {
+    throttle.val = DEFAULT_THROTTLE;
+}
+</pre><p>
+</p><p>
+
+</p></dd><dt id="dt:footer"><b><i>footer</i></b></dt><dd>Add extra C code at the bottom if needed.
+
+<pre class="jdocu_small">footer %{
+    static double compute_delay(double throttle, int count) {
+        return throttle * count / 4.0;
+    }
+%}
+</pre><p>
+</p><p>
+
+</p></dd></dl><p>To learn more about the sample DMA device and how it is implemented,
+refer to section <a class="reference" href="dma.html">18</a>.
+
+</p><h3 class="jdocu"><a name="Object-Members-and-Scope">6.1.6 Object Members and Scope</a></h3>
+<p>
+
+</p><p>
+DML allows you to group methods and data together with DML
+objects. Here is an example:
+
+</p><pre class="jdocu_small">attribute fifo {
+    parameter type = "[i*]";
+    data uint8 vals[$MAX_VALS];
+    <i>[…]</i>
+
+    method pop() -&gt; (uint8 val) {
+        <i>[…]</i>
+    }
+
+    method push(uint8 val) {
+        <i>[…]</i>
+    }
+}
+<i>[…]</i>
+call $fifo.push(17);
+</pre><p>
+</p><p>
+
+</p><p>
+The <b><i>pop()</i></b> and <b><i>push()</i></b> methods and the <i>vals</i> data
+are members of the <i>fifo</i> attribute. This makes the usage of FIFO
+simpler and there is no confusion which method pops and which methods push data
+on the FIFO, as it would if the methods where global.
+</p><p>
+Here is another very useful template for attributes to use when saving
+<em>dbuffer</em> data:
+
+</p><pre class="jdocu_small">template dbuffer_attribute {
+    parameter type = "d|n";
+    data dbuffer_t *buf;
+    method set(attr_value_t val) {
+        if ($buf)
+            dbuffer_free($buf);
+        if (SIM_attr_is_data(val)) {
+            $buf = new_dbuffer();
+            memcpy(dbuffer_append($buf, SIM_attr_data_size(val)),
+                   SIM_attr_data(val), SIM_attr_data_size(val));
+        } else {
+            $buf = NULL;
+        }
+    }
+    method get() -&gt; (attr_value_t val) {
+        if (!$buf)
+            val = SIM_make_attr_nil();
+        else
+            val = SIM_make_attr_data(dbuffer_len($buf),
+                                     dbuffer_read_all($buf));
+    }
+}
+<i>[…]</i>
+attribute frame {
+    is dbuffer_attribute;
+    parameter documentation = "An Ethernet frame.";
+}
+<i>[…]</i>
+inline $send_frame($frame.buf);
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="General-Usability">6.2 General Usability</a></h2>
+<p>
+
+</p><p>
+This chapter describes how to write device models that are easy to use
+and the generic rules on how to write device modules that comply with
+the standard way of writing Simics modules.
+</p><p>
+The user interface of a Simics module consists of three parts: its
+attributes, its interfaces, and the commands it adds to the Simics
+command line interface. You should try to make the user interface of
+your model similar in style to that of existing Simics models.
+</p><p>
+Every model should have an <b><a name="info">info</a></b> command, giving
+static information about the device, and a
+<b><a name="status">status</a></b> command, that gives dynamic information.
+See chapter <a class="reference" href="new-commands.html#info-and-status-commands">13.7</a> for more
+information.  Model Builder also includes a library for writing tests
+to check that all devices in your modules have <b>info</b> and
+<b>status</b> commands. See the <em>API Reference Manual</em>
+for more information.
+</p><p>
+Look at the interfaces of similar devices to see what other commands
+may be useful, and try to use the same names for similar commands and
+parameters. Use existing API functionality where appropriate, rather
+than inventing your own.
+</p><p>
+</p><h3 class="jdocu"><a name="checkpointing">6.2.1 Checkpointing</a></h3>
+<p>
+<a name="checkpoints"></a>
+
+</p><p>
+The ability to checkpoint and restore the state of a system is
+crucial to Simics functionality. Your device model should support
+checkpointing. In particular, you should ensure that:
+</p><ul>
+<li>All relevant state variables can be accessed as attributes</li>
+<li>The device can have its entire relevant state restored by writing
+    to those attributes</li>
+<li>That an attribute can be written to any number of times while the
+    device is active, and not assume that only a single
+    initialization will be performed, to support the quick
+    checkpoints of reverse execution.</li>
+</ul>
+<p>
+As attribute setter functions for more complex attributes can be hard
+to get right, be sure to read <a class="reference" href="device-modeling-overview.html#attribute_init">4.2.7.3</a>
+<i>very</i> carefully.
+</p><p>
+Attributes containing configuration parameters that never change
+during the lifetime of the device still need to accept setting their
+values. But since they will only be set with the value they already
+have, they only have to check that the value is unchanged and signal
+an error if not.
+</p><p>
+Ensure that the internal state of the device model is consistent at
+all times. If, for example, the model caches some information that
+depends on attribute values, these caches need to be flushed when the
+attribute is set. This is usually not a problem when restoring
+checkpoints from disk, but when using micro checkpoints and reverse
+execution it can easily cause trouble.
+</p><p>
+The checkpointing and reverse execution test libraries included with
+Model Builder can be used to test for at least basic support for these
+features.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Deterministic-Models">6.2.2 Deterministic Models</a></h3>
+<p>
+
+</p><p>
+Simics is deterministic and to keep the system deterministic all
+device models must be deterministic.
+</p><p>
+The basic rule to make a model deterministic is to save all device
+state data when writing checkpoints. The state is read from the
+device via the device attributes. Several DML object types implicitly
+corresponds to device attributes, examples are; attribute, register and
+connect.
+</p><p>
+Take extra care when using the data declaration as it does not
+implicitly correspond to an attribute.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Saving-Data">6.2.3 Saving Data</a></h3>
+<p>
+
+</p><p>
+There are several ways to save device data. The best way to save the
+data depends on how much data to save. A state with little data is
+best saved by creating an attribute with an integer or floating-point
+type or a small array:
+
+</p><pre class="jdocu_small">attribute counter {
+    parameter documentation = "Counting number of packets.";
+    parameter allocate_type = "uint32";
+}
+</pre><p>
+</p><p>
+
+</p><p>
+Saving larger blocks of unstructured data is best done by creating an
+attribute with type set to data:
+
+</p><pre class="jdocu_small">attribute buffer_attribute {
+    parameter documentation = "Packet data.";
+    parameter type = "d|n";
+    <i>[…]</i>
+}
+</pre><p>
+</p><p>
+
+</p><p>
+Structured state can be saved in the form of lists, or list of lists
+etc:
+
+</p><pre class="jdocu_small">attribute structured_attribute {
+    parameter documentation = "A string and two integers.";
+    parameter type = "[sii]";
+    <i>[…]</i>
+}
+</pre><p>
+</p><p>
+
+</p><p>
+The best way to save a large amount of data is to use Simics images. Images are
+optimized to only save differences between two consecutive checkpoints
+and not all data in each checkpoint:
+
+</p><pre class="jdocu_small">import "simics/model-iface/image.dml";
+
+connect data_image {
+    parameter documentation = "Image holding data";
+    parameter configuration = "required";
+    interface image;
+}
+
+method save_data(uint64 address, const uint8 *buffer) {
+    $data_image.image.write(
+        cast(buffer, const void *),
+        address,
+        256);
+}
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="inquiry">6.2.4 Support inquiry accesses</a></h3>
+<p>
+<a name="inquiryaccess"></a>
+
+</p><p>
+As listed in the Simics Model Development Checklist - Device Checklist , DE-11;
+device objects should handle inquiry accesses correctly. In Simics an 'inquiry
+access' is defined as an access without any side effects beyond changing the
+value of the register being accessed. Other domains call this 'debug
+access'. When using DML this is automatically handled for registers where the
+read_access and write_access methods have not been overridden. If overridden,
+or access is handled at bank level or elsewhere, the model must add the
+corresponding logic to handle inquiry accesses.
+
+</p><h3 class="jdocu"><a name="errors">6.2.5 Error Reporting</a></h3>
+<p>
+<a name="errorreporting"></a>
+
+</p><p>
+The model should handle errors in a forgiving way.  Avoid crashing
+or triggering assertions; instead, log an error message and try to
+continue anyway.
+</p><p>
+There are three different kinds of errors that should be reported
+by a Simics device:
+</p><p>
+</p><ol>
+<li><a name="erroroutside-architecture"></a><i>Outside architecture</i>
+    error.  A part of the device whose behavior is not specified in
+    the hardware documentation has been accessed.  For example, a
+    reserved register has been written to.  Use
+    <code>log spec_viol</code> for this kind of error.</li>
+
+<li><a name="errorunimplemented"></a><i>Unimplemented</i> error.  A part
+    of the device which has been left unimplemented in the model
+    (abstracted away) was accessed.  This suggests a bug in the model,
+    or that the model is used with software it was not developed for.
+    Use <code>log unimpl</code> for this kind of error.
+<p>
+    <a name="approximation"></a> In some cases it is sufficient to give
+    a warning for this kind of situation, for example if the model
+    returns approximate or invented values.</p></li>
+
+<li><a name="errorinternal"></a><i>Internal</i> error.  The internal
+    state of the model implementation has been corrupted beyond
+    repair.  Look for "this will never happen" comments and
+    reconsider<i>…</i>  Use <code>log error</code> for this kind of
+    error.</li>
+</ol>
+<p>
+Simics has extensive support for <a name="logging">logging</a>, allowing you to
+assign the output to different message categories, and different
+levels of verbosity. See the <em>DML Reference Manual</em> and the
+<em>API Reference Manual</em> for details.  Logging is
+mostly used during development and debugging of the model, but is also useful
+to aid inspection of the device state during actual simulation.
+</p><p>
+Always use detailed error messages. Often, the error messages are
+the only source of information when a bug is reported by another user.
+It is not certain that the execution can be repeated, or that the developer
+will have access to the same setup.
+</p><p>
+
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="programming-with-dml.html">5 Programming with DML</a>
+<a href="dml-tips-and-tricks.html">7 DML Tips and Tricks</a>
+</div>

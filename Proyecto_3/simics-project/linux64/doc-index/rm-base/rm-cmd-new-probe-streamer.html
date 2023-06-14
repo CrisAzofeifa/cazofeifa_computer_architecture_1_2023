@@ -1,0 +1,90 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-probe-streamer</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-new-probe-monitor.html">new-probe-monitor</a>
+<a href="rm-cmd-new-process-filter.html">new-process-filter</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="new-probe-streamer"></a>
+<h1 id="new-probe-streamer"><a href="#new-probe-streamer">new-probe-streamer</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>new-probe-streamer</b> [<i>"name"</i>] [<i>sampling-mode</i>] [<i>interval</i>] [<i>clock</i>] [<i>"notifier-type"</i>] [<i>notifier-obj</i>] [<i>timestamp-file</i>] <i>csv-output-file</i> [-no-metadata] [-no-timestamp] [<i>"timestamp-probe"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The probe-streamer is a tool for sampling probes during execution and storing the collected data into a CSV file. This is useful for batch runs when the data should be used later. No probe data is saved in the tool, making it useful for collecting large datasets.
+<p>
+<b>Argument description:</b>
+</p><p>
+Create a new probe-streamer object with a <i>name</i>. If name is not given a unique name will be created for it automatically. The probe-streamer samples probes in the system either at a regular interval or when a notification is raised.
+</p><p>
+The <i>sampling-mode</i> argument specifies the mode used to perform sampling. Default is "realtime-sync" when the interval is in realtime (wallclock), but also synchronized so all processor have executed at least one quantum since last sample.
+</p><p>
+With the "realtime" sampling mode, sampling is based on the wallclock time only, without any synchronization. Some probes might yield strange results, when some processors have not executed at all since the last sample.
+</p><p>
+Mode can also be "virtual", where the virtual time is used to perform sampling. The time is based on the virtual time of the first processor found in the system, unless <i>clock</i> is set to override the default one with another clock or processor.
+</p><p>
+In "realtime-sync", "realtime" and "virtual" modes the interval is set in seconds by the <i>interval</i> argument.
+</p><p>
+Another available mode is "notifier" where sampling is performed each time a notification is raised. <i>notifier-type</i> specifies the notifier type and <i>notifier-obj</i> the object where the notifier is installed.
+</p><p>
+The <i>timestamp-file</i> specifies a file to be used recording specific timepoints when the sampling should take place. Together with realtime-sync the file will be created and filled with the cycle count from the <i>clock</i> argument, when the samples are taken.
+</p><p>
+With the time-stamp sampler, this file will instead be used as an input file, and the sampling will take place on the cycles specified in the file.
+</p><p>
+Probes to sample are added by the <tt>&lt;probe-streamer&gt;.add-probe</tt> command.
+</p><p>
+The <i>csv-output-file</i> argument specifies the path of the CSV file where the samples are dumped.
+</p><p>
+The <tt>-no-metadata</tt> switch disables the insertion of the metadata fields in the generated CSV.
+</p><p>
+The <tt>-no-timestamp</tt> switch disables the insertion of the timestamp column in the generated CSV.
+</p><p>
+The <i>timestamp-probe</i> allows the user to specify the probe used for timestamping, overriding the default timestamp probe selection.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.probe-monitor.html">probe-monitor</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-new-probe-monitor.html">new-probe-monitor</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-new-probe-monitor.html">new-probe-monitor</a>
+<a href="rm-cmd-new-process-filter.html">new-process-filter</a>
+</div>

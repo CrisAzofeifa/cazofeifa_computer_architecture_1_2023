@@ -1,0 +1,172 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10.8 Script branches</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="python-api-testing.html">10.7 Testing</a>
+<a href="python-api-probes.html">10.9 Probes</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="python-api.html">10 Python API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="python-api-script-branch">10.8 Script branches</a></h1>
+<p>
+
+</p><p>
+The Script Branch API is a set of Python functions for controlling
+script branches. This API is used when implementing CLI commands that
+make use of script branches, and also when waiting for simulator
+events via corresponding <code>wait-for-</code> CLI commands. See
+the <em>Simics User's Guide</em> for an introduction and examples
+of using the API.
+</p><p>
+</p><h2 class="jdocu"><a class="not-numbered" name="script_branch-Python-Module">script_branch Python Module</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="script_branch.sb_create">script_branch.sb_create()</a></h3>
+<p>
+  
+  <a name="sb_create"></a> <a name="script_branch-Python-modulesb_create"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_script_branch.sb_create"></a><b>sb_create</b> — create a script branch</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">sb_create(func, desc = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Create a script branch that will start executing <i>func</i>
+(which should not take any arguments). The <b><i>sb_create</i></b>
+function returns a unique script-branch identifier, that can be
+used with <b><i>sb_interrupt_branch</i></b>. It may be called from a
+script branch to create a new parallel branch. The current branch
+will resume execution when the new script branch is suspended.
+<p>
+The optional <i>desc</i> argument will be displayed by
+<b>list-script-branches</b> as a description of the script
+branch.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+script-branch identifier</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_script_branch.sb_wait">script_branch.sb_wait</a>, <a class="jdocu" href="#__jdocu_seealso_script_branch.sb_interrupt_branch"> script_branch.sb_interrupt_branch</a>, <a class="jdocu" href="#__jdocu_seealso_script_branch.sb_run_in_main_branch"> script_branch.sb_run_in_main_branch</a></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="script_branch.sb_get_wait_id">script_branch.sb_get_wait_id()</a></h3>
+<p><a name="sb_get_wait_id"></a> <a name="script_branch-Python-modulesb_get_wait_id"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_script_branch.sb_get_wait_id"></a><b>sb_get_wait_id</b> — obtain script branch wait ID</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">sb_get_wait_id()</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return a new unique script-branch wait-identifier that can be
+used when suspending a script-branch using <b><i>sb_wait</i></b>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+script branch wait-identifier</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_script_branch.sb_wait">script_branch.sb_wait</a>, <a class="jdocu" href="#__jdocu_seealso_script_branch.sb_signal_waiting"> script_branch.sb_signal_waiting</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="script_branch.sb_in_main_branch">script_branch.sb_in_main_branch()</a></h3>
+<p><a name="sb_in_main_branch"></a> <a name="script_branch-Python-modulesb_in_main_branch"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_script_branch.sb_in_main_branch"></a><b>sb_in_main_branch</b> — indicate if the main branch is running</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">sb_in_main_branch()</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return <code>true</code> if the main branch is currently active, and not
+one of the script branches.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_script_branch.sb_run_in_main_branch">script_branch.sb_run_in_main_branch</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="script_branch.sb_interrupt_branch">script_branch.sb_interrupt_branch()</a></h3>
+<p><a name="sb_interrupt_branch"></a> <a name="script_branch-Python-modulesb_interrupt_branch"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_script_branch.sb_interrupt_branch"></a><b>sb_interrupt_branch</b> — interrupt suspended script branch</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">sb_interrupt_branch(branch_id)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Interrupt a script branch that is currently suspended. The
+<i>branch_id</i> should be the script-branch identifier
+(returned by <b><i>sb_create</i></b>) of a suspended script branch,
+otherwise an exception is raised.
+<p>
+As a side effect, the <b><i>sb_wait</i></b> function called in the
+script branch will raise a <code>CliQuietError</code> exception.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_script_branch.sb_create">script_branch.sb_create</a>, <a class="jdocu" href="#__jdocu_seealso_script_branch.sb_wait"> script_branch.sb_wait</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="script_branch.sb_run_in_main_branch">script_branch.sb_run_in_main_branch()</a></h3>
+<p><a name="sb_run_in_main_branch"></a> <a name="script_branch-Python-modulesb_run_in_main_branch"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_script_branch.sb_run_in_main_branch"></a><b>sb_run_in_main_branch</b> — run function in the main thread</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">sb_run_in_main_branch(command, func)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Schedule <i>func</i> (which should not take
+any arguments) to run in the main thread and block the calling script-branch
+thread until the function has run. A <code>CliError</code> exception will
+be raised if an error occurs while running <i>func</i>, otherwise
+its return value is returned.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+return value of <i>func</i></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_script_branch.sb_create">script_branch.sb_create</a>, <a class="jdocu" href="#__jdocu_seealso_script_branch.sb_in_main_branch"> script_branch.sb_in_main_branch</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="script_branch.sb_signal_waiting">script_branch.sb_signal_waiting()</a></h3>
+<p><a name="sb_signal_waiting"></a> <a name="script_branch-Python-modulesb_signal_waiting"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_script_branch.sb_signal_waiting"></a><b>sb_signal_waiting</b> — wake up a suspended script branch</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">sb_signal_waiting(wait_id)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Wake up a suspended script-branch, with <i>wait_id</i> as wait
+identifier, letting it run again.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_script_branch.sb_wait">script_branch.sb_wait</a>, <a class="jdocu" href="#__jdocu_seealso_script_branch.sb_get_wait_id"> script_branch.sb_get_wait_id</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="script_branch.sb_wait">script_branch.sb_wait()</a></h3>
+<p><a name="sb_wait"></a> <a name="script_branch-Python-modulesb_wait"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_script_branch.sb_wait"></a><b>sb_wait</b> — suspend a script branch</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">sb_wait(command, wait_id, reverse=False, always=False, wait_data=None,
+        use_obj=None)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Suspend a script branch in the <i>command</i> command (a
+descriptive string) until <b><i>sb_signal_waiting</i></b> is called
+with <i>wait_id</i> as argument. The <i>reverse</i> and
+<i>always</i> arguments correspond to the script-branch
+command arguments with the same names (e.g. see
+<b>wait-for-breakpoint</b>). The <i>wait_data</i> argument
+is a string describing the data being waited for, or
+<code>None</code>. The <i>use_obj</i> argument is deprecated and
+should never be specified.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_script_branch.sb_create">script_branch.sb_create</a>, <a class="jdocu" href="#__jdocu_seealso_script_branch.sb_get_wait_id"> script_branch.sb_get_wait_id</a>, <a class="jdocu" href="#__jdocu_seealso_script_branch.sb_signal_waiting"> script_branch.sb_signal_waiting</a></dd>
+</dl><p>
+</p>
+<div class="chain">
+<a href="python-api-testing.html">10.7 Testing</a>
+<a href="python-api-probes.html">10.9 Probes</a>
+</div>

@@ -1,0 +1,198 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>9.6 Device Register Coverage</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="profiling-example.html">9.5 Profiling Example</a>
+<a href="probes.html">10 Probes</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="instrumentation.html">9 Instrumentation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Device-Register-Coverage">9.6 Device Register Coverage</a></h1>
+<p>
+  
+</p><p>
+  The bank-coverage-tool provides register coverage for DML devices.
+</p><p>
+  Device register coverage can be thought of as code coverage for
+  modeled registers. The tool can aggregate register accesses over
+  several Simics runs by saving intermediate results to a file and
+  summarize the total coverage figures for each device through the
+  command line interface. The tool can also export results to CSV.
+</p><p>
+  The tool makes use of the bank instrumentation framework to collect
+  register accesses and uses the general instrumentation framework and
+  its familiar interfaces, documented in this section, to connect to
+  register banks. Please see the <em>API Reference Manual</em> for
+  more details about the bank instrumentation framework, which the
+  tool also relies on, and how to develop your own tools using this
+  framework.
+</p><p>
+  By connecting the tool to banks of interest, or using the -connect-all
+  flag when instantiating the tool, the tool will track all accesses to
+  connected banks and summarize the number of accessed registers in a
+  device as a percentage to the number of its registers in total. We
+  call this the 'coverage' of a device. For further inquiry, the tool
+  may also present the accrued number of accesses to individual
+  registers in a connected bank.
+  However the register accesses are presented, they may be filtered on
+  read accesses, write accesses, or both. Both commands may be
+  interacted with in this way and the output may be sorted and
+  mutated in a variety of ways.
+</p><p>
+  In order to instantiate the tool, use
+  the <b>new-bank-coverage-tool</b> command and provide any banks
+  you want to connect to the tool. Alternatively, you can use the
+  -connect-all flag to connect it to any supporting banks in the
+  system. Additional banks can be connected using
+  the <b>add-instrumentation</b> command on the tool.
+</p><p>
+  </p><h2 class="jdocu"><a name="Example">9.6.1 Example</a></h2>
+<p>
+  
+</p><p>
+  When the configuration is loaded, instantiate and connect the bank
+  coverage tool to all banks in the system like so:
+</p><p>
+  </p><pre class="jdocu_small">    simics&gt; <b>new-bank-coverage-tool -connect-all</b>
+    Created coverage_tool0 (connected to 75 banks)
+  </pre><p>
+</p><p>
+  Once the tool is instantiated we may run the workload, which in this
+  case is booting Linux. At any time we may stop the simulation and
+  use the <b>coverage</b> command to present the coverage so far,
+  which is ordered by the coverage percentage by default:
+</p><p>
+  </p><pre class="jdocu_small">    simics&gt; <b>coverage_tool0.coverage -write max = 10</b>
+    ┌─────────┬─────────────────────────┬──────────────────────┬─────────────┬─────────┐
+    │  Row #  │          Device         │No. accessed registers│No. registers│Coverage%│
+    ├─────────┼─────────────────────────┼──────────────────────┼─────────────┼─────────┤
+    │        1│board.mb.sb.spi_flash_obj│                     0│            0│  100.00%│
+    │        2│board.mb.sb.com[0]       │                     5│            8│   62.50%│
+    │        3│board.mb.sb.com[2]       │                     5│            8│   62.50%│
+    │        4│board.mb.sb.com[1]       │                     5│            8│   62.50%│
+    │        5│board.mb.sb.com[3]       │                     5│            8│   62.50%│
+    │        6│board.mb.sb.hpet         │                    15│           28│   53.57%│
+    │        7│board.mb.sb.bridge       │                    17│           38│   44.74%│
+    │        8│board.mb.sb.uhci[4]      │                    19│           50│   38.00%│
+    │        9│board.mb.sb.uhci[2]      │                    19│           50│   38.00%│
+    │       10│board.mb.sb.uhci[0]      │                    19│           50│   38.00%│
+    ├─────────┼─────────────────────────┼──────────────────────┼─────────────┼─────────┤
+    │# 10/44  │                         │                      │             │         │
+    │Sum (all)│                         │                   830│         3391│         │
+    │Sum shown│                         │                   109│          248│         │
+    └─────────┴─────────────────────────┴──────────────────────┴─────────────┴─────────┘
+  </pre><p>
+</p><p>
+  Note that we're limiting the output by using the max parameter. The
+  output of the bank coverage tool commands may be morphed like this in
+  many ways. It's left as an exercise to the user to explore these
+  possibilities further.
+</p><p>
+  A user may also export the attained coverage to CSV by using the
+  to-file parameter:
+</p><p>
+  </p><pre class="jdocu_small">    simics&gt; <b>coverage_tool0.coverage -write max = 10 to-file = ~/coverage.csv</b>
+  </pre><p>
+</p><p>
+  This will output a CSV file like so:
+</p><p>
+  </p><pre class="jdocu_small">    Device,No. accessed registers,No. registers,Coverage%
+    board.mb.sb.spi_flash_obj,0,0,1.0
+    board.mb.sb.com[0],5,8,0.625
+    board.mb.sb.com[2],5,8,0.625
+    board.mb.sb.com[1],5,8,0.625
+    board.mb.sb.com[3],5,8,0.625
+    board.mb.sb.hpet,15,28,0.5357142857142857
+    board.mb.sb.bridge,17,38,0.4473684210526316
+    board.mb.sb.uhci[4],19,50,0.38
+    board.mb.sb.uhci[2],19,50,0.38
+    board.mb.sb.uhci[0],19,50,0.38
+    ...
+  </pre><p>
+</p><p>
+  Furthermore, we may inspect the register accesses, of any connected
+  bank, of every device presented in the coverage output by using the
+  <b>access-count</b> command:
+</p><p>
+  </p><pre class="jdocu_small">    simics&gt; <b>coverage_tool0.access-count board.mb.sb.hpet.bank.regs -write sort-on-column = "Count" max = 10</b>
+    ┌─────────┬───────────────┬──────┬────┬──────┐
+    │  Row #  │      Name     │Offset│Size│Count │
+    ├─────────┼───────────────┼──────┼────┼──────┤
+    │        1│tim_comp[2]    │ 0x148│   8│529647│
+    │        2│tim_comp[3]    │ 0x168│   8│ 19140│
+    │        3│gen_conf       │  0x10│   8│     6│
+    │        4│fsb_int_rout[2]│ 0x150│   8│     6│
+    │        5│tim_conf[1]    │ 0x120│   8│     5│
+    │        6│tim_conf[0]    │ 0x100│   8│     5│
+    │        7│tim_conf[2]    │ 0x140│   8│     5│
+    │        8│tim_comp[0]    │ 0x108│   8│     2│
+    │        9│tim_comp[1]    │ 0x128│   8│     2│
+    │       10│main_cnt       │  0xf0│   8│     2│
+    ├─────────┼───────────────┼──────┼────┼──────┤
+    │# 10/15  │               │      │    │      │
+    │Sum (all)│               │      │    │548825│
+    │Sum shown│               │      │    │548820│
+    └─────────┴───────────────┴──────┴────┴──────┘
+  </pre><p>
+</p><p>
+  Note that we're sorting the table based on the number of accesses
+  rather than offset, which is the default.
+</p><p>
+  If the tool were to be used to compile the total coverage figures
+  over a set of runs, such as over several tests, a user may utilize
+  the <b>save</b> command to temporarily save the results to disk:
+</p><p>
+  </p><pre class="jdocu_small">    simics&gt; <b>coverage_tool0.save ~/coverage_0.bin</b>
+  </pre><p>
+</p><p>
+  ...and subsequently use the <b>load</b> command to aggregate the
+  results:
+</p><p>
+  </p><pre class="jdocu_small">    simics&gt; <b>coverage_tool0.load ~/coverage_0.bin</b>
+    simics&gt; <b>coverage_tool0.load ~/coverage_1.bin</b>
+    simics&gt; <b>coverage_tool0.load ~/coverage_2.bin</b>
+    ...
+  </pre><p>
+</p><p>
+  Once loaded, the <b>coverage</b> and <b>access-count</b>
+  commands will act as if all the accesses had happened during the
+  same run and present the combined results accordingly.
+  In this way, a user may compile the aggregated results of an entire
+  test suite, which should prove useful.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="profiling-example.html">9.5 Profiling Example</a>
+<a href="probes.html">10 Probes</a>
+</div>

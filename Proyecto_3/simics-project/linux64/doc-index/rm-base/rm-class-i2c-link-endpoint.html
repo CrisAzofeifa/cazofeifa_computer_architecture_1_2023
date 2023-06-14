@@ -1,0 +1,182 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i2c-link-endpoint</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-i2c-bus.html">i2c-bus</a>
+<a href="rm-class-i2c-link-impl.html">i2c-link-impl</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="i2c-link-endpoint"><a href="#i2c-link-endpoint">i2c-link-endpoint</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Connects a link with a device
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, link_endpoint, link_endpoint_v2, i2c_slave_v2, i2c_master_v2
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-i2c-link-endpoint.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-i2c-link-endpoint.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:id">
+<i>id</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Endpoint ID. The ID of each endpoint must be unique among the link's endpoints, and it may not be 0 or 0xffffffffffffffff</dd>
+<dt id="dt:link">
+<i>link</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>The link object to which this endpoint belongs.</dd>
+<dt id="dt:delivery_queue">
+<i>delivery_queue</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i[o|n[ii]][iii]]*]</code>
+<br>The endpoint's queue.</dd>
+<dt id="dt:sorting_key">
+<i>sorting_key</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[bi]</code>
+<br>Internal.</dd>
+<dt id="dt:device">
+<i>device</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o|[os]</code>
+<br>The device connected to this endpoint.</dd>
+<dt id="dt:indirect_delivery">
+<i>indirect_delivery</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If set, deliver link messages to their targets immediately to let them worry about the exact time of delivery. Needed for endpoints attached to follower agents.</dd>
+<dt id="dt:current_master">
+<i>current_master</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The endpoint id of current active master, initialized as 0</dd>
+<dt id="dt:current_slave">
+<i>current_slave</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The endpoint id of current active slave, initialized as 0</dd>
+<dt id="dt:state">
+<i>state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The current state of i2c link, initialized as idle(0)</dd>
+<dt id="dt:pending_start_responses">
+<i>pending_start_responses</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>IDs of endpoints from which we are awaiting a start response</dd>
+<dt id="dt:pending_slaves">
+<i>pending_slaves</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The number of slaves we are awaiting a start response</dd>
+<dt id="dt:slave_list">
+<i>slave_list</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>IDs of endpoints which acknowledge general call address or 10-bit address</dd>
+<dt id="dt:slave_list_counter">
+<i>slave_list_counter</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The number of slaves we are awaiting response for general call or 10-bit address</dd>
+<dt id="dt:address_pattern">
+<i>address_pattern</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Save address status for start request</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.i2c-link-v2.html">i2c-link-v2</a>
+</section>
+<div class="chain">
+<a href="rm-class-i2c-bus.html">i2c-bus</a>
+<a href="rm-class-i2c-link-impl.html">i2c-link-impl</a>
+</div>

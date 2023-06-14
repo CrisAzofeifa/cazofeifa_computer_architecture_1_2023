@@ -1,0 +1,163 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_msr</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_memory_query.html">x86_memory_query</a>
+<a href="__rm_interface_x86_pkg_cstate.html">x86_pkg_cstate</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_msr">x86_msr</a></h1>
+<p>
+
+<a name="x86_msr"></a><a name="x86_msr_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(x86_msr) {
+        void (*register_handlers)(
+                conf_object_t *cpu,
+                int64 number,
+                x86_msr_getter_func_t getter,
+                lang_void *getter_data,
+                x86_msr_setter_func_t setter,
+                lang_void *setter_data,
+                const char *name);
+        void (*unregister_handlers)(
+                conf_object_t *cpu,
+                int64 number);
+        x86_msr_getter_ret_t (*get)(
+                conf_object_t *cpu,
+                int64 number,
+                x86_msr_access_type_t type);
+        x86_msr_ret_t (*set)(
+                conf_object_t *cpu,
+                int64 number,
+                uint64 value,
+                x86_msr_access_type_t type);
+        const char *(*get_name)(
+                conf_object_t *cpu,
+                int64 number);
+        int64 (*get_number)(
+                conf_object_t *cpu,
+                const char *name);
+        attr_value_t (*get_all_valid_numbers)(
+                conf_object_t *cpu);
+};
+#define X86_MSR_INTERFACE "x86_msr"
+</pre><p>
+</p><p>
+
+   The <b><i>register_handlers</i></b> function will register get and set
+   functions that will be called every time a read or write access is made to
+   the MSR with number <i>msr</i>.
+</p><p>
+   
+</p><pre class="jdocu_small">typedef struct {
+        x86_msr_ret_t status;
+        uint64 value;
+} x86_msr_getter_ret_t;</pre><p>
+
+   
+</p><pre class="jdocu_small">typedef enum {
+        Sim_X86_Msr_Ok = Sim_Gen_Spr_Ok,        /* Access was OK */
+        Sim_X86_Msr_GP_Fault,                   /* Raise #GP fault */
+        Sim_X86_Msr_Not_Handled                 /* Pass on to next handler */
+} x86_msr_ret_t;</pre><p>
+
+   
+</p><pre class="jdocu_small">typedef x86_msr_getter_ret_t (*x86_msr_getter_func_t)(
+        conf_object_t *cpu,
+        int64 number,
+        x86_msr_access_type_t type,
+        lang_void *user_data);</pre><p>
+
+   
+</p><pre class="jdocu_small">typedef x86_msr_ret_t (*x86_msr_setter_func_t)(
+        conf_object_t *cpu,
+        int64 spr_number,
+        uint64 value,
+        x86_msr_access_type_t type,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The <i>type</i> parameter in the get and set functions is one of
+   the following, depending on where from the access originated:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef enum {
+        /* Access from a rdmsr/wrmsr instruction */
+        Sim_X86_Msr_Instruction_Access = Sim_Gen_Spr_Instruction_Access,
+
+        /* Access through attribute */
+        Sim_X86_Msr_Attribute_Access = Sim_Gen_Spr_Attribute_Access,
+
+        /* Access through int_register interface */
+        Sim_X86_Msr_Int_Register_Access = Sim_Gen_Spr_Int_Register_Access,
+
+        /* Access during VMX entry/exit */
+        Sim_X86_Msr_VMX_Access,
+
+        /* Architectural access without side effects within the CPU model, only
+           reads or writes the register value. However, if it is sent to the
+           platform as a non-inquiry access, that may cause side effects. */
+        Sim_X86_Msr_Architectural_Access
+} x86_msr_access_type_t;</pre><p>
+
+</p><p>
+   The getter function returns the status just like the setter together with
+   the read MSR value. A getter or setter may return the
+   Sim_X86_MSR_Not_Handled return code, in which case the access will pass
+   through to the earlier registered handler (or the default handler if there
+   is no earlier registered handler).
+</p><p>
+   The function <b><i>unregister_handlers</i></b> will remove any
+   non-default handlers for a particular MSR.
+</p><p>
+   The <b><i>get</i></b> and <b><i>set</i></b> functions get and set MSRs, using both
+   model default MSR handlers and handlers installed through this interface.
+</p><p>
+   The function <b><i>get_name</i></b> takes <i>number</i>
+   as parameter and returns the name of the MSR.
+</p><p>
+   The function <b><i>get_number</i></b> takes the <i>name</i>
+   and returns the MSR number.
+</p><p>
+   The function <b><i>get_all_valid_numbers</i></b> returns a list of integers
+   corresponding to all the valid MSRs, including both model default MSRs and
+   MSRs installed through this interface.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_memory_query.html">x86_memory_query</a>
+<a href="__rm_interface_x86_pkg_cstate.html">x86_pkg_cstate</a>
+</div>

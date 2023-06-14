@@ -1,0 +1,1565 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3 DML 1.2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="object-model.html">2 The Object Model</a>
+<a href="libraries.html">4 Libraries and Built-ins</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.2 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="dml-1-2">3 <a href="#dml-1-2">DML 1.2</a></h1>
+<p>This chapter describes the DML language, version 1.2. It will
+help to have read and understood the object model in the previous
+chapter before reading this chapter.</p>
+<h2 id="overview">3.1 <a href="#overview">Overview</a></h2>
+<p>DML is not a general-purpose programming language, but a modeling
+language, targeted at writing Simics device models. The algorithmic part
+of the language is an extended subset of ISO C; however, the main power
+of DML is derived from its simple object-oriented constructs for
+defining and accessing the static data structures that a device model
+requires, and the automatic creation of bindings to Simics.</p>
+<p>Furthermore, DML provides syntax for <em>bit-slicing</em>, which much
+simplifies the manipulation of bit fields in integers; <code>new</code> and
+<code>delete</code> operators for allocating and deallocating memory; a
+basic <code>try</code>/<code>throw</code> mechanism for error handling; built-in
+<code>log</code> and <code>assert</code> statements; and a powerful
+metaprogramming facility using <em>templates</em>, method inlining, and
+compile-time evaluation for shaping the generated code.</p>
+<p>Most of the built-in Simics-specific logic is implemented directly in
+DML, in standard library modules that are automatically imported; the
+<code>dmlc</code> compiler itself contains as little knowledge as possible
+about the specifics of Simics.</p>
+<h2 id="lexical-structure">3.2 <a href="#lexical-structure">Lexical Structure</a></h2>
+<p>For the most part, the lexical structure of DML resembles that of C.
+However, DML distinguishes between "object context" and "C context", so
+that some C keywords such as <code>register</code>, <code>signed</code> and
+<code>unsigned</code>, are allowed as identifiers in object context, while
+on the other hand many words that look like keywords in the object
+context, such as <code>bank</code>, <code>event</code> and <code>data</code>, are in
+fact allowed as identifiers in all contexts.</p>
+<p>Another major difference from C is that names do not generally need to
+be defined before their first use. This is quite useful, but might
+sometimes appear confusing to C programmers.</p>
+<dl><dt id="dt:character-encoding">
+<p>Character encoding</p>
+</dt><dd>
+<p>DML source files are written using UTF-8 encoding.  Non-ASCII
+characters are only allowed in comments and in string literals.
+String values are still handled as byte arrays, which means that a
+string value written with a literal of three characters may actually
+create an array of more than three bytes.</p>
+</dd><dt id="dt:reserved-words">
+<p>Reserved words</p>
+</dt><dd>
+<p>All ISO/ANSI C reserved words are reserved words in DML (even if
+currently unused). In addition, the C99 and C++ reserved words
+<code>restrict</code>, <code>inline</code>, <code>this</code>, <code>new</code>,
+<code>delete</code>, <code>throw</code>, <code>try</code>, <code>catch</code>, and
+<code>template</code> are also reserved in DML. The C++ reserved words
+<code>class</code>, <code>namespace</code>, <code>private</code>,
+<code>protected</code>, <code>public</code>, <code>using</code>, and
+<code>virtual</code>, are reserved in DML for future use; as are
+identifiers starting with an underscore (_).</p>
+<p>The following words are reserved specially by DML: <code>after</code>,
+<code>assert</code>, <code>call</code>, <code>cast</code>, <code>defined</code>,
+<code>error</code>, <code>foreach</code>, <code>in</code>, <code>is</code>,
+<code>local</code>, <code>log</code>, <code>parameter</code>, <code>select</code>,
+<code>sizeoftype</code>, <code>typeof</code>, <code>undefined</code>, <code>vect</code>,
+and <code>where</code>.</p>
+</dd><dt id="dt:identifiers">
+<p>Identifiers</p>
+</dt><dd>
+<p>Identifiers in DML are defined as in C; an identifier may begin
+with a letter or underscore, followed by any number of letters,
+numbers, or underscores. Identifiers that begin with an underscore (_)
+are reserved by the DML language and standard library and should not
+be used. Within C context, unqualified object-context
+identifiers are always prefixed by a <code>$</code> character.</p>
+</dd><dt id="dt:constant-literals">
+<p>Constant Literals</p>
+</dt><dd>
+<p>DML has literals for strings, characters, integers, booleans, and floating-point numbers.  The integer literals can be written in decimal (<code>01234</code>), hexadecimal (<code>0x12af</code>), or binary (<code>0b110110</code>) form.</p>
+<p>Underscores (<code>_</code>) can be used between digits, or immediately
+following the <code>0b</code>, <code>0x</code> prefixes, in integer literals
+to separate groups of digits for improved readability. For example,
+<code>123_456</code>, <code>0b10_1110</code>, <code>0x_eace_f9b6</code> are valid
+integer constants, whereas <code>_78</code>, <code>0xab_</code> are not.</p>
+<p>String literals are surrounded by double quotes (<code>"</code>). To
+include a double quote or a backslash (<code>\</code>) in a string
+literal, precede them with a backslash (<code>\"</code> and <code>\\</code>,
+respectively). Newline, carriage return, tab and backspace characters
+are represented by <code>\n</code>, <code>\r</code>, <code>\t</code> and
+<code>\b</code>. Arbitrary byte values can be encoded as <code>\x</code>
+followed by exactly two hexadecimal digits, such as <code>\x1f</code>.
+Such escaped byte values are restricted to 00-7f for strings
+containing Unicode characters above U+007F.</p>
+<p>Character literals consist of a pair of single quotes (<code>'</code>)
+surrounding either a single printable ASCII character or one of the
+escape sequences <code>\'</code>, <code>\\</code>, <code>\n</code>, <code>\r</code>,
+<code>\t</code> or <code>\b</code>. The value of a character literal is
+the character's ASCII value.</p>
+</dd><dt id="dt:comments">
+<p>Comments</p>
+</dt><dd>
+<p>C-style comments are used in DML.  This includes both in-line
+comments (<code>/``*</code>...<code>*``/</code>) and comments
+that continue to the end of the line (<code>//</code>...).</p>
+</dd></dl>
+<h2 id="module-system">3.3 <a href="#module-system">Module System</a></h2>
+<p>DML employs a very simple module system, where a <em>module</em> is any
+source file that can be imported using the <code>import</code> directive.
+Such files may not contain a <code>device</code> declaration, but otherwise
+look like normal DML source files. The imported modules are merged into
+the main program as if all the code was contained in a single file (with
+some exceptions). This is similar to C preprocessor <code>#include</code>
+directives, but in DML each imported file must be possible to parse in
+isolation, and may contain declarations (such as <code>bitorder</code>) that
+are only effective for that file.</p>
+<h2 id="source-file-structure">3.4 <a href="#source-file-structure">Source File Structure</a></h2>
+<p>A DML source file describes both the structure of the modeled device and
+the actions to be taken when the device is accessed.</p>
+<p>A DML source file defining a device starts with a <em>language version
+declaration</em> and a <em>device declaration</em>. After that, any
+number of <em>parameter declarations</em>, <em>methods</em>, <em>data
+fields</em>, <em>object declarations</em>, or <em>global
+declarations</em> can be written. A DML file intended to be
+<em>imported</em> (by an <code>import</code> statement in another DML file)
+has the same layout except for the device declaration.</p>
+<h3 id="language-version-declaration">3.4.1 <a href="#language-version-declaration">Language Version Declaration</a></h3>
+<p>Every DML source file should contain a version declaration, on the form
+"<code>dml <em>m</em>.<em>n</em>;</code>", where <em>m</em> and <em>n</em> are
+nonnegative integers denoting the major and minor version of DML,
+respectively, that the source file is written in. The version
+declaration allows the <code>dmlc</code> compiler to select the proper
+versions of the DML parser and standard libraries to be used for the
+file. (Note that each file has its own individual language version, even
+if it is imported by a file using another version.) A file should not
+import a file with a higher language version than its own.</p>
+<p>The version declaration must be the first declaration in the file,
+possibly preceded by comments. For example:</p>
+<pre><code>// My Device
+dml 1.2;
+...
+</code></pre>
+<p>This document describes DML 1.2. The compiler does not compile files
+written in DML 1.0.</p>
+<h3 id="device-declaration">3.4.2 <a href="#device-declaration">Device Declaration</a></h3>
+<p>Every DML source file that contains a device declaration is a <em>DML
+program</em>, and defines a device class with the specified name. Such a
+file may <em>import</em> other files, but only the initial file may
+contain a device declaration.</p>
+<p>The device declaration must be the first proper declaration in the file,
+only preceded by comments and the language version declaration. For
+example:</p>
+<pre><code>/*
+ *  My New Device
+ */
+dml 1.2;
+device my_device;
+...
+</code></pre>
+<h3 id="source-file-example">3.4.3 <a href="#source-file-example">Source File Example</a></h3>
+<p>The following is an example of a small DML program defining a very
+simple device. This lacks many details that would appear in a real
+device.</p>
+<pre><code>dml 1.2;
+
+device excalibur;
+
+connect bus {
+    interface pci;
+}
+
+bank config_registers {
+    register cfg1 size 4 @ 0x0000 {
+        field status {
+            method read { ... }
+            method write { ... }
+        }
+        field enable {
+            method read { ... }
+            method write { ... }
+        }
+    }
+}
+
+bank databank {
+    register r1 size 4 @ 0x0000 {
+        field f1 {
+            method read { ... }
+            method write { ... }
+        }
+    }
+    register r2 size 4 @ 0x0004 {
+        field f2 {
+            method read { ... }
+            method write { ... }
+        }
+    }
+}
+</code></pre>
+<h2 id="parameter-declarations">3.5 <a href="#parameter-declarations">Parameter Declarations</a></h2>
+<p>A parameter declaration has the general form "<code>parameter <em>name</em>
+<em>specification</em>;</code>", where <em><code>specification</code></em> is
+either "<code>= <em>expr</em></code>" or "<code>default <em>expr</em></code>".
+For example:</p>
+<pre><code>parameter offset = 8;
+parameter byte_order default "little-endian";
+</code></pre>
+<p>A default value is overridden by an assignment (<code>=</code>). There can
+be at most one assignment, and at most one default value, for each
+parameter. Typically, a default value for a parameter is specified in a
+template, and the programmer may then choose to override it where the
+template is used. See Section <a class="reference" href="#template-declarations">3.11.2</a> for
+more information about templates.</p>
+<p>The <em><code>specification</code></em> part is in fact optional; if omitted,
+it means that the parameter is declared to exist (and <em>must</em> be
+given a value, or the program will not compile). This is sometimes
+useful in templates, as in:</p>
+<pre><code>template constant {
+    parameter value;
+    method get -&gt; (v) {
+        v = $value;
+    }
+}
+</code></pre>
+<p>so that wherever the template <code>constant</code> is used, the programmer
+is also forced to define the parameter <code>value</code>. E.g.:</p>
+<pre><code>register r0 size 2 @ 0x0000 is (constant) {
+    parameter value = 0xffff;
+}
+</code></pre>
+<p>Note that simply leaving out the parameter declaration from the template
+definition can have unwanted effects if the programmer forgets to
+specify its value where the template is used. At best, it will only
+cause a more obscure error message, such as "unknown identifier"; at
+worst, the scoping rules will select an unrelated definition of the same
+parameter name.</p>
+<p>You may see the following special form in some standard library files:</p>
+<pre>parameter <em>name</em> auto;
+</pre>
+<p>for example,</p>
+<pre><code>parameter parent auto;
+</code></pre>
+<p>This is used to explicitly declare the built-in automatic parameters,
+and should never be used outside the libraries.</p>
+<h2 id="data-types">3.6 <a href="#data-types">Data types</a></h2>
+<p>The type system in DML builds on the type system in C, with a few
+modifications.  There are eight kinds of data types.  New names for
+types can also be assigned using a <code>typedef</code> declaration.</p>
+<dl><dt id="dt:integers">
+<p>Integers</p>
+</dt><dd>
+<p>Integer types guarantee a certain <em>minimum</em> bit width and
+may be signed or unsigned.  The basic integer types are
+named <code>uint1</code>,
+<code>uint2</code>, ..., <code>uint64</code> for the unsigned types, and
+<code>int1</code>, <code>int2</code>, ..., <code>int64</code> for the signed
+types. Note that the size of the integer type is only a hint and the
+type is guaranteed to be able to hold at least that many
+bits. Assigning a value that would not fit into the type is
+undefined, thus it is an error to assume that values will be
+truncated. For bit-exact types, refer to <code>bitfields</code>
+and <code>layout</code>.</p>
+<p>The familiar integer types <code>char</code> and <code>int</code> are
+available as aliases for <code>int8</code> and <code>int32</code>,
+respectively. The C keywords <code>short</code>, <code>signed</code>, <code>unsigned</code>
+and <code>long</code> are reserved words in DML and not allowed in type
+declarations.  The types <code>size_t</code> and <code>uintptr_t</code> are
+defined as in C.</p>
+</dd><dt id="dt:endian-integers">
+<p>Endian integers</p>
+</dt><dd>
+<p>Endian integer types hold similar values as
+integer types, but in addition have the following attributes:</p>
+<ul>
+<li>
+<p><em>They are guaranteed to be stored in the exact number of bytes
+required for their bitsize, without padding.</em></p>
+</li>
+<li>
+<p><em>They have a defined byte order.</em></p>
+</li>
+<li>
+<p><em>They have a natural alignment of 1 byte.</em></p>
+</li>
+</ul>
+<p>Endian integer types are named after the integer type
+with which they share a bitsize and sign but in addition
+have a <code>_be_t</code> or <code>_le_t</code> suffix, for big-endian
+and little-endian integers, respectively. So for example;
+<code>uint8_be_t</code>, <code>uint8_le_t</code>,
+<code>int16_be_t</code>, <code>uint24_le_t</code> are all endian integer
+types.
+These types can be transparently
+used interchangeably with regular integer types, values of one
+type will be coerced to the other as needed. Note that operations
+on integers will always produce regular integer types, even
+if all operands are of endian integer type.
+Assigning a value that would not fit into the type is undefined,
+thus it is an error to assume that values will be truncated.</p>
+</dd><dt id="dt:floating-point-numbers">
+<p>Floating-point numbers</p>
+</dt><dd>
+<p>There is only one floating-point type, called <code>double</code>.
+Note that DMLC currently permits <code>float</code> as a type, but this
+is not officially supported and we may change some details in the
+semantics later. We generally recommend the use of <code>double</code>
+instead.</p>
+</dd><dt id="dt:booleans">
+<p>Booleans</p>
+</dt><dd>
+<p>The boolean type <code>bool</code> has two values, <code>true</code> and
+<code>false</code>.</p>
+</dd><dt id="dt:arrays">
+<p>Arrays</p>
+</dt><dd>
+<p>An array is a sequence of elements of another type, and works as
+in C.</p>
+</dd><dt id="dt:pointers">
+<p>Pointers</p>
+</dt><dd>
+<p>Pointers to types, work as in C. String literals have the
+type <code>const char *</code>. A pointer has undefined meaning
+if the pointer target type is an integer whose bit-width is neither 8,
+16, 32, nor 64.</p>
+</dd><dt id="dt:structures">
+<p>Structures</p>
+</dt><dd>
+<p>A <code>struct</code> type defines a composite type that contains
+named members of different types.  DML makes no assumptions about the
+data layout in struct types, but see the layout types below for that.
+Note that there is no struct label as in C, and struct member declarations
+are permitted to refer to types that are defined further down in the file.
+Thus, new struct types can always be declared using the following syntax:</p>
+<pre>typedef struct { <em>member declarations</em> } <em>name</em>;
+</pre>
+</dd><dt id="dt:layouts">
+<p>Layouts</p>
+</dt><dd>
+<p>A layout is similar to a struct in many ways.  The important
+difference is that there is a well-defined mapping between a layout
+object and the underlying memory representation, and layouts may
+specify that in great detail.</p>
+<p>A basic layout type looks like this:</p>
+<pre><code>layout "big-endian" {
+    uint24 x;
+    uint16 y;
+    uint32 z;
+}
+</code></pre>
+<p>By casting a pointer to a piece of host memory to a pointer of this
+layout type, you can access the fourth and fifth byte as a 16-bit
+unsigned integer with big-endian byte order by simply writing
+<code>p-&gt;y</code>.</p>
+<p>The allowed types of the layout members are integers, other layout
+types, bitfields (see below), and arrays of these.</p>
+<p>The byte order declaration is mandatory, and is
+either <code>"big-endian"</code> or <code>"little-endian"</code>.</p>
+<p>Access of layout members do not always provide a value of the
+type used for the member in the declaration. Bitfields and
+integer members (and arrays of similar) are translated
+to endian integers of similar size, with endianness matching
+the layout (or arrays of such). Layout and endian integer members are
+accessed normally.</p>
+<p>Pointer arithmetic on layout members gives undefined behavior.</p>
+</dd><dt id="dt:bitfields">
+<p>Bitfields</p>
+</dt><dd>
+<p>A bitfield type works similar to an integer type where you use bit
+slicing to access individual bits, but where the bit ranges are
+assigned names. A <code>bitfields</code> declaration looks like this:</p>
+<pre><code>bitfields 32 {
+    uint3  a @ [31:29];
+    uint16 b @ [23:8];
+    uint7  c @ [7:1];
+    uint1  d @ [0];
+}
+</code></pre>
+<p>The bit numbering is determined by the <code>bitorder</code> declaration
+in the current file.</p>
+<p>Accessing bit fields is done as with a struct or layout, but the whole
+bitfield can also be used as an unsigned integer. See the following
+example:</p>
+<pre><code>local bitfields 32 { uint8 x @ [7:0] } bf;
+bf = 0x000000ff;
+bf.x = bf.x - 1;
+local uint32 v = bf;
+</code></pre>
+</dd></dl>
+<h2 id="methods">3.7 <a href="#methods">Methods</a></h2>
+<p>Methods are similar to C functions, but also have an implicit
+(invisible) parameter which allows them to refer to the current device
+instance, i.e., the Simics configuration object representing the device.
+Methods also support exception handling in DML, using <code>try</code> and
+<code>throw</code>. The body of the method is a compound statement in an
+extended subset of C; see also Section <a class="reference" href="#comparison-to-c">x</a>
+It is an error to have more than one method declaration using the same
+name within the same scope.</p>
+<h3 id="input-and-output-parameters">3.7.1 <a href="#input-and-output-parameters">Input and Output Parameters</a></h3>
+<p>In addition to the input parameters, a DML method can have any number of
+output parameters, in contrast to C functions which have at most one
+return value. DML methods do not use the keyword <code>void</code> - an
+empty pair of parentheses always means "zero parameters", and can even
+be omitted. Apart from this, the parameter declarations of a method are
+ordinary C-style declarations.</p>
+<p>For example,</p>
+<pre><code>method m1 {...}
+</code></pre>
+<p>and</p>
+<pre><code>method m1() {...}
+</code></pre>
+<p>are equivalent, and define a method that takes no input parameters and
+returns nothing.</p>
+<pre><code>method m2(int a) -&gt; () {...}
+</code></pre>
+<p>defines a method that takes a single input parameter, and also returns
+nothing.</p>
+<pre><code>method m3(int a, int b) -&gt; (int c) {
+  ...;
+  c = ...;
+}
+</code></pre>
+<p>defines a method with two input parameters and a single output
+parameter. Output parameters must be explicitly assigned before the
+method returns.</p>
+<pre><code>method m4() -&gt; (int c, int d) {
+  ...;
+  c = ...;
+  d = ...;
+  return;
+}
+</code></pre>
+<p>has no input parameters, but two output parameters. Ending the method
+body with a <code>return</code> statement is optional.</p>
+<p>If it is statically known that a method can not throw an exception,
+then it may be declared as <code>nothrow</code>:</p>
+<pre><code>method m5(int x) -&gt; (int y) nothrow {
+    y = x * x;
+}
+</code></pre>
+<p>This allows the method to be called as an expression, without a <code>call</code>
+statement:</p>
+<pre><code>log info: "m5(4) is %d", $m5(4);
+</code></pre>
+<p>If a method is declared <code>nothrow</code>, then any throwing statement
+inside the method must be enclosed in a <code>try</code> block. A <code>throw</code>
+statement counts as throwing, as does a <code>call</code> or <code>inline</code>
+statement, unless the method it invokes is declared <code>nothrow</code>.</p>
+<div class="note">
+<p><strong>Note:</strong> In DML 1.4, <code>nothrow</code> is the default, and methods that
+<em>can</em> throw an exception must be explicitly declare that with
+a <code>throws</code> annotation.</p>
+</div>
+<h3 id="default-methods">3.7.2 <a href="#default-methods">Default Methods</a></h3>
+<p>A method can be declared as the <em>default</em> implementation with the
+<code>default</code> keyword:</p>
+<pre><code>method m() default {...}
+</code></pre>
+<p>A default method can be overridden <em>once</em> by defining a method
+with the same name and signature in the same object but without
+the <code>default</code> keyword. This is especially useful in templates
+(see section <a class="reference" href="#template-declarations">3.11.2</a>) to provide some
+default behavior while allowing the user to customize that behavior by
+overriding a default method where the template is instantiated.</p>
+<h3 id="calling-methods">3.7.3 <a href="#calling-methods">Calling Methods</a></h3>
+<p>In DML, a method call is performed with one of the <code>call</code> and
+<code>inline</code> keywords. For instance,</p>
+<pre><code>call $access(...) -&gt; (a, b)
+</code></pre>
+<p>will call the method 'access' in the same object, assigning the values
+of the output parameters to variables <code>a</code> and <code>b</code>. (Note
+the '<code>$</code>' character which is necessary for referring to the
+method.) The call might be inline expanded depending on the C compiler
+used to compile the generated code, but there is no guarantee.</p>
+<p>On the other hand,</p>
+<pre><code>inline $access(...) -&gt; (a, b)
+</code></pre>
+<p>has the same semantics as the <code>call</code>, but will always inline
+expand the called method.</p>
+<p>It is possible to invoke the default method in the overriding method using
+the following special method call syntax (note that there is no <code>$</code>
+before <code>default</code>):</p>
+<pre><code>call default(...) -&gt; (...);
+</code></pre>
+<p>, or</p>
+<pre><code>inline default(...) -&gt; (...);
+</code></pre>
+<p>to expand the overridden method inline.</p>
+<h3 id="methods-as-macros">3.7.4 <a href="#methods-as-macros">Methods as Macros</a></h3>
+<p>Methods can also be used as macros, by omitting the types on
+one or more of the input parameters. A method defined this way can only
+be called through an <code>inline</code> statement; see Section
+<a class="reference" href="#inline-statements">3.13.5</a>.</p>
+<p>For example,</p>
+<pre><code>method twice(x) -&gt; (y) { y = x + x; }
+</code></pre>
+<p>could be used to double any numeric value without forcing the result to
+be of any particular type, as in</p>
+<pre><code>int32_t x;
+int64_t y;
+inline twice(x) -&gt; (x);
+inline twice(y) -&gt; (y);
+</code></pre>
+<p>This is sometimes referred to as a <em>polymorphic</em> method.</p>
+<p>This form of macros is particularly useful when writing
+<em>templates</em> (see Section <a class="reference" href="#template-declarations">3.11.2</a>).
+Note that the name scoping rules and the semantics of calls are the same
+as for normal methods; in other words, it is a form of "hygienic
+macros".</p>
+<h3 id="external-methods">3.7.5 <a href="#external-methods">External Methods</a></h3>
+<p>A method can be declared <em>external</em>, which means that a C
+function corresponding to the method is guaranteed to be generated.
+This is done by prefixing the name of the
+method with the keyword <code>extern</code>; e.g.:</p>
+<pre><code>method extern my_method(int x) { ... }
+</code></pre>
+<p>An external method must have a proper signature, i.e., the types of all
+its input and output parameters must be specified.</p>
+<p>External methods are rarely used, since most of the needs for making DML
+methods accessible from outside the device model itself are covered by
+the <code>implement</code>, <code>event</code>, and
+<code>attribute</code> type objects.  Note that the generated
+functions will always have static linkage.</p>
+<h2 id="data-fields">3.8 <a href="#data-fields">Data Fields</a></h2>
+<p>A <em>data</em> declaration creates a named storage location for an
+arbitrary run-time value. The name belongs to the same namespace as
+objects and methods. The general form is:</p>
+<pre>data <em>declaration</em> = <em>initializer</em>;
+</pre>
+<p>where <em><code>= initializer</code></em> is optional
+and <em><code>declaration</code></em> is similar to a C variable
+declaration; for example,</p>
+<pre><code>data int id = 1;
+data bool active;
+data double table[4] = {0.1, 0.2, 0.4, 0.8};
+data conf_object_t *obj;
+</code></pre>
+<p>In the absence of explicit initializer expression, a default
+"all zero" initializer will be applied to the declared object.</p>
+<p>Note that the number of elements in the initializer must match with
+the number of elements or fields of the type of the <em>data</em>
+object. This also implies that each sub-element, if itself being a
+compound data structure, must also be enclosed in braces. C99-style
+designated initializers are not supported.</p>
+<h2 id="object-declarations">3.9 <a href="#object-declarations">Object Declarations</a></h2>
+<p>The general form of an object declaration is "<code><em>type</em>
+<em>name</em> <em>extras</em> is (<em>template</em> ...) <em>desc</em> {
+... }</code>" or "<code><em>type</em> <em>name</em> <em>extras</em> is
+(<em>template</em> ...) <em>desc</em>;</code>", where <em><code>type</code></em>
+is an object type such as <code>bank</code>, <em><code>name</code></em> is an
+identifier naming the object, and <em><code>extras</code></em> is optional
+special notation which depends on the object type. The <code>is
+(<em>template</em> ...)</code> part is optional and will make the object
+use the named templates. The <em><code>desc</code></em> is an optional
+string constant giving a very short summary of the object. It can consist
+of several string literals concatenated by the '+' operator. Ending the
+declaration with a semicolon is equivalent to ending with an empty
+pair of braces. The <em>body</em> (the section within the braces) may
+contain <em>parameter declarations</em>, <em>methods</em>, <em>data
+fields</em>, and <em>object declarations</em>.</p>
+<p>For example, a <code>register</code> object may be declared as</p>
+<pre><code>register r0 @ 0x0100 "general-purpose register 0";
+</code></pre>
+<p>where the "<code>@ <em>offset</em></code>" notation is particular for the
+<code>register</code> object type; see below for details.</p>
+<p>Using <code>is (<em>template1</em>, <em>template2</em>)</code> is equivalent to
+using <code>is</code> statements in the body, so the following two
+declarations are equivalent:</p>
+<pre><code>register r0 @ 0x0100 is (read_only,autoreg);
+
+register r0 @ 0x0100 {
+    is read_only;
+    is autoreg;
+}
+</code></pre>
+<p>An object declaration with a <em><code>desc</code></em> section, on the form</p>
+<pre><em>type</em> <em>name</em> ... <em>desc</em> { ... }
+</pre>
+<p>is equivalent to defining the parameter <code>desc</code>, as in</p>
+<pre><em>type</em> <em>name</em> ... {
+    parameter desc = <em>desc</em>;
+    ...
+}
+</pre>
+<p>In the following sections, we will leave out <em><code>desc</code></em> from the object
+declarations, since it is always optional. Another parameter, <code>documentation</code>
+(for which there is no short-hand), may also be defined for each object, and for
+some object types it is used to give a more detailed description. See Section
+<a class="reference" href="libraries.html#object-parameters">4.1.1</a> for details.)</p>
+<p>If two object declarations with the same name occur within the same
+containing object, and they specify the same object type, then the
+declarations are concatenated; e.g.,</p>
+<pre>bank b {
+    register r size 4 { ...<em>body1</em>... }
+    ...
+    register r @ 0x0100 { ...<em>body2</em>... }
+    ...
+}
+</pre>
+<p>is equivalent to</p>
+<pre>bank b {
+    register r size 4 @ 0x0100  {
+        ...<em>body1</em>...
+        ...<em>body2</em>...
+    }
+    ...
+}
+</pre>
+<p>However, it is an error if the object types should differ.</p>
+<p>Most object types (<code>bank</code>, <code>register</code>,
+<code>group</code>, <code>attribute</code>, <code>connect</code>,
+<code>event</code>, and <code>port</code>) may be used
+in <em>arrays</em>. The general form of an object array declaration is</p>
+<pre><em>type</em> <em>name</em> [<em>variable</em> in 0..<em>max</em>]... <em>extras</em> { ... }
+</pre>
+<p>Here, each <em>variable</em> defines the name of one index in the array and
+<code>0..<em>max</em></code> defines the size of the corresponding dimension of the
+array. Each <em>variable</em> defines a parameter in the object scope, and thus must
+be unique.
+<em>max</em> must be a compile time constant. For instance,</p>
+<pre><code>register regs[i in 0..15] size 2 {
+    parameter offset = 0x0100 + 2 * $i;
+    ...
+}
+</code></pre>
+<p>or written more compactly</p>
+<pre><code>register regs[i in 0..15] size 2 @ 0x0100 + 2 * $i;
+</code></pre>
+<p>defines an array named <code>regs</code> of 16 registers (with index 0 to 15) of 2 bytes
+each, whose offsets start at 0x0100. There is also a special syntax
+"<code><em>type</em> <em>name</em> [<em>size</em>] ...</code>", this is
+equivalent to declaring "<code><em>type</em> <em>name</em> [i in
+0..<em>size</em>-1]...</code>". See Section <a class="reference" href="libraries.html#array-parameters">4.1.2</a>
+for details about arrays and index parameters.</p>
+<p>The following sections give further details on declarations for object
+types that have special conventions.</p>
+<h3 id="bank-declarations">3.9.1 <a href="#bank-declarations">Bank Declarations</a></h3>
+<p>The general form of a <code>bank</code> declaration is</p>
+<pre>bank <em>name</em> { ... }
+</pre>
+<p>where <em><code>name</code></em> may be omitted. The elements (e.g., registers)
+of a bank that has no name belong to the namespace of the parent object,
+i.e., the device. There is at most one such anonymous bank object per
+device and it is not possible to define an anonymous bank array
+object; multiple "<code>bank { ... }</code>" declarations are concatenated.</p>
+<h3 id="register-declarations">3.9.2 <a href="#register-declarations">Register Declarations</a></h3>
+<p>The general form of a <code>register</code> declaration is</p>
+<pre>register <em>name</em> size <em>n</em> @ <em>d</em> is (<em>templates</em>) { ... }
+</pre>
+<p>Each of the "<code>size <em>n</em></code>", "<code>@ <em>d</em></code>", and "<code>is
+(<em>templates</em>)</code>" sections is optional, but if present, they must
+be specified in the above order.</p>
+<ul>
+<li>
+<p>A declaration</p>
+<pre>register <em>name</em> size <em>n</em> ... { ... }
+</pre>
+<p>is equivalent to</p>
+<pre>register <em>name</em> ... { parameter size = <em>n</em>; ... }
+</pre>
+</li>
+<li>
+<p>A declaration</p>
+<pre>register <em>name</em> ... @ <em>d</em> ... { ... }
+</pre>
+<p>is equivalent to</p>
+<pre>register <em>name</em>  ... { parameter offset = <em>d</em>; ... }
+</pre>
+</li>
+<li>
+<p>A declaration</p>
+<pre>register <em>name</em> ... is (<em>t1</em>,...,<em>tN</em>) { ... }
+</pre>
+<p>is equivalent to</p>
+<pre>register <em>name</em>  ... { is <em>t1</em>; ... is <em>tN</em>; ... }
+</pre>
+</li>
+</ul>
+<p>Templates are further described in Section <a class="reference" href="#template-declarations">3.11.2</a>.</p>
+<h3 id="field-declarations">3.9.3 <a href="#field-declarations">Field Declarations</a></h3>
+<p>The general form of a <code>field</code> declaration is</p>
+<pre>field <em>name</em> [<em>highbit</em>:<em>lowbit</em>] is (<em>templates</em>) { ... }
+</pre>
+<p>or simply</p>
+<pre>field <em>name</em> [<em>bit</em>] ... { ... }
+</pre>
+<p>specifying a range of bits of the containing register, where the syntax
+<code>[<em>bit</em>]</code> is short for <code>[<em>bit</em>:<em>bit</em>]</code>.
+Both the "<code>[...]</code>" and the <code>is (<em>templates</em>)</code>
+sections are optional; in fact, the "<code>[...]</code>" syntax is merely a
+much more convenient way of defining the (required) field parameters
+<code>lsb</code> and <code>msb</code> (cf. Section <a class="reference" href="libraries.html#field-parameters">4.1.8</a>).</p>
+<ul>
+<li>
+<p>A declaration</p>
+<pre>field <em>name</em> [<em>high</em>:<em>low</em>] is (<em>t1</em>,...,<em>tN</em>) { ... }
+</pre>
+<p>is equivalent to</p>
+<pre>field <em>name</em> [<em>high</em>:<em>low</em>] { is <em>t1</em>; ... is <em>tN</em>; ... }
+</pre>
+</li>
+</ul>
+<p>For a range of two or more bits, the first (leftmost) number always
+indicates the <em>most significant bit</em>, regardless of the bit
+numbering scheme used in the file. This corresponds to how bit fields
+are usually visualized, with the most significant bit to the left.</p>
+<p>The bits of a register are always numbered from zero to <em>n</em> - 1,
+where <em>n</em> is the width of the register. If the default
+little-endian bit numbering is used, the least significant bit has index
+zero, and the most significant bit has index <em>n</em> - 1. In this case,
+a 32-bit register with two fields corresponding to the high and low
+half-words may be declared as</p>
+<pre><code>register HL size 4 ... {
+    field H [31:16];
+    field L [15:0];
+}
+</code></pre>
+<p>If instead big-endian bit numbering is selected in the file, the most
+significant bit has index zero, and the least significant bit has the
+highest index. In that case, the register above may be written as</p>
+<pre><code>register HL size 4 ... {
+    field H [0:15];
+    field L [16:31];
+}
+</code></pre>
+<p>This is useful when modeling a system where the documentation uses
+big-endian bit numbering, so it can be compared directly to the model.</p>
+<p>If a register contains a set of fields with similar functionality,
+then these may be represented as a <em>field array</em>. In this case,
+the array size must be specified using the verbose <code><em>i</em> in
+0..<em>max</em></code> syntax, and the bit range specification is
+preceded by the <code>@</code> character, like:</p>
+<pre><code>register R size 4 ... {
+    field A[i in 0..2] @ [i*3 + 2 : i * 3];
+}
+</code></pre>
+<h2 id="conditional-objects">3.10 <a href="#conditional-objects">Conditional Objects</a></h2>
+<p>It is also possible to conditionally include or exclude one or more
+object declarations, depending on the value of a boolean
+expression. This is especially useful when reusing source files
+between several similar models that differ in some of the details.</p>
+<p>The syntax is very similar to the <code>if</code> statements used in
+methods.</p>
+<pre><code>if ($enable_target) {
+    connect target (
+        interface signal;
+    }
+}
+</code></pre>
+<p>One difference is that the braces are required.  It is also possible
+to add else branches, or else-if branches.</p>
+<pre><code>if ($modeltype == "Mark I") {
+    ...
+} else if ($modeltype == "Mark II" {
+    ...
+} else {
+    ...
+}
+</code></pre>
+<p>The general syntax is</p>
+<pre>if ( <em>conditional</em> ) { <em>object declarations</em> ... }
+else if ( <em>conditional</em> ) { <em>object declarations</em> ... }
+...
+else { <em>object declarations</em> ... }
+</pre>
+<p>The <em>conditional</em> is an expression with a constant boolean
+value.  It may use parameters declared at the same level in the object
+hierarchy, or in parent levels.</p>
+<p>The <em>object declarations</em> are any number of declarations of
+objects or methods, but not parameters.  When the conditional is true
+(or if it's the else branch of a false conditional), the object
+declarations are treated as if they had appeared without any
+surrounding <em>if</em>.  So the two following declarations are
+equivalent:</p>
+<pre><code>if (true) {
+    register R size 4;
+} else {
+    register R size 2;
+}
+</code></pre>
+<p>is equivalent to</p>
+<pre><code>register R size 4;
+</code></pre>
+<h2 id="global-declarations">3.11 <a href="#global-declarations">Global Declarations</a></h2>
+<p>The following sections describe the global declarations in DML. These
+can only occur on the top level of a DML program, i.e., not within an
+object or method. Unless otherwise noted, their scope is the entire
+program.</p>
+<h3 id="import-declarations">3.11.1 <a href="#import-declarations">Import Declarations</a></h3>
+<pre>import <em>filename</em>;
+</pre>
+<p>Imports the contents of the named file. <em>filename</em> must be a string
+literal, such as <code>"utility.dml"</code>. The <code>-I</code> option to the
+<code>dmlc</code> compiler can be used to specify directories to be searched
+for import files.</p>
+<p>If <em>filename</em> starts with <code>./</code>, the compiler disregards
+the <code>-I</code> flag, and the path is instead interpreted relative to
+the directory of the importing file.</p>
+<p>Note that imported files are parsed as separate units, and use their own
+language version and bit order declarations.</p>
+<p>A DML 1.2 file is allowed to import a DML 1.4 file, but the exact
+semantics are not well-specified: The standard libraries of DML 1.4
+and DML 1.2 are quite different, and the compiler contains workarounds
+to bridge some of the differences; these workarounds may evolve in
+incompatible ways.</p>
+<h3 id="template-declarations">3.11.2 <a href="#template-declarations">Template Declarations</a></h3>
+<pre>template <em>name</em> { ... }
+</pre>
+<p>Defines a <em>template</em>, a piece of code that can be reused in
+multiple locations. The body of the template contains a number of
+declarations that will be added to any object that uses the template.</p>
+<p>Templates are imported into an object declaration body using
+<code>is</code> statements, written as</p>
+<pre>is <em>name</em>;
+</pre>
+<p>or</p>
+<pre>is (<em>name1</em>, <em>name2</em>);
+</pre>
+<p>It is also possible to use templates when declaring an object or a
+template, as in</p>
+<pre>field F is <em>name</em>;
+</pre>
+<p>or</p>
+<pre>template T is (<em>name1</em>,<em>name2</em>) { ... }
+</pre>
+<p>These can be used in any context where an object declaration may be
+written, and has the effect of expanding the body of the template at the
+point of the <code>is</code>. Note that the expansion is purely textual, so
+e.g., two templates which define methods with the same name cannot both
+be used in the same context.</p>
+<h3 id="bitorder-declarations">3.11.3 <a href="#bitorder-declarations">Bitorder Declarations</a></h3>
+<pre>bitorder <em>order</em>;
+</pre>
+<p>Selects the default bit numbering scheme to be used for interpreting
+bit-slicing expressions and bit field declarations in the file. The
+<em><code>order</code></em> is one of the identifiers <code>le</code> or
+<code>be</code>, implying little-endian or big-endian, respectively.  The
+little-endian numbering scheme means that bit zero is the least
+significant bit in a word, while in the big-endian scheme, bit zero is
+the most significant bit.</p>
+<p>A <code>bitorder</code> declaration should be placed before any other
+global declaration in each DML-file, but must follow immediately after
+the <code>device</code> declaration if such one is present.
+The scope of the declaration is the whole of the file it
+occurs in. If no <code>bitorder</code> declaration is present in a file, the
+default bit order is <code>le</code> (little-endian). The bitorder does not
+extend to imported files; for example, if a file containing a
+declaration "<code>bitorder be;</code>" imports a file with no bit order
+declaration, the latter file will still use the default <code>le</code>
+order.</p>
+<h3 id="constant-declarations">3.11.4 <a href="#constant-declarations">Constant Declarations</a></h3>
+<pre>constant <em>name</em> = <em>expr</em>;
+</pre>
+<p>Defines a named constant which can be used in C context.
+<em><code>expr</code></em> must be a constant-valued expression.</p>
+<h3 id="loggroup-declarations">3.11.5 <a href="#loggroup-declarations">Loggroup Declarations</a></h3>
+<pre>loggroup <em>name</em>;
+</pre>
+<p>Defines a log group, for use in <code>log</code> statements. More generally,
+the identifier <em><code>name</code></em> is bound to an unsigned integer
+value that is a power of 2, and can be used anywhere in C context; this
+is similar to a <code>constant</code> declaration, but the value is
+allocated automatically so that all log groups are represented by
+distinct powers of 2 and can be combined with bitwise <em>or</em> (see
+Section <a class="reference" href="#log-statements">3.13.7</a>).</p>
+<h3 id="typedef-declarations">3.11.6 <a href="#typedef-declarations">Typedef Declarations</a></h3>
+<pre>typedef <em>declaration</em>;
+extern typedef <em>declaration</em>;
+</pre>
+<p>Defines a name for a data type.</p>
+<p>When the <code>extern</code> form is used, the type is assumed to exist in
+the C environment.  No definition of the type is added to the
+generated C code, and the generated C code may assume that the data
+type supports the operations of the declared type.</p>
+<h3 id="struct-declarations">3.11.7 <a href="#struct-declarations">Struct Declarations</a></h3>
+<pre>struct <em>name</em> { <em>declarations</em> }
+</pre>
+<p>This is the same as writing <code>typedef struct { <em>declarations</em> }
+<em>name</em>;</code></p>
+<h3 id="extern-declarations">3.11.8 <a href="#extern-declarations">Extern Declarations</a></h3>
+<pre>extern <em>declaration</em>;
+</pre>
+<p>Declares an external identifier, similar to a C <code>extern</code>
+declaration; for example,</p>
+<pre><code>extern char *motd;
+extern double table[16];
+extern conf_object_t *obj;
+extern int foo(int x);
+extern int printf(const char *format, ...);
+</code></pre>
+<h3 id="header-declarations">3.11.9 <a href="#header-declarations">Header Declarations</a></h3>
+<pre><code>header %{
+...
+%}
+</code></pre>
+<p>Specifies a section of C code which will be included verbatim in the
+generated C header file for the device. There must be no whitespace
+between the <code>%</code> and the corresponding brace in the <code>%{</code>
+and <code>%}</code> markers. The contents of the header section are not
+examined in any way by the <code>dmlc</code> compiler; declarations made
+in C code must also be specified separately in the DML code proper.</p>
+<p>This feature should only be used to solve problems that cannot easily be
+handled directly in DML. It is most often used to make the generated
+code include particular C header files, as in:</p>
+<pre><code>header %{
+#include "extra_defs.h"
+%}
+</code></pre>
+<p>The expanded header block will appear in the generated C file, which
+usually is in a different directory than the source DML
+file. Therefore, when including a file with a relative path, the C
+compiler will not automatically look for the <code>.h</code> file in
+the directory of the <code>.dml</code> file, unless a corresponding
+<code>-I</code> flag is passed. To avoid this problem, DMLC inserts a C
+macro definition to permit including a <em>companion header
+file</em>. For instance, if the
+file <code>/path/to/hello-world.dml</code> includes a header block,
+then the macro <code>DMLDIR_HELLO_WORLD_H</code> is defined as the
+string <code>"/path/to/hello-world.h"</code> within this header
+block. This allows the header block to contain <code>#include DMLDIR_HELLO_WORLD_H</code>, as a way to include <code>hello-world.h</code>
+without passing <code>-I/path/to</code> to the C compiler.</p>
+<p>DMLC only defines one such macro in each header block, by taking the
+DML file name and substituting the <code>.dml</code> suffix
+for <code>.h</code>. Furthermore, the macro is undefined after the
+header. Hence, the macro can only be used to access one specific
+companion header file; if other header files are desired, then
+<code>#include</code> directives can be added to the companion header
+file, where relative paths are expanded as expected.</p>
+<p>See also <code>footer</code> declarations, below.</p>
+<h3 id="footer-declarations">3.11.10 <a href="#footer-declarations">Footer Declarations</a></h3>
+<pre><code>footer %{
+...
+%}
+</code></pre>
+<p>Specifies a piece of C code which will be included verbatim at the end
+of the generated code for the device. There must be no whitespace
+between the <code>%</code> and the corresponding brace in the <code>%{</code>
+and <code>%}</code> markers. The contents of the footer section are not
+examined in any way by the <code>dmlc</code> compiler.</p>
+<p>This feature should only be used to solve problems that cannot easily be
+handled directly in DML. See also <code>header</code> declarations, above.</p>
+<h2 id="comparison-to-c-c">3.12 <a href="#comparison-to-c-c">Comparison to C/C++</a></h2>
+<a id="comparison-to-c">
+</a><p><a id="comparison-to-c">The algorithmic language used to express method bodies in DML is an
+extended subset of ISO C, with some C++ extensions such as <code>new</code>
+and <code>delete</code>. The DML-specific statements and expressions are
+described in Sections </a><a class="reference" href="#statements">3.13</a> and <a class="reference" href="#expressions">3.14</a>.</p>
+<p>DML defines the following additional built-in data types:</p>
+<dl><dt id="dt:int1-int64-uint1-uint64">
+<p><code>int1</code>, ..., <code>int64</code>, <code>uint1</code>, ...,
+<code>uint64</code></p>
+</dt><dd>
+<p>Signed and unsigned specific-width integer types. Widths from 1 to
+64 are allowed.</p>
+</dd><dt id="dt:bool">
+<p><code>bool</code></p>
+</dt><dd>
+<p>The generic boolean datatype, consisting of the values <code>true</code>
+and <code>false</code>. It is not an integer type, and the only implicit
+conversion is to <code>uint1</code></p>
+</dd></dl>
+<p>DML also supports the non-standard C extension
+<code>typeof(<em>expr</em>)</code> operator, as provided by some modern C
+compilers such as GCC.</p>
+<p>Most forms of C statements and expressions can be used in DML, with the
+exceptions listed below. Some of these limitations may be removed in a
+later version of DML.</p>
+<ul>
+<li>
+<p>Local variable declarations must use the keyword <code>local</code> or
+<code>static</code>, as in</p>
+<pre><code>method m() {
+    static int call_count = 0;
+    local int n = 0;
+    local float f;
+    ...
+}
+</code></pre>
+<p>(only one variable can be introduced per declaration). Static
+variables have a similar meaning as in C, they retain value over function calls.
+But note that a <code>static</code> variable in DML is per device object, it is not
+globally shared between device instances.
+For symmetry with C, the keyword
+<code>auto</code> may be used as a synonym for <code>local</code>.</p>
+</li>
+<li>
+<p>Plain C functions (i.e., not DML methods) can be called using normal
+function call syntax, as in <code>f(x)</code>.</p>
+<p>C functions must either be defined in the <code>footer</code> or <code>header</code>
+sections of the DML file, or in one or more C source code files that are
+compiled or linked to separately.</p>
+<p>See sections <a class="reference" href="#header-declarations">3.11.9</a> and <a class="reference" href="#footer-declarations">3.11.10</a> for more detail on <code>header</code> and <code>footer</code>.</p>
+<p>In either case, the functions must also be declared as <code>extern</code> in the
+DML source code. For example:</p>
+<p><strong>foo.c</strong></p>
+<pre><code>int foo(int i)
+{
+    return ~i + 1;
+}
+</code></pre>
+<p><strong>bar.dml</strong></p>
+<pre><code>// tell DML that these functions are available
+extern int foo(int);
+extern int bar(int);
+
+header %{
+    // tell generated C that these functions are available
+    int foo(int);  // defined in separate C file
+    int bar(int);  // defined in the DML footer section
+%}
+
+footer %{
+    int bar(int i)
+    {
+        return -i;
+    }
+%}
+</code></pre>
+<p><strong>Makefile</strong></p>
+<pre><code>SRC_FILES=foo.c bar.dml
+</code></pre>
+</li>
+<li>
+<p><code>return</code> statements do not take a return value as argument;
+output parameters of methods must be assigned explicitly.</p>
+</li>
+<li>
+<p>Type casts must be written as <code>cast(<em>expr</em>,
+<em>type</em>)</code>.</p>
+</li>
+<li>
+<p>Comparison operators and logical operators produce results of type
+<code>bool</code>, not integers.</p>
+</li>
+<li>
+<p>Conditions in <code>if</code>, <code>for</code>, <code>while</code>, etc. must
+be proper booleans; e.g., <code>if (i == 0)</code> is allowed, and <code>if (b)</code> is allowed if <code>b</code> is a boolean variable, but <code>if (i)</code> is not, if <code>i</code> is an integer.</p>
+</li>
+<li>
+<p>The <code>sizeof</code> operator can only be used on expressions. To
+take the size of a datatype, the <code>sizeoftype</code> operator must be
+used.</p>
+</li>
+<li>
+<p>Declarations are not allowed in the first clause of <code>for</code>-
+statements.</p>
+</li>
+<li>
+<p>Comma-expressions are only allowed in the head of
+<code>for</code>-statements, as in</p>
+<pre><code>for (i = 10, k = 0; i &gt; 0; --i, ++k) ...
+</code></pre>
+</li>
+<li>
+<p><code>delete</code> and <code>throw</code> can only be used as statements
+in DML, not as expressions.</p>
+</li>
+<li>
+<p><code>throw</code> does not take any argument, and <code>catch</code> cannot
+switch on the type or value of an exception.</p>
+</li>
+<li>
+<p>Type declarations do not allow the use of <code>union</code>.
+However, the <code>extern typedef</code> construct can be used to achieve
+the same result.  For example, consider the union data type declared in C
+as:</p>
+<pre><code>typedef union { int i; bool b; } u_t;
+</code></pre>
+<p>The data type can be exposed in DML as follows:</p>
+<pre><code>header %{
+  typedef union { int i; bool b; } u_t;
+%}
+extern typedef struct { int i; bool b; } u_t;
+</code></pre>
+<p>This will make <code>u_t</code> look like a struct to DML, but since union
+and struct syntax is identical in C, the C code generated from uses
+of <code>u_t</code> will work correctly together with the definition from
+the <code>header</code> declaration.</p>
+</li>
+</ul>
+<h2 id="statements">3.13 <a href="#statements">Statements</a></h2>
+<p>All ISO C statements are available in DML, and have the same semantics
+as in C. Like ordinary C expressions, all DML expressions can also be
+used in expression-statements.</p>
+<p>DML adds the following statements:</p>
+<h3 id="delete-statements">3.13.1 <a href="#delete-statements">Delete Statements</a></h3>
+<pre>delete <em>expr</em>;
+</pre>
+<p>Deallocates the memory pointed to by the result of evaluating
+<em><code>expr</code></em>. The memory must have been allocated with the
+<code>new</code> operator, and must not have been deallocated previously.
+Equivalent to <code>delete</code> in C++; however, in DML, <code>delete</code>
+can only be used as a statement, not as an expression.</p>
+<h3 id="try-statements">3.13.2 <a href="#try-statements">Try Statements</a></h3>
+<pre>try <em>protected-stmt</em> catch <em>handle-stmt</em>
+</pre>
+<p>Executes <em><code>protected-stmt</code></em>; if that completes normally,
+the whole <code>try</code>-statement completes normally. Otherwise,
+<em><code>handle-stmt</code></em> is executed. This is similar to exception
+handling in C++, but in DML there is only one kind of exception. Note
+that Simics C-exceptions are not handled. See also <code>throw</code>.</p>
+<h3 id="throw-statements">3.13.3 <a href="#throw-statements">Throw Statements</a></h3>
+<pre><code>throw;
+</code></pre>
+<p>Throws (raises) an exception, which may be caught by a
+<code>try</code>-statement. Exceptions are propagated over method call
+boundaries. This is similar to <code>throw</code> in C++, but in DML it is
+not possible to specify a value to be thrown. Furthermore, in DML,
+<code>throw</code> is a statement, not an expression.</p>
+<h3 id="call-statements">3.13.4 <a href="#call-statements">Call Statements</a></h3>
+<pre>call <em>method</em>(<em>e1</em>, ... <em>eN</em>) -&gt; (<em>d1</em>, ... <em>dM</em>);
+</pre>
+<p>Calls a DML method with input arguments <em><code>e1</code></em>, ...
+<em><code>eN</code></em> and output destinations <em><code>d1</code></em>, ...
+<em><code>dM</code></em>. The destinations are usually variables, but they can
+be arbitrary L-values (even bit slices) as long as their types match the
+method signature.</p>
+<p>If the method has no output parameters, the <code>-&gt; ()</code> part may be
+omitted, as in</p>
+<pre><code>call p(...);
+</code></pre>
+<p>which is equivalent to <code>call p(...) -&gt; ();</code>.</p>
+<p>If the method has no input parameters, the empty pair of parentheses may
+also be omitted, as in</p>
+<pre><code>call q -&gt; (...);
+</code></pre>
+<p>which is equivalent to <code>call q() -&gt; (...);</code>.</p>
+<p>A method with neither input nor output parameters may thus be called
+simply as</p>
+<pre><code>call me;
+</code></pre>
+<h3 id="inline-statements">3.13.5 <a href="#inline-statements">Inline Statements</a></h3>
+<pre>inline <em>method</em>(<em>e1</em>, ... <em>eN</em>) -&gt; (<em>d1</em>, ... <em>dM</em>);
+</pre>
+<p>This is equivalent to <code>call <em>method</em>(<em>e1</em>, ... <em>eN</em>)
+-&gt; (<em>d1</em>, ... <em>dM</em>);</code> but the code for the called method
+is expanded at the place of the <code>inline</code> call, and may be partly
+specialized to the values of any input arguments that are constant at
+DML compile time.</p>
+<p>Furthermore, methods that are only intended for inlining may be declared
+as a form of polymorphic hygienic macros; see Section <a class="reference" href="#methods-as-macros">3.7.4</a>.</p>
+<h3 id="after-statements">3.13.6 <a href="#after-statements">After Statements</a></h3>
+<pre>after (<em>time</em>) call <em>method</em>(<em>e1</em>, ... <em>eN</em>);
+</pre>
+<p>The <code>after</code> construct sets up an asynchronous event which will
+perform the specified method call with the provided arguments at the
+given time into the future (in simulated time, measured in seconds)
+relative to the time when the <code>after</code> statement is executed.
+For example:</p>
+<pre><code>after (0.1) call $my_callback(1, false);
+</code></pre>
+<p>This is equivalent to creating a named <code>event</code> object with
+an event-method that performs the specified <code>call</code>, and posting
+that event at the given time, with associated data corresponding to the
+provided arguments; see Section <a class="reference" href="object-model.html#events">2.11</a>.</p>
+<p>Each argument to the called method is evaluated at the time the
+<code>after</code> statement is executed and the event is posted.</p>
+<p>If the method has no input parameters, the empty pair of parentheses may
+be omitted, as in</p>
+<pre><code>after (0.1) call $q;
+</code></pre>
+<p>To allow the posted event to be checkpointed, <code>after</code> statements
+may only be performed with methods that have no output parameters, and
+where each input parameter is of <em>serializable type</em>. Serializable
+types are currently restricted to primitive data types, or structs or
+arrays containing only data types that are serializable.
+This means that <code>after</code> statements cannot be used with methods
+that e.g. have pointer parameters.</p>
+<h3 id="log-statements">3.13.7 <a href="#log-statements">Log Statements</a></h3>
+<pre>log <em>log-type</em>, <em>level</em>, <em>groups</em>: <em>format-string</em>, <em>e1</em>, ..., <em>eN</em>;
+</pre>
+<p>Outputs a formatted string to the Simics logging facility. The string
+following the colon is a normal C <code>printf</code> format string,
+optionally followed by one or more arguments separated by commas. (The
+format string should not contain the name of the device, or the type of
+the message, e.g., "error:..."; these things are automatically prefixed.)
+Either both of <em><code>level</code></em> and <em><code>groups</code></em> may be
+omitted, or only the latter; i.e., if <em><code>groups</code></em> is
+specified, then <em><code>level</code></em> must also be given explicitly.</p>
+<p>A Simics user can configure the logging facility to show only specific
+messages, by matching on the three main properties of each message:</p>
+<ul>
+<li>
+<p>The <em><code>log-type</code></em> specifies the general category
+of the message. The value must be one of the identifiers
+<code>info</code>, <code>error</code>, <code>critical</code>,
+<code>spec_viol</code>, or <code>unimpl</code>.
+Log types can also be written using the alternative syntaxes
+<code>"info"</code>, <code>"error"</code>, <code>"critical"</code>,
+<code>"spec_violation"</code>, and <code>"unimplemented"</code>, respectively.
+This alternative syntax is only reserved for backward compatibility
+and may be removed in future language versions.</p>
+</li>
+<li>
+<p>The <em><code>level</code></em> specifies at what verbosity level the log
+messages are displayed. The value must be an integer from 1 to 4; if
+omitted, the default level is 1. The different levels have the following
+meaning:</p>
+<ol>
+<li>
+<p>Important messages (displayed at the normal verbosity level)</p>
+</li>
+<li>
+<p>High level informative messages (like mode changes and important events)</p>
+</li>
+<li>
+<p>Medium level information (the lowest log level for SW development)</p>
+</li>
+<li>
+<p>Debugging level with low level model detail (Mainly used for model
+development)</p>
+</li>
+</ol>
+</li>
+<li>
+<p>The <em><code>groups</code></em> argument is an integer whose bit
+representation is used to select which log groups the message belongs
+to. If omitted, the default value is 0. The log groups are specific for
+the device, and must be declared using the <code>loggroup</code>
+device-level declaration. For example, a DML source file containing the
+declarations</p>
+<pre><code>loggroup good;
+loggroup bad;
+loggroup ugly;
+</code></pre>
+<p>could also contain a log statement such as</p>
+<pre><code>log info, 2, (bad | ugly): "...";
+</code></pre>
+<p>(note the <code>|</code> bitwise-or operator), which would be displayed if
+the user chooses to view messages from group <code>bad</code> or
+<code>ugly</code>, but not if only group <code>good</code> is shown.</p>
+<p>Groups allow the user to create arbitrary classifications of log
+messages, e.g., to indicate things that occur in different states, or in
+different parts of the device, etc. The two log groups
+<code>Register_Read</code> and <code>Register_Write</code> are predefined by
+DML, and are used by several of the built-in methods.</p>
+</li>
+</ul>
+<p>The <em><code>format-string</code></em> should be one or several string
+literals concatenated by the '+' operator, all optionally surrounded
+by round brackets.</p>
+<p>See also <em>Simics Model Builder User's Guide</em>, section
+"Logging", for further details.</p>
+<h3 id="assert-statements">3.13.8 <a href="#assert-statements">Assert Statements</a></h3>
+<pre>assert <em>expr</em>;
+</pre>
+<p>Evaluates <em><code>expr</code></em>. If the result is <code>true</code>, the
+statement has no effect; otherwise, a runtime-error is generated.
+<em><code>expr</code></em> must have type <code>bool</code>.</p>
+<h3 id="error-statements">3.13.9 <a href="#error-statements">Error Statements</a></h3>
+<pre>error <em>string</em>;
+</pre>
+<p>Attempting to compile an <code>error</code> statement causes the compiler to
+generate an error, using the specified string as error message. The
+string may be omitted; in that case, a default error message is used.</p>
+<p>The <em><code>string</code></em>, if present, should be one or several
+string literals concatenated by the '+' operator, all optionally
+surrounded by round brackets.</p>
+<h3 id="foreach-statements">3.13.10 <a href="#foreach-statements">Foreach Statements</a></h3>
+<pre>foreach <em>identifier</em> in (<em>expr</em>) <em>statement</em>
+</pre>
+<p>The <code>foreach</code> statement repeats its body (the
+<em><code>statement</code></em> part) once for each element in the
+<em>list</em>  given by <em><code>expr</code></em>.
+The <em><code>identifier</code></em> is used to refer to the current element
+within the body. It is <em>not</em> used with a <code>$</code> prefix.</p>
+<p>If <em><code>expr</code></em> is a list, it is always a DML compile-time
+constant, and in that case the loop is completely unrolled by the DML
+compiler. This can be combined with tests on the value of
+<em><code>identifier</code></em> within the body, which will be evaluated at
+compile time.</p>
+<p>For example:</p>
+<pre><code>foreach x in ([3,2,1]) {
+    if (x == 1) foo();
+    else if (x == 2) bar();
+    else if (x == 3) baz();
+    else error "out of range";
+}
+</code></pre>
+<p>would be equivalent to</p>
+<pre><code>baz();
+bar();
+foo();
+</code></pre>
+<p>Only <code>if</code> can be used to make such selections; <code>switch</code>
+statements are <em>not</em> evaluated at compile time. (Also
+note the use of <code>error</code> above to catch any compile-time
+mistakes.)</p>
+<p>The <code>break</code> statement can be used within a <code>foreach</code> loop to exit it.</p>
+<h3 id="select-statements">3.13.11 <a href="#select-statements">Select Statements</a></h3>
+<pre>select <em>identifier</em> in (<em>expr</em>) where (<em>cond-expr</em>) <em>statement</em> else <em>default-statement</em>
+</pre>
+<p>The <code>select</code> statement
+resembles a C <code>switch</code> statement and it
+is very similar to the <code>foreach</code>
+statement, but executes the <em><code>statement</code></em> exactly once for
+the first matching element in the <em>list</em>  given by <em><code>expr</code></em>, i.e., for the first element such that
+<em><code>cond-expr</code></em> is <code>true</code>; or if no element matches, it
+executes the <em><code>default-statement</code></em>.</p>
+<p>If <em><code>expr</code></em> is a list, <em>and</em> the
+<em><code>cond-expr</code></em> only depends on compile-time constants, apart
+from <em><code>identifier</code></em>, then the choice will be performed by
+the DML compiler, and code will only be generated for the selected case.</p>
+<h2 id="expressions">3.14 <a href="#expressions">Expressions</a></h2>
+<p>All ISO C operators are available in DML, except for certain limitations
+on the comma-operator, the <code>sizeof</code> operator, and type casts; see
+Section <a class="reference" href="#comparison-to-c">x</a>. Operators have the same
+precedences and semantics as in C</p>
+<p>DML adds the following expressions:</p>
+<h3 id="the-undefined-constant">3.14.1 <a href="#the-undefined-constant">The Undefined Constant</a></h3>
+<pre><code>undefined
+</code></pre>
+<p>The constant <code>undefined</code> is an abstract <em>compile-time
+only</em> value, mostly used as a default for parameters that are
+intended to optionally be overridden. The <code>undefined</code> expression may only
+appear as a parameter value, as argument to
+the <code>defined <em>expr</em></code> test (see below), and as the value for an
+untyped parameter when invoking a method with
+<code>inline</code>.</p>
+<h3 id="references">3.14.2 <a href="#references">References</a></h3>
+<pre>$<em>identifier</em>
+</pre>
+<p>To reference something in the DML object structure, the reference (an
+object-context identifier) must be prefixed by a <code>$</code> character;
+see also Section <a class="reference" href="#lexical-structure">3.2</a>. Following the
+identifier, subobjects may be selected using
+<code>.</code> and <code>-&gt;</code> as in C. (However, most objects in the DML
+object structure are proper substructures selected with the <code>.</code>
+operator.) For example,</p>
+<pre><code>$this.size # a parameter
+$dev.bank1 # a bank object
+$bank1.r0.hard_reset # a method
+</code></pre>
+<p>The DML object structure is a compile-time construction; references to
+certain objects are not considered to be proper values, and result in
+compile errors if they occur as standalone expressions.</p>
+<p>Some DML objects are proper values, while others are not:</p>
+<ul>
+<li>
+<p><code>data</code> objects are proper values</p>
+</li>
+<li>
+<p><code>register</code>, <code>field</code> and <code>attribute</code> objects
+are proper values when they have allocated storage.</p>
+</li>
+<li>
+<p>Objects of types <code>method</code>, <code>interface</code>, <code>implement</code>
+and <code>device</code> are technically considered run-time values, but
+the exact meaning is undefined so their use is discouraged.</p>
+</li>
+<li>
+<p>A <code>bank</code>, <code>group</code>, <code>connect</code>, <code>port</code>
+or <code>event</code> object is not a value.</p>
+</li>
+<li>
+<p>Inside an object array, the index variable (named <code>$i</code> by
+default) may evaluate to an <em>unknown index</em> if accessed
+from a location where the index is not statically known. For
+instance, in <code>group g[i in 0..3] { if ($i == 0) { ... } }</code>,
+the <code>if</code> statement is invoked once, statically, across all
+indices, meaning that the <code>$i</code> reference is an unknown
+index, and will yield a compile error.</p>
+</li>
+<li>
+<p>A reference to a <code>parameter</code> object is a proper value
+only if the parameter value is a proper value: A parameter value
+can be a reference to an object, an object array, a list,
+the <code>undefined</code> expression, or a static index (discussed
+above), in which case the parameter is not allowed as a standalone
+expression.</p>
+</li>
+<li>
+<p>When the object structure contains an array of objects,
+e.g. <code>register r[4] { ... }</code>, then a reference to the array
+itself (i.e. <code>$r</code> as opposed to <code>$r[0]</code>), is not
+considered a proper value.</p>
+</li>
+</ul>
+<p>If a DML object is not a proper value, then a reference to the object
+will give a compile error unless it appears in one of the following contexts:</p>
+<ul>
+<li>
+<p>As the left operand of the <code>.</code> operator</p>
+</li>
+<li>
+<p>As the value of a <code>parameter</code> object</p>
+</li>
+<li>
+<p>As a list element in a compile-time list</p>
+</li>
+<li>
+<p>As the operand of the <code>defined</code> operator</p>
+</li>
+<li>
+<p>A <code>method</code> object may be invoked in a <code>call</code>
+or <code>inline</code> statement</p>
+</li>
+<li>
+<p>An object array may appear in an index
+expression <code><em>array</em>[<em>index</em>]</code></p>
+</li>
+<li>
+<p>A register or field may appear as a <code>typeof</code> operand, even if the
+object does not have allocated storage.</p>
+</li>
+<li>
+<p>An unknown index may be used as an index to an object array; in the
+resulting object reference, the corresponding index variable of
+the object array will have an unknown value.</p>
+</li>
+</ul>
+<h3 id="new-expressions">3.14.3 <a href="#new-expressions">New Expressions</a></h3>
+<pre>new <em>type</em>
+
+new <em>type</em>[<em>count</em>]
+</pre>
+<p>Allocates a chunk of memory large enough for a value of the specified
+type.  If the second form is used, memory for <em>count</em> values will
+be allocated.  The result is a pointer to the allocated memory. (The
+pointer is never null; if allocation should fail, the Simics
+application will be terminated.)</p>
+<p>When the memory is no longer needed, it should be deallocated using a
+<code>delete</code> statement.</p>
+<h3 id="cast-expressions">3.14.4 <a href="#cast-expressions">Cast Expressions</a></h3>
+<pre>cast(<em>expr</em>, <em>type</em>)
+</pre>
+<p>Type casts in DML must be written with the above explicit <code>cast</code>
+operator, for syntactical reasons.</p>
+<p>Semantically, <code>cast(<em>expr</em>, <em>type</em>)</code> is equivalent to
+the C expression <code>(<em>type</em>) <em>expr</em></code>.</p>
+<h3 id="sizeoftype-expressions">3.14.5 <a href="#sizeoftype-expressions">Sizeoftype Expressions</a></h3>
+<pre>sizeoftype <em>type</em>
+</pre>
+<p>The <code>sizeof</code> operator in DML can only be used on expressions,
+not on types, for syntactical reasons. To take the size of a datatype,
+the <code>sizeoftype</code> operator must be used, as in</p>
+<pre><code>int size = sizeoftype io_memory_interface_t;
+</code></pre>
+<p>Semantically, <code>sizeoftype <em>type</em></code> is equivalent to the C
+expression <code>sizeof (<em>type</em>)</code>.</p>
+<h3 id="defined-expressions">3.14.6 <a href="#defined-expressions">Defined Expressions</a></h3>
+<pre>defined <em>expr</em>
+</pre>
+<p>This compile-time test evaluates to <code>false</code> if
+<em><code>expr</code></em> has the value <code>undefined</code>, and to
+<code>true</code> otherwise.</p>
+<h3 id="list-expressions">3.14.7 <a href="#list-expressions">List Expressions</a></h3>
+<pre>[<em>e1</em>, ..., <em>eN</em>]
+</pre>
+<p>A list is a <em>compile-time only</em> value, and is an ordered sequence
+of zero or more compile-time constant values. Lists are in particular
+used in combination with <code>foreach</code> and <code>select</code>
+statements, and are sometimes provided by built-in parameters,
+such as the <code>fields</code> parameter of <code>register</code>
+objects.</p>
+<p>A list expression may only appear in the following contexts:</p>
+<ul>
+<li>
+<p>As the list to iterate over in a <code>foreach</code>
+or <code>select</code> statement</p>
+</li>
+<li>
+<p>As the value in a <code>parameter</code> or <code>constant</code> declaration</p>
+</li>
+<li>
+<p>As a list element in another compile-time list</p>
+</li>
+<li>
+<p>In an index expression, <code><em>list</em>[<em>index</em>]</code></p>
+</li>
+<li>
+<p>As the operand of the <code>defined</code> operator</p>
+</li>
+</ul>
+<h3 id="bit-slicing-expressions">3.14.8 <a href="#bit-slicing-expressions">Bit Slicing Expressions</a></h3>
+<pre><em>expr</em>[<em>e1</em>:<em>e2</em>]
+
+<em>expr</em>[<em>e1</em>:<em>e2</em>, <em>bitorder</em>]
+
+<em>expr</em>[<em>e1</em>]
+
+<em>expr</em>[<em>e1</em>, <em>bitorder</em>]
+</pre>
+<p>If <em><code>expr</code></em> is of integer type, then the above
+<em>bit-slicing</em> syntax can be used in DML to simplify extracting or
+updating particular bit fields of the integer. Bit slice syntax can be
+used both as an expression producing a value, or as the target of an
+assignment (an L-value), e.g., on the left-hand side of an <code>=</code>
+operator.</p>
+<p>Both <em><code>e1</code></em> and <em><code>e2</code></em> must be integers. The
+syntax <code><em>expr</em>[<em>e1</em>]</code> is a short-hand for
+<code><em>expr</em>[<em>e1</em>:<em>e1</em>]</code> (but only evaluating
+<em><code>e1</code></em> once).</p>
+<p>The <em><code>bitorder</code></em> part is optional, and selects the bit
+numbering scheme (the "endianness") used to interpret the values of
+<em><code>e1</code></em> and <em><code>e2</code></em>. If present, it must be one
+of the identifiers <code>be</code> or <code>le</code>, just as in the
+<code>bitorder</code> device-level declaration.  If no
+<em><code>bitorder</code></em> is given in the expression, the global bit
+numbering (as defined by the <code>bitorder</code> declaration) is used.</p>
+<p>The first bit index <em><code>e1</code></em> always indicates the <em>most
+significant bit</em> of the field, regardless of the bit numbering
+scheme; cf. Section <a class="reference" href="#field-declarations">3.9.3</a>. If the default
+little-endian bit numbering is used, the least significant bit of the
+integer has index zero, and the most significant bit of the integer has
+index <em>n</em> - 1, where <em>n</em> is the width of the integer type.</p>
+<p>If big-endian bit numbering is used, e.g., due to a <code>bitorder be;</code> declaration in the file, or using a specific local bit
+numbering as in <code><em>expr</em>[<em>e1</em>:<em>e2</em>, be]</code>, then
+the bit corresponding to the little-endian bit number <em>n</em> - 1 has
+index zero, and the least significant bit has the index <em>n</em> - 1,
+where <em>n</em> is the bit width of <em><code>expr</code></em>.  Note that
+big-endian numbering is illegal if <em><code>expr</code></em> isn't a simple
+expression with a well-defined bit width.  This means that only local
+variables, method parameters, device variables (registers, data etc),
+and explicit cast expressions are allowed.  For little-endian
+numbering, any expressions are allowed, since there is never any doubt
+that bit 0 is the least significant bit.</p>
+<p>If the bit-slicing expression results in a zero or negative sized
+range of bits, the behavior is undefined.</p>
+<h3 id="stringify-expressions">3.14.9 <a href="#stringify-expressions">Stringify Expressions</a></h3>
+<pre># <em>expr</em>
+</pre>
+<p>Translates the value of <em><code>expr</code></em> (which must be a
+compile-time constant) into a string constant. This is similar to the
+use of <code>#</code> in the C preprocessor, but is performed on the level
+of compile time values, not tokens. The result is often used with the
+<code>+</code> string operator.</p>
+<h3 id="string-concatenation-expressions">3.14.10 <a href="#string-concatenation-expressions">String Concatenation Expressions</a></h3>
+<pre><em>expr1</em> + <em>expr2</em>
+</pre>
+<p>If both <em><code>expr1</code></em> and <em><code>expr2</code></em> are compile-time
+string constants, the expression <code><em>expr1</em> + <em>expr2</em></code>
+concatenates the two strings at compile time. This is often used in
+combination with the <code>#</code> operator, or to break long lines for
+source code formatting purposes.</p>
+
+<div class="chain">
+<a href="object-model.html">2 The Object Model</a>
+<a href="libraries.html">4 Libraries and Built-ins</a>
+</div>

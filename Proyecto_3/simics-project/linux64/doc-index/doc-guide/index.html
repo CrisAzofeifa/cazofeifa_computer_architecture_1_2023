@@ -1,0 +1,290 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Writing Simics Documentation</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<div class="note">
+<h2 id="technology-preview"><a href="#technology-preview">Technology Preview</a></h2>
+<p>This is a technology preview of the new, documentation system for Simics. It can be used to generate HTML documentation for Simics from Markdown. Everything here is subject to change without notice.</p>
+</div>
+<h1 id="writing-simics-documentation"><a href="#writing-simics-documentation">Writing Simics Documentation</a></h1>
+<p>The Simics documentation tool takes Markdown files and images in a directory and a table of contents file and produces documents in html.</p>
+<p>To write a document you write a <code>toc.json</code> file to specify the structure of the document and a series of Markdown file containing the actual content of the document.</p>
+<p>This Simics module build system uses a simple convention to find documents to build.
+It looks for documents in the <code>doc-src</code> directory in your Simics project, and allows you to build any documents it finds there.
+For example, if you have a document at <code>doc-src/my-document</code> in your Simics project, then the build system will find it and you can build it by running <code>make doc/my-document</code>.
+You can configure your project to look in different directories.
+We will describe this later in this document.</p>
+<p>The tool accepts multiple <em>input directories</em> for a single document.
+When the tool looks for a file it looks across all its input directories and takes the first file with the given name it finds.
+For the build system integration this is used to share common input files, like the CSS style-sheet, across documents.
+It adds both the document directory and the common directory as input directories.</p>
+<h2 id="an-example"><a href="#an-example">An Example</a></h2>
+<p>Let's look at building this very document you are reading as an example.
+We assume you have set up a Simics project associated with a Simics installation that includes the documentation package.
+This example also assumes you run things on a Linux host.
+The tool works just as well on Windows, but you have to adapt to the <code>win64</code> host directory.
+The examples also assumes a Unix shell, and you may need to use other commands on Windows.
+All the examples here also assume that you have your simics-project as the current working directory in your shell.</p>
+<p>First you need to copy the source of the document from the documentation package to your project:</p>
+<pre><code>mkdir -p doc-src
+cp -a &lt;doc-package&gt;/src/docs/simics-manuals/doc-guide doc-src
+</code></pre>
+<p>Then you can build your local copy of the document:</p>
+<pre><code>make doc/doc-guide
+</code></pre>
+<p>This will place the built document in <code>linux64/doc/html/doc-guide</code>.
+The main entry-point to the document is in <code>linux64/dod/html/doc-guide/index.html</code>.
+You can open it in your browser to read the resulting document.</p>
+<h2 id="documentation-make-targets"><a href="#documentation-make-targets">Documentation Make Targets</a></h2>
+<p>You don't have to write any make files to use the documentation system.
+The Simics build system will find the documents automatically and provide relevant make targets.
+The build system integration also selects the Simics CSS style sheet for you.</p>
+<p>Each document you can build will have a make target of the form <code>doc/&lt;doc&gt;</code>.
+By convention, the build system will look in <code>doc-src</code> for documents.
+Each sub-directory of <code>doc-src</code> containing a <code>toc.json</code> file is considered a document.
+The build system defines one build rule for each such document.
+It will only look for documents that are direct sub-directories of <code>doc-src</code>.
+It won't try to find documents at arbitrary depths.</p>
+<p>There is also a <code>doc/all</code> rule to build all documents in your project, and a <code>doc/list</code> rule to list the build targets for all individual documents in the project.</p>
+<p>In your project you can change which directory to search for documents in by setting <code>DOC_SRC_DIRS</code> in your <code>config-user.mk</code>.
+It should be set to a space-separated list of directories to look for documents in.
+As above, a document is any directory containing a <code>toc.json</code> file.</p>
+<h2 id="running-the-tool-directly"><a href="#running-the-tool-directly">Running The Tool Directly</a></h2>
+<p>The tool can be run directly.
+This could be used to integrate in other build systems.
+When you run the tool directly you don't have to follow the conventions set out by the integration into the Simics build system, but you also have to specify more things manually.
+Knowing how the tool works and what its inputs are is also useful to better understand <code>toc.json</code>.</p>
+<p>The tool is available at <code>&lt;doc-package&gt;/linux64/bin/dodoc</code>.
+It takes a list of directories as input, and an output directory to put the resulting document in.
+There are also some additional flags to specify which css-file to use etc.
+To get the full list of arguments run <code>&lt;doc-package&gt;/linux64/bin/dodoc --help</code>.</p>
+<p>You specify input directories one after another.
+To share chapters between documents or common resources like images you can specify more than one input directory.
+The tool requires that all the directories exist.
+When looking for files it will take the first instance of the file it finds.</p>
+<h2 id="toc-json"><a href="#toc-json">toc.json</a></h2>
+<p>This file defines your document and its structure.
+It is a JSON file declaring the table of contents of the document with references to the source files that provide the text for each section of the document.
+The document is structured as a tree of sections.
+Each section is a JSON object with keys to specify the source file of the section, children of the section, etc.</p>
+<p>The top-level section has some additional fields you can specify.</p>
+<h3 id="section-objects"><a href="#section-objects">Section Objects</a></h3>
+<p>Each section object in <code>toc.json</code> can have the following keys:</p>
+<ul>
+<li><strong><code>file</code>:</strong> A string value that points to the Markdown file which contains the source for the section's text.
+The tool will look for this Markdown (<code>.md</code>) in all input directories.
+The tool will convert this input file to HTML and place a corresponding file in the output directory with an <code>.html</code> extension.</li>
+<li><strong><code>name</code>:</strong> The name of the section.
+If this is not supplied it will be taken from the top-level heading in the source text instead.
+If it is supplied the source text should not contain any top-level heading and the tool will insert a heading in the output file for you.</li>
+<li><strong><code>children</code>:</strong> A list of child sections.
+Each child is its own section object.</li>
+<li><strong><code>numbering</code>:</strong> A boolean which tells the tool if this section should be numbered or not.
+If it is numbered then the tool will give it a section number.</li>
+<li><strong><code>appendix</code>:</strong> Tells the tool that this section is an appendix.
+This is only valid for the children of the top-level section or the chapters in a book.
+The first section with this key set to <code>true</code> and all following sections will be considered appendicies.
+This means they get a section letter instead of a section number.</li>
+</ul>
+<h3 id="the-root-section"><a href="#the-root-section">The Root Section</a></h3>
+<p>The top-level of the <code>toc.json</code> file is a JSON object and defines the root section of the table of contents.
+The root section can have some extra keys to control the tool.</p>
+<ul>
+<li><strong><code>anchor</code>:</strong> A string which says where in the master table of contents this document should be placed.
+Defaults to "users_guides".
+The master table of contents recognizes the anchors 
+<ul>
+<li>"users_guides",</li>
+<li>"target_guides",</li>
+<li>"programming_guides",</li>
+<li>"technology_guides",</li>
+<li>"application_notes",</li>
+<li>"reference_manuals",</li>
+<li>"release_notes",</li>
+<li>"getting_started",</li>
+<li>"installation_guides", and</li>
+<li>"master-toc".</li>
+</ul>
+</li>
+<li><strong><code>is_book</code>:</strong> A boolean which says if this is a book or not.
+A book has parts as the top-level children, with chapters as the level below that.
+Parts have roman numerals.
+The chapters are enumerated in one big sequence across the entire book.
+The chapter count is not reset for each part.</li>
+<li><strong><code>resource_directories</code>:</strong> An array of strings.
+Extra input directories for the tool.
+Each element is the path to a directory relative to the directory where the <code>toc.json</code> file is found.
+The resource directories are searched after the input directories specified on the command line.</li>
+</ul>
+<p>The purposes of the various anchors are as follows:</p>
+<table><thead><tr><th style="text-align: left">Anchor</th><th style="text-align: left">Purpose</th></tr></thead><tbody>
+<tr><td style="text-align: left">users_guides</td><td style="text-align: left">User's Guides guides users through how to use a part of the product.</td></tr>
+<tr><td style="text-align: left">target_guides</td><td style="text-align: left">Target Guides describe a target platform, its target scripts, etc.</td></tr>
+<tr><td style="text-align: left">programming_guides</td><td style="text-align: left">For specialized APIs such as the Link Library or the C++ Device API.</td></tr>
+<tr><td style="text-align: left">technology_guides</td><td style="text-align: left">Cover the simulation of specific technologies.</td></tr>
+<tr><td style="text-align: left">application_notes</td><td style="text-align: left">Tend to deal with very specific subjects, such as Understanding Simics Timing.</td></tr>
+<tr><td style="text-align: left">reference_manuals</td><td style="text-align: left">Reference documentation for Simics and its packages.</td></tr>
+<tr><td style="text-align: left">release_notes</td><td style="text-align: left">What has changed between releases of a particular package.</td></tr>
+<tr><td style="text-align: left">getting_started</td><td style="text-align: left">Helps a user get started with Simics itself.</td></tr>
+<tr><td style="text-align: left">installation_guides</td><td style="text-align: left">Describes how to install Simics itself.</td></tr>
+<tr><td style="text-align: left">master-toc</td><td style="text-align: left">Don't use. A description of the Simics documentation for users.</td></tr>
+</tbody></table>
+<p>You can read a fuller description for the categories of documents in the <em>Documentation Contents</em> document.</p>
+<h2 id="markdown-files"><a href="#markdown-files">Markdown files</a></h2>
+<p>You write the actual text of the document in Markdown in the <a href="https://commonmark.org/" rel="noopener noreferrer" target="_top">CommonMark</a> flavour.
+There are a couple of simple extensions and conventions used to write figures and references to figures and sections.
+The tool also expects a single top-level heading in the document, or no top-level heading if you provide a section title in <code>toc.json</code>.</p>
+<p>The tool can number sections, subheadings, and figures for you, and allows you to link to them without having to write the number.
+This is mostly intended for back-wards compatibility with our old Simics documentation conventions.</p>
+<p>To specify a figure the tool expects the convention that you wrap the figure in a <code>&lt;figure&gt;</code> tag and an id.
+You can also add a figure caption by writing a <code>&lt;figcaption&gt;</code> inside the <code>&lt;figure&gt;</code> tag.
+The caption will be decorated with the figure number by the tool.
+See figure <a class="reference" href="#figure-example">1</a> for an example.
+You don't have to use an actual image for a figure.</p>
+<p>You don't have to use figures, and can include images directly instead.</p>
+<figure id="figure-example">
+<pre><code>&lt;figure id="example-figure"&gt;
+
+Place your figure here. Possibly an image.
+Markdown is picky, so you need one or more empty lines after the &lt;figure&gt;-tag.
+&lt;figcaption&gt;An example&lt;/figcaption&gt;
+&lt;/figure&gt;
+</code></pre>
+<figcaption>Figure 1. How to write a figure</figcaption>
+</figure>
+<p>To refer to a numbered section, subheading, or figure you use a normal Markdown link, with a single <code>x</code> as placeholder text.
+The tool will replace the placeholder text of such links with the number of the section or figure they link to.
+The replacement is only the number.
+You have to write "Section", "Figure", etc yourself.
+If the tool does not find the section or figure you try to link to, the placeholder will not be replaced.</p>
+<figure id="reference-example">
+<pre><code>See figure [x](#example-figure).
+</code></pre>
+<figcaption>Figure 2. Referring to the figure</figcaption>
+</figure>
+<h2 id="documentation-tests"><a href="#documentation-tests">Documentation Tests</a></h2>
+<p>The documentation tool supports extracting test sessions from documentation.
+This allows you to write documentation that shows how you interact with Simics and test that what is in the documentation matches what the product does.
+This is limited to interactions with the command line interface, and text consoles. </p>
+<p>The mechanism is based on fenced code blocks with the <code>simics</code> language.
+In these code blocks you can use special annotations to drive the tests and highlight user input on the Simics prompt.
+Write <code>simics test &lt;session-name&gt; [&lt;optional-part&gt;]</code> to make the block part of a test, or use just <code>simics</code> to only take advantage of the highlighting of commands.</p>
+<p>Here is a short example:</p>
+<pre><code>```simics test a-test-session
+&gt; run-command-file "%simics%/targets/qsp-x86/firststeps.simics"
+|console board.serconsole.con
+|run-to (# )
+```
+</code></pre>
+<p>Which results in the following in the document</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file "%simics%/targets/qsp-x86/firststeps.simics"</strong>
+</code></pre>
+<p>When you run <code>dodoc</code> with the <code>--extract-tests</code> optional argument the tool will extract a <code>.json</code> file with the test sessions found in the document.</p>
+<pre><code>&lt;doc-package&gt;/linux64/bin/dodoc &lt;document-directories...&gt; --extract-tests &lt;test-sessions-json-file&gt;
+</code></pre>
+<pre><code class="language-json">[
+  {
+    "name": "a-test-session",
+    "steps": [
+      {
+        "Command": "run-command-file %simics%/targets/qsp-x86/firststeps.simics"
+      },
+      {
+        "Console": "board.serconsole.con"
+      },
+      {
+        "RunTo": "# "
+      }
+    ]
+  }
+]
+</code></pre>
+<p>This can then be used to drive tests, but <code>dodoc</code> itself does not include a framework to run such tests.</p>
+<p>Here is the full list of commands you can use in <code>test-simics</code> blocks:</p>
+<table><thead><tr><th>Command</th><th>Intended semantics</th><th>Include in documentation output</th></tr></thead><tbody>
+<tr><td><code>&gt;</code></td><td>run a simics command</td><td>yes, prefixed with <code>simics&gt;</code></td></tr>
+<tr><td><code>\|&gt;</code></td><td>run a simics command</td><td>no</td></tr>
+<tr><td><code>&lt;</code></td><td>check output from simics</td><td>yes</td></tr>
+<tr><td><code>\|&lt;</code></td><td>check output from simics</td><td>no</td></tr>
+<tr><td><code>input</code></td><td>input text on target console</td><td>yes</td></tr>
+<tr><td><code>\|input</code></td><td>input text on target console</td><td>no</td></tr>
+<tr><td><code>run-to</code></td><td>wait for output from target console</td><td>yes</td></tr>
+<tr><td><code>\|run-to</code></td><td>wait for output from target console</td><td>no</td></tr>
+<tr><td><code>\|console</code></td><td>declare which console to use for <code>input</code> and <code>run-to</code></td><td>no</td></tr>
+<tr><td><code>!</code></td><td>skipped</td><td>yes</td></tr>
+</tbody></table>
+<p>All other lines will be included in the manual as is, and skipped for testing.
+All commands are followed by text.
+This text is what is included in the manual, if the line is included.</p>
+<p>The text after a command can be surrounded by parenthesis.
+The parenthesis will not be included in the line, neither for testing or output.
+To allow parenthesis in the text, the initial parenthesis you can include any number of <code>:</code> characters.
+This will match with the same number of <code>:</code> after the final parenthesis.</p>
+<p>You can also use multi-line text after a command. Use a <code>{</code> after the command.
+Again, you can prefix it with <code>:</code>-characters.
+The following lines, up to a line starting with <code>}</code> and the same number as <code>:</code>s a at the start will be used as the text for the command.</p>
+<p>A test session can span several blocks in the same markdown file.
+This allows you to mix descriptions and interactions with Simics freely.</p>
+<p>Blocks that are empty after filtering for lines to include in the manual will be removed entirely from the output.</p>
+<h2 id="including-text-from-source-files"><a href="#including-text-from-source-files">Including text from source files</a></h2>
+<p>You can use the special annotation <code>{{include file#id}}</code> to include text from source files.
+This includes the snippet with the given <em>id</em> from the specified <em>file</em>.</p>
+<p>In the source files you use special comments to create snippets.
+There are two kinds of snippets:</p>
+<ul>
+<li>code snippets, which are inserted as code blocks, and</li>
+<li>markdown snippets, which are inserted as additional markdown text.</li>
+</ul>
+<p>To specify a code snippet surround it with line comments specifying the start and end of the snippet.
+Different languages use different syntax for line comments. 
+Python uses the <code>#</code> character.
+There you specify the start of the snippet with <code>#:: pre &lt;id&gt; {{</code> and the end with <code># }</code>.
+This creates a snippet with the id <em>&lt;id&gt;</em>.</p>
+<p>To specify a markdown snippet you instead start the snippet with <code>#:: doc &lt;id&gt; {{</code>.
+The markdown will be extracted from the line comments between the start and end of the snippet, with the single <code>#</code> and the first space after the <code>#</code> stripped.</p>
+<p>For example:</p>
+<pre><code>{{include file.py#some-code}}
+{{include file.py#some-text}}
+</code></pre>
+<p>and</p>
+<pre><code class="language-python">#:: pre some-code {{
+def foo():
+    print("hello")
+# }}
+
+#:: doc some-text {{
+# ## Hello from Python
+# Yes, that is all I have to say right now.
+# }}
+</code></pre>
+
+<div class="chain">
+<span></span>
+</div>

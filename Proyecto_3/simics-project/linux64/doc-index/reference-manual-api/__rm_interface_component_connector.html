@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>component_connector</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_component.html">component</a>
+<a href="__rm_interface_concurrency_group.html">concurrency_group</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_component_connector">component_connector</a></h1>
+<p>
+
+<a name="component_connector"></a><a name="component_connector_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>component_connector</code> is implemented by components
+  that use connector objects for handling connections between components.
+<p>
+  The connection setup is made in two stages, the check stage and the
+  connect stage. The check stage is often not needed, but it can be
+  used to make sure that the later connect step will not fail. Each
+  connection is handled by a connector object. The connector object
+  will both handle the connection in both direction, i.e. sending
+  connect information and receiving connector information. Two
+  components that should be connected must implement one connector
+  object each.
+</p><p>
+  The <b><i>get_check_data</i></b> and <b><i>get_connect_data</i></b> will
+  be called from the connector object to get connection data to send
+  to the other part of the connection, i.e. to the destination. The
+  data sent must be an <code>attr_value_t</code> type.
+</p><p>
+  The <b><i>check</i></b>, <b><i>connect</i></b>, and <b><i>disconnect</i></b>
+  functions are called from the connector object when another
+  connector wants to connect to this connection. The connection data
+  is passed as the <i>attr</i> argument.
+</p><p>
+  </p><pre class="jdocu_small">SIM_INTERFACE(component_connector) {
+        attr_value_t (*get_check_data)(conf_object_t *obj,
+                                       conf_object_t *NOTNULL connector);
+        attr_value_t (*get_connect_data)(conf_object_t *obj,
+                                         conf_object_t *NOTNULL connector);
+        bool (*check)(conf_object_t *obj, conf_object_t *NOTNULL connector,
+                      attr_value_t attr);
+        void (*connect)(conf_object_t *obj, conf_object_t *NOTNULL connector,
+                        attr_value_t attr);
+        void (*disconnect)(conf_object_t *obj,
+                           conf_object_t *NOTNULL connector);
+};
+
+#define COMPONENT_CONNECTOR_INTERFACE "component_connector"
+</pre><p>
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_component.html">component</a>
+<a href="__rm_interface_concurrency_group.html">concurrency_group</a>
+</div>

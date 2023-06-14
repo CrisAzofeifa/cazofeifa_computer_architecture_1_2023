@@ -1,0 +1,94 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>usb</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_translator.html">translator</a>
+<a href="__rm_interface_usb_device.html">usb_device</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_usb">usb</a></h1>
+<p>
+
+<a name="usb"></a><a name="usb_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>usb_interface_t</code> interface is implemented by all
+   USB hosts. USB devices use the interface to communicate with the
+   USB host.  The interface is Simics internal, and may be changed in
+   future versions of Simics.  It should not be used by user-defined
+   classes.
+<p>
+   The <b><i>connect_device()</i></b> function is called by the USB device to
+   connect to the USB. The host returns the physical port to which the device
+   is connected, or <code>-1</code> on connection error (for example, if all ports
+   are occupied). Parameter to <b><i>connect_device()</i></b> is the maximum
+   data speed for the USB device.
+</p><p>
+   The <b><i>disconnect_device()</i></b> function is called by the USB device when
+   it wants to disconnect from the USB. The host returns <code>0</code> on success.
+</p><p>
+   The <b><i>complete_transfer()</i></b> function is called by a USB device when
+   it has completed a transfer. Refer to the <code>usb_device_t</code>
+   interface documentation to know more about how a transfer is sent to the USB
+   device.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(usb) {
+        int (*connect_device)(conf_object_t *bus_obj,
+                              conf_object_t *NOTNULL dev_obj,
+                              usb_speed_t speed);
+        int (*disconnect_device)(conf_object_t *bus_obj,
+                                 conf_object_t *NOTNULL dev_obj);
+        void (*complete_transfer)(conf_object_t *bus_obj,
+                                  conf_object_t *NOTNULL dev_obj,
+                                  usb_transfer_t *NOTNULL transfer);
+};
+
+#define USB_INTERFACE "usb"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>connect_device</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>disconnect_device</i></b></td>
+       <td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>complete_transfer</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_translator.html">translator</a>
+<a href="__rm_interface_usb_device.html">usb_device</a>
+</div>

@@ -1,0 +1,93 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>breakpoint_trigger</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_breakpoint_query_v2.html">breakpoint_query_v2</a>
+<a href="__rm_interface_callback_info.html">callback_info</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_breakpoint_trigger">breakpoint_trigger</a></h1>
+<p>
+
+<a name="breakpoint_trigger"></a><a name="breakpoint_trigger_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Objects implementing the <code>breakpoint</code> interface
+   typically also implement the <code>breakpoint_trigger</code>
+   interface. Processors call the <b><i>trigger_breakpoint</i></b>
+   function to signal that a memory access intersects a
+   breakpoint. The <b><i>trigger_breakpoint</i></b> function will raise
+   the appropriate haps and the currently scheduled execute object may
+   receive a <b><i>stop</i></b> call during the call to
+   <b><i>trigger_breakpoint</i></b>.
+<p>
+   The <i>obj</i> argument is the object that holds the
+   breakpoint, typically a memory space or a context
+   object. <i>initiator_obj</i> is the source of the memory
+   operation that triggers the breakpoint. The <i>handle</i>
+   argument identifies the breakpoint to trigger. A value of
+   <i>BREAKPOINT_HANDLE_ANY</i> can be passed as
+   <i>handle</i>, in which case all the breakpoints that match the
+   given <i>address</i>, <i>size</i>, and <i>access</i>
+   will be triggered. The <i>address</i>, <i>size</i>, and
+   <i>access</i> arguments specify information about the access
+   that triggers the breakpoint. The <i>data</i> argument points
+   to a buffer where the data for the access is kept.
+</p><p>
+   If a <b><i>stop</i></b> is received during a call to
+   <b><i>trigger_breakpoint</i></b>, then it is recommended that any
+   software visible actions carried out after the breakpoint are
+   logged. That could for example be to notify the user if the entire
+   instruction that triggers a breakpoint will complete, and that the
+   instruction will then not be re-executed when the simulation
+   restarts.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(breakpoint_trigger) {
+        void (*trigger_breakpoint)(conf_object_t *obj,
+                                   conf_object_t *initiator_obj,
+                                   breakpoint_handle_t handle,
+                                   generic_address_t address,
+                                   generic_address_t size,
+                                   access_t access,
+                                   uint8 *data);
+};
+
+#define BREAKPOINT_TRIGGER_INTERFACE "breakpoint_trigger"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_breakpoint_query_v2.html">breakpoint_query_v2</a>
+<a href="__rm_interface_callback_info.html">callback_info</a>
+</div>

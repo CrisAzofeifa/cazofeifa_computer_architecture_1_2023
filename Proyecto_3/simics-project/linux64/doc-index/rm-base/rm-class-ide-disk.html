@@ -1,0 +1,507 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ide-disk</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-ide-cdrom.html">ide-cdrom</a>
+<a href="rm-class-ieee_802_15_4_link_endpoint.html">ieee_802_15_4_link_endpoint</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="ide-disk"><a href="#ide-disk">ide-disk</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Instances of the <tt>ide-disk</tt> class are generic IDE disks with several of tunable parameters. PIO is supported up to mode 4, and Ultra DMA up to level 2.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, ide_device
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-ide-disk.add-diff-file.html">add-diff-file</a>
+ – add a diff file to the image</li>
+<li>
+<a href="rm-cmd-ide-disk.add-partial-diff-file.html">add-partial-diff-file</a>
+ – add a partial diff file to the image</li>
+<li>
+<a href="rm-cmd-ide-disk.create-partition.html">create-partition</a>
+ – <i>deprecated</i> add a partition to disk</li>
+<li>
+<a href="rm-cmd-ide-disk.default-translation.html">default-translation</a>
+ – get or set the default CHS translation</li>
+<li>
+<a href="rm-cmd-ide-disk.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-ide-disk.print-partition-info.html">print-partition-info</a>
+ – <i>deprecated</i> print info about a pc-style partition</li>
+<li>
+<a href="rm-cmd-ide-disk.print-partition-table.html">print-partition-table</a>
+ – print the partition table</li>
+<li>
+<a href="rm-cmd-ide-disk.save-diff-file.html">save-diff-file</a>
+ – save diff file to disk</li>
+<li>
+<a href="rm-cmd-ide-disk.save-mbr-partition.html">save-mbr-partition</a>
+ – save an MBR partition to a file</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:irq_pending">
+<i>irq_pending</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>IRQ Pending.</dd>
+<dt id="dt:status">
+<i>status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Status register.</dd>
+<dt id="dt:sector_cnt">
+<i>sector_cnt</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Sector count register.</dd>
+<dt id="dt:sector_num">
+<i>sector_num</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Sector number register.</dd>
+<dt id="dt:cylinder">
+<i>cylinder</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Cylinder number (cylinder high and cylinder low).</dd>
+<dt id="dt:head">
+<i>head</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Lower four bits of the head register.</dd>
+<dt id="dt:command">
+<i>command</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Last command.</dd>
+<dt id="dt:error">
+<i>error</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Error register.</dd>
+<dt id="dt:features">
+<i>features</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Feature register.</dd>
+<dt id="dt:pio_mode">
+<i>pio_mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Current PIO mode (upper byte in identify device word 51).</dd>
+<dt id="dt:udma_mode">
+<i>udma_mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Current UDMA mode (upper byte in identify device word 88).</dd>
+<dt id="dt:udma_enabled">
+<i>udma_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set if UDMA is enabled.</dd>
+<dt id="dt:multiword_dma_mode">
+<i>multiword_dma_mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Current multiword DMA mode (upper byte in identify device word 63).</dd>
+<dt id="dt:multiword_dma_enabled">
+<i>multiword_dma_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set if multiword DMA is enabled.</dd>
+<dt id="dt:sectors_per_int">
+<i>sectors_per_int</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Sectors per interrupt (lower byte in identify device word 59).</dd>
+<dt id="dt:tr_sectors_size">
+<i>tr_sectors_size</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Transfer sector size.</dd>
+<dt id="dt:tr_sectors_per_block">
+<i>tr_sectors_per_block</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Transfer sectors per block.</dd>
+<dt id="dt:tr_sectors_last_block">
+<i>tr_sectors_last_block</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Transfer sectors last block.</dd>
+<dt id="dt:tr_num_blocks">
+<i>tr_num_blocks</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of blocks in transfer.</dd>
+<dt id="dt:tr_op">
+<i>tr_op</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>DMA transfer operation type.</dd>
+<dt id="dt:tr_update_address">
+<i>tr_update_address</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Update address during transfer.</dd>
+<dt id="dt:tr_drq_start_offset">
+<i>tr_drq_start_offset</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Offset in sector buffer where the active DRQ block starts.</dd>
+<dt id="dt:tr_drq_bytes_handled">
+<i>tr_drq_bytes_handled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Bytes handled in DRQ block before the active sector.</dd>
+<dt id="dt:tr_pos">
+<i>tr_pos</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Transfer position.</dd>
+<dt id="dt:tr_req_length">
+<i>tr_req_length</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Requested length of transfer.</dd>
+<dt id="dt:tr_drq_bytes">
+<i>tr_drq_bytes</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Bytes per DRQ.</dd>
+<dt id="dt:tr_bytes_remaining">
+<i>tr_bytes_remaining</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Transfer bytes remaining.</dd>
+<dt id="dt:tr_current_lba">
+<i>tr_current_lba</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Current transfer address.</dd>
+<dt id="dt:tr_disk_finished">
+<i>tr_disk_finished</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Transfer finished (device view).</dd>
+<dt id="dt:tr_dma_finished">
+<i>tr_dma_finished</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>DMA finished.</dd>
+<dt id="dt:buf">
+<i>buf</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|[iii]|n</code>
+<br><tt>sector buffer</tt> | <tt>atapi packet</tt>. Current transfer source/destination.</dd>
+<dt id="dt:sector_buffer">
+<i>sector_buffer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{2048}]</code>
+<br>(<i>b0</i>, ..., <i>b2047</i>). Sector buffer.</dd>
+<dt id="dt:state">
+<i>state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Device state.</dd>
+<dt id="dt:power_mode">
+<i>power_mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Device power mode (0==active, 1==idle, 2==standby, 3==sleep).</dd>
+<dt id="dt:stat_commands">
+<i>stat_commands</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{256}]</code>
+<br>(<i>f0</i>, ..., <i>f255</i>). Executed command count (command i has been issued <i>fi</i> times).</dd>
+<dt id="dt:stat_atapi_commands">
+<i>stat_atapi_commands</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{256}]</code>
+<br>(<i>f0</i>, ..., <i>f255</i>). Executed ATAPI command count (command i has been issued <i>fi</i> times).</dd>
+<dt id="dt:stat_bytes_read">
+<i>stat_bytes_read</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total number of bytes read from device using PIO.</dd>
+<dt id="dt:stat_bytes_written">
+<i>stat_bytes_written</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total number of bytes written to device using PIO.</dd>
+<dt id="dt:stat_bytes_transfered_dma">
+<i>stat_bytes_transfered_dma</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total number of bytes read or written to or from device using DMA.</dd>
+<dt id="dt:geometry_valid">
+<i>geometry_valid</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Geometry valid.</dd>
+<dt id="dt:serial_number">
+<i>serial_number</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Device serial number. Up to 20 character long string.</dd>
+<dt id="dt:firmware_id">
+<i>firmware_id</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Device firmware id. Up to 8 character long string.</dd>
+<dt id="dt:model_id">
+<i>model_id</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Device model id. Up to 40 character long string.</dd>
+<dt id="dt:no_48bits_lba_support">
+<i>no_48bits_lba_support</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>48-bit address feature set not supported (bit 10 in identify device word 83).</dd>
+<dt id="dt:sector_num_ext">
+<i>sector_num_ext</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Sector number extended register. (for 48bit addressing and Harddisk only).</dd>
+<dt id="dt:cylinder_ext">
+<i>cylinder_ext</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Cylinder number extended. (for 48bit addressing and Harddisk only).</dd>
+<dt id="dt:features_ext">
+<i>features_ext</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Feature extended register. (for 48bit addressing and Harddisk only).</dd>
+<dt id="dt:disk_cylinders">
+<i>disk_cylinders</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of logical cylinders.</dd>
+<dt id="dt:disk_sectors_per_track">
+<i>disk_sectors_per_track</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of logical sectors per track.</dd>
+<dt id="dt:disk_heads">
+<i>disk_heads</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of logical heads.</dd>
+<dt id="dt:disk_sectors">
+<i>disk_sectors</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total number of sectors on disk.</dd>
+<dt id="dt:image">
+<i>image</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Object implementing the image interface holding device data.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.ide.html">ide</a>
+</section>
+<div class="chain">
+<a href="rm-class-ide-cdrom.html">ide-cdrom</a>
+<a href="rm-class-ieee_802_15_4_link_endpoint.html">ieee_802_15_4_link_endpoint</a>
+</div>

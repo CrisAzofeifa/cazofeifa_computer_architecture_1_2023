@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>18.9 Example</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="script-execution.html">18.8 Script Execution</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="appendix.html">V Appendix</a>
+&nbsp;/&nbsp;
+<a href="script-decls.html">18 Old Script Parameters</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Example">18.9 Example</a></h1>
+<p>
+  
+</p><p>
+  Here is a slightly longer example of a script declaration block.
+  
+</p><pre class="jdocu_small">  
+# A machine from the good old days (?)
+decl {
+  ! The original IBM PC XT from 1983, complete with
+  ! a &lt;em&gt;full-height&lt;/em&gt; 10 MB fixed disk and a 5 1/4" floppy drive.
+
+  # Note that comments (like this one) are distinct from doc strings.
+
+  param ram_size : int = 256
+  ! RAM size in KiB. Max is 640, which should be enough for anyone.
+
+  param cpu_freq : float = 4.77
+  ! CPU frequency in MHz.
+
+  param video : {mda, cga, hercules} = cga
+  ! Type of video card. mda &amp;amp; hercules look best.
+
+  group "networking"
+  param mac_addr : string or nil = NIL
+  ! Ethernet MAC address, or NIL if no Ethernet adapter present.
+
+  param rom_file : file("*.bin") = "%script%/pc_xt_rom.bin"
+  ! File containing the ROM image. Must be exactly 40 KiB.
+
+  param rtc_time : string = "2015-02-01 13:37:00"
+  ! Initial time and date of the real-time clock, on the form
+  ! &lt;tt&gt;"YYYY-MM-DD HH:MM:SS"&lt;/tt&gt;.
+
+  # Include parameters declared in another file.
+  params from "ms-dos.simics"
+
+  # Override the default value of a parameter from that file
+  default dos_ver = "2.11"
+
+  result system : string
+  ! Name of generated system component object.
+}
+
+# Here the actual script starts with commands to execute.
+</pre><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="script-execution.html">18.8 Script Execution</a>
+</div>

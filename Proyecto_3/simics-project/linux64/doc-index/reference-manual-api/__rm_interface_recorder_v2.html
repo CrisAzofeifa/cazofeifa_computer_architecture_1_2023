@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>recorder_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_recorder.html">recorder</a>
+<a href="__rm_interface_register_breakpoint.html">register_breakpoint</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_recorder_v2">recorder_v2</a></h1>
+<p>
+
+<a name="recorder_v2"></a><a name="recorder_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>recorder_v2</code> interface is implemented by the recorder, and
+   can be used by any object interacting with the outside world in order to
+   make re-runs of the same simulation behave identically. This is a
+   requirement for reverse execution to work. Objects using this interface must
+   implement the <code>recorded</code> interface themselves.
+<p>
+   An object uses it by calling the <b><i>record</i></b> method with itself and
+   the data it wishes to record as parameters. The recorder will then save
+   the data and call the <b><i>input</i></b> method in the <code>recorded</code>
+   interface on the object.
+</p><p>
+   The <b><i>playback</i></b> method returns whether the recorder is currently
+   playing back recorded data. It may be used by the object to determine if
+   output to the outside world should be dropped or not.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(recorder_v2) {
+        void (*record)(conf_object_t *NOTNULL obj,
+                       conf_object_t *NOTNULL sender, bytes_t data);
+        bool (*playback)(conf_object_t *NOTNULL obj);
+};
+#define RECORDER_V2_INTERFACE "recorder_v2"
+</pre><p>
+</p><p>
+   
+   The <code>recorded</code> interface is implemented by objects that wish to
+   use the <code>recorder_v2</code> interface.
+</p><p>
+   The <b><i>input</i></b> method is called with data that has been recorded.
+   The <i>playback</i> parameter is set if the data came from a
+   previous recording, and clear if the data came directly from a call to
+   <b><i>record</i></b> in <code>recorder_v2</code> with live data.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(recorded) {
+        void (*input)(conf_object_t *NOTNULL obj, bytes_t data, bool playback);
+};
+#define RECORDED_INTERFACE "recorded"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_recorder.html">recorder</a>
+<a href="__rm_interface_register_breakpoint.html">register_breakpoint</a>
+</div>

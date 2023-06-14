@@ -1,0 +1,287 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>QSP-CPU Release Notes</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>QSP-CPU Release Notes</h1>
+
+    
+    
+    
+    
+<h2 class="jdocu"><a name="Introduction">1 Introduction</a></h2>
+<p>
+
+</p><p>
+This document identifies important information for the QSP-CPU
+package for Simics 6. All users of this specific package
+should review this document carefully.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Minor-Changes-Since-Simics-6.0.0">2 Minor Changes Since Simics 6.0.0</a></h2>
+<p>
+
+The following is a list of changes since the initial Simics
+6.0.0 release.
+</p><p>
+</p><ul><li><p><a name="__rn_build_id_6196"></a>6.0.13 (build 6196)
+</p><ul><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Fixed a bug in ERETS that could leave interrupts permanently disabled if
+      if the STI interrupt blocking bit was set in the return context.
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6188"></a>6.0.11 (build 6188)
+</p><ul><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      FRED support has been removed from the <b>x86QSP2</b> CPU
+      class. Use the <b>x86-experimental-fred</b> CPU class for FRED
+      support.
+    </li><li>
+      Fixed ERETS to raise #GP if CS or SS in the return context do not match
+      the current CS or SS.
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6176"></a>6.0.10 (build 6176)
+</p><ul><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Fixed a bug in ERETU that caused incorrect RIP after returning to a code
+      segment with non-zero base (bug #14017032910).
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6173"></a>6.0.9 (build 6173)
+</p><ul><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Updated the ERETS and ERETU instructions to expect RSP to point to RIP of
+      the return context, not the error code pushed by event delivery.
+    </li><li>
+      Updated the ERETU instruction to check that the return CS.RPL and SS.RPL
+      fields are 3 even if the selectors match IA32_STAR.
+    </li><li>
+      Updated the ERETS and ERETU instructions to ignore bits 63:32 of the word
+      containing the SS selector.
+    </li><li>
+      Updated the ERETS and ERETU instructions to not raise #GP if bit 28 of
+      the word containing the CS selector is set.
+    </li><li>
+      Updated the ERETS and ERETU instructions to report the original RSP in
+      the exception context if they raise an exception, not the RSP after
+      popping parts or all of the return context (bug #14017032184).
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6166"></a>6.0.8 (build 6166)
+</p><ul><li><b>APIC</b><ul><li>
+      Event queue overflows that could occur in some situations have been fixed
+      (bug #16015793807).
+    </li></ul></li><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Implemented the changes from version 2.0 to version 3.0 of the FRED
+      specification.
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6158"></a>6.0.7 (build 6158)
+</p><ul><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Fixed clearing of RF flag at the start of the next instruction after
+      ERETU/ERETS.
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6155"></a>6.0.6 (build 6155)
+</p><ul><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Implemented enumeration of VMX nested-exception support in MSR
+      IA32_VMX_BASIC (index 480H) of <b>x86-experimental-fred</b>
+      processor class.
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6137"></a>6.0.4 (build 6137)
+</p><ul><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Fixed restoring of segment registers in case if FRED delivery incurs a
+      nested exception.
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6134"></a>6.0.3 (build 6134)
+</p><ul><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Fixed VMX guest state check and VMX CR4 capability reporting.
+    </li><li>
+      Fixed VMX capability reporting.
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6127"></a>6.0.2 (build 6127)
+</p><ul><li><b>APIC</b><ul><li>
+      One-shot and periodic timer modes will use core crystal clock (otherwise
+      known as ART) frequency to measure time intervals, if attached processor
+      enumerates this frequency in CPUID.0x15. This behavior matches the
+      description given in modern SDM.
+    </li></ul></li><li><b>Common</b><ul><li>Simics no longer comes with documentation
+  in PDF format.</li></ul></li><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Changed the treatment of RPL fields for CS and SS: event delivery ensures
+      that SS.RPL in the new context is 0, ERETS generates general-protection
+      exception if either CS.RPL or SS.RPL of the return context is not 0.
+    </li><li>
+      WRMSR to IA32_FRED_CONFIG MSR generates general-protection exception if
+      its source operand sets reserved bits. WRMSR to IA32_FRED_RSPx MSRs
+      generates general-protection exception if its source operand is not
+      64-byte aligned.
+    </li><li>
+      An execution of far CALL or far JMP instructions that encounters a call
+      gate generates general-protection exception. An execution of IRET or far
+      RET instructions that would change CPL generates general-protection
+      exception.
+    </li><li>
+      State of STI blocking is now saved on event delivery and restored on ERETS
+      execution.
+    </li><li>
+      ERETU instruction loads CS and SS descriptors now from the GDT
+      or LDT as would be done by an execution of IRET (the case 3 of CS
+      and SS registers configuration).
+    </li><li>
+      ERETU instruction generates general-protection exception if it would load
+      I/O privilege level (IOPL) with a non-zero value.
+    </li><li>
+      Delivery of device-not-available exception (#NM) pushes the identity of
+      feature triggering #NM, i.e. the value being loaded into IA32_XFD_ERR MSR.
+    </li><li>
+      Changes to the RSM instruction are implemented.
+    </li><li>
+      VMX interactions with FRED transitions are implemented.
+    </li><li>
+      The following changes in draft specification 2.0, June 2021, have been
+      implemented:
+      <ul>
+        <li>They entry point offset for events occurring in ring 0 has changed
+            from 64 bytes to 256 bytes.</li>
+        <li>CS.L is saved in the event information.</li>
+        <li>The instruction length is saved in the event information when an
+            event is caused by an INTn, INT1, INT3, INTO, SYSCALL or SYSENTER
+            instruction.</li>
+        <li>New format used for reporting the cause of #DB.</li>
+        <li>Event delivery always clears EFLAGS.TF.</li>
+        <li>ERETU clears any pending UMONITOR.</li>
+        <li>Interrupt blocking after POP or MOV to SS is disabled when FRED
+            is enabled.</li>
+      </ul>
+    </li><li>
+      Added a new <b>x86-experimental-fred</b> processor class.
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6096"></a>6.0.1 (build 6096)
+</p><ul><li><b>Flexible Return and Event Delivery (FRED)</b><ul><li>
+      Flexible Return and Event Delivery (FRED) feature is supported
+      in <code>x86QSP2</code> CPU model as technology preview and is subject to
+      change based on customer feedback and internal analysis. The FRED
+      implementation has several limitations described in the Limitations
+      section. To use the model, set <i>cpu_comp_class</i> parameter
+      to <code>x86QSP2</code> before running a Simics script.
+    </li></ul></li></ul></li></ul>
+<p>
+
+
+
+
+
+
+
+
+
+
+
+
+</p><h2 class="jdocu"><a name="Changes-in-Simics-6">3 Changes in Simics 6</a></h2>
+<p>
+
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Limitations">4 Limitations</a></h2>
+<p>
+
+</p><p>
+This section briefly describes the known limitations of the
+QSP-CPU package. Please refer to section
+<a class="reference" href="#Detailed-List-of-Limitations">5</a> for a more technical
+description.
+</p><p>
+For model oriented packages, additional limitations may be found in
+the model target guides.
+<br><br>
+</p><p>
+<b>Flexible Return and Event Delivery (FRED)</b>: 
+    </p><dl><dt id="dt:limitations-and-deviations-from-the-draft-specification-may-2022-revision-3-0"><b>Limitations and deviations from the draft specification (May 2022,
+        revision 3.0)</b></dt><dd><ul>
+          <li>Shadow stack interactions are not supported.</li>
+        </ul>
+      </dd></dl><p>
+</p><h2 class="jdocu"><a name="Detailed-List-of-Limitations">5 Detailed List of Limitations</a></h2>
+<p>
+
+This section describes in detail the known limitations of the
+QSP-CPU package. Please refer to
+section <a class="reference" href="#Limitations">4</a> for a more general description.
+</p><p>
+A register or field marked as <i>Not implemented</i> is present with
+read-write semantics but has no side effects on simulation. A register
+marked as <i>Not implemented (design limitation)</i> has the same
+semantics as a "Not implemented" register and there is no
+plan to extend the model with this functionality. A register with
+<i>Lack of documentation</i> has not been implemented because there is
+no available documentation describing its semantics.
+</p><p>
+<br><br>
+</p><p>
+
+
+
+</p><p>
+</p><h2 class="jdocu"><a name="Notices-amp-Disclaimers">6 Notices &amp; Disclaimers</a></h2>
+<p>
+
+</p><p>
+</p><div class="jdocu_copyright">
+<p>
+No product or component can be absolutely secure.
+</p><p>
+Intel technologies may require enabled hardware, software or
+service activation.
+</p><p>
+Your costs and results may vary.
+</p><p>
+Intel does not control or audit third-party data. You should
+consult other sources to evaluate accuracy.
+</p><p>
+You may not use or facilitate the use of this document in
+connection with any infringement or other legal analysis concerning
+Intel products described herein. You agree to grant Intel a
+non-exclusive, royalty-free license to any patent claim thereafter
+drafted which includes subject matter disclosed herein.
+</p><p>
+No license (express or implied, by estoppel or otherwise) to any
+intellectual property rights is granted by this document.
+</p><p>
+All product plans and roadmaps are subject to change without
+notice.
+</p><p>
+The products described may contain design defects or errors known
+as errata which may cause the product to deviate from published
+specifications. Current characterized errata are available on
+request.
+</p><p>
+Intel disclaims all express and implied warranties, including
+without limitation, the implied warranties of merchantability, fitness
+for a particular purpose, and non-infringement, as well as any
+warranty arising from course of performance, course of dealing, or
+usage in trade.
+</p><p>
+© 2010–2023 Intel Corporation. Intel, the Intel logo,
+and other Intel marks are trademarks of Intel Corporation or its
+subsidiaries. Other names and brands may be claimed as the property of
+others.
+</p><p>
+
+
+</p></div>
+<p>
+
+</p>
+<div class="chain">
+<span></span>
+</div>

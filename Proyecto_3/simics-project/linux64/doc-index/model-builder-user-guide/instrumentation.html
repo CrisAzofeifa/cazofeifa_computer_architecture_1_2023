@@ -1,0 +1,479 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>40 Instrumentation</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="eb-introduction.html">39 Introduction</a>
+<a href="probes-api.html">41 Probes API</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="extension-builder.html">VII Extending Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Instrumentation">40 Instrumentation</a></h1>
+<p>
+  
+  </p><h2 class="jdocu"><a name="instrumentation-api">40.1 Instrumentation API Overview</a></h2>
+<p>
+  
+</p><p>
+  Simics instrumentation framework defines a set of new interfaces that
+  could be used to add instrumentation. Most of these are optional by
+  the design. In principle, the only interface that must be used
+  for instrumentation to show up in
+  the <b>list-instrumentation</b> command are some Python
+  functions in Simics' <b>instrumentation</b> module.
+</p><p>
+  Currently, the only supported interface for implementing
+  instrumentation tools is to use
+  the <b><i>instrumentation.make_tool_commands()</i></b> python function.
+  This makes it easier to write instrumentation tools, and to automatically
+  implement a number of standard commands for those. These commands
+  will automatically interface the <b>instrumentation</b>
+  "database" which keeps track of currently used instrumentation
+  (tools, providers and filters objects connected).
+</p><p>
+  This factory function should be called from the tool's
+  <code>simics_start.py</code> file, which is automatically run when
+  Simics starts. The <b><i>instrumentation.make_tool_commands()</i></b>
+  function takes many arguments (allowing customization on which commands
+  that should be created), but only a few arguments are actually required.
+</p><p>
+  A tool which make use of
+  the <b><i>instrumentation.make_tool_commands()</i></b> function, must
+  implement the <code>instrumentation_tool</code>
+  interface. The <b><i>instrumentation_tool.connect()</i></b> method
+  should return an object pointer with the associated data-structure
+  for the connection. As shown in figure <a class="reference" href="#api-ex1">16</a>
+  and figure <a class="reference" href="#api-ex2">17</a>
+</p><p>
+  </p><div class="figure" id="api-ex1">
+<div style="text-align: center">  
+      <img alt="" src="api-ex1.png"><br>
+      <div class="caption">Figure 16. Connecting a tool with a provider</div>
+  </div></div>
+
+<p>
+  </p><div class="figure" id="api-ex2">
+<div style="text-align: center">  
+      <img alt="" src="api-ex2.png"><br>
+      <div class="caption">Figure 17. Multiple connections</div>
+  </div></div>
+
+  <p>
+  By having a dedicated object for each connection, the tool
+  will more easily be able to handle simultaneous calls from
+  providers that execute in different threads in Simics.
+  This requires that each connection maintains its own connection
+  specific data (and not access any connection global data).
+  The tool can then fetch the connection specific data from
+  all connections and merge these into a unified view for
+  the complete result of all connections.
+</p><p>
+  If a connection is about to be removed,
+  the <b><i>instrumentation_tool.disconnect()</i></b> function is
+  called. This requests the tool to un-register the connection from
+  the provider and to remove the associated connection object, as
+  illustrated in figure <a class="reference" href="#api-ex4">19</a>.
+  </p><p>
+  </p><div class="figure" id="api-ex3">
+<div style="text-align: center">  
+      <img alt="" src="api-ex3.png"><br>
+      <div class="caption">Figure 18. Disconnecting a tool from a provider</div>
+  </div></div>
+
+<p>
+  When a connection is created, the framework also creates
+  an additional small Simics object of the
+  <b>instrumentation_filter_aggregator</b> class. This object
+  is what the filters communicate with, when enabling/disabling each
+  connection. The aggregator will look at all sources and control
+  enabling and disabling with
+  the <code>instrumentation_connection</code> interface. The filter
+  implements the <code>instrumentation_filter_master</code>
+  interface and talks to the aggregator via
+  the <code>instrumentation_filter_slave</code> interface. See
+  figure <a class="reference" href="#api-ex4">19</a>.
+  </p><p>
+  </p><div class="figure" id="api-ex4">
+<div style="text-align: center">  
+      <img alt="" src="api-ex4.png"><br>
+      <div class="caption">Figure 19. Filter setup and communication</div>
+  </div></div>
+
+<p>
+  Figure <a class="reference" href="#api-ex5">20</a> shows how the aggregator
+  takes input from multiple sources and decides if the
+  connection should be enabled or disabled at this time.
+  As long as any filter-source is disabled, the connection
+  will be disabled.
+  </p><div class="figure" id="api-ex5">
+<div style="text-align: center">  
+      <img alt="" src="api-ex5.png"><br>
+      <div class="caption">Figure 20. Multiple filters</div>
+  </div></div>
+
+  <p>
+  </p><div class="note">
+<b>Note:</b>
+Instrumentation setup is regarded as per session, that is,
+    the connected instrumentation is not saved in any checkpoints.
+    This means that the user will need to re-establish the instrumentation
+    connections when starting from a checkpoint.
+    All instrumentation tools and filters should set
+    <code>class_data_t.kind = Sim_Class_Kind_Session</code>.
+  </div>
+
+  <h2 class="jdocu"><a name="Tool-and-Connection-API">40.2 Tool and Connection API</a></h2>
+<p>
+  
+  The API functions and interfaces that a tool should use are
+  located in
+  the <code>simics/simulator-iface/instrumentation-tool.h</code>
+  header file.
+</p><p>
+  To get started writing an new instrumentation tool, a skeleton
+  can be created by running the following command in the
+  project:
+</p><p>
+  </p><pre class="jdocu_small">    $ <b>cd <em>my-project</em></b>
+    my-project$ <b>./bin/project-setup --instrumentation-tool my_tool</b>
+  </pre><p>
+  This will create a new <code>modules/my_tool</code> directory containing
+  associated required files. Search for <code>USER-TODO</code> markers in
+  the generated files for a description on what, and where, additional
+  logic needs to be inserted.
+  It can also be useful to take a look at the distributed source files
+  of example tools, that are included in the package.
+</p><p>
+  </p><h3 class="jdocu"><a name="Multithreading-Aspects">40.2.1 Multithreading Aspects</a></h3>
+<p>
+  
+  Tools can be called simultaneously from providers in different
+  executing threads. It is up to the tool to handle this parallelism
+  itself. The tool has some choices how to handle multi-threading:
+  </p><ul>
+    <li>In all callbacks, only access data which are associated with
+      a specific connection, i.e., the connection object.
+      This is safe since a provider will only reside in one thread.
+      This is the recommended approach.
+    </li>
+    <li>Make the tool multi-threading capable, protecting accesses to
+      any shared resources with locks, atomic operations, etc.</li>
+    <li>Detect if providers are in different cells and refuse to
+      support it.</li>
+    <li>Enforce that any multi-threading simulation is turned off, in
+      order to use the tool.</li>
+  </ul>
+
+  <p>
+
+  </p><h2 class="jdocu"><a name="Instrumentation-Filter-API">40.3 Instrumentation Filter API</a></h2>
+<p>
+  
+  The interfaces needed to design a filter is located in the
+  <code>simics/simulator-iface/instrumentation-filter.h</code> header
+  file.
+</p><p>
+  To get started writing an new instrumentation filter, a skeleton
+  can be created by running the following command in a
+  project:
+</p><p>
+  </p><pre class="jdocu_small">    $ <b>cd <em>my-project</em></b>
+    my-project$ <b>./bin/project-setup --instrumentation-filter my_filter</b>
+  </pre><p>
+  This will create a new <code>modules/my_filter</code> directory containing
+  associated required files. Search for <code>USER-TODO</code> markers in
+  the generated files for a description on what, and where, additional
+  logic needs to be inserted.
+  It can also be useful to take a look at the distributed source files
+  of example filters, that are included in the package.
+  </p><p>
+  A filter must implement
+  the <code>instrumentation_filter_master</code> interface and drive
+  the <code>instrumentation_filter_slave</code> interface for the
+  slaves it has been assigned. The slaves are
+  <b>instrumentation_filter_aggregator</b> objects which
+  are automatically created when a connection is created.
+</p><p>
+  When a filter object is created, it must first be assigned a
+  session-unique "source-id". This can be retrieved from the
+  python <b><i>instrumentation.get_filter_source</i></b> function. This
+  can be achieved from the filter's <code>simics_start.py</code> file,
+  which should contain a command for creating the filter.  Once the
+  object has been created, the python code could inform its source-id
+  to the filter by calling
+  the <b><i>instrumentation_filter_master.set_source_id</i></b> function.
+</p><p>
+  The <b><i>instrumentation_filter_master.add/remove_slave</i></b> functions
+  will be called when ever <b>&lt;tool&gt;.add-filter</b> is adding
+  this tool, or when additional connections are added or removed
+  from the tool.
+  </p><p>
+  Note that filters could be assigned slaves located in different
+  cells (executing in different threads). It is up to the filter
+  to handle this, for example by not supporting it, to avoid strange
+  threading problems. This can be achieved by returning
+  <code>false</code> in the <b><i>add_slave</i></b> method when the
+  <i>provider_obj</i> is located in a different cell than
+  previous slaves.
+  </p><p>
+  How a filter enables/disables the slaves is up to the filter.
+  There are some scenarios:
+  </p><p>
+  </p><ul>
+    <li>The filter itself listens to the corresponding provider
+      as the slave's provider object, and only enable/disable
+      the corresponding connection based on this.
+      This would be safe from a threading point of view even if
+      the providers are located in different cells.</li>
+    <li>The filter gets stimuli from something else and enables
+      or disables all slaves at the same time.</li>
+    <li>A combination of the above. Known providers' connections
+      are enabled/disabled when something happens on those.
+      The "unknown" listeners can be all enabled/disabled
+      when one or all providers are in a certain state.</li>
+  </ul>  
+<p>
+  Figure <a class="reference" href="#api-ex6">21</a> show how a filter reacts on a provider
+  and only enables/disables the slave which is associated with the same
+  provider.
+  </p><div class="figure" id="api-ex6">
+<div style="text-align: center">  
+      <img alt="" src="api-ex6.png"><br>
+      <div class="caption">Figure 21. Thread-safe filtering</div>
+  </div></div>
+
+<p>
+  In figure <a class="reference" href="#api-ex7">22</a>, however, the filter tries to
+  enable/disable connections in two different cells. This could
+  potentially crash. If cross-cell filtering is needed, the connection
+  in the other cell must be relayed through
+  a <b><i>SIM_run_alone()</i></b> function, which will be delayed and
+  invoked when it is safe to do cross-cell calls.
+  </p><p>
+  </p><div class="figure" id="api-ex7">
+<div style="text-align: center">  
+      <img alt="" src="api-ex7.png"><br>
+      <div class="caption">Figure 22. Thread violation</div>
+  </div></div>
+
+  
+  
+  <h2 class="jdocu"><a name="Provider-API">40.4 Provider API</a></h2>
+<p>
+    
+</p><p>
+  How the actual communication between a provider and tool should be
+  achieved, must be designed case by case. The
+  instrumentation framework itself, does not have any specific
+  requirements on this. When a new provider interface needs to be
+  designed, it is recommended to re-use design philosophies and naming
+  schemes from already existing interfaces, keeping provider interfaces
+  as consistent as possible.
+  </p><p>
+  In some way, the tool must inform the provider that it wants to
+  get instrumentation information. Typically there are two designs for
+  this:
+  </p><ul>
+    <li><b>Callback based</b>. The provider implements an interface
+      which offers callback functions to be registered, one function
+      per particular feature the provider provides. The callbacks
+      are invoked by the provider when something interesting
+      happens in the provider.</li>
+    <li><b>Interface based</b>. The provider implements a simple
+      interface which can register connection objects. The
+      provider could then detect which interfaces that exists in the
+      tool connection and based of this, later invoke corresponding
+      interface calls towards the tool connection's interfaces.
+    </li>
+  </ul>
+<p>
+  Two generic interfaces can be implemented in the provider (when found
+  useful):
+  </p><ul>
+    <li>The <b>instrumentation_order</b> interface,
+      which allows the user to change the dispatch order for
+      registered tool connections with the
+      generic <b>instrumentation-order</b>
+      and <b>instrumentation-move</b> commands.</li>
+    <li>A callback based provider can implement the <b>callback_info</b>
+      interface, which allows the generic
+      <b>list-instrumentation-callbacks</b> command to list callbacks that
+      has been installed in the provider.</li>
+  </ul>
+  These interfaces are located in
+  the <code>simics/model-iface/instrumentation-provider.h</code>
+  header file.
+  <p>
+  </p><h3 class="jdocu"><a name="CPU-Instrumentation-API">40.4.1 CPU Instrumentation API</a></h3>
+<p>
+  
+</p><p>
+  Simics CPU instrumentation is provided on top of the generic
+  instrumentation framework, where the processor model acts as a
+  instrumentation provider.
+  This chapter describes Simics' processor instrumentation API.
+</p><p>
+  A tool that wants to connect to the CPU instrumentation and
+  use the <b><i>instrumentation.make_tool_commands</i></b> function
+  must set the <i>provider_requirements</i> argument
+  to <code>cpu_instrumentation_subscribe</code>, and maybe more interfaces.
+</p><p>
+  The <code>cpu_instrumentation_subscribe</code> interface is the
+  main interface used, but there are also other interfaces
+  that must be used in certain circumstances as a consequence
+  of some of the callbacks.
+  Figure <a class="reference" href="#cpu-api-ex1">23</a> shows some of the interfaces
+  that are used.
+</p><p>
+  </p><div class="figure" id="cpu-api-ex1">
+<div style="text-align: center">  
+      <img alt="" src="cpu-api-ex1.png">
+      <br>
+      <div class="caption">Figure 23. CPU instrumentation interfaces</div>
+  </div></div>
+
+<p>
+  A processor does not require any
+  implemented interfaces from a tool, instead a tool will
+  subscribe for information from a processor and register function
+  callbacks which are invoked when the subscribed
+  feature is triggered on a processor.
+</p><p>
+  The interface can be used in two different ways:
+  </p><ul>
+    <li>
+      The instrumentation framework, where the supplied connection
+      object acts as a container for all registered callbacks. This
+      allows all callbacks to be moved in dispatch order, compared to
+      other connections. It also makes it easier to control multiple
+      callbacks since it it possible to disable, enable and remove all
+      callbacks associated with a connection with one method call.
+    </li>
+    <li>
+      Or as simple callbacks, which is achieved by
+      specifying <code>NULL</code> or <code>None</code>, in C or Python respectively,
+      as connection pointer. This allows the interface to be used from
+      a Python script, without the need to create Simics connection
+      objects. With this setup, the user must control each callback
+      by itself. When invoked, these callbacks will be called prior
+      to the connection grouped callbacks, which also allows the processor
+      model itself to be extended using the same interface.
+    </li>
+  </ul>
+<p>
+  The interfaces used for the CPU instrumentation are located in
+  the <code>simics/model-iface/cpu-instrumentation.h</code>
+  header file. The architecture specific interfaces are located
+  in <code>simics/arch/x86-instrumentation.h</code>, etc.
+  </p><p>
+  Subscribing to CPU instrumentation can be global (all instructions
+  and/or memory accesses) or more carefully selected for each
+  instruction at a time by the tool.
+</p><p>
+  For example, assume a tool wants to monitor when certain
+  instructions are executed. This can be done in different ways, each
+  with pros and cons. The following list tries to highlight the workings
+  of these different ways.
+  </p><dl><dt id="dt:with-global-instrumentation"><b>With global instrumentation</b></dt><dd>By registering a callback with
+      the <code>cpu_instrumentation_subscribe</code> interface using
+      the <b><i>register_instruction_before_cb()</i></b> method, the tool
+      will get a callback for each instruction executed.  If the tool
+      is only looking for certain types of instructions, it would need
+      to use the <code>cpu_instruction_query</code>
+      interface's <b><i>get_instruction_bytes()</i></b> method and filter
+      out the unwanted instructions. This will become very
+      slow. See figure <a class="reference" href="#cpu-api-ex2a">24</a>.
+      <div class="figure" id="cpu-api-ex2a">
+<div style="text-align: center">  
+	  <img alt="" src="cpu-api-ex2a.png">
+	  <br>
+	  <div class="caption">Figure 24. Using instruction callbacks</div>
+      </div></div>
+
+      <p>
+    </p></dd><dt id="dt:with-selective-instrumentation"><b>With selective instrumentation</b></dt><dd>The tool can filter out which instructions it wants to get a
+      callback from more selectively. This is done by
+      registering a callback with
+      the <code>cpu_instrumentation_subscribe</code> interface using
+      the <b><i>register_cached_instruction_cb()</i></b> method.  The
+      tool will now be called when each instruction is about to be
+      cached in the CPU model's internal instruction cache (this is
+      a Simics internal cache and
+      not the same as the cache found on a real processor).
+      <p>
+      Just as before, the tools must decode what instruction that
+      is about to be executed using
+      the <code>cpu_instruction_query</code>
+      interface's <b><i>get_instruction_bytes()</i></b> method. For the
+      interesting instructions the tool can now register a dedicated
+      callback using the
+      <code>cpu_cached_instruction</code>
+      interface's <b><i>register_instruction_before_cb()</i></b> method.
+      Each cached instruction callback also carries a user-data
+      pointer, which can be used by the callback. This means that the
+      analysis is performed only once.  There are, however, multiple
+      reasons why this internal cache may be flushed, if that happens
+      the instruction must be re-decoded.
+</p><p>
+      Using the <code>cpu_cached_instruction</code> interface is
+      much faster than filtering for an instruction of interest
+      each time it is executed, since the callback will only be called
+      for the requested instructions. See figure <a class="reference" href="#cpu-api-ex2b">25</a>.
+</p><p>
+      </p><div class="figure" id="cpu-api-ex2b">
+<div style="text-align: center">  
+	  <img alt="" src="cpu-api-ex2b.png">
+	  <br>
+	  <div class="caption">Figure 25. Using cached instruction callbacks</div>
+      </div></div>
+      
+    </dd><dt id="dt:with-a-counter"><b>With a counter</b></dt><dd>This is if the tool only wants to count how
+      many times certain instructions are
+      executed. The <code>cpu_cached_instruction</code> interface
+      with the <b><i>add_counter</i></b> method, supports the fastest way
+      to count instructions. Adding a pointer to a 64-bit
+      counter for specific instruction means that the counter will
+      increment each time this particular instruction is executed.
+      This has very low overhead.
+      See figure <a class="reference" href="#cpu-api-ex2c">26</a>.      
+      <div class="figure" id="cpu-api-ex2c">
+<div style="text-align: center">  
+	  <img alt="" src="cpu-api-ex2c.png">
+	  <br>
+	  <div class="caption">Figure 26. Using cached instruction counters</div>
+      </div></div>
+      
+    </dd></dl><p>  
+
+  
+</p>
+<div class="chain">
+<a href="eb-introduction.html">39 Introduction</a>
+<a href="probes-api.html">41 Probes API</a>
+</div>

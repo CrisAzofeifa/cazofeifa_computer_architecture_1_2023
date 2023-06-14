@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>mmc</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_memory_profiler.html">memory_profiler</a>
+<a href="__rm_interface_mouse.html">mouse</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_mmc">mmc</a></h1>
+<p>
+
+<a name="mmc"></a><a name="mmc_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">#define MMC_INTERFACE "mmc"
+SIM_INTERFACE(mmc) {
+#if !defined(PYWRAP)
+        int (*send_command)(conf_object_t *obj, uint8 cmd, uint32 args,
+                            buffer_t response);
+        int (*read_data)(conf_object_t *obj, buffer_t data);
+#endif
+        int (*write_data)(conf_object_t *obj, bytes_t data);
+};
+</pre><p>
+</p><p>
+
+   Interface that should be implemented by all MMC/SD/SDHC/SDIO card models.
+</p><p>
+   send_command: sends a 5-byte command to the card (1-byte command index and
+                 4 bytes command arguments).
+                 Caller provides the response length. Card fills in actual
+                 response data. The response data is 0, 6 or 17 bytes,
+                 in big-endian (see the MMC/SD specification for details).
+                 Return value: number of response bytes, -1 if the command
+                 wasn't accepted (e.g. command is not supported or illegal in
+                 current state, or command is not supported or illegal for
+                 current card type).
+</p><p>
+   read_data: reads data. Caller provides the length.
+              Return value: the card fills in the provided buffer, and returns
+              the number of bytes actually read, which might be less than the
+              buffer length in case of error.
+</p><p>
+   write_data: writes data. Caller provides in both length and data.
+               Return value: number of bytes actually written, which might be
+               less than the provided data length in case of error.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_memory_profiler.html">memory_profiler</a>
+<a href="__rm_interface_mouse.html">mouse</a>
+</div>

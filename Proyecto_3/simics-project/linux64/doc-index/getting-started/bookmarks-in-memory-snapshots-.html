@@ -1,0 +1,132 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.5 Bookmarks (in-memory snapshots)</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="checkpoints-snapshots-.html">2.4 Checkpoints (snapshots)</a>
+<a href="virtual-disks.html">2.6 Virtual disks</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="bookmarks-in-memory-snapshots">2.5 <a href="#bookmarks-in-memory-snapshots">Bookmarks (in-memory snapshots)</a></h1>
+<p>In addition to checkpoints, Simics can save the state of simulation in memory. We refer to such saved states as bookmarks or, sometimes, as time bookmarks. Bookmarks are not preserved after one quits the simulator. Once bookmarks have been created it is possible to jump between them.</p>
+<p>In this section:</p>
+<ul>
+<li>how to create bookmarks </li>
+<li>how to jump between bookmarks </li>
+</ul>
+<p>We assume that a user knows how to start Simics and how to get access to Simics CLI.</p>
+<p>Creation and use of bookmarks:</p>
+<ol>
+<li>
+<p>create a target machine from Simics CLI by executing the <code>targets/qsp-x86/firststeps.simics</code> script with Simics <code>run-command-file</code> command:</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+</li>
+<li>
+<p>start the created target machine: </p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+running&gt;
+</code></pre>
+</li>
+<li>
+<p>wait until Linux has booted. When Linux has booted, a text terminal window connected to a serial port of the target machine will look like this:   <img alt="" src="bookmarks-1.png"> </p>
+</li>
+<li>
+<p>stop simulation: </p>
+<pre><code class="language-simics">running&gt; <strong>stop</strong>
+simics&gt;
+</code></pre>
+</li>
+<li>
+<p>create a bookmark by running the <code>set-bookmark</code> Simics command and specifying a name for the bookmark (a bookmark can be created even when the simulation runs, but, in this case, we stopped it first):</p>
+<pre><code class="language-simics">simics&gt; <strong>set-bookmark booted</strong>
+</code></pre>
+<p>where "booted" is a name we picked for a bookmark.</p>
+</li>
+<li>
+<p>resume simulation: </p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+running&gt;
+</code></pre>
+</li>
+<li>
+<p>do some changes to the target machine. As an example of such changes, the screenshot below shows how to identify where the uname utility is located, delete it and check that it cannot be found after it has been deleted:</p>
+<p><img alt="" src="bookmarks-2.png"> </p>
+</li>
+<li>
+<p>stop simulation: </p>
+<pre><code class="language-simics">running&gt; <strong>stop</strong>
+simics&gt;
+</code></pre>
+</li>
+<li>
+<p>restore simulation state to the one which was saved on step 4: </p>
+<pre><code class="language-simics">simics&gt; <strong>skip-to booted</strong>
+</code></pre>
+<p>where <code>skip-to</code> is a command to restore simulation state from a bookmark, and "booted" is the name which we gave to the bookmark created on the step 4.</p>
+</li>
+<li>
+<p>the text terminal of the simulated machine looks now like it did before we deleted uname utility on step 6:</p>
+</li>
+</ol>
+<p><img alt="" src="bookmarks-1.png"></p>
+<p>What will happen now if we will run the simulation after we restored the state from the bookmark? By default, the simulator will just replay all user input, i.e. repeat all changes done to the simulated machine on the step 7 above. Let’s check this (the instructions below are to be done in the same simulation session where the previous steps have been executed):</p>
+<ol>
+<li>resume simulation by executing the <code>run</code> command on Simics CLI and observe on the text terminal windows of the target machine how Simics replays the changes which were done on the step 7 above </li>
+<li>stop simulation by executing the <code>stop</code> command on Simics CLI </li>
+</ol>
+<p>How can one prevent Simics from replaying user input and do something different on the target machine after the simulation state has been restored from a bookmark? This can be done by executing the <code>clear-recorder</code> command via Simics CLI immediately after the state of the simulation has been restored from a bookmark. Let’s check this (the instructions below are to be done in the same simulation session where the previous steps have been executed):</p>
+<ol>
+<li>
+<p>restore simulation state to the one which was saved on step 4: </p>
+<pre><code class="language-simics">simics&gt; <strong>skip-to booted</strong>
+</code></pre>
+</li>
+<li>
+<p>clear recorded input: </p>
+<pre><code class="language-simics">simics&gt; <strong>clear-recorder</strong>
+</code></pre>
+</li>
+<li>
+<p>resume simulation with the <code>run</code> command:</p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+running&gt;
+</code></pre>
+</li>
+<li>
+<p>note on the text terminal windows of the target machine that no changes happen now </p>
+</li>
+</ol>
+<p>Why is the default behavior for Simics is to replay the user input? This is because Simics struggles hard to provide repeatability which is very useful when debugging the software running on the target machine.</p>
+
+<div class="chain">
+<a href="checkpoints-snapshots-.html">2.4 Checkpoints (snapshots)</a>
+<a href="virtual-disks.html">2.6 Virtual disks</a>
+</div>

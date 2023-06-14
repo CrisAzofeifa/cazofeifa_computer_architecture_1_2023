@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>enable-writable-persistent-state</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-enable-vmp-feature.html">enable-vmp-feature</a>
+<a href="rm-cmd-env.html">env</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="enable-writable-persistent-state"></a>
+<h1 id="enable-writable-persistent-state"><a href="#enable-writable-persistent-state">enable-writable-persistent-state</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>enable-writable-persistent-state</b> <i>dir</i> [<i>root</i>] [-new] [<i>"comment"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Enables a writable persistent simulator state in the directory <i>dir</i>. Persistent data typically includes disk images, NVRAM and flash memory contents and clock settings, i.e. data that survive reboots. The persistent state is saved as a standard Simics configuration.
+<p>
+The persistent state will contain persistent data from objects in the hierarchy rooted at <i>root</i>, or all persistent data if that argument is NIL.
+</p><p>
+To use this command, no image is allowed to have a writable file already.
+</p><p>
+If the directory exists, it must contain a saved persistent state previously created by this command, whose objects match the configuration under <i>root</i>, and this state will be loaded and used as writable state. Otherwise a new state will be created.
+</p><p>
+If <tt>-new</tt> is specified and the directory <i>dir</i> exists, an error will be raised.
+</p><p>
+If a new state is created, a description can be added to the persistent state, using the <i>comment</i> argument. The comment is saved in the <tt>info</tt> file in the persistent state directory. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-save-persistent-state.html">save-persistent-state</a>, 
+<a href="rm-cmd-load-persistent-state.html">load-persistent-state</a>, 
+<a href="rm-cmd-list-persistent-images.html">list-persistent-images</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-enable-vmp-feature.html">enable-vmp-feature</a>
+<a href="rm-cmd-env.html">env</a>
+</div>

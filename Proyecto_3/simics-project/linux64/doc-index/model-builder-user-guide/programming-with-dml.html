@@ -1,0 +1,1338 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5 Programming with DML</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="device-modeling-overview.html">4 Overview</a>
+<a href="building-well-behaved-models.html">6 Building Well-Behaved Models</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="programming-with-dml">5 Programming with DML</a></h1>
+<p>
+
+</p><p>
+This chapter describes the basic concepts of <a name="DML">DML</a>. This is
+not a complete guide, see the <em>DML Reference Manual</em> for
+more details. The intention of this chapter is to describe the basic
+concepts of DML to understand how to model devices which will be
+discussed in more detail in later sections.
+</p><p>
+</p><h2 class="jdocu"><a name="dml-class">5.1 Modules, Classes, and Objects</a></h2>
+<p>
+
+</p><p>
+DML hides many of the mechanics of interacting with Simics to make the
+development of device models easier. For example, DML takes care of all module
+initialization, so nothing needs to be performed when a DML module is
+loaded in Simics.
+</p><p>
+Each DML file mentioned in the module's <code>Makefile</code> defines
+a Simics class automatically. The class name is provide by the
+<code>device</code> statement at the beginning of the DML file:
+</p><p>
+</p><pre class="jdocu_small">device my_device;
+</pre><p>
+</p><p>
+DML models devices as a set of nested parts called
+<i><a name="objects">objects</a></i>. Each attribute, bank, register, etc is a
+separate object. The objects can contain other objects as well as
+methods, data and parameters. Many types of objects only make sense in
+particular contexts. A complete list of object types and the
+restrictions on how they can be nested is provided in the <em>DML
+Reference Manual</em>. The set of object types is fixed and you can
+not extend it.
+</p><p>
+To refer to objects you give the names of all objects from the device
+to the sought object separated by <code>.</code>, ending with the name of
+the sought object. Example:
+</p><p>
+</p><pre class="jdocu_small">$the_device.my_attr.my_data = 4;
+</pre><p>
+</p><p>
+
+</p><div class="note">
+<b>Note:</b>
+Do not confuse this concept of object with configuration objects
+in Simics. They are not the same.</div>All data declared in the DML file is
+automatically defined as object-scope data, which means that DML
+automatically defines the class structure from which objects will be
+instantiated. For example:
+<p>
+</p><pre class="jdocu_small">data int link_id;
+</pre><p>
+</p><p>
+defines a <i>link_id</i> variable in the object structure.
+</p><p>
+Local variables declared <code>static</code> are also defined as
+object-scope data, which means that no state is shared between device
+instances.
+</p><p>
+
+</p><h2 class="jdocu"><a name="spc-dml-parameters">5.2 Parameters</a></h2>
+<p>
+
+<a name="parameter"></a>
+</p><p>
+Parameters are compile-time constant-valued object members. You can only set
+their value once. A parameter can be set to a value of any of the types
+<code>integer</code>, <code>float</code>, <code>string</code>,
+<code>bool</code>, <code>list</code>, <code>reference</code> or
+<code>undefined</code>. The type is automatically set from the value. To
+declare a parameter use the <code>parameter</code> keyword:
+</p><p>
+</p><pre class="jdocu_small">parameter some_parameter = "the value of the parameter";
+</pre><p>
+</p><p>
+Each object also declares some parameters automatically. Read the
+<em>DML Reference Manual</em> for a complete list.
+</p><p>
+In code you refer to parameters by prefixing their names with
+<code>$</code>:
+</p><p>
+</p><pre class="jdocu_small">method some_method {
+    log info: "some_parameter: %s", $some_parameter;
+}
+</pre><p>
+</p><p>
+In section <a class="reference" href="#spc-dml-templates">5.6</a> you can read more about
+how parameters interact with templates.
+</p><p>
+
+</p><h2 class="jdocu"><a name="dml-attr">5.3 Attributes</a></h2>
+<p>
+
+</p><p>
+Registers defined in the DML files are automatically registered as both object
+structure variables and attributes. The line:
+</p><p>
+</p><pre class="jdocu_small">register aprom_0 size 1 @ 0x00 "Address PROM (MAC address)";</pre><p>
+</p><p>
+will define a variable in the object structure that contains the value of the
+register <code>aprom_0</code>. It will also define a corresponding attribute so
+that the state of the register can be saved and restored during checkpointing.
+</p><p>
+You can also manually add attributes in DML. All that is required is an
+attribute declaration, including name, type and configuration type. If the type
+of the attribute is simple, then the declaration itself is sufficient and the
+default <b><i>set</i></b>/<b><i>get</i></b> methods will be used.
+</p><p>
+To understand attributes in DML, please first refer to section
+<a class="reference" href="device-modeling-overview.html#configuration-attributes">4.2.7</a> which gives an overview of
+attributes. When programming in DML it is especially important to make
+sure that the attribute initialization order is correct. If this is
+not the case some Simics features such as checkpointing and
+reverse-execution may not work; this is covered in detail in section
+<a class="reference" href="device-modeling-overview.html#attribute_init">4.2.7.3</a>.
+</p><p>
+</p><h3 class="jdocu"><a name="A-Simple-Example">5.3.1 A Simple Example</a></h3>
+<p>
+
+</p><p>
+The simplest possible attribute holds the value of a simple data type and
+allows the attribute to be read and written without any side effects. Let us
+take the example of a counter attribute:
+</p><p>
+
+</p><pre class="jdocu_small">attribute counter {
+    parameter documentation = "A sample counter attribute";
+    parameter type          = "i";
+    parameter allocate_type = "int64";
+    parameter configuration = "required";
+}
+</pre><p>
+</p><p>
+
+</p><p>
+The two type declarations serve different purposes. The <em>"i"</em>
+tells Simics type system to check the value in set and get operations
+for an integer type. <em>allocate_type</em> defines the internal
+representation of the attribute value. It is perfectly possible to let
+those differ to be incompatible, but if they do, you must provide
+<b><i>get</i></b>/<b><i>set</i></b> methods that do the correct
+conversions. See the <em>DML Reference Manual</em> for
+details. The only required parameter is <em>type</em> though it will
+be calculated from <em>allocate_type</em> if set and <em>type</em> is
+undefined.
+</p><p>
+
+</p><h3 class="jdocu"><a name="spc-dml-attributes-ex-pseudo">5.3.2 A Pseudo Attribute</a></h3>
+<p>
+
+</p><p>
+When the attribute is more complex, for example if writing an attribute can
+have side effects, or if it contains a complex data type, the
+<b><i>set</i></b>/<b><i>get</i></b> methods must be provided. They are defined as:
+</p><p>
+
+</p><pre class="jdocu_small">    method set(attr_value_t val) {
+        <i>[…]</i>
+    }
+    method get() -&gt; (attr_value_t val) {
+        <i>[…]</i>
+    }
+</pre><p>
+</p><p>
+
+</p><p>
+A slightly more complicated example is a pseudo attribute which, when setting
+values, will add to the value of the counter, and for which getting is
+an error.
+</p><p>
+
+</p><pre class="jdocu_small">attribute add_counter {
+    parameter documentation = "A sample pseudo attribute";
+    parameter type          = "i";
+    parameter configuration = "pseudo";
+
+    method set(val) {
+        $counter += SIM_attr_integer(val);
+    }
+    method get() -&gt; (val) {
+        log "error", 1, 1 : "Get is not allowed";
+        throw;
+    }
+}
+</pre><p>
+</p><p>
+
+</p><p>
+Note that no type check is required in the <b><i>set</i></b> method, since the
+type <em>"i"</em> is unambiguously checked by Simics. Note also that there
+is no <em>allocate_type</em> parameter for the attribute. Since it is a pseudo
+attribute that does not store any value, there is no type to allocate.
+</p><p>
+
+</p><h3 class="jdocu"><a name="dml-attribute-errors">5.3.3 Attribute Errors</a></h3>
+<p>
+
+</p><p>
+DML provides generic error handling for simple attributes where the
+<b><i>get</i></b> and <b><i>set</i></b> methods are not explicitly
+provided. For the default <b><i>get</i></b> method, it is equivalent to a
+C/Python attribute getter function that return
+an <code>attr_value_t</code> of kind <code>Invalid</code>. For the
+default <b><i>set</i></b> method, it is equivalent to a C/Python
+attribute setter function that returns Sim_Set_Illegal_Value. For both
+default methods, no additional informative error message is specified
+with
+<b><i>SIM_attribute_error</i></b> or an equivalent thereof. This is
+sufficient for most attributes.
+</p><p>
+For more complex attributes as described in section
+<a class="reference" href="#spc-dml-attributes-ex-pseudo">5.3.2</a>, where the implementer
+provides custom <b><i>get</i></b> and <b><i>set</i></b> methods, these
+methods are responsible for handling and returning any error that may
+result from the attribute access. They become strikingly similar to
+how an attribute access function written in C, and most attribute
+error handling concepts from C can indeed be directly translated to
+DML. Section <a class="reference" href="writing-module-with-c.html#c-attribute-errors">14.4.3</a> contains the details
+about attribute errors in C and Python.
+</p><p>
+The difference between DML and C is the return value of the
+methods. To signal that a DML attribute <b><i>get</i></b>
+or <b><i>set</i></b> method encountered an error, the <code>throw</code>
+statement is used. The effect is that the method is stopped
+immediately, and the equivalent C return value is the same as for the
+default access methods as described above. However, the implementer
+has the option to specify a message to provide details about the error
+using <b><i>SIM_attribute_error</i></b> before throwing.
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="spc-dml-banks-and-registers">5.4 Banks and Registers</a></h2>
+<p>
+
+</p><p>
+DML uses registers and banks to model hardware registers. Banks
+represent continuous address ranges containing registers. The
+registers are mapped in their banks with an offset and size. A bank
+can also contain registers without an offset. These registers are not
+accessible with memory operations.
+</p><p>
+A register can be further split into fields. Each field is a range of
+bits in the register. If a register has fields it does not store its
+own value. Instead the parts of the value are stored in the fields.
+</p><p>
+</p><h3 class="jdocu"><a name="spc-dml-banks">5.4.1 Register Banks</a></h3>
+<p>
+
+</p><p>
+A <i>register bank</i> (or simply <i>bank</i>) is an abstraction that
+is used to group registers in DML. A bank is defined by using the
+keyword <i>bank</i>. A device can have one or more banks. Each bank
+can be individually mapped in a memory space by specifying the name of
+the bank as the function to map. This is described in chapter
+<a class="reference" href="memory-space.html">23</a>.
+</p><p>
+The same bank can be defined
+several times. Doing this often helps when looking at the code for a
+large device with many registers. The first definition at the top of
+the file only list all registers and their offsets. Later the bank is
+defined again, but this time with the register functionality. Try
+splitting up your bank like this:
+
+</p><pre class="jdocu_small">bank regs {
+    register r size 4 @ 0x0000;
+}
+<i>[…]</i>
+bank regs {
+    register r {
+        method read() -&gt; (value) {
+            log "info": "read from r";
+            value = 42;
+        }
+    }
+}
+</pre><p>
+</p><p>
+
+</p><p>
+Note that you can only set register size and offset once.
+</p><p>
+
+</p><h3 class="jdocu"><a name="spc-dml-registers">5.4.2 Registers</a></h3>
+<p>
+
+</p><p>
+Registers in DML contain integer values, which can be signed or
+unsigned. The most important parameters for registers are their
+<i>size</i> and <i>offset</i>. You can specify these parameters as any
+other, but it is easier to use the shorthand notation:
+</p><p>
+
+</p><pre class="jdocu_small">    register r size 4 @ 0x1000;
+</pre><p>
+</p><p>
+
+</p><p>
+This defines a register <i>r</i> of size 4 which is mapped at offset
+<code>0x1000</code> in the register's bank. Memory accesses to this
+location will access the register. The default behavior of registers
+is to return the register's value when read and set the register's
+value when written. This behavior can be changed by implementing
+the <i>read</i> and <i>write</i> methods:
+</p><p>
+
+</p><pre class="jdocu_small">    register r size 4 @ 0x1000 {
+        method read () -&gt; (value) {
+            log "info": "Reading register r returns a constant";
+            value = 42;
+        }
+        
+        method write (value) {
+            log "info": "Wrote register r";
+            $this = value;
+        }
+    }
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="spc-dml-fields">5.4.3 Register Fields</a></h3>
+<p>
+
+</p><p>
+Real hardware registers often have a number of <i>fields</i> with
+separate meaning. Registers in Simics also support fields. Let us
+assume bit <code>0</code> in register <i>r</i> is a status bit and bits
+<code>1-4</code> are a counter. It would look something like this:
+</p><p>
+
+</p><pre class="jdocu_small">bank regs {
+    register r size 4 @ 0x0000 {
+        field status  [0];
+        field counter [4:1] {
+            method read() -&gt; (value) {
+                log "info": "read from counter";
+                value = $this + 1;
+            }
+        }
+    }
+}
+<i>[…]</i>
+if ($regs.r.status == ENABLED) {
+    <i>[…]</i>
+}
+</pre><p>
+</p><p>
+
+</p><p>
+Using field names instead of doing bit-slicing on the register helps to
+understand what is happening in the device when reading the code. It
+is also possible to write special methods for the fields.
+</p><p>
+Fields support almost the same methods as a register. The most common
+methods are <i>get</i>, <i>set</i>, <i>read</i>, and
+<i>write</i>. These methods behave the same for fields as for
+registers.
+</p><p>
+
+</p><h3 class="jdocu"><a name="spc-dml-getset">5.4.4 The get and set methods of registers</a></h3>
+<p>
+
+</p><p>
+The <i>get</i> and <i>set</i> methods of a register are used when you
+access the register as an attribute.  Implementations of these methods
+should not have any side effects apart from getting and setting the
+register's value.  The default behavior of the methods depends on
+whether the register has any fields or not. For registers without
+fields the methods work the same way as the corresponding methods for
+attributes. For a register with fields the methods take care of
+calling the corresponding methods of the register's fields. The
+<i>get</i> method merges the results from the calls to the fields'
+<i>get</i> methods and the <i>set</i> method splits the value into one
+part for each field and sends the parts on to the fields' <i>set</i>
+methods.
+</p><p>
+
+</p><h3 class="jdocu"><a name="spc-dml-arrays">5.4.5 Bank and Register Arrays</a></h3>
+<p>
+
+</p><p>
+In DML it is possible to define rows of registers or banks as register
+and bank arrays. The sample code below defines a bank array of size
+two, where each bank contains two registers in a single array.
+</p><p>
+
+</p><pre class="jdocu_small">bank func[2] {
+    register ctrl[2] size 4 @ 4 * $i {
+        method read() -&gt; (value) {
+            log "info": "read from %s -&gt; %#x", $qname, $this;
+            value = $this;
+        }
+    }
+}
+</pre><p>
+</p><p>
+
+</p><p>
+This creates four registers in total each of which has their own
+state (value) but shares the same behavior (methods).
+</p><p>
+Each bank in a bank array is mapped individually in memory spaces,
+normally in a component file, with the same name but different
+indexes. The following code maps the banks defined above into the
+memory space <i>mem_space</i> at offsets <code>0x100</code>
+and <code>0x200</code>, respectively.
+</p><p>
+
+ </p><pre class="jdocu_small">mem_space.map = [[0x100, obj.bank.func[0], 0, 0, 0x100],
+                 [0x200, obj.bank.func[1], 0, 0, 0x100]]
+</pre><p>
+</p><p>
+ 
+</p><p>
+Register <code>func[0].ctrl[0]</code> will then be mapped at address
+<code>0x100</code>, <code>func[0].ctrl[1]</code> at <code>0x104</code>,
+<code>func[1].ctrl[0]</code> at <code>0x200</code> and <code>func[1].ctrl[1]</code>
+at <code>0x204</code>, respectively.
+</p><p>
+Bank and register arrays are apt for modeling devices containing
+several identical units where each of the units performs the same
+functionality but operates independently to each other. An example of
+this is the virtual functions in PCIe SR-IOV devices.
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="spc-dml-interface">5.5 Interfaces</a></h2>
+<p>
+
+</p><p>
+Interfaces is the mechanism used in Simics when Simics objects, such
+as device models, need to communicate with each other. A DML device
+can both implement interfaces to provide additional services which
+other devices and objects can call, and call methods in interfaces
+implemented by other objects. This section describes how to do this in DML.
+</p><h3 class="jdocu"><a name="Using-Interfaces">5.5.1 Using Interfaces</a></h3>
+<p>
+
+<a name="interfaceDML"></a>
+</p><p>
+Using an interface in a module implemented in DML, is done by
+<em>connecting</em> an object to the device model you are developing,
+specifying which interfaces you are planning to use.
+</p><p>
+The <code>connect</code> section performs two things at the same
+time: it defines an attribute that can take an object or an object and
+a port name as its value, and it tells the DML compiler that a number
+of interfaces belonging to this object or port can be used in the
+current device model.
+</p><p>
+The following code will create an <i>irq_dev</i> attribute that
+accepts as a value only objects or ports implementing the
+<code>signal</code> interface.
+</p><p>
+
+</p><pre class="jdocu_small">connect irq_dev {
+    parameter documentation = "The device that interrupts are sent to.";
+    parameter configuration = "required";
+
+    interface signal;
+}
+</pre><p>
+</p><p>
+
+</p><p>
+Once an object has been connected, using the interfaces that were specified is
+simple:
+</p><p>
+
+</p><pre class="jdocu_small"><i>[…]</i>
+if (!$irq_raised &amp;&amp; $irq_dev.obj) {
+    log "info", 3: "Raising interrupt.";
+    $irq_dev.signal.signal_raise();
+}
+<i>[…]</i>
+</pre><p>
+</p><p>
+
+</p><p>
+To connect the created attribute set it to either a configuration
+object implementing the correct interfaces or a configuration object
+and the name of a port in that object which implements the
+interfaces.
+</p><p>
+Here is a Python example how to do the connection to an object:
+<a name="interfaceconnecting"></a>
+</p><p>
+</p><pre class="jdocu_small">dev.irq_dev = intc
+</pre><p>
+</p><p>
+And here is an example showing how to connect to a port:
+<a name="portconnecting"></a>
+</p><p>
+</p><pre class="jdocu_small">dev.irq_dev = [intc, "input_levels"]
+</pre><p>
+</p><p>
+In both examples dev is the object implementing the connect, and intc
+is an object implementing the <code>signal</code>
+interface. In the second example input_levels is the name of the port
+in intc implementing the interface.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Implementing-an-Interface">5.5.2 Implementing an Interface</a></h3>
+<p>
+
+</p><p>
+Implementing an interface in DML is done with the <em>implement</em>
+declaration, which contains the implementation of all the functions
+listed in the interface. The interface is automatically registered by
+the DML compiler so that other objects can use it on the current
+device model:
+</p><p>
+
+</p><pre class="jdocu_small">implement ethernet_common {
+    // Called when a frame is received from the network.
+    method frame(const frags_t *frame, eth_frame_crc_status_t crc_status) {
+        if (crc_status == Eth_Frame_CRC_Mismatch) {
+            log "info", 2: "Bad CRC for received frame";
+        }
+        inline $receive_packet(frame);
+    }
+}
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="Ports">5.5.3 Ports</a></h3>
+<p>
+
+<a name="portDML"></a>
+</p><p>
+A device can use interface <em>ports</em> to have several
+implementations of the same interface. The ports have names that can
+be used to select the implementation when connecting to the
+device. Use a <em>port</em> declaration in DML to define a new
+port. See example:
+
+</p><pre class="jdocu_small">port pin0 {
+    implement signal {
+        method signal_raise() {
+            log "info": "pin0 raised";
+        }
+        method signal_lower() {
+            log "info": "pin0 lowered";
+        }
+    }
+}
+port pin1 {
+    implement signal {
+        method signal_raise() {
+            log "info": "pin1 raised";
+        }
+        method signal_lower() {
+            log "info": "pin1 lowered";
+        }
+    }
+}
+</pre><p>
+</p><p>
+
+</p><p>
+Every <a name="bank">bank</a> declaration also acts as a port, which means
+that interfaces implemented inside a bank belong to the port defined
+by the bank. This allows to map each register bank separately.
+</p><p>
+The DML compiler will create a port object for each DML port and bank. These
+are automatically created sub objects of the device object that are specified
+when connecting other devices to the port or bank. See <a class="reference" href="port-objects.html">34</a> for more information about port objects.
+</p><p>
+Port objects for DML ports are created in a <em>port</em> namespace under the
+device object. For example, if there is a DML port named <em>irq</em> in a
+device object named <em>pic</em> the full name of the port object will
+be <em>pic.port.irq</em>.
+</p><p>
+These port objects are specified when connecting other objects to the port. For
+example, connecting the irq output of a UART object (perhaps implemented as a
+DML connect in that device) to the irq port of our <em>pic</em> object may look
+like this in the component code:
+</p><p>
+</p><pre class="jdocu_small">uart.irq = pic.port.irq
+</pre><p>
+</p><p>
+Port objects for DML banks are created in a corresponding <em>bank</em>
+namespace under the device object.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Defining-a-New-Interface-Type">5.5.4 Defining a New Interface Type</a></h3>
+<p>
+
+</p><p>
+The Simics API defines a number of useful interface types, but sometimes they
+are not enough, for example if you are using a bus type that is not supported
+by the predefined interface types.
+</p><p>
+To define new interfaces you should create a new interface module. This is described in chapter <a class="reference" href="define-new-interface-type.html">11</a>.
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="spc-dml-templates">5.6 Templates</a></h2>
+<p>
+
+</p><p>
+Templates are a powerful tool when programming in DML. The code in a
+template can be used multiple times. A template can also implement
+other templates. Templates are commonly used on registers, but they
+can be used on all DML object types. Here is a simple template:
+
+</p><pre class="jdocu_small">template spam {
+    method write(value) {
+        log "error": "spam, spam, spam, ...";
+    }
+}
+<i>[…]</i>
+register A size 4 @ 0x0 is (spam);
+</pre><p>
+</p><p>
+
+</p><p>
+Register A will write <i>spam, spam, spam</i> to the console when
+someone writes to it.
+</p><p>
+Templates in combination with parameters are even more powerful:
+
+</p><pre class="jdocu_small">template lucky_number {
+    parameter extra_1 default 1;
+    parameter extra_2 default undefined;
+
+    method read() -&gt; (value) {
+        value = $this * $extra_1 + $extra_2;
+        log "error": "my lucky number is %d", value;
+    }
+}
+<i>[…]</i>
+register B size 4 @ 0x4 is (lucky_number) {
+    parameter extra_2 = 4711;
+}
+</pre><p>
+</p><p>
+
+</p><p>
+The <code>extra_1</code> parameter has a default value so there is no need
+to define it in <code>B</code>. But <code>extra_2</code> must be defined in
+<code>B</code> as it is <i>undefined</i>. The DML compiler will return a
+warning if <code>extra_2</code> is not set, forcing everybody using the
+template to set it.
+</p><p>
+The DML library contains many standard templates which can be used on
+registers and fields. The most common one is the <i>read-write</i>
+template which is identical to default behavior for register or
+field. The <em>DML Reference Manual</em> lists all standard
+templates and their functionality.
+</p><p>
+In addition to facilitating code-reuse by defining templates for
+common functionality, templates can also be used as a sort of
+"inheritance" mechanism in DML. For example, two devices may be almost
+similar except for some parameters and a few functional
+differences. In this case the common functionality can be implemented
+as a template, to be shared between the devices where the differences
+is abstracted out to parameters and methods that are specialized in
+the two (or more) devices. In a somewhat artificial example, a device
+may have several banks that have registers that byte-swaps any value
+written to them. The banks may have different ways to control if the
+swapping should take place. In this case it is possible to implement
+the common functionality in a template and to specialize the
+individual banks. The listing below shows an example of such a device,
+with comments inlined.
+</p><pre class="jdocu_small"><span class="jdocu_small">
+<pre class="jdocu_small">dml 1.2;
+
+device byte_swapper;
+parameter desc = "byte swapper";
+parameter documentation = "This device implements byte swapping functionality";
+
+// This is a template that implements basic byte swapping
+// functionality. An object implementing this template must define
+// the should_swap and get_name methods.
+template swapper {
+    // Swap value and return the result in swapped. Swapping will only
+    // take place if should_swap returns true. It will also write a
+    // log message based on the get_name method.
+    method swap(uint32 value) -&gt; (uint32 swapped) {
+        local bool swap;
+        call $should_swap() -&gt; (swap);
+
+        if (swap) {
+            local const char *name;
+            call $get_name() -&gt; (name);
+            log info, 2: "Swapping in %s", name;
+
+            value = (value &amp; 0xff) &lt;&lt; 24 | (value &amp; 0xff00) &lt;&lt; 8
+                | (value &amp; 0xff0000) &gt;&gt; 8 | (value &amp; 0xff000000) &gt;&gt; 24;
+        }
+
+        swapped = value;
+    }
+}
+
+// This template implements a general swap enable/disable
+// functionality through a configuration register. An object
+// implementing this template must define a register named CONF with a
+// one-bit bit-field named SWAP.
+template swap_conf {
+    method should_swap() -&gt; (bool swap) {
+        swap = $CONF.SWAP;
+    }
+}
+
+// This template is a bank-template and implements a register bank
+// with a configuration register and a byte-swapping register. It also
+// implements the swapper template, it ISA swapper.
+template swap_bank {
+    is swapper;
+
+    parameter register_size = 4;
+    parameter byte_order = "little-endian";
+
+    register CONF @ 0 {
+        field SWAP[0];
+    }
+
+    register SWAP @ 4 {
+        method read() -&gt; (value) {
+            inline $swap($this) -&gt; (value);
+        }
+    }
+}
+
+// swap1 bank, implements swap_bank and swap_conf. Swapping is
+// controlled through the CONF.SWAP bit.
+bank swap1 {
+    is swap_bank;
+    is swap_conf;
+
+    method get_name() -&gt; (const char *name) {
+        name = "swap1";
+    }
+}
+
+// swap2 bank, implements swap_bank and swap_conf. Swapping is
+// controlled through the CONF.SWAP bit.
+bank swap2 {
+    is swap_bank;
+    is swap_conf;
+
+    method get_name() -&gt; (const char *name) {
+        name = "swap2";
+    }
+}
+
+// swap_always bank, implements swap_bank template, but not the
+// swap_conf template. Swapping is always enabled.
+bank swap_always {
+    is swap_bank;
+
+    method should_swap() -&gt; (bool swap) {
+        swap = true;
+    }
+
+    method get_name() -&gt; (const char *name) {
+        // Here we leverage the name parameter instead of manually
+        // specifying the name.
+        name = $name;
+    }
+}
+</pre><p>
+</p></span></pre><p>
+In the above example the <code>get_name</code> and <code>should_swap</code>
+methods are specialized in the various bank instances. Although for
+the <code>should_swap</code> specialization for the bank <b>swap1</b>
+and <b>swap2</b> is done in a common template,
+the <code>swap_conf</code> template. This is a good example of using
+multiple templates to build more and more specialized instances using
+common code. Below is a simple test case for the byte-swapper device.
+</p><pre class="jdocu_small"><span class="jdocu_small">
+<pre class="jdocu_small">import dev_util as du
+import stest
+
+# Create a sample_swap object and raise the log-level
+s = SIM_create_object('byte_swapper', 's', [])
+s.log_level = 4
+
+# Create a register accessor for the CONF and SWAP registers in bank
+# swap1
+conf1 = du.Register_LE(s.bank.swap1, 0)
+swap1 = du.Register_LE(s.bank.swap1, 4)
+
+# Write a value to s:swap1:SWAP, it should NOT be swapped because CONF
+# is 0
+swap1.write(0xdeadbeef)
+stest.expect_equal(swap1.read(), 0xdeadbeef)
+
+# Now write 1 to CONF, to make the value swapped
+conf1.write(1)
+stest.expect_equal(swap1.read(), 0xefbeadde)
+
+# Same thing for bank 'swap2'
+conf2 = du.Register_LE(s.bank.swap2, 0)
+swap2 = du.Register_LE(s.bank.swap2, 4)
+swap2.write(0xdeadbeef)
+stest.expect_equal(swap2.read(), 0xdeadbeef)
+conf2.write(1)
+stest.expect_equal(swap2.read(), 0xefbeadde)
+
+# Now for the swap_always bank. The SWAP register will now swap
+# without setting the CONF register.
+swap = du.Register_LE(s.bank.swap_always, 4)
+swap.write(0xdeadbeef)
+stest.expect_equal(swap.read(), 0xefbeadde)
+</pre><p>
+</p></span></pre><p>
+This is the corresponding test log.
+</p><pre class="jdocu_small"><span class="jdocu_small">
+=BEGIN s-swap -----------------------------------------------------------------
+[s info] Write to register swap1.SWAP &lt;- 0xdeadbeef
+[s info] Read from register swap1.SWAP -&gt; 0xdeadbeef
+[s info] Write to register swap1.CONF &lt;- 0x1
+[s info] Swapping in swap1
+[s info] Read from register swap1.SWAP -&gt; 0xefbeadde
+[s info] Write to register swap2.SWAP &lt;- 0xdeadbeef
+[s info] Read from register swap2.SWAP -&gt; 0xdeadbeef
+[s info] Write to register swap2.CONF &lt;- 0x1
+[s info] Swapping in swap2
+[s info] Read from register swap2.SWAP -&gt; 0xefbeadde
+[s info] Write to register swap_always.SWAP &lt;- 0xdeadbeef
+[s info] Swapping in swap_always
+[s info] Read from register swap_always.SWAP -&gt; 0xefbeadde
+=END s-swap 0.4 s -------------------------------------------------------------
+</span></pre><p>
+</p><p>
+
+</p><h2 class="jdocu"><a name="dml-log">5.7 Logging</a></h2>
+<p>
+
+<a name="loggingDML"></a>
+</p><p>
+Logging support is built into the language. Log outputs are made with
+the <em>log</em> statement as follows:
+</p><p>
+</p><pre class="jdocu_small">log <em>type</em>[, <em>level</em> [then <em>subsequent_level</em>][, <em>groups</em>]]: <em>string</em>, [<em>value</em>, <i>…</i>];
+</pre><p>
+</p><p>
+where the parameters mean:
+</p><dl><dt id="dt:type"><b><em>type</em></b></dt><dd>One of the identifiers:
+    <ul>
+    <a name="logginglogtypeDML"></a>
+    <li><code>info</code>: Normal informational message</li>
+    <li><code>error</code>: Unexpected error in the model
+      (indicates a bug in the model)</li>
+    <li><code>critical</code>: Serious error that will interrupt
+      the simulation</li>
+    <li><code>spec_viol</code>: Target program violates the
+      specification</li>
+    <li><code>unimpl</code>: Attempt to use not yet implemented
+      functionality</li>
+    </ul>
+</dd><dt id="dt:level"><b><em>level</em></b></dt><dd>An integer from 1 through 4, determining the verbosity level at
+    which the message will be logged. The default is 1. This parameter
+    has no effects if <em>type</em> is either <code>error</code> or
+    <code>critical</code> and may be left unspecified if <em>groups</em>
+    (see below) is not used.
+</dd><dt id="dt:subsequent_level"><b><em>subsequent_level</em></b></dt><dd>An integer from 1 through 5. If specified, all logs after the first issued
+  will be on the verbosity level <em><code>subsequent_level</code></em>. A
+  <em><code>subsequent_level</code></em> of 5 means no logging after the initial log
+  will be done.
+</dd><dt id="dt:groups"><b><em>groups</em></b></dt><dd>One or several log groups, defined by the global declaration
+<code>loggroup</code>.  See section <a class="reference" href="#log-groups">5.7.1</a> for details.
+Several log groups can be combined with the bitwise <b>or</b> operator
+"<code>|</code>".
+<p>
+</p></dd><dt id="dt:string-values"><b><em>string, values</em></b></dt><dd>A formatting string, as for the C function <b><i>printf()</i></b>,
+    optionally followed by a comma separated list of values to be
+    printed.</dd></dl><p>A small example:
+</p><p>
+
+</p><pre class="jdocu_small">loggroup example;
+
+method m(uint32 val) {
+    log info, 4, example : "val=%u", val;
+}
+</pre><p>
+</p><p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="log-groups">5.7.1 Log Groups</a></h3>
+<p>
+
+<a name="loggingloggroupDML"></a>
+</p><p>
+Log groups help debugging by grouping log-messages based on different
+parts of the device functionality.  Each log message is associated
+with a number of groups as described above, and each log object has a
+builtin CLI command <b>&lt;object&gt;.log-group</b> to select which
+groups of log messages to show.  The log messages of an Ethernet
+device can for example be divided into different groups for the
+receive logic and the transmit logic. You can then choose to only see
+log messages for the part you find interesting when running Simics.
+</p><p>
+If a log message specifies no log group, it is unaffected by which log
+groups that are currently selected.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Log-Levels">5.7.2 Log Levels</a></h3>
+<p>
+
+</p><p>
+Log levels are very helpful when it comes to finding bugs or examining
+what is happening inside a device. The default log-level in Simics is
+<code>1</code>. Different log levels target different groups of users:
+</p><ul>
+<li>Log levels 1-2: Any user</li>
+<li>Log level 3: Developer of target software that interacts with this
+device</li>
+<li>Log level 4: Developer of the model itself</li>
+</ul>
+Here are some logging examples of DML Ethernet controller that will help
+you to choose the appropriate log-level.
+<p>
+</p><dl><dt id="dt:log-level-1"><b>log-level 1</b></dt><dd>Important messages that must be brought to the user's
+attention. Example: <code>"Receive buffer functionality is not implemented."
+</code></dd><dt id="dt:log-level-2"><b>log-level 2</b></dt><dd>High level informative messages like mode changes and
+important events. Example: <code>"Port status changed to link-up."</code></dd><dt id="dt:log-level-3"><b>log-level 3</b></dt><dd>Detailed information for target software developer.
+Example: <code>"Received an ARP frame with correct CRC."</code></dd><dt id="dt:log-level-4"><b>log-level 4</b></dt><dd>Debugging level with low level model detail. Mainly used
+for model development. Example: <code>"External buffer allocated at address
+0x1000BEAF with 512 bytes."</code></dd></dl><p>
+</p><p>
+
+</p><h2 class="jdocu"><a name="dml-event">5.8 Events</a></h2>
+<p>
+
+<a name="eventDML"></a>
+</p><p>
+In a hardware simulation, it can often be useful to let something
+happen only after a certain amount of (simulated) time. This can be
+done in Simics by posting an event, which means that a callback
+function is placed in a queue, to be executed later in the
+simulation. The amount of simulated time before the event is triggered
+is usually specified in a number of seconds (as a floating-point
+number), but other units are possible; see the <em>DML Reference
+Manual</em> for more information about the <em>timebase</em> parameter.
+</p><p>
+The callbacks and posting is handled by declaring <em>event objects</em>. A
+simple example looks like this:
+</p><p>
+
+</p><pre class="jdocu_small">event future {
+    method event(void *data) {
+        log "info", 1, 1 : "The future is here";
+    }
+}
+</pre><p>
+</p><p>
+
+</p><p>
+The <b><i>event()</i></b> method is called when the queue reaches a posted
+event.
+</p><p>
+To post an event, use the <b><i>post()</i></b> method.
+</p><p>
+
+</p><pre class="jdocu_small">// post an event 0.1 s in the future
+inline $future.post(0.1, NULL);
+</pre><p>
+</p><p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="Event-data">5.8.1 Event data</a></h3>
+<p>
+
+</p><p>
+Every posted event can be associated with a data pointer. In the simple cases,
+this data pointer is <code>NULL</code>, but sometimes the callback needs some more
+information about the action to be performed. When posting an event using
+the <b><i>post</i></b> method, a data pointer can be provided, and this pointer
+will be passed on to the <b><i>event</i></b> method.
+</p><p>
+To support checkpointing, all event declarations using non-null data pointers
+must implement a few more methods. The <b><i>get_event_info</i></b> is called when
+creating the checkpoint to convert the event data to
+an <code>attr_value_t</code> that can be stored in the checkpoint. When
+restoring from a checkpoint, the <b><i>set_event_info</i></b> method is called to
+convert from an <code>attr_value_t</code> to a data pointer that can be passed
+to the event callback.
+</p><p>
+If the data pointer points to newly allocated memory that is only passed to
+the <b><i>post</i></b> method, the allocated data is owned by the event. This
+means that it is up to the <b><i>event</i></b> method to deallocate the
+memory. But sometimes events needs to be removed before they are reached, and
+events using allocated memory must implement a <b><i>destroy</i></b> method that
+is passed the data pointer. This method should deallocate the data without
+performing any other action. The <b><i>destroy</i></b> method may not access the
+Simics configuration, since it may be called while removing objects.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Managing-posted-events">5.8.2 Managing posted events</a></h3>
+<p>
+
+</p><p>
+If you changed your mind and a posted, but not yet handled, event is no longer
+valid, it can be canceled by calling the <b><i>remove()</i></b> method on the
+event object.
+</p><p>
+
+</p><pre class="jdocu_small">inline $future.remove(some_data);
+</pre><p>
+</p><p>
+
+</p><p>
+To find out if there is an event posted but not yet handled, the method
+<b><i>posted()</i></b> can be called, and to get the time remaining until the
+event will be handled, the method <b><i>next()</i></b> will return the time as
+specified by <code>timebase</code>.
+</p><p>
+
+</p><pre class="jdocu_small">local bool is_this_event_posted;
+local double when_is_this_event_posted;
+inline $future.posted(some_data) -&gt; (is_this_event_posted);
+inline $future.next(some_data) -&gt; (when_is_this_event_posted);
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><h3 class="jdocu"><a name="Alternate-event-queues">5.8.3 Alternate event queues</a></h3>
+<p>
+
+</p><p>
+DML also provides the ability to post an event to an alternate event
+queue using the <b><i>post_on_queue()</i></b> method on the event object.
+This method should be avoided as events on other queues can't be
+removed or queried and checkpointing is more difficult.
+</p><p>
+
+</p><h3 class="jdocu"><a name="After">5.8.4 After</a></h3>
+<p>
+
+DML also provides a convenient shortcut with the <code>after</code> statement. An
+<code>after</code> statement is used to call a DML method some time in the
+future. It is not possible to cancel pending calls from <em>after</em>
+statements, and the time is always specified in seconds.
+</p><p>
+
+</p><pre class="jdocu_small">// call my_method() after 10.5s
+after (10.5) call $my_method();
+</pre><p>
+</p><p>
+
+</p><p>
+The DML program continues immediately with the next statement
+following <code>after</code>, i.e., the event is executed
+<em>asynchronously</em>. Refer to the <em>DML Reference
+Manual</em> for more information.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Event-Example">5.8.5 Event Example</a></h3>
+<p>
+
+</p><p>
+It is possible to modify our example to post an event when the register
+is written to, as follows:
+
+</p><pre class="jdocu_small">dml 1.2;
+device sample_device;
+parameter documentation = "Timer example for Model Builder User's Guide";
+parameter desc = "example of timer";
+import "utility.dml";
+
+bank regs {
+    register delay size 4 is (unmapped);
+    register r size 4 @ 0x0000 {
+        method write(val) {
+            $this = 0;
+            $delay = val;
+            inline $ev.post($delay, NULL);
+            log "info": "Posted tick event";
+        }
+        event ev {
+            parameter timebase = "seconds";
+            method event(void *data) {
+                ++$r;
+                log "info": "Tick: %d.", $r;
+                inline $this.post($delay, NULL);
+            }
+        }
+    }
+}
+</pre><p>
+</p><p>
+
+</p><p>
+In the example, the register itself functions as a counter, which is
+reset to zero upon a write access; the written value is used as the
+delay in seconds. Once the event happens, it re-posts itself after the
+same interval. Note the use of a unmapped <code>register</code> to store the
+delay internally. The counter could have been placed in a data field
+instead, or in a more realistic example the counter could have been
+placed in an additional register. Also, the <b><i>post</i></b> method
+must be called with the <code>inline</code> keyword, because its argument
+can be of varying types.
+</p><p>
+A device that posts events must be connected to a <em>clock
+object</em>, which controls when the event is executed. All processor
+objects function as clocks. This is done by setting the
+<i>queue</i> attribute of the device. After recompiling and
+restarting Simics, enter:
+
+
+</p><pre class="jdocu_small">simics&gt; <b>@SIM_create_object('sample_device', 'dev1')</b>
+simics&gt; <b>dev1-&gt;queue = timer</b>
+simics&gt; <b>phys_mem.add-map dev1.bank.regs 0x1000 4</b>
+</pre><p>
+This connects your device to the clock <b>timer</b>, which was
+pre-defined by the <code>vacuum</code> target.
+</p><p>
+Now enter the command <b>continue</b> (or <b>c</b> for
+short). This simply runs the simulation of the hardware. You should
+see no messages, since there is nothing exciting going on in the
+machine, except that the clock is ticking away. Press <code>Ctrl-C</code>
+to pause the simulation and get back to the prompt.
+</p><p>
+Now write a large value to the register:
+</p><pre class="jdocu_small">simics&gt; <b>phys_mem.write 0x1000 10000 -l</b>
+</pre><p>
+and enter <b>c</b> again. You should see "Tick"-messages being
+written at fairly short intervals. Press <code>Ctrl-C</code> and write a
+lower value to the register:
+
+
+</p><pre class="jdocu_small">simics&gt; <b>phys_mem.write 0x1000 1 -l</b>
+</pre><p>
+then start the simulation again. The messages are now printed at high
+speed (although not ten thousand times as fast). The lesson from this is
+that simulated time is not strictly proportional to real time, and if a
+machine has very little to do, even 10,000 seconds can be simulated in a
+very short time.
+</p><p>
+In this simple case, the event is not associated with any data. All event
+that have non-NULL data pointer must implement more methods to support check
+pointing. See section 5.8.1 for more details.
+</p><p>
+Note that it is often bad for Simics performance to post many events;
+a counter such as the example device above could have been implemented
+in a more efficient way. See sections <a class="reference" href="modeling-techniques.html#function-of-time">2.3.3</a> and <a class="reference" href="modeling-techniques.html#cluster-events">2.3.2</a> for details.
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="dml-hap">5.9 Haps</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="Providing-Haps">5.9.1 Providing Haps</a></h3>
+<p>
+
+</p><p>
+As the Simics profiling and event viewing systems are based on
+listening to haps it can be useful for a device to directly trigger
+haps rather than relying on haps built into the memory, link, and
+processor models.  In these situations the model has to choose between
+a standard Simics hap and a user defined hap. Standard haps have the
+benefit of documentation and predefined hap handlers. User defined
+haps have the advantage of specificity. 
+</p><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="Adding-a-New-Type">Adding a New Type</a></h4>
+<p>
+
+</p><p>
+Before handlers can be notified of a new hap, the hap must be known.  A new
+hap type is made known through registration. Registering a new hap type is done
+with the function <b><i><a name="SIM_hap_add_type">SIM_hap_add_type</a>()</i></b>. The signature is:
+</p><p>
+</p><pre class="jdocu_small">hap_type_t
+SIM_hap_add_type(const char *hap,
+                 const char *params,
+                 const char *param_desc,
+                 const char *index,
+                 const char *desc,
+                 int old_hap_obj);
+</pre><p>
+</p><p>
+where the parameters are:
+</p><p>
+</p><dl><dt id="dt:hap"><b><i>hap</i></b></dt><dd>The name of the hap, which must be unique</dd><dt id="dt:params"><b><i>params</i></b></dt><dd>A string specifying the number of parameters
+of the hap and their types.  The return value and the first two parameters of
+the callback function are always the same and are not included in the list. A
+valid parameter description string contains only the following type description
+characters:
+<p>
+    </p><ul>
+    <li><code>i</code> – int</li>
+    <li><code>I</code> – int64 (64 bit integer)</li>
+    <li><code>e</code> – exception_type_t</li>
+    <li><code>o</code> – object (i.e., void* in DML and C, and a
+      Python object in Python)</li>
+    <li><code>s</code> – string</li>
+    <li><code>m</code> – memory transaction
+                           (<code>generic_transaction_t *</code> in DML and C)</li>
+    <li><code>c</code> – configuration object
+                           (<code>conf_object_t *</code> in DML and C)</li>
+    <li><code>v</code> – <code>void *</code></li>
+    </ul>
+<p>
+</p></dd><dt id="dt:param_desc"><b><i>param_desc</i></b></dt><dd>space separated list of descriptive
+parameter names (in the same order as <i>params</i>, so that the first
+word is the name of the first parameter. If <i>param</i> is the empty
+string, <i>param_desc</i> may be None.</dd><dt id="dt:index"><b><i>index</i></b></dt><dd>A string describing the index value for the
+hap, or None if there is no index value. The meaning of indexes is up to you to
+define.</dd><dt id="dt:desc"><b><i>desc</i></b></dt><dd>A human readable description of the hap.</dd><dt id="dt:old_hap_obj"><b><i>old_hap_obj</i></b></dt><dd>Always 0.</dd></dl><p>The return value is a handle that must be saved for operations on the hap.
+</p><p>
+Example:
+</p><p>
+</p><pre class="jdocu_small">data hap_type_t hap_handle;
+
+method init() {
+    <i>[…]</i>
+    $hap_handle = SIM_hap_add_type("My_Special_Hap",
+                                  "ii",
+                                  "val1 val2",
+                                  NULL,
+                                  "Triggered when something special"
+                                  " happens in my module.",
+                                  0);
+    if ($hap_handle &lt;= 0) {
+        /× error handling ×/
+        <i>[…]</i>
+    }
+}
+</pre><p>
+</p><p>
+This registration will be executed once for every instance of the
+device model, but when <b><i>SIM_hap_add_type</i></b> is called with the
+same arguments it will avoid registering a duplicate hap type and
+instead return the handle of the previous registration.
+</p><p>
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Triggering-a-Hap">Triggering a Hap</a></h4>
+<p>
+
+</p><p>
+Whenever the condition for the hap is met, the handlers for the hap
+should be notified. Triggering a hap incurs some overhead; if it
+occurs in performance-sensitive code, it may be beneficial to use one
+of the <b><i><a name="SIM_hap_is_active_obj">SIM_hap_is_active_obj</a></i></b> or
+<b><i><a name="SIM_hap_is_active_obj_idx">SIM_hap_is_active_obj_idx</a></i></b> functions to check if
+there are any handlers prior to calling the notification function.
+</p><p>
+</p><pre class="jdocu_small">bool SIM_hap_is_active_obj(hap_type_t hap, conf_object_t *NOTNULL obj);
+
+bool SIM_hap_is_active_obj_idx(hap_type_t hap,
+                               conf_object_t *NOTNULL obj, int64 index);
+</pre><p>
+</p><p>
+where the parameter <i>hap</i> is the value returned from
+<b><i>SIM_hap_add_type()</i></b> or from <b><i>SIM_hap_get_number()</i></b>
+if using a standard hap type. These predicates are approximate, but if
+they return false, there is no need to trigger the hap since no installed
+functions would be called.
+</p><p>
+The notification to handlers is normally done by calling one of
+<b><i><a name="SIM_hap_occurred">SIM_hap_occurred</a>()</i></b>, <b><i>SIM_hap_occurred_vararg()</i></b>,
+<b><i>SIM_hap_occurred_always()</i></b>, and
+<b><i>SIM_hap_occurred_always_vararg()</i></b>. See the <em>API Reference
+Manual</em> for information about the differences.
+</p><p>
+</p><pre class="jdocu_small">int
+SIM_c_hap_occurred_always(hap_type_t     hap,
+                          conf_object_t *obj,
+                          int64          value,
+                          ...);
+</pre><p>
+</p><p>
+The parameters are:
+</p><p>
+</p><dl><dt id="dt:hap-2"><b><i>hap</i></b></dt><dd>The handle to the hap type, as returned from
+<b><i><a name="SIM_hap_add_type2">SIM_hap_add_type</a>()</i></b> and
+<b><i><a name="SIM_hap_get_number">SIM_hap_get_number</a>()</i></b>.</dd><dt id="dt:obj"><b><i>obj</i></b></dt><dd>The object for which the condition is met.</dd><dt id="dt:value"><b><i>value</i></b></dt><dd>Only meaningful if the hap is indexed. The
+meaning is defined by you.</dd></dl><p>The hap parameters will be provided as additional parameters to the
+function. A short example:
+</p><p>
+</p><pre class="jdocu_small">method some_meth(int v1, int v2) {
+    if (some_condition) {
+        if (SIM_hap_is_active_obj($hap_handle, $dev.obj))
+            SIM_c_hap_occurred($hap_handle, $dev.obj, 0, v1, v2)
+    }
+}
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="device-modeling-overview.html">4 Overview</a>
+<a href="building-well-behaved-models.html">6 Building Well-Behaved Models</a>
+</div>

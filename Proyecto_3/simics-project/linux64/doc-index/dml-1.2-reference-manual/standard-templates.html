@@ -1,0 +1,394 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5 Standard Templates</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="libraries.html">4 Libraries and Built-ins</a>
+<a href="limitations.html">A Known Limitations</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.2 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="standard-templates">5 <a href="#standard-templates">Standard Templates</a></h1>
+<p>This chapter describes the standard templates included the DML
+library. The templates can be used for both registers and fields. The
+templates can be accessed after importing <code>utility.dml</code>.</p>
+<p>The most common device register functionality is included in the
+standard templates.</p>
+<p>Note that many standard templates has the same functionality and only
+differ by name or log-messages printed when writing or reading
+them. The name of the template help developers to get a quick overview
+of the device functionality. An example are the <em>undocumented</em>
+and <em>reserved</em> templates. Both have the same
+functionality. However, the <em>undocumented</em> template hints that
+something in the device documentation is unclear or missing, and the
+<em>reserved</em> template that the register or field should not be used
+by software.</p>
+<p>The sub-sections use <em>object</em> as a combined name for registers
+and fields. The sub-sections refers to software and hardware reads and
+writes. Software reads and writes are defined as accesses using the
+<code>io_memory</code> interface (write/reads to memory/io mapped
+device). Software reads and writes use the DML built-in read and write
+methods. Hardware read writes are defined as accesses using Simics
+configuration attributes, using the DML built-in set and get
+methods. Device code can still modify a register or device even if
+hardware modification is prohibited.</p>
+<h2 id="_read_unimplemented">5.1 <a href="#_read_unimplemented">_read_unimplemented</a></h2>
+<section>
+<h3 id="description">5.1.1 <a href="#description">Description</a></h3>
+<p>The object functionality associated to a read access is unimplemented. Write
+access is using default implementation and can be overridden (for instance
+by the read_only template).</p>
+<h3 id="log-output">5.1.2 <a href="#log-output">Log Output</a></h3>
+<p>First software read to a register results in an unimplemented log-message on
+log-level 1, remaining reads on log-level 2. Software reads to fields does
+not result in a log-message.</p>
+<h3 id="parameters">5.1.3 <a href="#parameters">Parameters</a></h3>
+<p>log_level_high: sets the high log-level (default is 1, see LOG-OUTPUT)</p>
+<p>log_level_low: sets the low log-level (default is 2, see LOG-OUTPUT)</p>
+<h3 id="related-templates">5.1.4 <a href="#related-templates">Related Templates</a></h3>
+<p>unimplemented, _write_unimplemented, silent_unimplemented, design_limitation</p>
+</section>
+<h2 id="_write_unimplemented">5.2 <a href="#_write_unimplemented">_write_unimplemented</a></h2>
+<section>
+<h3 id="description-2">5.2.1 <a href="#description-2">Description</a></h3>
+<p>The object functionality associated to a write access is unimplemented. Read
+access is using default implementation and can be overridden (for instance
+by the write_only template).</p>
+<h3 id="log-output-2">5.2.2 <a href="#log-output-2">Log Output</a></h3>
+<p>First software write to registers results in an unimplemented log-message on
+log-level 1, remaining writes on log-level 2.  First write to a field (if
+field value is not equal to write value) results in an unimplemented
+log-message on log-level 1, remaining writes on log-level 2.</p>
+<h3 id="parameters-2">5.2.3 <a href="#parameters-2">Parameters</a></h3>
+<p>log_level_high: sets the high log-level (default is 1, see LOG-OUTPUT)</p>
+<p>log_level_low: sets the low log-level (default is 2, see LOG-OUTPUT)</p>
+<h3 id="related-templates-2">5.2.4 <a href="#related-templates-2">Related Templates</a></h3>
+<p>unimplemented, _read_unimplemented, silent_unimplemented, design_limitation</p>
+</section>
+<h2 id="checkreserved">5.3 <a href="#checkreserved">checkreserved</a></h2>
+<section>
+<h3 id="description-3">5.3.1 <a href="#description-3">Description</a></h3>
+<p>Check if the value written to a register matches the bits in the
+<code>reserved</code> parameter, and log a spec_violation when it does.</p>
+<h3 id="log-output-3">5.3.2 <a href="#log-output-3">Log Output</a></h3>
+<p>A spec_violation message.</p>
+</section>
+<h2 id="clear_on_read">5.4 <a href="#clear_on_read">clear_on_read</a></h2>
+<section>
+<h3 id="description-4">5.4.1 <a href="#description-4">Description</a></h3>
+<p>Software reads return the object value. The object value is then reset to 0
+as a side-effect of the read.</p>
+<h3 id="log-output-4">5.4.2 <a href="#log-output-4">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="constant">5.5 <a href="#constant">constant</a></h2>
+<section>
+<h3 id="description-5">5.5.1 <a href="#description-5">Description</a></h3>
+<p>The object value will remain constant.
+Software and hardware writes does not update the object value.
+If this template is used on a register, it will not be checkpointed.</p>
+<h3 id="log-output-5">5.5.2 <a href="#log-output-5">Log Output</a></h3>
+<p>First software write to register or field (if field value is not
+equal to write value) results in a spec_violation log-message on
+log-level 1, remaining writes on log-level 2.</p>
+<h3 id="parameters-3">5.5.3 <a href="#parameters-3">Parameters</a></h3>
+<p>value: the constant value</p>
+<p>init_val: can be set instead of <code>value</code>, for forward
+compatibility with DML 1.4</p>
+<p>hard_reset_value: if <code>value</code> is <code>undefined</code>, this
+parameter is used instead</p>
+<h3 id="related-templates-3">5.5.4 <a href="#related-templates-3">Related Templates</a></h3>
+<p>read_constant, silent_constant</p>
+</section>
+<h2 id="design_limitation">5.6 <a href="#design_limitation">design_limitation</a></h2>
+<section>
+<h3 id="description-6">5.6.1 <a href="#description-6">Description</a></h3>
+<p>The object's functionality is not in the model's scope and has been
+left unimplemented as a design decision. Software and hardware
+writes and reads are implemented as default writes and reads.
+Debug registers are a prime example of when to use this
+template. This is different from <em>unimplemented</em> which is
+intended to be implement (if required) but is a limitation in
+the current model.</p>
+<h3 id="related-templates-4">5.6.2 <a href="#related-templates-4">Related Templates</a></h3>
+<p>unimplemented, silent_unimplemented</p>
+</section>
+<h2 id="ignore">5.7 <a href="#ignore">ignore</a></h2>
+<section>
+<h3 id="description-7">5.7.1 <a href="#description-7">Description</a></h3>
+<p>The objects functionality is unimportant for both hardware and software.
+Software and hardware reads return 0. Software and hardware writes
+are ignored.</p>
+<h3 id="log-output-6">5.7.2 <a href="#log-output-6">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="ignore_write">5.8 <a href="#ignore_write">ignore_write</a></h2>
+<section>
+<h3 id="description-8">5.8.1 <a href="#description-8">Description</a></h3>
+<p>Software writes are ignored. This template might also be useful for read-only
+fields inside an otherwise writable register. See the documentation for the
+read_only template for more information.</p>
+<h3 id="log-output-7">5.8.2 <a href="#log-output-7">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="no_reset">5.9 <a href="#no_reset">no_reset</a></h2>
+<section>
+<h3 id="description-9">5.9.1 <a href="#description-9">Description</a></h3>
+<p>The register's or field's value will not be changed on a hard or soft reset.</p>
+</section>
+<h2 id="noalloc">5.10 <a href="#noalloc">noalloc</a></h2>
+<section>
+<h3 id="description-10">5.10.1 <a href="#description-10">Description</a></h3>
+<p>Do not allocate any storage for the object value, i.e.
+sets the object's <em>allocate</em> parameter to <code>false</code>.</p>
+<h3 id="log-output-8">5.10.2 <a href="#log-output-8">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="ones">5.11 <a href="#ones">ones</a></h2>
+<section>
+<h3 id="description-11">5.11.1 <a href="#description-11">Description</a></h3>
+<p>The object is constant all 1's.
+Software and hardware writes does not update the object value. The
+object value is all 1's.</p>
+<h3 id="log-output-9">5.11.2 <a href="#log-output-9">Log Output</a></h3>
+<p>First software write to register or field (if field value is not
+equal to write value) results in a spec_violation log-message on
+log-level 1, remaining writes on log-level 2.</p>
+</section>
+<h2 id="read_constant">5.12 <a href="#read_constant">read_constant</a></h2>
+<section>
+<h3 id="description-12">5.12.1 <a href="#description-12">Description</a></h3>
+<p>Software reads return a constant value. No storage is
+allocated for the object value.  If this template is used on a register,
+it will not be checkpointed.</p>
+<h3 id="log-output-10">5.12.2 <a href="#log-output-10">Log Output</a></h3>
+<p>None.</p>
+<h3 id="parameters-4">5.12.3 <a href="#parameters-4">Parameters</a></h3>
+<p>value: the constant value</p>
+<p>read_val: can be set instead of <code>value</code>, for forward
+compatibility with DML 1.4</p>
+<p>hard_reset_value: if <code>value</code> is <code>undefined</code>, this
+parameter is used instead</p>
+<h3 id="related-templates-5">5.12.4 <a href="#related-templates-5">Related Templates</a></h3>
+<p>constant, silent_constant</p>
+</section>
+<h2 id="read_only">5.13 <a href="#read_only">read_only</a></h2>
+<section>
+<h3 id="description-13">5.13.1 <a href="#description-13">Description</a></h3>
+<p>The object value is read-only for software, the object value can be
+modified by hardware.</p>
+<h3 id="log-output-11">5.13.2 <a href="#log-output-11">Log Output</a></h3>
+<p>First software write results in a spec_violation log-message on
+log-level 1, remaining writes on log-level 2. Fields will only log if the
+written value is different from the old value.</p>
+<p>If the register containing the read-only field also contains writable fields,
+it may be better to use the ignore_write template instead, since software
+often do not care about what gets written to a read-only field, causing
+unnecessary logging.</p>
+</section>
+<h2 id="read_write">5.14 <a href="#read_write">read_write</a></h2>
+<section>
+<h3 id="description-14">5.14.1 <a href="#description-14">Description</a></h3>
+<p>The object value can be modified by both software and hardware. Uses the
+default read and write methods.</p>
+<h3 id="log-output-12">5.14.2 <a href="#log-output-12">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="read_zero">5.15 <a href="#read_zero">read_zero</a></h2>
+<section>
+<h3 id="description-15">5.15.1 <a href="#description-15">Description</a></h3>
+<p>Software reads return 0.</p>
+<h3 id="log-output-13">5.15.2 <a href="#log-output-13">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="reserved">5.16 <a href="#reserved">reserved</a></h2>
+<section>
+<h3 id="description-16">5.16.1 <a href="#description-16">Description</a></h3>
+<p>The object is marked reserved and should not be used by software.
+Software writes update the object value. Reads are not affected.</p>
+<h3 id="log-output-14">5.16.2 <a href="#log-output-14">Log Output</a></h3>
+<p>First software write to register or field (if field value is not
+equal to write value) results in a spec_violation log-message on
+log-level 2. No logs on subsequent writes.</p>
+</section>
+<h2 id="scratch">5.17 <a href="#scratch">scratch</a></h2>
+<section>
+<h3 id="description-17">5.17.1 <a href="#description-17">Description</a></h3>
+<p>The object is a data scratch area.
+Uses the default read and write methods.</p>
+<h3 id="log-output-15">5.17.2 <a href="#log-output-15">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="signed">5.18 <a href="#signed">signed</a></h2>
+<section>
+<h3 id="description-18">5.18.1 <a href="#description-18">Description</a></h3>
+<p>Defines the object value to be treated as a signed integer, i.e.
+sets the object's <em>signed</em> parameter to <code>true</code>.</p>
+<h3 id="log-output-16">5.18.2 <a href="#log-output-16">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="silent_constant">5.19 <a href="#silent_constant">silent_constant</a></h2>
+<section>
+<h3 id="description-19">5.19.1 <a href="#description-19">Description</a></h3>
+<p>The object value will remain constant.
+Software and hardware writes does not update the initial object value.
+If this template is used on a register, it will not be checkpointed.</p>
+<h3 id="log-output-17">5.19.2 <a href="#log-output-17">Log Output</a></h3>
+<p>None.</p>
+<h3 id="parameters-5">5.19.3 <a href="#parameters-5">Parameters</a></h3>
+<p>value: the constant value</p>
+<p>init_val: can be set instead of <code>value</code>, for forward
+compatibility with DML 1.4</p>
+<p>hard_reset_value: if <code>value</code> is <code>undefined</code>, this
+parameter is used instead</p>
+<h3 id="related-templates-6">5.19.4 <a href="#related-templates-6">Related Templates</a></h3>
+<p>constant, read_constant</p>
+</section>
+<h2 id="silent_unimplemented">5.20 <a href="#silent_unimplemented">silent_unimplemented</a></h2>
+<section>
+<h3 id="description-20">5.20.1 <a href="#description-20">Description</a></h3>
+<p>The object functionality is unimplemented, but do not print a
+lot of log-messages when reading or writing.
+Software and hardware writes and reads are implemented as default writes and
+reads.</p>
+<h3 id="log-output-18">5.20.2 <a href="#log-output-18">Log Output</a></h3>
+<p>First software read to a register results in an unimplemented log-message on
+log-level 3, remaining reads on log-level 4. Software reads to fields does
+not result in a log-message. First software write to a register results in
+an unimplemented log-message on log-level 3, remaining writes on log-level 4.
+First write to a field (if field value is not equal to write value) results
+in an unimplemented log-message on log-level 3, remaining writes on
+log-level 4.</p>
+<h3 id="related-templates-7">5.20.3 <a href="#related-templates-7">Related Templates</a></h3>
+<p>unimplemented</p>
+<h3 id="related-templates-8">5.20.4 <a href="#related-templates-8">Related Templates</a></h3>
+<p>design_limitation</p>
+</section>
+<h2 id="sticky">5.21 <a href="#sticky">sticky</a></h2>
+<section>
+<h3 id="description-21">5.21.1 <a href="#description-21">Description</a></h3>
+<p>Do not reset object value on soft-reset, keep current value.</p>
+<h3 id="log-output-19">5.21.2 <a href="#log-output-19">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="undocumented">5.22 <a href="#undocumented">undocumented</a></h2>
+<section>
+<h3 id="description-22">5.22.1 <a href="#description-22">Description</a></h3>
+<p>The object functionality is undocumented or poorly documented.
+Software and hardware writes and reads are implemented as default writes and
+reads.</p>
+<h3 id="log-output-20">5.22.2 <a href="#log-output-20">Log Output</a></h3>
+<p>First software write and read result in a spec_violation log-message on
+log-level 1, remaining on log-level 2.</p>
+</section>
+<h2 id="unimplemented">5.23 <a href="#unimplemented">unimplemented</a></h2>
+<section>
+<h3 id="description-23">5.23.1 <a href="#description-23">Description</a></h3>
+<p>The object functionality is unimplemented. Warn when software is using the
+object. Software and hardware writes and reads are implemented as default
+writes and reads.</p>
+<h3 id="log-output-21">5.23.2 <a href="#log-output-21">Log Output</a></h3>
+<p>First software read to a register results in an unimplemented log-message on
+log-level 1, remaining reads on log-level 2. Software reads to fields does
+not result in a log-message. First software write to registers results in
+an unimplemented log-message on log-level 1, remaining writes on log-level 2.
+First write to a field (if field value is not equal to write value) results
+in an unimplemented log-message on log-level 1, remaining writes on
+log-level 2.</p>
+<h3 id="parameters-6">5.23.3 <a href="#parameters-6">Parameters</a></h3>
+<p>log_level_high: sets the high log-level (default is 1, see LOG-OUTPUT)</p>
+<p>log_level_low: sets the low log-level (default is 2, see LOG-OUTPUT)</p>
+<h3 id="related-templates-9">5.23.4 <a href="#related-templates-9">Related Templates</a></h3>
+<p>_read_unimplemented, _write_unimplemented, silent_unimplemented,
+design_limitation</p>
+</section>
+<h2 id="unmapped">5.24 <a href="#unmapped">unmapped</a></h2>
+<section>
+<h3 id="description-24">5.24.1 <a href="#description-24">Description</a></h3>
+<p>Make the offset of a register undefined.  This means that it is not mapped
+in the address space of the bank it is in.</p>
+<h3 id="log-output-22">5.24.2 <a href="#log-output-22">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="write_0_only">5.25 <a href="#write_0_only">write_0_only</a></h2>
+<section>
+<h3 id="description-25">5.25.1 <a href="#description-25">Description</a></h3>
+<p>Software can only set bits to 0.
+The new object value is the bitwise AND of the
+old object value and the value written by software.</p>
+<h3 id="log-output-23">5.25.2 <a href="#log-output-23">Log Output</a></h3>
+<p>None.</p>
+<h3 id="related-templates-10">5.25.3 <a href="#related-templates-10">Related Templates</a></h3>
+<p>write_1_only</p>
+</section>
+<h2 id="write_1_clears">5.26 <a href="#write_1_clears">write_1_clears</a></h2>
+<section>
+<h3 id="description-26">5.26.1 <a href="#description-26">Description</a></h3>
+<p>Software can only clear bits. This feature is often when
+hardware sets bits and software clears them to acknowledge.
+Software write 1's to clear bits. The new object value is
+a bitwise AND of the old object value and the bitwise
+complement of the value written by software.</p>
+<h3 id="log-output-24">5.26.2 <a href="#log-output-24">Log Output</a></h3>
+<p>None.</p>
+</section>
+<h2 id="write_1_only">5.27 <a href="#write_1_only">write_1_only</a></h2>
+<section>
+<h3 id="description-27">5.27.1 <a href="#description-27">Description</a></h3>
+<p>Software can only set bits to 1.
+The new object value is the bitwise OR of the
+old object value and the value written by software.</p>
+<h3 id="log-output-25">5.27.2 <a href="#log-output-25">Log Output</a></h3>
+<p>None.</p>
+<h3 id="related-templates-11">5.27.3 <a href="#related-templates-11">Related Templates</a></h3>
+<p>write_0_only</p>
+</section>
+<h2 id="write_only">5.28 <a href="#write_only">write_only</a></h2>
+<section>
+<h3 id="description-28">5.28.1 <a href="#description-28">Description</a></h3>
+<p>The objects value can be modified by software but can't be read back, reads
+return 0.</p>
+<h3 id="log-output-26">5.28.2 <a href="#log-output-26">Log Output</a></h3>
+<p>The first time the object is read there is a spec_violation
+log-message on log-level 1, remaining reads on log-level 2.</p>
+</section>
+<h2 id="zeros">5.29 <a href="#zeros">zeros</a></h2>
+<section>
+<h3 id="description-29">5.29.1 <a href="#description-29">Description</a></h3>
+<p>The object is constant all 0's.
+Software and hardware writes does not update the object value. The
+object value is all 0's.</p>
+<h3 id="log-output-27">5.29.2 <a href="#log-output-27">Log Output</a></h3>
+<p>First software write to register or field (if field value is not
+equal to write value) results in a spec_violation log-message on
+log-level 1, remaining writes on log-level 2.</p>
+</section>
+
+<div class="chain">
+<a href="libraries.html">4 Libraries and Built-ins</a>
+<a href="limitations.html">A Known Limitations</a>
+</div>

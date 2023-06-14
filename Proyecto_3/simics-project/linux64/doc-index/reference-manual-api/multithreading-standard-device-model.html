@@ -1,0 +1,73 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.6 Standard Device Model</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="multithreading-concurrency-modes.html">2.5 Concurrency Modes</a>
+<a href="multithreading-threaded-cpu.html">2.7 Threaded Device Model</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rmapi-threading-model.html">2 Threading Model</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="multithreading-standard-device-model">2.6 Standard Device Model</a></h1>
+<p>
+
+By default, devices in Simics use the Standard Device Model. Such
+models run in the <code>Sim_Concurrency_Mode_Serial</code>
+concurrency mode.
+</p><p>
+Using the Standard Device Model amounts to being able to assume at
+least Cell Context when interface methods are invoked. Certain things,
+like object initialization, run in Global Context, which is
+the most permissive context.
+</p><p>
+</p><h2 class="jdocu"><a name="multithreading-standard-device-model-properties">2.6.1 Properties</a></h2>
+<p>
+
+Cell Context has the following properties:
+</p><ul>
+  <li>Any object belonging to the same cell may be accessed or referenced.
+    Interfaces marked as available in Cell Context can be
+    called directly without any additional steps.</li>
+  <li>Accessed objects always have a stable state.</li>
+  <li>The cell thread domain is held.</li>
+  <li>The direct memory subsystem ensures that there is no observable
+    concurrency with respect to simulated RAM.</li>
+</ul>
+In Cell Context, everything within the cell appears
+to be completely serialized. Under to hood, this may not be the case, and
+CPUs might be running concurrently. But when a CPU is accessed from a
+device, it is stopped until the device access is complete. For instance,
+a device will always see a stable cycle count when it repeatedly
+queries its associated clock during a register access.
+ 
+
+<div class="chain">
+<a href="multithreading-concurrency-modes.html">2.5 Concurrency Modes</a>
+<a href="multithreading-threaded-cpu.html">2.7 Threaded Device Model</a>
+</div>

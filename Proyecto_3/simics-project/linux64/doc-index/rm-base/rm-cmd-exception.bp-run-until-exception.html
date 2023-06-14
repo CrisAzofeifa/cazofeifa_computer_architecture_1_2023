@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;exception&gt;.bp-run-until-exception</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-exception.bp-break-exception.html">&lt;exception&gt;.bp-break-exception</a>
+<a href="rm-cmd-exception.bp-trace-exception.html">&lt;exception&gt;.bp-trace-exception</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="exception.bp-run-until-exception"></a>
+<h1 id="exception.bp-run-until-exception"><a href="#exception.bp-run-until-exception">&lt;exception&gt;.bp-run-until-exception</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;exception&gt;.bp-run-until-exception</b> (<i>"name"</i>|<i>number</i>|-all) [-recursive] [<i>timeout</i>] [<i>timeout-rt</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Run the simulation until the specified exception occurs.
+<p>
+The <i>name</i> or <i>number</i> parameter specify which exception should stop the simulation. The available exceptions depend on the simulated target. Instead of an exception, the <tt>-all</tt> flag may be given. This will stop the simulation on all exceptions.
+</p><p>
+If no processor object is specified, the currently selected processor is used.
+</p><p>
+If <tt>-recursive</tt> is used, not only the object, but the objects hierarchically below the object will be considered when adding the breakpoint. If <i>timeout</i> is a positive number, the command will run for at most that many seconds of virtual time.
+</p><p>
+If <i>timeout-rt</i> is a positive number, the command will run for at most that many seconds of real time.
+</p><p>
+A time-out will be signaled by throwing a CLI exception, which can be captured using try/except in order to take specific action, or to let it pass unhandled. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.bp-manager.html">bp-manager</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-exception.bp-break-exception.html">&lt;exception&gt;.bp-break-exception</a>
+<a href="rm-cmd-exception.bp-trace-exception.html">&lt;exception&gt;.bp-trace-exception</a>
+</div>

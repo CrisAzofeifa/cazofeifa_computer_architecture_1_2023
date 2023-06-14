@@ -1,0 +1,355 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>6.4 Components</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="inspecting-the-configuration.html">6.3 Inspecting the Configuration</a>
+<a href="conf-object-name.html">6.5 Object Name</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="configuration.html">6 Configuration and Checkpointing</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Configuration-Components">6.4 Components</a></h1>
+<p>
+
+</p><p>
+All machines in
+<code>[simics]\targets\</code><i>architecture</i><code></code> use
+components to create configurations. A component is typically the
+smallest hardware unit that can be used when configuring a real
+machine, and examples include motherboards, PCI cards, hard disks, and
+backplanes. Components are usually implemented in Simics using several
+configuration objects and can also contain subcomponents.
+</p><p>
+Components are intended to reduce the large configuration space provided by
+Simics's objects and attributes, by only allowing combinations that match real
+hardware. This greatly simplifies the creation of different systems by catching
+many misconfigurations.
+</p><p>
+Components themselves are also configuration objects in Simics. But to avoid
+confusion, they will always be referred to as components and the objects
+implementing the actual functionality will be called objects.
+</p><p>
+</p><h2 class="jdocu"><a name="Component-Definitions">6.4.1 Component Definitions</a></h2>
+<p>
+
+<a name="component"></a>
+</p><p>
+The <em><a name="component2">component</a></em> is the basic building block in the
+component system. When a component is created, it is in
+a <em>non-instantiated</em> state. At this stage only the component
+itself exists, not the configuration objects that will implement the
+actual functionality. Once a complete configuration has been created,
+all included components can be <em>instantiated</em>. When this
+happens, all objects are created and their attributes are set.
+</p><p>
+Components are connected to each other with
+<em><a name="connector">connector</a>s</em>. Each connector has
+a <em><a name="connector-type">connector type</a></em> which tells what kind of
+connector it is and a <em>direction</em>, which can
+be <em>up</em>, <em>down</em>, or <em>any</em>. A connector is either
+required or optional. If it is optional it does not need to be
+connected to anything. Unless a connector is specified
+as <em>hotpluggable</em> it cannot be connected or disconnected after
+the component is instantiated. If a connection is hotpluggable it must
+be optional.
+</p><p>
+Connectors can be connected to each other in <em><a name="connection">connection</a>s</em>.
+Each connection connects an <em>up</em> connector with a <em>down</em>
+connector. A connection can also include an <em>any</em> connector. If
+an <em>any</em> connector is connected to an <em>up</em> connector it works
+exactly like a <em>down</em> connector and if it is connected to a <em>down</em>
+connector it works exactly like an <em>up</em> connector. The connections in the
+system must not form a cycle. You can think of the components and connections in
+the system as a directed acyclic graph with the components as the vertices and
+the connections as the edges.
+</p><p>
+Each connected subgraph in the set of components is called
+a <em><a name="component-hierarchy">component hierarchy</a></em>.
+</p><p>
+A component <em>A</em> is said to be <em>above</em> a component <em>B</em> if it
+can be reached through up connectors in one or more steps from component
+<em>B</em>. Analogously, component <em>A</em> is said to be <em>below</em> a
+component <em>B</em> if <em>B</em> is above <em>A</em>.
+</p><p>
+A <em>root</em> is a component without any components above it. A
+component's roots are the roots which are above it.
+</p><p>
+A component where the <i>top_level</i> attribute returns true is
+a <em>top-level</em> component. It is often a motherboard, backplane
+or system chassis. It must be a root.
+</p><p>
+A <em>standalone</em> component is a component without any required
+connectors. A typical example is a hotplug device, such as a PC Card
+(PCMCIA) or an Ethernet link.
+</p><p>
+To instantiate a set of components, each component which is not
+standalone or top-level must have a top-level component as a root.
+</p><p>
+Components are also <em><a name="namespace">namespace</a>s</em> and can be nested in a
+<em><a name="namespace-hierarchy">namespace hierarchy</a></em>, which is separate from the component
+hierarchy. The root of the hierarchy is the <em>global namespace</em>,
+and this is the only namespace which is not a component. Each
+configuration object (including components) lives in a namespace. The
+object is a <em>child</em> of the namespace and the namespace is the
+<em>parent</em> of the object. The other objects in the namespace are
+<em>siblings</em> of the object.
+</p><p>
+</p><h2 class="jdocu"><a name="Importing-Component-Commands">6.4.2 Importing Component Commands</a></h2>
+<p>
+
+Components in Simics are grouped by machine architecture, or by type, into
+several modules. Before a component can be used in Simics, the
+corresponding component module has to be loaded. When the component module
+is loaded, CLI commands for creating components are added to the front end. The
+most common modules, that are not architecture specific, are
+<code>memory-comp</code>, <code>pci-comp</code>, <code>std-comp</code>,
+<code>console-components</code>. To import all modules that are used by
+the <i>QSP-Simple</i> machine, issue the
+following commands:
+</p><pre class="jdocu_small">simics&gt; <b>load-module std-comp</b>
+simics&gt; <b>load-module memory-comp</b>
+simics&gt; <b>load-module console-components</b>
+simics&gt; <b>load-module x58-ich10-comp</b>
+simics&gt; <b>load-module x86-nehalem-comp</b>
+</pre><p>
+</p><h2 class="jdocu"><a name="Creating-Components">6.4.3 Creating Components</a></h2>
+<p>
+
+</p><p>
+The <b>create-&lt;component&gt;</b> command is used to create
+non-instantiated components. There is one create command for each
+component class.  The arguments to the create command represent
+attributes in the component.  Standalone components can be created
+both non-instantiated and instantiated.  To create instantiated
+components, there are <b>new-</b> commands, similar to
+the <b>create-</b> commands.
+</p><p>
+The following code creates a non-instantiated 'motherboard_x58_ich10' component
+, called 'motherboard0'
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module x58-ich10-comp</b>
+simics&gt; <b>create-motherboard-x58-ich10</b>
+Created non-instantiated 'motherboard_x58_ich10' component 'motherboard0'
+</pre><p>
+</p><p>
+</p><h2 class="jdocu"><a name="machine-configuration-components-connector">6.4.4 Connectors</a></h2>
+<p>
+
+<a name="connector2"></a><a name="component3"></a>
+</p><p>
+A connector provides a means for a component to connect to other components.
+Connectors have a defined direction: <i>up</i>, <i>down</i>, or <i>any</i>.
+The direction is <i>up</i> if it needs an existing hierarchy to connect to;
+for example, the PCI-bus connector in a PCI device must connect to a PCI slot.
+A connector has a <i>down</i> direction if it extends the hierarchy downwards;
+for example, a PCI slot is a connection downward from a board to a PCI device.
+There are also non-directed connectors, with direction <i>any</i>. You can
+only connect an <em>up</em> to a <em>down</em> connector or to an <em>any</em>
+connector, and similar for <em>down</em> connectors. Connectors with the
+<em>any</em> direction can not be connected together.
+</p><p>
+Many connectors have to be connected before the component is instantiated,
+while others can be empty. A standalone component, as described above,
+may have all connectors empty.
+</p><p>
+A <em>hotplug</em> connector supports connect and disconnect after
+instantiation. Other connectors can only be connected, or left
+unconnected, when the configuration is created and may not be modified
+after that point.  A <em>multi</em> connector supports connections to
+several other connectors. Creating <em>multi</em> connectors should be
+avoided, it is often better to dynamically create non-<em>multi</em>
+connectors when new connectors are needed.
+</p><p>
+It is not possible to connect instantiated components with non-instantiated
+ones. The reason is that the instantiated component expects the other to have
+all objects already created, and need to access some of them to finish the
+connection.
+</p><p>
+The <b>info</b> command of a component lists all connectors and some
+information about them:
+</p><pre class="jdocu_small">simics&gt; <b>motherboard0.info</b>
+Information about motherboard0 [class motherboard_x58_ich10]
+============================================================
+
+Slots:
+      dimm[0] : motherboard0.dimm[0]
+      dimm[1] : motherboard0.dimm[1]
+      dimm[2] : motherboard0.dimm[2]
+      dimm[3] : motherboard0.dimm[3]
+           nb : motherboard0.nb
+    reset_bus : motherboard0.reset_bus
+           sb : motherboard0.sb
+    socket[0] : motherboard0.socket[0]
+    socket[1] : motherboard0.socket[1]
+    socket[2] : motherboard0.socket[2]
+    socket[3] : motherboard0.socket[3]
+    socket[4] : motherboard0.socket[4]
+    socket[5] : motherboard0.socket[5]
+    socket[6] : motherboard0.socket[6]
+    socket[7] : motherboard0.socket[7]
+
+Connectors:
+      dimm[0] : mem-bus              down
+      dimm[1] : mem-bus              down
+      dimm[2] : mem-bus              down
+      dimm[3] : mem-bus              down
+    reset_bus : x86-reset-bus        down
+    socket[0] : x86-apic-processor   down
+    socket[1] : x86-apic-processor   down
+    socket[2] : x86-apic-processor   down
+    socket[3] : x86-apic-processor   down
+    socket[4] : x86-apic-processor   down
+    socket[5] : x86-apic-processor   down
+    socket[6] : x86-apic-processor   down
+    socket[7] : x86-apic-processor   down
+
+</pre><p>
+The board has four slots for memory modules, one north bridge, one reset bus, 
+one south bridge, eight sockets. All slots are not listed as <em>hotplug</em> 
+since they have to be inserted when the machine is configured initially.
+</p><p>
+Since the machine need a cpu, we also add a x86QSP1 processor to our example. 
+A CLI variable is used to hold the name of the processor component.
+</p><pre class="jdocu_small">simics&gt; <b>load-module x86-nehalem-comp</b>
+simics&gt; <b>$cpu = (create-processor-x86QSP1 freq_mhz = 2000)</b>
+simics&gt; <b>connect motherboard0.socket[0] $cpu.socket</b>
+</pre><p>
+</p><p>
+To enable input and output for the simulated machine, the following commands
+create a serial text console and connect it to the <code>serial[0]</code> connector
+of the south bridge.
+</p><pre class="jdocu_small">simics&gt; <b>load-module console-components</b>
+simics&gt; <b>connect motherboard0.sb.serial[0] (create-txt-console-comp).serial</b>
+</pre><p>
+</p><p>
+Since the machine needs some memory to run, we also add a memory module to
+our example. A CLI variable is used to hold the name of the memory component.
+</p><pre class="jdocu_small">simics&gt; <b>load-module memory-comp</b>
+simics&gt; <b>$dimm = (create-simple-memory-module memory_megs = 2048)</b>
+simics&gt; <b>connect motherboard0.dimm[0] $dimm.mem_bus</b>
+</pre><p>
+</p><h2 class="jdocu"><a name="Instantiation">6.4.5 Instantiation</a></h2>
+<p>
+
+When a component hierarchy has been created, it can be instantiated using the
+<b>instantiate-components</b> command. This command will look for all
+non-instantiated top-level components and instantiate all components below
+them. The <b>instantiate-components</b> command can also be given
+a specific component as argument. Then only that component will be
+instantiated, including its hierarchy if it is a top-level component.
+</p><pre class="jdocu_small">simics&gt; <b>instantiate-components</b>
+</pre><p>
+</p><p>
+If there are unconnected connectors left that may not be empty, the command
+will return with an error.
+</p><p>
+When the instantiation is ready, all object and attributes have been
+created and initialized. In our example, a text console window should
+have opened.  The hardware of the simulated motherboard is now
+properly configured, but since no software is loaded, it will not show
+any output on the console if the machine is started.
+</p><h2 class="jdocu"><a name="Inspecting-Component-Configurations">6.4.6 Inspecting Component Configurations</a></h2>
+<p>
+
+</p><p>
+The <b>list-components</b> command prints a list of all components in the
+system. All connectors are included, and information about existing
+connections between them.
+</p><p>
+The <b>info</b> namespace command provides static information about a
+component, such as the slots and a list of connectors.
+</p><p>
+The <b>status</b> namespace command provides dynamic information about a
+component, such as attribute values and a list of all current connections. The
+output from status in the example:
+</p><pre class="jdocu_small">simics&gt; <b>motherboard0.status</b>
+Status of motherboard0 [class motherboard_x58_ich10]
+====================================================
+
+Setup:
+         Top component : none
+          Instantiated : True
+
+Attributes:
+                  acpi : True
+                  bios : 
+       break_on_reboot : False
+           mac_address : 20:20:20:20:20:20
+              rtc_time : 2008-06-05 23:52:01
+             spi_flash : 
+          system_clock : False
+    system_clock_class : clock
+
+Connections:
+               dimm[0] : dimm0:mem_bus
+             socket[0] : processor0:socket
+</pre><p>
+</p><p>
+</p><h2 class="jdocu"><a name="Accessing-Objects-from-Components">6.4.7 Accessing Objects from Components</a></h2>
+<p>
+
+</p><p>
+When doing more advanced configuration of a machine, it may be
+necessary to access configuration objects and their attributes
+directly. Each object in a component has a slot name that can be used
+for accessing the object. A list of slot names, and their mappings to
+actual configuration object names, is available from the output of the
+component's <b>info</b> command. The next example prints the 
+<i>frequency</i> attribute from the <i>core</i> object.
+</p><pre class="jdocu_small">simics&gt; <b>processor0.core[0][0]-&gt;frequency</b>
+[20000000, 1]
+</pre><p>
+</p><p>
+Accessing objects of non-instantiated components is not possible, since
+they do not have any associated configuration objects. But it is
+possible to access the <code>pre_conf_object</code>s of a
+non-instantiated component from Python. The following
+example works both for instantiated and non-instantiated components:
+</p><pre class="jdocu_small">simics&gt; <b>@print(conf.processor0.core[0][0].cpuid_stepping)</b>
+8
+</pre><p>
+Remember that not all configuration object attributes are available on a
+<code>pre_conf_object</code>. Only attributes that have been assigned by
+the component during initialization exists.
+</p><p>
+</p><h2 class="jdocu"><a name="Available-Components">6.4.8 Available Components</a></h2>
+<p>
+
+<a name="component4"></a>
+The <em>Target Guide</em> for each architecture lists and describes
+all components that are available.
+
+</p><p>
+</p>
+<div class="chain">
+<a href="inspecting-the-configuration.html">6.3 Inspecting the Configuration</a>
+<a href="conf-object-name.html">6.5 Object Name</a>
+</div>

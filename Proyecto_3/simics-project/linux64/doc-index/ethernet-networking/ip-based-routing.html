@@ -1,0 +1,108 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.4.1 IP Based Routing</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="ip-services.html">3.4 IP Services</a>
+<a href="dhcp-and-bootp.html">3.4.2 DHCP and BOOTP</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="simicsnet.html">3 Network Simulation</a>
+&nbsp;/&nbsp;
+<a href="ip-services.html">3.4 IP Services</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="IP-Based-Routing">3.4.1 IP Based Routing</a></h1>
+<p>
+<a name="routing"></a>
+<a name="IProuting"></a>
+
+</p><p>
+Simics' <em>service node</em> can provide IP based routing between Ethernet
+links, allowing machines attached to different networks to communicate with
+each other.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+To use the routing mechanisms, simulated machines must use the
+<a name="IPaddress"></a>IP address of the service node as a
+<a name="routinggateway"></a><em><a name="gateway">gateway</a></em> for IP based
+traffic. Configuring a gateway requires system administration skills,
+and the exact procedure depends on the target operating system.</div>Each connection of the service-node to an Ethernet link implies a default route
+to that link. For example, connecting a service node with the
+address <code>192.168.0.1/24</code> to <b>link1</b> implies that all
+packets matching this network and mask combination will be routed
+to <b>link1</b> automatically. This often solves the most common routing
+needs.
+<p>
+In addition, the service node contains an internal IP routing table that is
+used for packet routing between connected links.  The routing table can be
+viewed using the <b>&lt;service_node_comp&gt;.route</b> command:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>sn0.route</b>
+Destination  Netmask  Gateway  Link 
+------------------------------------
+10.10.0.0    24                link0
+</pre><p>
+</p><p>
+The output is quite similar to <code>route</code> command available on many
+systems. The <i>destination</i> and <i>netmask</i> fields specify a target that
+can be either a network (i.e., a range of addresses) or a single host (with
+netmask <code>255.255.255.255</code>). For packets with this target as their
+destination, the <i>link</i> field specifies the Ethernet link the packet
+should be sent to.
+</p><p>
+New entries can be added to the routing table with the
+<a name="routingroute-add"></a>
+<b>&lt;service_node_comp&gt;.route-add</b> command. If there is a service node
+called <b>sn0</b> connected to two links called
+<b>link0</b> and <b>link1</b>, it would for example possible to set up
+routes like this:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>sn0.route-add 192.168.0.0 255.255.0.0 link = link0</b>
+simics&gt; <b>sn0.route-add 192.168.1.0/26 link = link1</b>
+simics&gt; <b>sn0.route-add 10.10.0.0 255.255.0.0 192.168.0.1 link0</b>
+simics&gt; <b>sn0.route-add 0.0.0.0 255.255.255.255 192.168.1.1 link1</b>
+simics&gt; <b>sn0.route</b>
+Destination  Netmask  Gateway      Link 
+----------------------------------------
+192.168.0.0  16                    link0
+192.168.1.0  26                    link1
+10.10.0.0    16       192.168.0.1  link0
+default               192.168.1.1  link1
+</pre><p>
+</p><p>
+The destination address and the netmask identify the target, and
+should be given as strings in dotted decimal form. If the target is a
+single host, the netmask should be given as
+<code>"255.255.255.255"</code>.
+</p><p>
+</p>
+<div class="chain">
+<a href="ip-services.html">3.4 IP Services</a>
+<a href="dhcp-and-bootp.html">3.4.2 DHCP and BOOTP</a>
+</div>

@@ -1,0 +1,116 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i2c_slave</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_i2c_master_v2.html">i2c_master_v2</a>
+<a href="__rm_interface_i2c_slave_v2.html">i2c_slave_v2</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_i2c_slave">i2c_slave</a></h1>
+<p>
+
+<a name="i2c_slave"></a><a name="i2c_slave_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(i2c_slave) {
+        void (*start_request)(conf_object_t *device, uint32 address);
+        void (*read_request)(conf_object_t *device);
+        void (*ack_read_request)(conf_object_t *device, i2c_status_t ack);
+        void (*write_request)(conf_object_t *device, uint8 value);
+        void (*stop)(conf_object_t *device, uint8 repeated_start);
+};
+
+#define I2C_SLAVE_INTERFACE "i2c_slave"
+</pre><p>
+</p><p>
+
+   The <code>i2c_slave</code> interface is implemented by devices
+   that may act as slaves on an I2C link. The <b><i>start_request</i></b>
+   function is called by the I2C link to start a transaction.  Bits 7
+   down to 1 of the <i>address</i> parameter are the address of
+   the slave, and bit 0 is the write bit. The started transaction is a
+   write transaction if the write bit is <code>0</code>, and a read
+   transaction otherwise. The I2C slave device accepts the transaction
+   by calling the <b><i>start_response</i></b> function in the I2C
+   link. The transaction consists of a number of calls to
+   <b><i>write_request</i></b> (or <b><i>read_request</i></b>, depending on
+   the write bit). The slave responds to each of these with a call to
+   <b><i>write_response</i></b> (or <b><i>read_response</i></b>) in the I2C
+   link. The <b><i>ack_read_request</i></b> function is called by the I2C
+   link as response to the <b><i>read_response</i></b> function. The
+   transfer can end in three ways:
+</p><p>
+   </p><ol>
+     <li>If a <em>stop</em> condition occurs (i.e., a master calls
+     <b><i>stop</i></b>), <code>stop(0)</code> is called in the slave device.
+     </li>
+
+     <li>If a <em>repeated start</em> condition occurs, with the same
+     device as slave, then the start message is relayed to the slave
+     device as usual, and the first transmission is ended by this new
+     call to the slave's <b><i>start_request</i></b> function.  </li>
+
+     <li>If a <em>repeated start</em> condition occurs, with a
+     different device as slave, then the first transmission is ended by
+     a <code>stop(1)</code> call in the first slave device. </li>
+   </ol>
+<p>
+   Note that a call to <b><i>stop</i></b> doesn't necessarily represent
+   an I2C stop condition: If the <i>repeated_start</i>
+   parameter is <code>1</code>, the call actually represents an I2C start
+   condition, whose effect is similar to that of a stop condition.
+</p><p>
+   Note that a call to <b><i>ack_read_request</i></b> always is followed
+   by a call to <b><i>read_request</i></b> if <i>ack</i> is
+   <code>I2C_status_success</code>, or by a call to either
+   <b><i>stop</i></b> or <b><i>start_request</i></b> if <i>ack</i>
+   is <code>I2C_status_noack</code>. Moreover, the interface calls
+   to an i2c slave device always follow the regular expression
+   <code>(((R(ra)*rA)|(Ww*))+P)*</code>, where <code>R</code> and <code>W</code>
+   are calls to <b><i>start_request</i></b> with odd and even addresses,
+   respectively; <code>r</code> is <b><i>read_request</i></b>; <code>w</code> is
+   <b><i>write_request</i></b>; <code>a</code> and <code>A</code> are
+   <b><i>ack_read_request</i></b> calls with <i>ack</i> set to
+   <code>I2C_status_success</code> and
+   <code>I2C_status_noack</code>, respectively; and <code>P</code> is a
+   call to <b><i>stop</i></b>.
+</p><p>
+   See the description for the <code>i2c_link</code> interface for
+   more information how to call the <b><i>*_response</i></b> functions.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_i2c_master_v2.html">i2c_master_v2</a>
+<a href="__rm_interface_i2c_slave_v2.html">i2c_slave_v2</a>
+</div>

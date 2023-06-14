@@ -1,0 +1,1058 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>B Messages</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="limitations.html">A Known Limitations</a>
+<a href="grammar.html">C Formal Grammar</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.2 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="messages">B <a href="#messages">Messages</a></h1>
+<p>The following sections list the warnings and error messages from
+<code>dmlc</code>, with some clarifications.</p>
+<h2 id="warning-messages">B.1 <a href="#warning-messages">Warning Messages</a></h2>
+<p>The messages are listed in alphabetical order; the corresponding tags
+are shown within brackets, e.g., <code>[WNDOC]</code>.</p>
+<dl>
+  <dt id="dt:wsystemc"><b>
+</b><p><b>... [WSYSTEMC]</b></p></dt><p></p>
+<dd>
+<p>SystemC specific warnings</p>
+</dd>
+  <dt id="dt:wwrnstmt"><b>
+</b><p><b>... [WWRNSTMT]</b></p></dt><p></p>
+<dd>
+<p>The source code contained a statement "<code>warning;</code>", which
+causes a warning to be printed.</p>
+</dd>
+  <dt id="dt:x-then-y-log-level-has-no-effect-when-the-levels-are-the-same-wredundantlevel"><b>
+</b><p><b>'X then Y' log level has no effect when the levels are the same [WREDUNDANTLEVEL]</b></p></dt><p></p>
+<dd>
+<p><code>X then Y</code> log level syntax has no effect when the
+first and subsequent levels are the same.</p>
+</dd>
+  <dt id="dt:comparing-negative-constant-to-unsigned-integer-has-a-constant-result-wnegconstcomp"><b>
+</b><p><b>Comparing negative constant to unsigned integer has a constant result [WNEGCONSTCOMP]</b></p></dt><p></p>
+<dd>
+<p>DML uses a special method when comparing an unsigned and signed integer,
+meaning that comparing a negative constant to an unsigned integer always
+has the same result, which is usually not the intended behaviour.</p>
+</dd>
+  <dt id="dt:outdated-ast-file-woldast"><b>
+</b><p><b>Outdated AST file: ... [WOLDAST]</b></p></dt><p></p>
+<dd>
+<p>A precompiled DML file has an old time-stamp. This may happen if a
+user accidentally edits a DML file from the standard library. A
+safe way to suppress the warning is to remove the outdated
+<code>.dmlast</code> file.</p>
+</dd>
+  <dt id="dt:the-assignment-source-is-a-constant-value-which-does-not-fit-the-assign-target-of-type-and-will-thus-be-truncated-wastrunc"><b>
+</b><p><b>The assignment source is a constant value which does not fit the assign target of type '...', and will thus be truncated [WASTRUNC]</b></p></dt><p></p>
+<dd>
+<p>The source of an assignment is a constant value that can't fit in the
+type of the target, and is thus truncated. This warning can be silenced by
+explicitly casting the expression to the target type.</p>
+</dd>
+  <dt id="dt:use-of-unsupported-feature-wexperimental"><b>
+</b><p><b>Use of unsupported feature: ... [WEXPERIMENTAL]</b></p></dt><p></p>
+<dd>
+<p>This part of the language is experimental, and not yet officially
+supported. Code relying on the feature may break without notice in
+future releases.</p>
+</dd>
+  <dt id="dt:use-of-unsupported-feature-wexperimental_unmapped"><b>
+</b><p><b>Use of unsupported feature: ... [WEXPERIMENTAL_UNMAPPED]</b></p></dt><p></p>
+<dd>
+<p>This part of the language is experimental, and not yet officially
+supported. Code relying on the feature may break without notice in
+future releases.</p>
+</dd>
+  <dt id="dt:deprecation-wdeprecated"><b>
+</b><p><b>deprecation: ... [WDEPRECATED]</b></p></dt><p></p>
+<dd>
+<p>This part of the language is deprecated, usually because the
+underlying support in Simics is deprecated.</p>
+</dd>
+  <dt id="dt:duplicate-event-checkpoint-names-wdupevent"><b>
+</b><p><b>duplicate event checkpoint names: ... [WDUPEVENT]</b></p></dt><p></p>
+<dd>
+<p>Two or more events will be checkpointed using the same name, which
+means that the checkpoint cannot be safely read back.</p>
+</dd>
+  <dt id="dt:file-has-no-version-tag-assuming-version-1-2-wnover"><b>
+</b><p><b>file has no version tag, assuming version 1.2 [WNOVER]</b></p></dt><p></p>
+<dd>
+<p>A DML file must start with a version statement, such as <code>dml 1.2;</code></p>
+</dd>
+  <dt id="dt:implementation-of-without-is-is-ignored-by-the-standard-library-wnois"><b>
+</b><p><b>implementation of ...() without 'is ...' is ignored by the standard library [WNOIS]</b></p></dt><p></p>
+<dd>
+<p>Many standard method overrides will only be recognized if a
+template named like the method is also instantiated. For instance,
+the method <code>set</code> in a field has no effect unless the
+<code>set</code> template is instantiated.</p>
+</dd>
+  <dt id="dt:negative-register-offset-n-wnegoffs"><b>
+</b><p><b>negative register offset: <i>N</i> [WNEGOFFS]</b></p></dt><p></p>
+<dd>
+<p>A negative integer expression is given as a register offset.
+Register offsets are unsigned 64-bit numbers, which means that
+a negative offset expression translates to a very large offset.</p>
+</dd>
+  <dt id="dt:no-desc-parameter-specified-for-device-wnshortdesc"><b>
+</b><p><b>no 'desc' parameter specified for device [WNSHORTDESC]</b></p></dt><p></p>
+<dd>
+<p>No short description string was specified using the 'desc' parameter.
+(This warning is disabled by default.)</p>
+</dd>
+  <dt id="dt:no-documentation-for-wndoc"><b>
+</b><p><b>no documentation for '...' [WNDOC]</b></p></dt><p></p>
+<dd>
+<p>No documentation string was specified for the attribute.
+(This warning is disabled by default.)</p>
+</dd>
+  <dt id="dt:no-documentation-for-required-attribute-wndocra"><b>
+</b><p><b>no documentation for required attribute '...' [WNDOCRA]</b></p></dt><p></p>
+<dd>
+<p>No documentation string was specified for a <em>required</em> attribute.</p>
+</dd>
+  <dt id="dt:overriding-non-throwing-dml-1-4-method-with-throwing-dml-1-2-method-wthrows_dml12"><b>
+</b><p><b>overriding non-throwing DML 1.4 method with throwing DML 1.2 method [WTHROWS_DML12]</b></p></dt><p></p>
+<dd>
+<p>In DML 1.2, a method is by default permitted to throw an exception,
+while in DML 1.4, an annotation <code>throws</code> is required for that.
+So, if a method without annotations is ported to DML 1.4, it will
+no longer permit exceptions. If such method is overridden by
+a DML 1.2 file, then a non-throwing method is overridden by a potentially
+throwing method, which is normally a type error. However, this particular
+case is reduced to this warning. If an exception is uncaught in the
+override, then this will automatically be caught in runtime and
+an error message will be printed.</p>
+</dd>
+  <dt id="dt:potential-leak-of-confidential-information-wconfidential"><b>
+</b><p><b>potential leak of confidential information [WCONFIDENTIAL]</b></p></dt><p></p>
+<dd>
+<p>The object's name/qname is used as part of an expression in a
+context other than the log statement, which could potentially lead
+to the leak of confidential information.</p>
+</dd>
+  <dt id="dt:prefer-is-statement-outside-template-braces-template-is-x-y-wtemplateis"><b>
+</b><p><b>prefer 'is' statement outside template braces, 'template ... is (x, y) {' [WTEMPLATEIS]</b></p></dt><p></p>
+<dd>
+<p>In a template with methods marked <code>shared</code>, it is recommended that
+other templates are instantiated on the same line</p>
+</dd>
+  <dt id="dt:shifting-away-all-data-wshall"><b>
+</b><p><b>shifting away all data [WSHALL]</b></p></dt><p></p>
+<dd>
+<p>The result of the shift operation will always be zero.
+(This warning is disabled by default.)</p>
+</dd>
+  <dt id="dt:sizeof-on-a-type-is-not-legal-use-sizeoftype-instead-wsizeoftype"><b>
+</b><p><b>sizeof on a type is not legal, use sizeoftype instead [WSIZEOFTYPE]</b></p></dt><p></p>
+<dd>
+<p>The 'sizeof' operator is used on a type name, but expects an
+expression. Use the 'sizeoftype' operator for types.</p>
+</dd>
+  <dt id="dt:the-time-value-of-type-is-implicitly-converted-to-the-type-expected-by-the-specified-time-unit-wttypec"><b>
+</b><p><b>the time value of type '...' is implicitly converted to the type '...' expected by the specified time unit '...'. [WTTYPEC]</b></p></dt><p></p>
+<dd>
+<p>The delay value provided to an <code>after</code> call is subject to
+implicit type conversion which may be unexpected for certain types.
+To silence this warning, explicitly cast the delay value to the expected
+type.</p>
+</dd>
+  <dt id="dt:unused-implementation-of-dml-1-2-method-enclose-in-if-dml_1_2-wunused_dml12"><b>
+</b><p><b>unused implementation of DML 1.2 method ...; enclose in #if (dml_1_2) ? [WUNUSED_DML12]</b></p></dt><p></p>
+<dd>
+<p>A DML 1.4 file contains a method implementation that would override
+a library method in DML 1.2, but which is not part of the DML 1.4
+library, because some methods have been renamed. For instance,
+implementing <code>read_access</code> in a register makes no sense
+in DML 1.4, because the method has been renamed to
+<code>read_register</code>.</p>
+<p>If a DML 1.4 file contains common code that also is imported from
+DML 1.2 devices, then it may need to implement methods like
+<code>read_access</code> to get the right callbacks when compiled
+for DML 1.2. Such implementations can be placed inside <code>#if (dml_1_2) { }</code> blocks to avoid this warning.</p>
+</dd>
+  <dt id="dt:unused-parameter-contains-wref"><b>
+</b><p><b>unused parameter ... contains ... [WREF]</b></p></dt><p></p>
+<dd>
+<p>An unused parameter refers to an object that has not been declared.</p>
+<p>This warning message will be replaced with a hard error in future
+major versions of Simics.</p>
+</dd>
+  <dt id="dt:unused-wunused"><b>
+</b><p><b>unused: ... [WUNUSED]</b></p></dt><p></p>
+<dd>
+<p>The object is not referenced anywhere.
+(This warning is disabled by default.; it typically causes many false
+warnings.)</p>
+</dd>
+  <dt id="dt:unused-methods-are-not-called-automatically-for-objects-in-wunuseddefault"><b>
+</b><p><b>unused: ... methods are not called automatically for ... objects in ... [WUNUSEDDEFAULT]</b></p></dt><p></p>
+<dd>
+<p>The object is not referenced anywhere but it matches a name of an
+object automatically referenced in another scope. This is the same
+as WUNUSED but only for known common errors and it will never be
+emitted if WUNUSED is enabled.</p>
+</dd>
+</dl>
+<h2 id="error-messages">B.2 <a href="#error-messages">Error Messages</a></h2>
+<p>The messages are listed in alphabetical order; the corresponding tags
+are shown within brackets, e.g., <code>[ENBOOL]</code>.</p>
+<dl>
+  <dt id="dt:eerrstmt"><b>
+</b><p><b>... [EERRSTMT]</b></p></dt><p></p>
+<dd>
+<p>The source code contained a statement "<code>error;</code>", which
+forces a compilation error with the given message, or the standard message
+"forced compilation error in source code".</p>
+</dd>
+  <dt id="dt:has-no-member-named-emember"><b>
+</b><p><b>'...' has no member named '...' [EMEMBER]</b></p></dt><p></p>
+<dd>
+<p>Attempt to access a nonexisting member of a compound data structure.</p>
+</dd>
+  <dt id="dt:len-cannot-be-used-with-variable-length-arrays-evlalen"><b>
+</b><p><b>'.len' cannot be used with variable-length arrays [EVLALEN]</b></p></dt><p></p>
+<dd>
+<p><tt>.len</tt> cannot be used with variable-length arrays</p>
+</dd>
+  <dt id="dt:ambiguous-invocation-of-default-implementation-eambdefault"><b>
+</b><p><b>Ambiguous invocation of default implementation [EAMBDEFAULT]</b></p></dt><p></p>
+<dd>
+<p>A method may not invoke its default implementation if multiple
+methods are overridden, and the template inheritance graph is
+insufficient to infer that one default implementation overrides
+the others. See section <a class="reference" href="language.html#calling-methods">3.7.3</a> for details.</p>
+</dd>
+  <dt id="dt:cannot-declare-variable-in-an-inline-method-estoredinline"><b>
+</b><p><b>Cannot declare '...' variable in an inline method [ESTOREDINLINE]</b></p></dt><p></p>
+<dd>
+<p>You cannot declare session or saved variables in methods marked with
+'inline'</p>
+</dd>
+  <dt id="dt:dml-version-does-not-support-api-version-esimapi"><b>
+</b><p><b>DML version ... does not support API version ... [ESIMAPI]</b></p></dt><p></p>
+<dd>
+<p>The DML file is written in a too old version of DML. Use the
+<code>--simics-api</code> option to use a sufficiently old Simics API.</p>
+</dd>
+  <dt id="dt:declaration-would-result-in-conflicting-attribute-name-eattrcoll"><b>
+</b><p><b>Declaration would result in conflicting attribute name [EATTRCOLL]</b></p></dt><p></p>
+<dd>
+<p>This error is signalled if two DML declarations would result in two
+Simics attributes being registered with the same name.</p>
+<p>This most commonly happens when an attribute name is a result of the
+object hierarchy, and there is another object named similarly. For example,
+if a bank contains one register named <code>g_r</code> and
+a group <code>g</code> containing a register named <code>r</code>.</p>
+</dd>
+  <dt id="dt:abstract-method-overrides-existing-method-eameth"><b>
+</b><p><b>abstract method ... overrides existing method [EAMETH]</b></p></dt><p></p>
+<dd>
+<p>An abstract method cannot override another method.</p>
+</dd>
+  <dt id="dt:an-anonymous-cannot-implement-interfaces-eanonport"><b>
+</b><p><b>an anonymous ... cannot implement interfaces [EANONPORT]</b></p></dt><p></p>
+<dd>
+<p>An <code>implement</code> definition can only exist in a port or bank
+that has a name.</p>
+</dd>
+  <dt id="dt:array-has-too-many-elements-n-2147483648-easzlarge"><b>
+</b><p><b>array has too many elements (<i>N</i> &gt;= 2147483648) [EASZLARGE]</b></p></dt><p></p>
+<dd>
+<p>Object arrays with huge dimensions are not allowed; the product of
+dimension sizes must be smaller than 2<sup>31</sup>.</p>
+</dd>
+  <dt id="dt:array-index-out-of-bounds-eoob"><b>
+</b><p><b>array index out of bounds [EOOB]</b></p></dt><p></p>
+<dd>
+<p>The used index is outside the defined range.</p>
+</dd>
+  <dt id="dt:array-range-must-start-at-0-ezrange"><b>
+</b><p><b>array range must start at 0 [EZRANGE]</b></p></dt><p></p>
+<dd>
+<p>An array index range must start at zero.</p>
+</dd>
+  <dt id="dt:array-size-is-less-than-1-easzr"><b>
+</b><p><b>array size is less than 1 [EASZR]</b></p></dt><p></p>
+<dd>
+<p>An array must have at least one element.</p>
+</dd>
+  <dt id="dt:array-upper-bound-is-not-a-constant-integer-easzvar"><b>
+</b><p><b>array upper bound is not a constant integer: ... [EASZVAR]</b></p></dt><p></p>
+<dd>
+<p>The size of an array must be a constant integer.</p>
+</dd>
+  <dt id="dt:assignment-to-constant-econst"><b>
+</b><p><b>assignment to constant [ECONST]</b></p></dt><p></p>
+<dd>
+<p>The lvalue that is assigned to is declared as a <code>const</code> and
+thus can't be assigned to.</p>
+</dd>
+  <dt id="dt:attempt-to-override-non-default-method-edmeth"><b>
+</b><p><b>attempt to override non-default method '...' [EDMETH]</b></p></dt><p></p>
+<dd>
+<p>A method can only be overridden if it is declared as <code>default</code></p>
+</dd>
+  <dt id="dt:attribute-has-no-get-or-set-method-eanull"><b>
+</b><p><b>attribute has no get or set method [EANULL]</b></p></dt><p></p>
+<dd>
+<p>An attribute must have a set or a get method to be useful.</p>
+</dd>
+  <dt id="dt:attribute-type-undefined-eatype"><b>
+</b><p><b>attribute type undefined: ... [EATYPE]</b></p></dt><p></p>
+<dd>
+<p>Either the <code>attr_type</code> or the <code>type</code> parameter of the
+attribute must be specified.</p>
+</dd>
+  <dt id="dt:bad-declaration-of-automatic-parameter-eautoparam"><b>
+</b><p><b>bad declaration of automatic parameter '...' [EAUTOPARAM]</b></p></dt><p></p>
+<dd>
+<p>Some parameters are predefined by DML, using the <code>auto</code>
+keyword. Such parameters may only be declared by the standard
+library, and they may not be overridden.</p>
+</dd>
+  <dt id="dt:bit-range-of-field-outside-register-boundaries-ebitrr"><b>
+</b><p><b>bit range of field '...' outside register boundaries [EBITRR]</b></p></dt><p></p>
+<dd>
+<p>The bit range of a field can only use bits present in the
+register.</p>
+</dd>
+  <dt id="dt:bit-range-of-field-overlaps-with-field-ebitro"><b>
+</b><p><b>bit range of field '...' overlaps with field '...' [EBITRO]</b></p></dt><p></p>
+<dd>
+<p>The fields of a register must not overlap.</p>
+</dd>
+  <dt id="dt:bitslice-size-of-bits-is-not-between-1-and-64-ebssize"><b>
+</b><p><b>bitslice size of ... bits is not between 1 and 64 [EBSSIZE]</b></p></dt><p></p>
+<dd>
+<p>Bit slices cannot be larger than 64 bits.</p>
+</dd>
+  <dt id="dt:bitslice-with-big-endian-bit-order-and-uncertain-bit-width-ebsbe"><b>
+</b><p><b>bitslice with big-endian bit order and uncertain bit width [EBSBE]</b></p></dt><p></p>
+<dd>
+<p>A big-endian bit slice can only be done on an expression whose type
+is explicitly defined, such as a local variable or a register field.</p>
+</dd>
+  <dt id="dt:call-to-method-in-unsupported-context-eapplymeth"><b>
+</b><p><b>call to method '...' in unsupported context [EAPPLYMETH]</b></p></dt><p></p>
+<dd>
+<p>Calls to inline methods, methods that may throw, or methods that have
+multiple output parameters cannot be used as arbitrary expressions. In DML
+1.2, any such method must be called via the <code>call</code> or <code>inline</code> statements,
+and in DML 1.4 any such method must be called either as a standalone
+statement, or as an initializer (e.g., RHS of an assignment or argument of
+a <code>return</code> statement).</p>
+</dd>
+  <dt id="dt:cannot-access-device-instance-in-device-independent-context-eindependentviol"><b>
+</b><p><b>cannot access device instance in device independent context [EINDEPENDENTVIOL]</b></p></dt><p></p>
+<dd>
+<p>Expressions that depend on values stored in a device instance cannot be
+evaluated in contexts where the device instance is not available. This
+is within static contexts — for example when initializing typed
+template parameters  — or within independent methods.</p>
+</dd>
+  <dt id="dt:cannot-assign-to-inlined-parameter-eassinl"><b>
+</b><p><b>cannot assign to inlined parameter: '...' [EASSINL]</b></p></dt><p></p>
+<dd>
+<p>The target of the assignment is a method parameter that has been
+given a constant or undefined value when inlining the method.</p>
+</dd>
+  <dt id="dt:cannot-assign-to-this-expression-eassign"><b>
+</b><p><b>cannot assign to this expression: '...' [EASSIGN]</b></p></dt><p></p>
+<dd>
+<p>The target of the assignment is not an l-value, and thus cannot be
+assigned to.</p>
+</dd>
+  <dt id="dt:cannot-define-both-allocate_type-parameter-and-local-data-objects-eattrdata"><b>
+</b><p><b>cannot define both 'allocate_type' parameter and local data objects [EATTRDATA]</b></p></dt><p></p>
+<dd>
+<p>Specifying <code>allocate_type</code> and using 'data'
+declarations in the same attribute object is not allowed.</p>
+</dd>
+  <dt id="dt:cannot-find-file-to-import-eimport"><b>
+</b><p><b>cannot find file to import: ... [EIMPORT]</b></p></dt><p></p>
+<dd>
+<p>The file to imported could not be found. Use the <code>-I</code>
+option to specify additional directories to search for imported
+files.</p>
+</dd>
+  <dt id="dt:cannot-import-file-containing-device-declaration-edevimp"><b>
+</b><p><b>cannot import file containing device declaration [EDEVIMP]</b></p></dt><p></p>
+<dd>
+<p>Source files that are used with <code>import</code> directives may not
+contain <code>device</code> declarations.</p>
+</dd>
+  <dt id="dt:cannot-use-a-register-with-fields-as-a-value-eregval"><b>
+</b><p><b>cannot use a register with fields as a value: ... [EREGVAL]</b></p></dt><p></p>
+<dd>
+<p>When a register has been specified with explicit fields, you have to
+use the <code>get</code> and <code>set</code> methods to access the register as
+a single value.</p>
+</dd>
+  <dt id="dt:cannot-use-an-array-as-a-value-earray"><b>
+</b><p><b>cannot use an array as a value: '...' [EARRAY]</b></p></dt><p></p>
+<dd>
+<p>A whole array cannot be used as a single value.</p>
+</dd>
+  <dt id="dt:cannot-use-endian-integer-as-argument-type-in-declaration-eearg"><b>
+</b><p><b>cannot use endian integer as argument type in declaration [EEARG]</b></p></dt><p></p>
+<dd>
+<p>Function and method arguments in declarations cannot be of
+endian integer type.</p>
+</dd>
+  <dt id="dt:cannot-use-variable-index-in-a-constant-list-eavar"><b>
+</b><p><b>cannot use variable index in a constant list [EAVAR]</b></p></dt><p></p>
+<dd>
+<p>Indexing into constant lists can only be done with constant indexes.</p>
+</dd>
+  <dt id="dt:checkpointable-attribute-missing-set-or-get-method-eachk"><b>
+</b><p><b>checkpointable attribute missing set or get method [EACHK]</b></p></dt><p></p>
+<dd>
+<p>An attribute must have set and get methods to be
+checkpointable. This attribute has neither, and the
+'configuration' parameter is either "required" or "optional".</p>
+</dd>
+  <dt id="dt:circular-dependency-in-parameter-value-erecparam"><b>
+</b><p><b>circular dependency in parameter value [ERECPARAM]</b></p></dt><p></p>
+<dd>
+<p>The value of a parameter may not reference the parameter itself,
+neither directly nor indirectly.</p>
+</dd>
+  <dt id="dt:conditional-parameters-are-not-allowed-econdp"><b>
+</b><p><b>conditional parameters are not allowed [ECONDP]</b></p></dt><p></p>
+<dd>
+<p>It is not permitted to declare a parameter directly inside an
+<code>if</code> conditional.</p>
+</dd>
+  <dt id="dt:conditional-templates-are-not-allowed-econdt"><b>
+</b><p><b>conditional templates are not allowed [ECONDT]</b></p></dt><p></p>
+<dd>
+<p>It is not permitted to use a template directly inside an
+<code>if</code> conditional.</p>
+</dd>
+  <dt id="dt:conflicting-default-definitions-for-method-eddefmeth"><b>
+</b><p><b>conflicting default definitions for method '...' [EDDEFMETH]</b></p></dt><p></p>
+<dd>
+<p>If a method has two default implementations, then at least one
+of them must be defined in a template.</p>
+</dd>
+  <dt id="dt:conflicting-definitions-of-when-instantiating-and-eambinh"><b>
+</b><p><b>conflicting definitions of ... when instantiating ... and ... [EAMBINH]</b></p></dt><p></p>
+<dd>
+<p>If a method or parameter has multiple definitions, then there must
+be a unique definition that overrides all other definitions.</p>
+</dd>
+  <dt id="dt:const-qualifier-discarded-edisconst"><b>
+</b><p><b>const qualifier discarded [EDISCONST]</b></p></dt><p></p>
+<dd>
+<p>A pointer to a constant value has been assigned to a pointer to a
+non-constant.</p>
+</dd>
+  <dt id="dt:continue-is-not-possible-here-econtu"><b>
+</b><p><b>continue is not possible here [ECONTU]</b></p></dt><p></p>
+<dd>
+<p>A <code>continue</code> statement cannot be used in a <code>foreach</code>
+or <code>select</code> statement.</p>
+</dd>
+  <dt id="dt:cyclic-import-ecyclicimp"><b>
+</b><p><b>cyclic import [ECYCLICIMP]</b></p></dt><p></p>
+<dd>
+<p>A DML file imports itself, either directly or indirectly.</p>
+</dd>
+  <dt id="dt:cyclic-template-inheritance-ecyclictemplate"><b>
+</b><p><b>cyclic template inheritance [ECYCLICTEMPLATE]</b></p></dt><p></p>
+<dd>
+<p>A template inherits from itself, either directly or indirectly.</p>
+</dd>
+  <dt id="dt:duplicate-bank-function-number-n-edbfunc"><b>
+</b><p><b>duplicate bank function number: <i>N</i> [EDBFUNC]</b></p></dt><p></p>
+<dd>
+<p>The device contains two differently-named banks that use the same
+function number.</p>
+</dd>
+  <dt id="dt:duplicate-definition-of-variable-edvar"><b>
+</b><p><b>duplicate definition of variable '...' [EDVAR]</b></p></dt><p></p>
+<dd>
+<p>A local variable has more than one definition in the same code block.</p>
+</dd>
+  <dt id="dt:duplicate-method-parameter-name-eargd"><b>
+</b><p><b>duplicate method parameter name '...' [EARGD]</b></p></dt><p></p>
+<dd>
+<p>All parameter names of a method must be distinct.</p>
+</dd>
+  <dt id="dt:expression-may-not-depend-on-the-index-variable-eidxvar"><b>
+</b><p><b>expression may not depend on the index variable ... [EIDXVAR]</b></p></dt><p></p>
+<dd>
+<p>Expressions that are evaluated statically to constants cannot have
+different values for different elements in a register array.  This
+includes, for instance, the <code>allocate</code> parameter in
+registers and fields, and object-level <code>if</code> statements.</p>
+</dd>
+  <dt id="dt:file-not-found-enofile"><b>
+</b><p><b>file not found [ENOFILE]</b></p></dt><p></p>
+<dd>
+<p>The main input file could not be found.</p>
+</dd>
+  <dt id="dt:heterogeneous-bitsize-in-field-array-efarrsz"><b>
+</b><p><b>heterogeneous bitsize in field array [EFARRSZ]</b></p></dt><p></p>
+<dd>
+<p>The bit width must be identical across the elements of a field array.</p>
+</dd>
+  <dt id="dt:illegal-after-call-to-eafter"><b>
+</b><p><b>illegal 'after' call to '...': ... [EAFTER]</b></p></dt><p></p>
+<dd>
+<p>An illegal <code>after (..) call ..</code> was made.  A method called this way
+may only have serializable input parameters, and may not have any output
+parameters.</p>
+</dd>
+  <dt id="dt:illegal-attribute-name-eaname"><b>
+</b><p><b>illegal attribute name: ... [EANAME]</b></p></dt><p></p>
+<dd>
+<p>This name is not available as the name of an attribute, since it is
+used for an automatically added attribute.</p>
+</dd>
+  <dt id="dt:illegal-bitfields-definition-ebfld"><b>
+</b><p><b>illegal bitfields definition: ... [EBFLD]</b></p></dt><p></p>
+<dd>
+<p>A <code>bitfield</code> declaration must have an integer type that
+matches the width of the field.</p>
+</dd>
+  <dt id="dt:illegal-bitorder-ebito"><b>
+</b><p><b>illegal bitorder: '...' [EBITO]</b></p></dt><p></p>
+<dd>
+<p>The specified bit-order is not allowed.</p>
+</dd>
+  <dt id="dt:illegal-bitslice-operation-ebslice"><b>
+</b><p><b>illegal bitslice operation [EBSLICE]</b></p></dt><p></p>
+<dd>
+<p>A bitslice operation was attempted on an expression that is not an
+integer.</p>
+</dd>
+  <dt id="dt:illegal-cast-to-ecast"><b>
+</b><p><b>illegal cast to '...' [ECAST]</b></p></dt><p></p>
+<dd>
+<p>The cast operation was not allowed.  It is illegal to cast to void.</p>
+</dd>
+  <dt id="dt:illegal-comparison-mismatching-types-eillcomp"><b>
+</b><p><b>illegal comparison; mismatching types [EILLCOMP]</b></p></dt><p></p>
+<dd>
+<p>The values being compared do not have matching types.</p>
+</dd>
+  <dt id="dt:illegal-declaration-of-extern-method-eextern"><b>
+</b><p><b>illegal declaration of extern method [EEXTERN]</b></p></dt><p></p>
+<dd>
+<p>An extern declared method must be fully typed and may not throw
+exceptions.</p>
+</dd>
+  <dt id="dt:illegal-function-application-of-eapply"><b>
+</b><p><b>illegal function application of '...' [EAPPLY]</b></p></dt><p></p>
+<dd>
+<p>The applied value is not a function.</p>
+</dd>
+  <dt id="dt:illegal-increment-decrement-operation-einc"><b>
+</b><p><b>illegal increment/decrement operation [EINC]</b></p></dt><p></p>
+<dd>
+<p>An increment or decrement operation can only be performed on simple
+lvalues such as variables.</p>
+</dd>
+  <dt id="dt:illegal-interface-method-reference-eifref"><b>
+</b><p><b>illegal interface method reference: ... [EIFREF]</b></p></dt><p></p>
+<dd>
+<p>Interface function calls must be simple references to the method.</p>
+</dd>
+  <dt id="dt:illegal-layout-definition-elayout"><b>
+</b><p><b>illegal layout definition: ... [ELAYOUT]</b></p></dt><p></p>
+<dd>
+<p>The type of a member of a <code>layout</code> declaration must be an integer or
+bitfield with a bit width that is a multiple of 8, or another layout.</p>
+</dd>
+  <dt id="dt:illegal-operands-to-binary-ebinop"><b>
+</b><p><b>illegal operands to binary '...'  [EBINOP]</b></p></dt><p></p>
+<dd>
+<p>One or both of the operands have the wrong type for the given binary
+operator.</p>
+</dd>
+  <dt id="dt:illegal-pointer-type-eintptrtype"><b>
+</b><p><b>illegal pointer type: ... [EINTPTRTYPE]</b></p></dt><p></p>
+<dd>
+<p>Pointer types that point to integers with a bit width that is not
+a power of two are not allowed.</p>
+</dd>
+  <dt id="dt:illegal-register-size-for-eregisz"><b>
+</b><p><b>illegal register size for '...' [EREGISZ]</b></p></dt><p></p>
+<dd>
+<p>The specified register size is not allowed. Possible values are 1-8.</p>
+</dd>
+  <dt id="dt:illegal-use-of-void-type-evoid"><b>
+</b><p><b>illegal use of void type [EVOID]</b></p></dt><p></p>
+<dd>
+<p>The type <code>void</code> is not a value, and thus cannot be used as
+the type of e.g. a variable or struct member</p>
+</dd>
+  <dt id="dt:illegal-value-for-parameter-eparam"><b>
+</b><p><b>illegal value for parameter '...' [EPARAM]</b></p></dt><p></p>
+<dd>
+<p>The parameter is not bound to a legal value.</p>
+</dd>
+  <dt id="dt:incompatible-array-declarations-eaincomp"><b>
+</b><p><b>incompatible array declarations: ... [EAINCOMP]</b></p></dt><p></p>
+<dd>
+<p>The array has been declared more than once, in an incompatible way.</p>
+</dd>
+  <dt id="dt:incompatible-method-definitions-emeth"><b>
+</b><p><b>incompatible method definitions: ... [EMETH]</b></p></dt><p></p>
+<dd>
+<p>The default implementation is overridden by an implementation with
+different input/output parameters.</p>
+</dd>
+  <dt id="dt:incompatible-version-while-compiling-a-device-evers"><b>
+</b><p><b>incompatible version (...) while compiling a ... device [EVERS]</b></p></dt><p></p>
+<dd>
+<p>A device declared to be written in one DML language version tried to
+import a file written in an incompatible language version.</p>
+</dd>
+  <dt id="dt:invalid-data-initializer-edatainit"><b>
+</b><p><b>invalid data initializer: ... [EDATAINIT]</b></p></dt><p></p>
+<dd>
+<p>An invalid initializer was detected. The error message provides
+the detailed information.</p>
+</dd>
+  <dt id="dt:invalid-expression-einvalid"><b>
+</b><p><b>invalid expression: '...' [EINVALID]</b></p></dt><p></p>
+<dd>
+<p>The expression does not produce a proper value.</p>
+</dd>
+  <dt id="dt:invalid-log-type-eltype"><b>
+</b><p><b>invalid log type: '...' [ELTYPE]</b></p></dt><p></p>
+<dd>
+<p>Log-statement type must be one of <code>info</code>, <code>error</code>,
+<code>spec_viol</code>, and <code>unimpl</code>.</p>
+</dd>
+  <dt id="dt:invalid-name-parameter-value-enameid"><b>
+</b><p><b>invalid name parameter value: '...' [ENAMEID]</b></p></dt><p></p>
+<dd>
+<p>The name parameter does not follow identifier syntax.</p>
+</dd>
+  <dt id="dt:invalid-override-of-non-default-declaration-einvover"><b>
+</b><p><b>invalid override of non-default declaration ... [EINVOVER]</b></p></dt><p></p>
+<dd>
+<p>Only default declarations of parameters can be overridden.</p>
+</dd>
+  <dt id="dt:log-level-must-be-an-integer-between-1-and-n-ellev"><b>
+</b><p><b>log level must be an integer between 1 and <i>N</i> [ELLEV]</b></p></dt><p></p>
+<dd>
+<p>The log level given in a log statement must be an integer between 1 and 4.
+Or 1 and 5 for a subsequent log level (<code>then ...</code>).</p>
+</dd>
+  <dt id="dt:malformed-format-string-unknown-format-at-position-n-eformat"><b>
+</b><p><b>malformed format string: unknown format at position <i>N</i> [EFORMAT]</b></p></dt><p></p>
+<dd>
+<p>The log-statement format string is malformed.</p>
+</dd>
+  <dt id="dt:malformed-switch-statement-eswitch"><b>
+</b><p><b>malformed switch statement: ... [ESWITCH]</b></p></dt><p></p>
+<dd>
+<p>A switch statement must start with a <code>case</code> label, and there
+may be at most one <code>default</code> label which must appear after
+all <code>case</code> labels</p>
+</dd>
+  <dt id="dt:missing-device-declaration-edevice"><b>
+</b><p><b>missing device declaration [EDEVICE]</b></p></dt><p></p>
+<dd>
+<p>The main source file given to the DML compiler must contain a
+<code>device</code> declaration.</p>
+</dd>
+  <dt id="dt:more-than-one-output-parameter-not-allowed-in-interface-methods-eimpret"><b>
+</b><p><b>more than one output parameter not allowed in interface methods [EIMPRET]</b></p></dt><p></p>
+<dd>
+<p>Methods within an <code>interface</code> declaration may have only have
+zero or one output parameter.</p>
+</dd>
+  <dt id="dt:name-collision-on-enamecoll"><b>
+</b><p><b>name collision on '...' [ENAMECOLL]</b></p></dt><p></p>
+<dd>
+<p>The name is already in use in the same scope.</p>
+</dd>
+  <dt id="dt:negative-size-n-n-of-bit-range-for-ebitrn"><b>
+</b><p><b>negative size (<i>N</i> &lt; <i>N</i>) of bit range for '...' [EBITRN]</b></p></dt><p></p>
+<dd>
+<p>The size of the bit range must be positive. Note that the [msb:lsb]
+syntax requires that the most significant bit (msb) is written to the
+left of the colon, regardless of the actual bit numbering used.</p>
+</dd>
+  <dt id="dt:no-assignment-to-parameter-enparam"><b>
+</b><p><b>no assignment to parameter '...' [ENPARAM]</b></p></dt><p></p>
+<dd>
+<p>The parameter has been declared, but is not assigned a value or a
+default value.</p>
+</dd>
+  <dt id="dt:no-default-implementation-endefault"><b>
+</b><p><b>no default implementation [ENDEFAULT]</b></p></dt><p></p>
+<dd>
+<p>The default implementation of a method was invoked, but there was
+no default implementation.</p>
+</dd>
+  <dt id="dt:no-return-type-erettype"><b>
+</b><p><b>no return type [ERETTYPE]</b></p></dt><p></p>
+<dd>
+<p>The type of the return value (if any) must be specified for methods
+that implement interfaces.</p>
+</dd>
+  <dt id="dt:no-type-for-parameter-enargt"><b>
+</b><p><b>no type for ... parameter '...' [ENARGT]</b></p></dt><p></p>
+<dd>
+<p>Methods that are called must have data type declarations for all
+their parameters. (Methods that are only inlined do not need this.)</p>
+</dd>
+  <dt id="dt:non-boolean-condition-of-type-enbool"><b>
+</b><p><b>non-boolean condition: '...' of type '...' [ENBOOL]</b></p></dt><p></p>
+<dd>
+<p>Conditions must be properly boolean expressions; e.g., "<code>if (i == 0)</code>" is allowed, but "<code>if (i)</code>" is not, if <code>i</code> is an
+integer.</p>
+</dd>
+  <dt id="dt:non-constant-element-in-list-eclst"><b>
+</b><p><b>non-constant element in list [ECLST]</b></p></dt><p></p>
+<dd>
+<p>Lists may only contain constants.</p>
+</dd>
+  <dt id="dt:non-constant-expression-enconst"><b>
+</b><p><b>non-constant expression: ... [ENCONST]</b></p></dt><p></p>
+<dd>
+<p>A constant expression was expected.</p>
+</dd>
+  <dt id="dt:non-constant-parameter-or-circular-parameter-dependencies-evarparam"><b>
+</b><p><b>non-constant parameter, or circular parameter dependencies: '...' [EVARPARAM]</b></p></dt><p></p>
+<dd>
+<p>The value assigned to the parameter is not a well-defined constant.</p>
+</dd>
+  <dt id="dt:non-constant-strings-cannot-be-concatenated-using-ecsadd"><b>
+</b><p><b>non-constant strings cannot be concatenated using '+' [ECSADD]</b></p></dt><p></p>
+<dd>
+<p>Non-constant strings cannot be concatenated using <code>+</code>.</p>
+</dd>
+  <dt id="dt:not-a-list-enlst"><b>
+</b><p><b>not a list: ... [ENLST]</b></p></dt><p></p>
+<dd>
+<p>A list was expected.</p>
+</dd>
+  <dt id="dt:not-a-method-enmeth"><b>
+</b><p><b>not a method: '...' [ENMETH]</b></p></dt><p></p>
+<dd>
+<p>A method name was expected. This might be caused by using
+<code>call</code> or <code>inline</code> on something that counts as a C
+function rather than a method.</p>
+</dd>
+  <dt id="dt:not-a-pointer-enoptr"><b>
+</b><p><b>not a pointer: ... (...) [ENOPTR]</b></p></dt><p></p>
+<dd>
+<p>A pointer value was expected.</p>
+</dd>
+  <dt id="dt:not-a-value-enval"><b>
+</b><p><b>not a value: ... [ENVAL]</b></p></dt><p></p>
+<dd>
+<p>Only some objects can be used as values directly. An attribute can
+only be accessed directly as a value if it has been declared using the
+<code>allocate_type</code> parameter.</p>
+</dd>
+  <dt id="dt:nothing-to-break-from-ebreak"><b>
+</b><p><b>nothing to break from [EBREAK]</b></p></dt><p></p>
+<dd>
+<p>A <code>break</code> statement can only be used inside a loop or switch
+construct.</p>
+</dd>
+  <dt id="dt:nothing-to-continue-econt"><b>
+</b><p><b>nothing to continue [ECONT]</b></p></dt><p></p>
+<dd>
+<p>A <code>continue</code> statement can only be used inside a loop construct.</p>
+</dd>
+  <dt id="dt:object-expected-enobj"><b>
+</b><p><b>object expected: ... [ENOBJ]</b></p></dt><p></p>
+<dd>
+<p>A reference to an object was expected.</p>
+</dd>
+  <dt id="dt:object-is-not-allocated-at-run-time-enalloc"><b>
+</b><p><b>object is not allocated at run-time: ... [ENALLOC]</b></p></dt><p></p>
+<dd>
+<p>An object which is not allocated at run-time cannot be referenced as
+a run-time value.</p>
+</dd>
+  <dt id="dt:operand-of-is-not-an-lvalue-erval"><b>
+</b><p><b>operand of '...' is not an lvalue [ERVAL]</b></p></dt><p></p>
+<dd>
+<p>The operand of <code>sizeof</code>, <code>typeof</code> and <code>&amp;</code> must
+be a lvalue.</p>
+</dd>
+  <dt id="dt:overlapping-registers-and-eregol"><b>
+</b><p><b>overlapping registers: '...' and '...' [EREGOL]</b></p></dt><p></p>
+<dd>
+<p>The registers are mapped to overlapping address ranges.</p>
+</dd>
+  <dt id="dt:passing-const-reference-for-nonconst-parameter-in-econstp"><b>
+</b><p><b>passing const reference for nonconst parameter ... in ... [ECONSTP]</b></p></dt><p></p>
+<dd>
+<p>C function called with a pointer to a constant value for a parameter
+declared without const in the prototype.</p>
+</dd>
+  <dt id="dt:recursive-inline-of-erecur"><b>
+</b><p><b>recursive inline of ... [ERECUR]</b></p></dt><p></p>
+<dd>
+<p>Methods may not be inlined recursively.</p>
+</dd>
+  <dt id="dt:recursive-type-definition-of-etrec"><b>
+</b><p><b>recursive type definition of ... [ETREC]</b></p></dt><p></p>
+<dd>
+<p>The definition of a structure type can not have itself as direct or
+indirect member.</p>
+</dd>
+  <dt id="dt:reference-to-unknown-object-eref"><b>
+</b><p><b>reference to unknown object '...' [EREF]</b></p></dt><p></p>
+<dd>
+<p>The referenced object has not been declared.</p>
+</dd>
+  <dt id="dt:right-hand-side-operand-of-is-zero-edivz"><b>
+</b><p><b>right-hand side operand of '...' is zero [EDIVZ]</b></p></dt><p></p>
+<dd>
+<p>The right-hand side of the given / or % operator is always zero.</p>
+</dd>
+  <dt id="dt:saved-variable-declared-with-partially-const-qualified-type-esavedconst"><b>
+</b><p><b>saved variable declared with (partially) const-qualified type ... [ESAVEDCONST]</b></p></dt><p></p>
+<dd>
+<p>Declaring a saved variable with a type that is (partially) const-qualified
+is not allowed, as they can be modified due to checkpoint restoration.</p>
+</dd>
+  <dt id="dt:shift-with-negative-shift-count-eshneg"><b>
+</b><p><b>shift with negative shift count: '... [ESHNEG]</b></p></dt><p></p>
+<dd>
+<p>The right-hand side operand to a shift operator must not be negative.</p>
+</dd>
+  <dt id="dt:struct-declaration-not-allowed-in-a-eanonstruct"><b>
+</b><p><b>struct declaration not allowed in a ... [EANONSTRUCT]</b></p></dt><p></p>
+<dd>
+<p>Declarations of new structs are not permitted in certain contexts,
+such as method arguments, <code>new</code> expressions,
+<code>sizeoftype</code> expressions and <code>cast</code> expressions.</p>
+</dd>
+  <dt id="dt:struct-or-layout-with-no-fields-eemptystruct"><b>
+</b><p><b>struct or layout with no fields [EEMPTYSTRUCT]</b></p></dt><p></p>
+<dd>
+<p>A struct or layout type must have at least one field.
+This restriction does not apply to structs declared in a
+<code>extern typedef</code>.</p>
+</dd>
+  <dt id="dt:syntax-error-esyntax"><b>
+</b><p><b>syntax error...... [ESYNTAX]</b></p></dt><p></p>
+<dd>
+<p>The code is malformed.</p>
+</dd>
+  <dt id="dt:the-size-of-dimension-n-with-index-variable-is-never-defined-eaunkdimsize"><b>
+</b><p><b>the size of dimension <i>N</i> (with index variable '...') is never defined [EAUNKDIMSIZE]</b></p></dt><p></p>
+<dd>
+<p>The size of an array dimension of an object array must be defined at least
+once across all declarations of that object array.</p>
+</dd>
+  <dt id="dt:this-object-is-not-allowed-here-enallow"><b>
+</b><p><b>this object is not allowed here [ENALLOW]</b></p></dt><p></p>
+<dd>
+<p>Many object types have limitations on the contexts in which they may
+appear.</p>
+</dd>
+  <dt id="dt:trying-to-get-a-member-of-a-non-struct-of-type-enostruct"><b>
+</b><p><b>trying to get a member of a non-struct: '...' of type '...' [ENOSTRUCT]</b></p></dt><p></p>
+<dd>
+<p>The left-hand side operand of the <code>.</code> operator is not of struct
+type.</p>
+</dd>
+  <dt id="dt:trying-to-index-something-that-isn-t-an-array-enarray"><b>
+</b><p><b>trying to index something that isn't an array: '...' [ENARRAY]</b></p></dt><p></p>
+<dd>
+<p>Indexing can only be applied to arrays, integers (bit-slicing),
+and lists.</p>
+</dd>
+  <dt id="dt:typed-parameter-definitions-may-not-contain-independent-methods-calls-etypedparamviol"><b>
+</b><p><b>typed parameter definitions may not contain independent methods calls [ETYPEDPARAMVIOL]</b></p></dt><p></p>
+<dd>
+<p>Independent method calls are not allowed within the definitions of
+typed parameters.</p>
+</dd>
+  <dt id="dt:uncaught-exception-ebadfail"><b>
+</b><p><b>uncaught exception [EBADFAIL]</b></p></dt><p></p>
+<dd>
+<p>An exception is thrown in a context where it will not be caught.</p>
+</dd>
+  <dt id="dt:uncaught-exception-in-call-to-dml-1-2-method-ebadfail_dml12"><b>
+</b><p><b>uncaught exception in call to DML 1.2 method '...' [EBADFAIL_dml12]</b></p></dt><p></p>
+<dd>
+<p>If a DML 1.2 method lacks a <code>nothrow</code> annotation, and a
+non-throwing DML 1.4 method calls it, then DMLC will analyze
+whether the method call can actually cause an exception. If it
+can, this error is reported; if not, the call is permitted.</p>
+<p>For this error, a 1.2 method counts as throwing if it throws an
+exception, or calls a <code>throws</code> marked 1.4 method, or
+(recursively) if it invokes a method that counts as throwing. A
+call or throw statement inside a <code>try</code> block does not cause
+the method to count as throwing. The methods
+<code>attribute.set</code>, <code>bank.read_access</code> and
+<code>bank.write_access</code> count as throwing even if they don't
+throw.</p>
+<p>This error is normally reported while porting common DML 1.2 code
+to DML 1.4: most 1.2 methods are not meant to throw exceptions,
+and when converted to DML 1.4 this becomes a strict requirement
+unless the method is annotated with the <code>throws</code> keyword.
+The remedy for this error message is normally to insert a
+<code>try</code> block around some call along the throwing call chain,
+with a <code>catch</code> block that handles the exception
+gracefully. The <code>try</code> block should usually be as close as
+possible to the <code>throw</code> in the call chain.</p>
+</dd>
+  <dt id="dt:undefined-register-size-for-eregnsz"><b>
+</b><p><b>undefined register size for '...' [EREGNSZ]</b></p></dt><p></p>
+<dd>
+<p>All registers must have a specified constant size.</p>
+</dd>
+  <dt id="dt:undefined-value-eundef"><b>
+</b><p><b>undefined value: '...' [EUNDEF]</b></p></dt><p></p>
+<dd>
+<p>Caused by an attempt to generate code for an expression that
+contains the <code>undefined</code> value.</p>
+</dd>
+  <dt id="dt:unknown-identifier-eident"><b>
+</b><p><b>unknown identifier: '...' [EIDENT]</b></p></dt><p></p>
+<dd>
+<p>The identifier has not been declared anywhere.</p>
+</dd>
+  <dt id="dt:unknown-interface-type-eiftype"><b>
+</b><p><b>unknown interface type: ... [EIFTYPE]</b></p></dt><p></p>
+<dd>
+<p>The interface datatype is unknown.</p>
+</dd>
+  <dt id="dt:unknown-template-entmpl"><b>
+</b><p><b>unknown template: '...' [ENTMPL]</b></p></dt><p></p>
+<dd>
+<p>The template has not been defined.</p>
+</dd>
+  <dt id="dt:unknown-type-of-expression-entype"><b>
+</b><p><b>unknown type of expression [ENTYPE]</b></p></dt><p></p>
+<dd>
+<p>This expression has an unknown type.</p>
+</dd>
+  <dt id="dt:unknown-type-etype"><b>
+</b><p><b>unknown type: '...' [ETYPE]</b></p></dt><p></p>
+<dd>
+<p>The data type is not defined in the DML code.</p>
+</dd>
+  <dt id="dt:unknown-value-identifier-in-the-operand-of-sizeof-eidentsizeof"><b>
+</b><p><b>unknown value identifier in the operand of 'sizeof': '...' [EIDENTSIZEOF]</b></p></dt><p></p>
+<dd>
+<p>A variant of the EIDENT message exclusive to usages of <code>sizeof</code>: it is
+emitted when the operand of <code>sizeof</code> makes use of an identifier which is
+not present in value scope, but <em>is</em> present in type scope.
+This likely means <code>sizeof</code> was used when <code>sizeoftype</code> was intended.</p>
+</dd>
+  <dt id="dt:unserializable-type-eserialize"><b>
+</b><p><b>unserializable type: ... [ESERIALIZE]</b></p></dt><p></p>
+<dd>
+<p>Some complex types, in particular most pointer types, cannot be
+automatically checkpointed by DML, and are therefore disallowed in
+contexts such as <code>saved</code> declarations.</p>
+</dd>
+  <dt id="dt:value-of-parameter-is-not-yet-initialized-euninitialized"><b>
+</b><p><b>value of parameter ... is not yet initialized [EUNINITIALIZED]</b></p></dt><p></p>
+<dd>
+<p>Some parameters that are automatically supplied by DML
+cannot be accessed in early stages of compilation, such as in object-level
+if statements.</p>
+</dd>
+  <dt id="dt:variable-length-array-declared-with-partially-const-qualified-type-evlaconst"><b>
+</b><p><b>variable length array declared with (partially) const-qualified type [EVLACONST]</b></p></dt><p></p>
+<dd>
+<p>Variable length arrays may not be declared const-qualified or with a base
+type that is (partially) const-qualified.</p>
+</dd>
+  <dt id="dt:variable-or-field-declared-evartype"><b>
+</b><p><b>variable or field declared ... [EVARTYPE]</b></p></dt><p></p>
+<dd>
+<p>A variable has been declared with a given type but the type is
+not acceptable.</p>
+</dd>
+  <dt id="dt:wrong-number-of-arguments-earg"><b>
+</b><p><b>wrong number of ... arguments [EARG]</b></p></dt><p></p>
+<dd>
+<p>The number of input/output arguments given in the call differs from
+the method definition.</p>
+</dd>
+  <dt id="dt:wrong-number-of-arguments-for-format-string-efmtargn"><b>
+</b><p><b>wrong number of arguments for format string [EFMTARGN]</b></p></dt><p></p>
+<dd>
+<p>The log-statement has too few or too many arguments for the given
+format string.</p>
+</dd>
+  <dt id="dt:wrong-type-ebtype"><b>
+</b><p><b>wrong type [EBTYPE]</b></p></dt><p></p>
+<dd>
+<p>An expression had the wrong type.</p>
+</dd>
+  <dt id="dt:wrong-type-for-operator-einctype"><b>
+</b><p><b>wrong type for '...' operator [EINCTYPE]</b></p></dt><p></p>
+<dd>
+<p>The prefix and postfix increment/decrement operators can only be
+used on integer and pointer expressions.</p>
+</dd>
+  <dt id="dt:wrong-type-for-argument-n-of-format-string-efmtargt"><b>
+</b><p><b>wrong type for argument <i>N</i> of format string ('...') [EFMTARGT]</b></p></dt><p></p>
+<dd>
+<p>Argument type mismatch in a log-statement format string.</p>
+</dd>
+  <dt id="dt:wrong-type-for-initializer-eastype"><b>
+</b><p><b>wrong type for initializer [EASTYPE]</b></p></dt><p></p>
+<dd>
+<p>The target of an initializer is incompatible with the type of the
+initializer.</p>
+</dd>
+  <dt id="dt:wrong-type-for-parameter-in-call-eptype"><b>
+</b><p><b>wrong type for parameter ... in ... call [EPTYPE]</b></p></dt><p></p>
+<dd>
+<p>The data type of the argument value given for the mentioned
+method or function parameter differs from the function prototype.</p>
+</dd>
+  <dt id="dt:wrong-type-in-parameter-when-eargt"><b>
+</b><p><b>wrong type in ... parameter '...' when ... '...' [EARGT]</b></p></dt><p></p>
+<dd>
+<p>The data type of the argument value given for the mentioned method
+parameter differs from the method definition.</p>
+</dd>
+</dl>
+
+<div class="chain">
+<a href="limitations.html">A Known Limitations</a>
+<a href="grammar.html">C Formal Grammar</a>
+</div>

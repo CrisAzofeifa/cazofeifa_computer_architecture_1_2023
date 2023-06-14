@@ -1,0 +1,147 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pci-bus</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-pc-shadow.html">pc-shadow</a>
+<a href="rm-class-pci_proxy.html">pci_proxy</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="pci-bus"><a href="#pci-bus">pci-bus</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The pci-bus device models a logical <i>Peripheral Component Interconnect</i> bus that PCI devices can be connected to. The bus needs memory-space objects connected, representing the three PCI address spaces 'configuration', 'I/O' and 'memory'. The bus itself should be connected to a PCI bridge device.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, io_memory, pci_upstream, pci_downstream, pci_upstream_operation, pci_bus
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-pci-bus.info.html">info</a>
+ – print information about the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:conf_space">
+<i>conf_space</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Memory-space object representing the PCI configuration space.</dd>
+<dt id="dt:memory_space">
+<i>memory_space</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Memory-space object representing the PCI memory space.</dd>
+<dt id="dt:io_space">
+<i>io_space</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Memory-space object representing the PCI I/O space.</dd>
+<dt id="dt:bridge">
+<i>bridge</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n|[o*]</code>
+<br>Upstream PCI bridge object, which must implement the pci_bridge interface. For cPCI use-case, multiple bridges can be assigned and signals will be sent to all of them.</dd>
+<dt id="dt:interrupt">
+<i>interrupt</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n|[o*]</code>
+<br>One or more interrupt device objects that implements the pci_interrupt interface. This attribute only has to be set if the bridge does not handle PCI interrupts.</dd>
+<dt id="dt:bus_number">
+<i>bus_number</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>PCI bus number of this bus. In most cases this is 0, but some exceptions exist. This attribute is set by the bridge and should not be changed by the user.</dd>
+<dt id="dt:sub_bus_number">
+<i>sub_bus_number</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Subordinate PCI bus number for this bus. This attribute is set by the bridge and should not be changed by the user.</dd>
+<dt id="dt:send_interrupt_to_bridge">
+<i>send_interrupt_to_bridge</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If non-zero (default), interrupt will be routed to the PCI bridge as well as the interrupt devices.</dd>
+<dt id="dt:upstream_target">
+<i>upstream_target</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o|[os]</code>
+<br>If non-NULL, all upstream transactions are forwarded to the specified object using the pci_upstream or transaction interface.</dd>
+<dt id="dt:pci_devices">
+<i>pci_devices</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iio]|[iioi]*]</code>
+<br>((<i>id</i>, <i>function</i>, <i>object</i>)*). <i>id</i> is the PCI device id. <i>function</i> is the PCI device logical function. <i>object</i> is the PCI device itself, which must implement the pci_device interface. The tuple may also contain an additional integer that tells if the PCI device is enabled or not. As default the PCI device is enabled.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.pci-bus.html">pci-bus</a>
+</section>
+<div class="chain">
+<a href="rm-class-pc-shadow.html">pc-shadow</a>
+<a href="rm-class-pci_proxy.html">pci_proxy</a>
+</div>

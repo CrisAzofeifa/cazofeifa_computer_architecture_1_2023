@@ -1,0 +1,147 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4 Migrating from Simics 5</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="overview.html">3 Migrating to a New Simics Version</a>
+<a href="4.8.html">5 Migrating from Simics 4.8</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Migration Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="5">4 Migrating from Simics 5</a></h1>
+<p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="5-sections">4.1 Introduction</a></h2>
+<p>
+  
+</p><p>
+  This chapter describes how to port device models, components, and scripts to
+  Simics 6 from Simics 5. For information about what is new in Simics 6,
+  read the product release notes.
+
+</p><h2 class="jdocu"><a name="Object-Initialization-Order">4.2 Object Initialization Order</a></h2>
+<p>
+  
+</p><p>
+  In Simics 5, objects are initialized using a deterministic, but undefined,
+  ordering. In Simics 6, the object initialization algorithm has changed
+  to always initialize objects in alphanumeric order, with parents being
+  initialized before children. Device models that happened to work
+  because of a particular device ordering in Simics 5, may break with
+  Simics 6. Such device models should be fixed to not
+  access uninitialized objects, e.g. by making proper use of
+  <b><i>SIM_require_object</i></b>.
+
+</p><h2 class="jdocu"><a name="Components">4.3 Components</a></h2>
+<p>
+  
+</p><p>
+  Simics 6 has native support for <em>Hierarchical Objects</em>. Support
+  for an object hierarchy was previously provided by, and restricted to,
+  the component system. The internals of the component system has been
+  modified extensively to work with the native object hierarchy,
+  and components that depend on undocumented or unsupported features
+  can break in Simics 6. Below is a list with some things that
+  could cause issues:
+</p><ul>
+  <li>Object aliasing should be avoided in Simics 6. Object aliasing
+    occur when a single object is assigned to more than one component slot.</li>
+  <li>Object arrays are implemented using <b>index-map</b>
+    objects in Simics 6. Code which depend on object arrays being
+    implemented by Python arrays can break.</li>
+  <li>The algorithm for assigning queues to components and their objects
+    have been changed to be more predictable. Several broken
+    corner cases have also been fixed.</li>
+  <li>The ordering used when finalizing component connections has
+    been changed to be more predictable.</li>
+</ul>
+
+<h2 class="jdocu"><a name="Updating-Processor-Core-Models">4.4 Updating Processor Core Models</a></h2>
+<p>
+  
+</p><p>
+When creating processor core models with Simics 6, or when integrating
+them into a platform, the following points should be taken into
+consideration:
+</p><ul>
+  <li>
+    Support for the obsolete <code>memory_page</code> API has
+    been removed. Models should make use
+    the <code>direct_memory</code> interface instead.
+  </li>
+  <li>
+    CPU models are required to allow event posting
+    at cycle 0 even in the situation when the CPU is in the middle
+    of an instruction.
+  </li>
+</ul>
+
+<h2 class="jdocu"><a name="New-Processor-API">4.5 New Processor API</a></h2>
+<p>
+  
+</p><p>
+Processor core models in Simics 6 should preferably use
+the <b>clock-extension</b> extension class instead of
+implementing the <code>cycle</code> interface directly.
+Using the new CPU API is not a strict requirement, but it
+has several benefits:
+</p><ul>
+  <li>The new <b><i>SIM_transaction_wait</i></b> functionality is only
+    supported for CPUs using the new API.</li>
+  <li>The new API is easier to use, with less risk for errors.</li>
+  <li>Switching to the new API is a pre-requisite for providing
+    <em>Multicore Accelerator</em> support.</li>
+</ul>
+
+<h2 class="jdocu"><a name="New-Target-Consoles">4.6 New Target Consoles</a></h2>
+<p>
+  
+</p><p>
+  Simics 6 introduces new target consoles, which are native to
+  the Simics GUI instead of relying on <code>xterm</code>. Please
+  refer to Chapter <a class="reference" href="consoles-migration.html">6</a> for more details.
+
+</p><h2 class="jdocu"><a name="Stall-CPU-Modules-have-been-Removed">4.7 Stall CPU Modules have been Removed</a></h2>
+<p>
+  
+</p><p>
+  From Simics 6, the CPU modules comes only in one variant, the "fast" one.
+  Consequently, "turbo" has been removed from the file names of CPU modules.
+</p><p>
+  Simics 5, and earlier, provided two modules per CPU, a "stall" module and a
+  "fast" module, where the "fast" file had "turbo" in its name. With the added
+  instrumentation and stalling support, there is no longer any need for the
+  "stall" module.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="overview.html">3 Migrating to a New Simics Version</a>
+<a href="4.8.html">5 Migrating from Simics 4.8</a>
+</div>

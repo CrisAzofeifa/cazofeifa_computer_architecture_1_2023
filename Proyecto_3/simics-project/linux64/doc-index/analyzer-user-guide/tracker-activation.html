@@ -1,0 +1,54 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.1 Tracker Activation</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="target-software-tracking.html">2 OS Awareness</a>
+<a href="nodes.html">2.2 The Node Tree</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="tracker-activation">2.1 <a href="#tracker-activation">Tracker Activation</a></h1>
+<p>Tracking software does not come for free. For this reason, the OSA framework is disabled by default and has to be enabled to make it track anything or get any information out of it.</p>
+<p>There are different ways to enable and disable the OSA framework. First, it can be done via the command line using the <code>enable-tracker</code> command. To disable the tracker again use the <code>disable-tracker</code> command.</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.enable-tracker</strong>
+simics&gt; <strong>board.software.disable-tracker</strong>
+</code></pre>
+<p>Secondly, it can be enabled (disabled) using the <code>request</code> (<code>release</code>) function in the <code>osa_control_v2</code> interface. The <code>request</code> function generates a new OSA framework handle and the <code>release</code> function releases the corresponding handle. The OSA framework is enabled when there exist at least one active OSA framework handle and is disabled when there are no active OSA framework handles. The <code>enable-tracker</code> command uses the <code>osa_control_v2</code> interface internally to enable and disable the OSA framework. Hence, this way to enable and disable the OSA framework can be used from within scripts without affecting OSA framework operation started from other scripts.</p>
+<pre><code class="language-simics">simics&gt; <strong>@admin = conf.board.software.iface.osa_component.get_admin()</strong>
+simics&gt; <strong>@(ok, riq_or_msg) = admin.iface.osa_control_v2.request("My requester")</strong>
+simics&gt; <strong>@admin.iface.osa_control_v2.release(riq_or_msg)</strong>
+</code></pre>
+<p>Each of the above methods for controlling the OSA framework are separate from each other. That means that the framework can only be disabled using the matching disable function and that the framework will stay active until there are no more users with an active request.</p>
+<p>Some trackers are able to determine some information about the running software just by enabling it on an already running system, but in other cases there is additional—and sometimes important information— that can only be collected by having the tracker enabled while the software starts. For instance, the Linux software tracker can determine the name and process id of already running processes, but to determine the path to the running binary the tracker needs to be enabled when the process starts.</p>
+
+<div class="chain">
+<a href="target-software-tracking.html">2 OS Awareness</a>
+<a href="nodes.html">2.2 The Node Tree</a>
+</div>

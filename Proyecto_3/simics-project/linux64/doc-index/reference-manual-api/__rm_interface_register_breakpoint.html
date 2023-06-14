@@ -1,0 +1,79 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>register_breakpoint</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_recorder_v2.html">recorder_v2</a>
+<a href="__rm_interface_screenshot.html">screenshot</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_register_breakpoint">register_breakpoint</a></h1>
+<p>
+
+<a name="register_breakpoint"></a><a name="register_breakpoint_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This is an optional CPU interface
+   allowing the execution to break upon any register change, both explicit by
+   the software and implicit changes by the model itself.
+<p>
+   The <b><i>add_breakpoint</i></b> function adds a new breakpoint. The
+   <i>reg_name</i> is the register name. When register becomes the
+   <i>value</i>, simulator will stop. The <i>break_upon_change</i>
+   means whether simulator should stop upon change of the register value. In
+   this case, <i>value</i> is not used. The <i>mask</i> can be used
+   when only certain bits are of interest.
+</p><p>
+   The <b><i>remove_breakpoint</i></b> function removes a breakpoint with a given
+   id. If the id is -1, then all breakpoints are removed.
+</p><p>
+   The function <b><i>get_breakpoints</i></b> returns a list of defined
+   breakpoints. Each breakpoint in the list is described by a tuple:
+   (breakpoint_id, register_name, break_value, mask). If the breakpoint is
+   triggered upon every register value change, then break_value is NIL.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(register_breakpoint) {
+        int (*add_breakpoint)(conf_object_t *obj, const char *reg_name,
+                              uint64 value, uint64 mask,
+                              bool break_upon_change);
+        bool (*remove_breakpoint)(conf_object_t *obj, int id);
+        attr_value_t (*get_breakpoints)(conf_object_t *obj);
+};
+
+#define REGISTER_BREAKPOINT_INTERFACE "register_breakpoint"
+</pre><p>
+ 
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_recorder_v2.html">recorder_v2</a>
+<a href="__rm_interface_screenshot.html">screenshot</a>
+</div>

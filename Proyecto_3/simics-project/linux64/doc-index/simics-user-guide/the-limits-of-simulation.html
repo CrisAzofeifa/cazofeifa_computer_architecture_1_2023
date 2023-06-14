@@ -1,0 +1,89 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.1 The Limits of Simulation</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simulation-concepts.html">2 Simulation Concepts</a>
+<a href="non-intrusive-inspection-and-debugging.html">2.2 Non-intrusive Inspection and Debugging</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="introduction.html">I Introduction</a>
+&nbsp;/&nbsp;
+<a href="simulation-concepts.html">2 Simulation Concepts</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="The-Limits-of-Simulation">2.1 The Limits of Simulation</a></h1>
+<p>
+
+<a name="simulationlimits"></a>
+</p><p>
+Simics is a system-level instruction set simulator. This means that:
+</p><p>
+</p><ul>
+
+  <li>Simics models the target system at the level of individual
+  instructions, executing them one at a time.</li>
+
+  <li>Simics models the binary interface to hardware in sufficient
+  detail that any software that runs on the real hardware will also
+  run on Simics.</li>
+
+</ul>
+<p>
+In practice, what this means is that there is no code that is too
+"low-level"—Simics can run, and debug, any kind of software:
+firmware, hardware drivers, operating systems, user-level
+applications, whatever. There are some caveats, though:
+</p><p>
+</p><ul>
+
+  <li>Simics's model of time is rather simple; for example, it assumes by
+  default that all instructions take the same amount of time to run. It is not
+  difficult to write a program that uses this fact to detect the difference
+  between Simics and real hardware. However, this is seldom a problem with
+  real-world software.
+<p>
+  You can read more about Simics and time in the <em>Understanding Simics
+  Timing</em> application note.</p></li>
+
+  <li>The hardware models must be detailed enough. Models of nontrivial pieces
+  of hardware do not typically model all functions and details of that
+  hardware, so it is possible to write a program that detects the difference
+  between Simics and real hardware by probing unimplemented functions. However,
+  any given piece of software can be accommodated by extending the hardware
+  models to cover the missing functions.
+<p>
+  You can read more about hardware modeling in the
+  <em>Simics Model Builder User's Guide</em>.</p></li>
+
+</ul>
+<p>
+</p>
+<div class="chain">
+<a href="simulation-concepts.html">2 Simulation Concepts</a>
+<a href="non-intrusive-inspection-and-debugging.html">2.2 Non-intrusive Inspection and Debugging</a>
+</div>

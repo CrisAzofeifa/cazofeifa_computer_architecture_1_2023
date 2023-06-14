@@ -1,0 +1,161 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>transaction_translator</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_telemetry.html">telemetry</a>
+<a href="__rm_interface_translate.html">translate</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_transaction_translator">transaction_translator</a></h1>
+<p>
+
+<a name="transaction_translator"></a><a name="transaction_translator_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>transaction_translator</code> interface is implemented by
+   objects which would like to inspect and/or modify transactions
+   before forwarding them to devices or address spaces. In Simics documentation,
+   such objects are usually called translator objects or, simply, translators.
+   In comparison with the simpler <code>translator</code> interface,
+   the <code>transaction_translator</code> interface provides
+   an opportunity to inspect/modify transactions. We recommend
+   using the <code>translator</code> interface when the additional
+   functionality is not needed.
+<p>
+   The interface has one method called <b><i>translate</i></b>. The arguments
+   passed to this method describe the access and thus allow
+   a translator to perform a proper translation. Here is a short description of
+   the <b><i>translate</i></b> method's parameters:<br>
+   - <i>addr</i> is an address of the access;<br>
+   - <i>access</i> is a bitmask specifying all requested
+   access types;<br>
+   - <i>t</i> is a transaction;<br>
+   - <i>callback</i> is a callback that should be called by
+   the object implementing the interface;<br>
+   - <i>data</i> should be passed to <i>callback</i>
+   as it is when the callback is invoked by the translator object.<br>
+   All these arguments are described in detail below.
+</p><p>
+   The transactions done by the translators may be cached by Simics.
+   To ensure efficient flushing of Simics internal caches we recommend
+   that the objects implementing the <code>transaction_translator</code>
+   interface implement also the <code>translation_flush</code> interface.
+   The absence of the <code>translation_flush</code> interface may lead to
+   a substantial decrease of simulation speed.
+</p><p>
+   Whenever a previously returned translation becomes invalid the translator
+   objects are expected to use either <b><i>SIM_map_target_flush</i></b>
+   (preferably) or <b><i>SIM_translation_changed</i></b> function to ensure that
+   Simics will flush any cached translations. Please refer to the documentation
+   of these functions for the information about how they should be used.
+</p><p>
+   An object implementing the <code>transaction_translator</code> interface
+   should invoke <i>callback</i> passing to it tree arguments:
+   <i>translation</i>, <i>transaction</i>
+   and <i>data</i>. The <i>translation</i> argument
+   describes the translation that was done, i.e. the transaction destination.
+   Please refer to the <code>translation_t</code> documentation
+   for the complete description.
+   The <i>transaction</i> argument is either the original
+   transaction passed to the <code>transaction_translator</code> interface
+   or, if a translator object wants to append atoms to the <i>t</i>
+   transaction, a new transaction created via transaction chaining.
+   The transaction chaining is described in detail in the "Transaction Chaining"
+   chapter of the <em>Model Builder's User Guide</em>. Finally, the
+   <i>data</i> argument is a parameter which should be passed as it is
+   when <i>callback</i> is invoked by the translator object.
+   Simics will report an error if a translator object doesn't invoke
+   <i>callback</i> from the <b><i>translate</i></b> method
+   of the <code>transaction_translator</code>.
+</p><p>
+   If it is needed, a translator may route transactions based on the value of
+   certain <i>transaction</i>'s atoms. The <code>initiator</code> atom
+   is a good example of such an atom. Please note that not all atoms are suited
+   for routing transactions based on their value. This should be checked
+   in the documentation for the specific atom.
+</p><p>
+   The <i>callback</i> function returns transaction completion status.
+   This status should be usually returned as it is by the <b><i>translate</i></b>
+   method. The status value is also needed in the case when a translator object
+   appends atoms via transaction chaining with a non-zero
+   <code>completion</code> atom. In that case the returned status should be used
+   when the <b><i>SIM_monitor_chained_transaction</i></b> function is called.
+</p><p>
+   Please note that memory accesses in Simics are not always issued with
+   the transactions of the <code>transaction_t</code> type.
+   For example, memory access can be done with the use of
+   the legacy <code>generic_transaction_t</code> type.
+   One more such example is lookup accesses which are done
+   via the <code>direct_memory_lookup</code> interface. All such accesses
+   are converted, if it is needed, and presented to the translator object via
+   the <i>t</i> parameter.
+</p><p>
+   The <i>access</i> parameter specifies access
+   types in the form of a bitmask. Its value may be of interest
+   if a translation is done differently based on whether it is
+   a read, write or instruction fetch transaction. It can be noted
+   that a transaction itself already contains information
+   whether it is a read, write or an instruction fetch.
+   Usually, the <i>access</i> parameter just reflects that value.
+   However, for lookup accesses done via
+   the <code>direct_memory_lookup</code> interface
+   the <i>access</i> argument may have more bits set. If a translation
+   which are valid for all requested accesses cannot be performed, then
+   a null value should be set in the <i>target</i> of
+   the <i>translation</i>
+   argument passed to <i>callback</i>. In this case, the requestor is
+   expected to repeat the interface call with just a single bit set
+   in the access mask, e.g. <code>Sim_Access_Read</code>.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(transaction_translator) {
+        exception_type_t (*translate)(
+                conf_object_t *NOTNULL obj,
+                uint64 addr,
+                access_t access,
+                transaction_t *t,
+                exception_type_t (*NOTNULL callback)(
+                        translation_t translation,
+                        transaction_t *transaction,
+                        cbdata_call_t data),
+                cbdata_register_t data);
+};
+
+#define TRANSACTION_TRANSLATOR_INTERFACE "transaction_translator"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_telemetry.html">telemetry</a>
+<a href="__rm_interface_translate.html">translate</a>
+</div>

@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>generic_message_device</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_frequency_listener.html">frequency_listener</a>
+<a href="__rm_interface_generic_message_link.html">generic_message_link</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_generic_message_device">generic_message_device</a></h1>
+<p>
+
+<a name="generic_message_device"></a><a name="generic_message_device_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(generic_message_device) {
+        void (*receive_frame)(conf_object_t *dev, conf_object_t *link,
+                              dbuffer_t *frame);
+};
+
+#define GENERIC_MESSAGE_DEVICE_INTERFACE "generic_message_device"
+</pre><p>
+</p><p>
+
+   This interface is implemented by generic message device objects that connect
+   to <b>generic-message-link</b> objects.  It is used by the link
+   object to send messages to the device object. The link should implement the
+   <code>generic_message_link</code> interface.
+</p><p>
+   The <b><i>receive_frame</i></b> function is called by the link to send a frame
+   to the device.  The frame is passed as a <code><a name="dbuffer_t">dbuffer_t</a></code>
+   pointer that may not be modified without cloning it first.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>receive_frame</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_frequency_listener.html">frequency_listener</a>
+<a href="__rm_interface_generic_message_link.html">generic_message_link</a>
+</div>

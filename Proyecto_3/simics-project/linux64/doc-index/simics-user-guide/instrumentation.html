@@ -1,0 +1,250 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>9 Instrumentation</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="host-serial-console.html">8.2 Host Serial Console</a>
+<a href="command-set.html">9.1 Command Set</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="instrumentation">9 Instrumentation</a></h1>
+<p>
+  
+  <a name="instrumentation"></a>
+</p><p>
+  This section describes the <em>Instrumentation Framework</em> in Simics.
+    </p><p>
+  Simics' instrumentation framework provides a mechanism for inspecting
+  various parts of the running simulated system and features a flexible
+  way to dynamically add/remove inspections. The framework is designed
+  with performance in mind, allowing fast and parallel execution
+  with low latency communication.  
+</p><p>
+  Unlike most profiling tools, which instrument the target source code
+  or object code, Simics can profile a workload non-intrusively. This
+  allows you to profile without disturbing the execution. Simics will
+  profile arbitrary code, including device drivers, dynamically
+  generated code, and code for which you do not have the source. Also,
+  unlike most profiling tools, Simics collects profiling data exactly,
+  not by sampling the execution and relying on statistics.
+  </p><p>
+  What information that can be obtained through the instrumentation
+  framework depends on how well the devices and other objects have been
+  adapted to this new framework. Since the framework is new, only
+  some models support instrumentation through various interfaces:
+  </p><ul>
+    <li>The processor models provide inspection capabilities to
+      monitor instruction execution, memory accesses, exceptions,
+      register changes etc. Only ARC, ARM, MIPS, PPC, X86 and Xtensa processor
+      targets currently support this kind of instrumentation.
+    </li>
+    <li>The SystemC Library awareness support tracing, breaking and
+      custom tools for acting on the basic signals, sockets, event and
+      processes that exists in a typical SystemC configuration.
+      Please refer to <em>Simics SystemC Library</em>
+      documentation for more details.
+    </li>
+    <li>DML device models will automatically support bank-instrumentation
+      allowing register bank accesses to be monitored and controlled.
+    </li>
+  </ul>
+<p>
+  Conceptually, Simics instrumentation framework consists of four elements:
+  </p><ul>
+    <li><b><i>Instrumentation providers</i></b> are models of
+      devices, processors, etc., that have been adapted for the
+      instrumentation framework.
+      Providers supply information on various things happening
+      in the model, such as instructions being executed,
+      exceptions triggered, or a device register written, etc.</li>
+
+    <li><b><i>Instrumentation tools</i></b> are objects which can
+      connect to the providers and request information to be sent
+      to them. The tool collects the information and provides
+      user-commands for presenting the result.</li>
+
+    <li><b><i>Instrumentation connections</i></b> are 
+      the communication channels used when a tool and a provider
+      are connected to each other.
+    </li>
+    
+    <li><b><i>Instrumentation filters</i></b> are optional objects
+      which can be used by one or several tools. The filters make sure
+      the tool only gets parts of the information from the provider
+      by enabling or disabling the instrumentation according to      
+      the filter algorithm.</li>    
+  </ul><br>
+<p>
+  Figure <a class="reference" href="#instrumentation-ex1">4</a> shows an abstract view of a possible
+  setup. The instrumentation provider sends information through an
+  instrumentation connection to the tool.  The instrumentation filter
+  can decide to disable the gathering of information from the
+  provider.  At any point within the simulation the tool can produce
+  output for the user on what it has collected.
+  </p><p>
+  </p><div class="figure" id="instrumentation-ex1">
+<div style="text-align: center">  
+      <img alt="" src="instrumentation-ex1.png">
+      <div class="caption">Figure 4. Abstract view of instrumentation elements</div>
+  </div></div>
+
+<p>
+  To concretize the abstract example in a more realistic setup,
+  figure <a class="reference" href="#instrumentation-ex2">5</a> shows an "instruction-histogram"
+  tool which counts the instructions being executed and their frequency,
+  producing a histogram of the most commonly used instructions
+  that were executed on this processor (system-wide, that is,
+  both instructions in the operating system, kernel threads,
+  and all user-level processes are counted).
+  </p><div class="figure" id="instrumentation-ex2">
+<div style="text-align: center">  
+      <img alt="" src="instrumentation-ex2.png">
+      <div class="caption">Figure 5. Simple example</div>
+  </div></div>
+
+  <p>
+  If only a specific application's instruction mix is of interest,
+  we can add a filter to this setup. In figure <a class="reference" href="#instrumentation-ex3">6</a>,
+  a process-filter has been setup to monitor the 'perl' application only.
+  The process-filter uses the OS-Awareness feature in Simics to get
+  information when any perl process is created, scheduled on a certain
+  cpu, or die.
+  With this knowledge, the process-filter enables and disables
+  the instruction-histogram collection. The output from the
+  instruction-histogram is now only the instruction mix for the
+  perl application(s) that has executed.
+  </p><div class="figure" id="instrumentation-ex3">
+<div style="text-align: center">  
+      <img alt="" src="instrumentation-ex3.png"><br>
+      <div class="caption">Figure 6. Simple example with a filter</div>
+  </div></div>
+
+<p>
+  Filters are orthogonal to the tools, and the tools are themselves
+  unaware of any existing filters controlling them. From the tool
+  perspective, it is simply someone requesting their connections
+  to be disabled or enabled.
+</p><p>
+  It is possible to have multiple filters controlling
+  one tool as shown in figure <a class="reference" href="#instrumentation-ex4">7</a>. This
+  allows sophisticated setups for zooming in a specific details
+  of the instrumentation gathered.
+  </p><p>
+  In principle, all tools always have one filter: the user, which
+  can use Simics commands to enable or disable the communication manually,
+  in a script or in a script-branch.
+  By using enable/disable commands in a script branch, the user
+  have the possibility to control when the instrumentation should be
+  active based on virtual-time, breakpoints triggered etc.
+  </p><p>
+  As long as all filters enables the tool's connection, it will be
+  active.
+</p><p>
+  </p><div class="figure" id="instrumentation-ex4">
+<div style="text-align: center">  
+      <img alt="" src="instrumentation-ex4.png"><br>
+      <div class="caption">Figure 7. Multiple filters, all enables</div>
+  </div></div>
+
+  <p>
+  But as shown in figure <a class="reference" href="#instrumentation-ex5">8</a> when any filter
+  decides to disable the connection
+  it will become disabled and remain so until all filters
+  have enabled it again.
+  </p><p>
+  </p><div class="figure" id="instrumentation-ex5">
+<div style="text-align: center">  
+      <img alt="" src="instrumentation-ex5.png"><br>
+      <div class="caption">Figure 8. Multiple filters, one disables</div>
+  </div></div>
+
+    <p>
+  How providers and tools are allowed to be connected depends on
+  the tool's requirements of the providers interfaces. That is,
+  some tools can only connect to certain providers.
+  </p><p>
+  It is possible to connect:
+  </p><ul>
+    <li>Multiple tools to the same provider. Each tool might extract
+      the same or different information from the provider and produce
+      various valuable output for the user.</li>
+    <li>One tool to multiple providers. Collecting system-wide
+      statistics. For example, one tool can be connected to all
+      processors in an SMP setup.
+    </li>
+    <li>The same tool to the same provider, multiple times. Where each
+      established connection might be configured to extract different
+      information</li>
+  </ul>
+<p>
+  An even more advanced example is illustrated the in figure
+  <a class="reference" href="#advanced-example">9</a>. In this setup, there are two tools
+  working simultaneously, both are connected to the same SMP cluster of
+  processors and both are using the same filter which
+  tracks the 'perl' application.
+  </p><div class="figure" id="advanced-example">
+<div style="text-align: center">  
+      <img alt="" src="instrumentation-ex6.png">
+      <div class="caption">Figure 9. Advanced example</div>
+  </div></div>
+
+  
+<p>
+  
+  
+    
+  
+    
+  
+</p>
+<ul class="subsections">
+<li>
+<a href="command-set.html">9.1 Command Set</a>
+</li>
+<li>
+<a href="instrumentation-tools.html">9.2 Instrumentation Tools</a>
+</li>
+<li>
+<a href="instrumentation-filters.html">9.3 Instrumentation Filters</a>
+</li>
+<li>
+<a href="exporting-instrumentation-data.html">9.4 Exporting Instrumentation Data</a>
+</li>
+<li>
+<a href="profiling-example.html">9.5 Profiling Example</a>
+</li>
+<li>
+<a href="device-register-coverage.html">9.6 Device Register Coverage</a>
+</li>
+</ul>
+<div class="chain">
+<a href="host-serial-console.html">8.2 Host Serial Console</a>
+<a href="command-set.html">9.1 Command Set</a>
+</div>

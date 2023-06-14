@@ -1,0 +1,865 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Quick-Start Platform x86 Release Notes</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>Quick-Start Platform x86 Release Notes</h1>
+
+    
+    
+    
+    
+<h2 class="jdocu"><a name="Introduction">1 Introduction</a></h2>
+<p>
+
+</p><p>
+This document identifies important information for the Quick-Start Platform x86
+package for Simics 6. All users of this specific package
+should review this document carefully.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Minor-Changes-Since-Simics-6.0.0">2 Minor Changes Since Simics 6.0.0</a></h2>
+<p>
+
+The following is a list of changes since the initial Simics
+6.0.0 release.
+</p><p>
+</p><ul><li><p><a name="__rn_build_id_6213"></a>6.0.67 (build 6213)
+</p><ul><li><b>QSP-x86</b><ul><li>Added new BIOS <code>SIMICSX58IA32X64_1_2_0_r.fd</code> that
+  enables both serial and graphical console for UEFI BIOS menu and UEFI Shell. It also shortens
+  the boot timeout from 50s to 3s and moves some ACPI NVS allocations to higher memory regions
+  to increase the size of contiguous useable RAM below 1 GiB. The BIOS is used by the QSP by default
+  when started via the new style target system.</li><li>Added the <code>user-provided-linux</code> target that allows to
+  conveniently boot a custom Linux by setting the path to a kernel image and (optionally) an
+  initrd, a rootfs, and a kernel command line.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6209"></a>6.0.66 (build 6209)
+</p><ul><li><b>QSP-x86</b><ul><li>New style targets are now included
+  in the package.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6191"></a>6.0.65 (build 6191)
+</p><ul><li><b>QSP-x86</b><ul><li>The BIOS used by the QSP has been updated to use a more recent 
+  state of the EDK2 sources. The previous (<code>1_0_0_bp_r</code>) and the new (<code>1_1_0_r</code>) 
+  version can both be found in <code>targets/qsp-x86/images</code>. By default, the QSP uses the new version. 
+  If your target SW requires the use of the old version, you need to explicitly set <code>$bios_image</code>
+  to point to it.</li><li>The mapping of the device <code>$system.mb.conf</code> of class
+  <code>pc-config</code> at address <code>0x402</code> in the IO space has been removed, because its mapping
+  conflicted with power management registers in the LPC, which led to error messages during some OS
+  boots. The removed mapping was used as a shortcut to generate Simics log messages from within target
+  SW and had no relationship to any real HW device. If target SW used this shortcut it should rather
+  use the mapping of the same function at <code>0xfff0</code> instead of <code>0x402</code>.
+  </li><li>The DSDT as provided by the updated BIOS now has a second
+  PCI bridge resource window for memory mappings from 0x8_0000_000 to 0xB_0000_0000. This fixes
+  an issue where larger PCI memory regions could not fit into the existing window and were hence
+  deactivated by the target's Linux.</li></ul></li><li><b>X58 devices</b><ul><li>It is now possible to connect
+      custom remap units in the <b>x58-core</b>, through the
+      attribute <i>external_remap_unit</i>
+      (bug #18018935731).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6190"></a>6.0.64 (build 6190)
+</p><ul><li><b>X58 devices</b><ul><li>Rework source-code to use
+      <code>map_target</code> template from
+      <code>utility.dml</code>.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6181"></a>6.0.63 (build 6181)
+</p><ul><li><b>CPU generic</b><ul><li>Temporarily rolled back minimum
+  host processor requirements to Nehalem, since some systems need more
+  time to migrate to match the official Haswell requirement
+  (bug #18024604079).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6179"></a>6.0.62 (build 6179)
+</p><ul><li><b>CPU generic</b><ul><li>The instrumentation for System Management Mode
+      (<code>smm_instrumentation_subscribe</code> interface)
+      does not block VMP execution anymore, (bug #SIMICS-19625).
+      </li></ul></li></ul></li><li><p><a name="__rn_build_id_6162"></a>6.0.60 (build 6162)
+</p><ul><li><b>x86 CPUs</b><ul><li> Three new instrumentation
+  interfaces have been added:
+      <code>x86_instrumentation_subscribe_v2</code>,
+      <code>vmx_instrumentation_subscribe</code>, and
+      <code>smm_instrumentation_subscribe</code>.
+      This is needed for (bug #SIMICS-14965).
+  </li></ul></li></ul></li><li><p><a name="__rn_build_id_6152"></a>6.0.59 (build 6152)
+</p><ul><li><b>CPU generic</b><ul><li>All CPUs have been updated to issue
+      transactions to the memory space connected to
+      the <i>physical_memory</i> attribute through
+      the <code>transaction</code> interface, instead of sending memory
+      transactions through the <code>memory_space</code>
+      interface.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6150"></a>6.0.58 (build 6150)
+</p><ul><li><b>CPU generic</b><ul><li>Simics now stops with an error,
+      instead of a message, if the event queue overflows</li></ul></li></ul></li><li><p><a name="__rn_build_id_6147"></a>6.0.57 (build 6147)
+</p><ul><li><b>QSP-x86</b><ul><li>The unused
+  parameter <i>enable_efi</i> has been
+  removed.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6144"></a>6.0.56 (build 6144)
+</p><ul><li><b>CPU generic</b><ul><li>Parallel JIT compilation:
+      JIT blocks compiled, but later rejected for insertion,
+      previously leaked a resource. This has now been fixed.
+      If many blocks were rejected, the lack of resources
+      caused a reduced amount of blocks could be compiled, and
+      eventually no blocks where compiled at all.
+      (bug #14015758898).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6142"></a>6.0.55 (build 6142)
+</p><ul><li><b>QSP-x86</b><ul><li>The package no longer
+  contains <code>.pyc</code> files, and now requires Simics-Base version
+  6.0.114 or later.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6141"></a>6.0.54 (build 6141)
+</p><ul><li><b>CPU generic</b><ul><li>Instrumentation: fixed an assertion
+      error for processor models without JIT support. This previously
+      happened when calling the <b><i>instruction_query-&gt;logical_address()</i></b>
+      method (bug #1309492050).
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6133"></a>6.0.53 (build 6133)
+</p><ul><li><b>x86 CPUs</b><ul><li> Callbacks from the
+    <b><i>register_instruction_decoder_cb</i></b> method in the
+    <code>cpu_instrumentation_subscribe</code> interface did not
+    get enough bytes to decode an instruction if the instruction was
+    crossing page boundary. This is now fixed. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6131"></a>6.0.52 (build 6131)
+</p><ul><li><b>X58 devices</b><ul><li>Fixed a bug that duplicated VTBAR
+      mappings when restoring a checkpoint.</li></ul></li><li><b>x86 CPUs</b><ul><li> Callbacks from the
+      <b><i>register_illegal_instruction_cb</i></b> method in the
+      <code>x86_instrumentation_subscribe</code> interface did not
+      get enough bytes to decode an instruction if the instruction was
+      executed from a non-cacheable memory. This is now fixed.
+    (bug #22012278089). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6128"></a>6.0.51 (build 6128)
+</p><ul><li><b>CPU generic</b><ul><li> Fixed a bug that prevented
+    VMP to be reengaged after all instrumentation callbacks have been removed
+      (bug #SIMICS-10259). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6126"></a>6.0.50 (build 6126)
+</p><ul><li><b>QSP-x86</b><ul><li>A very simple processor core timing model,
+	  sample-core-timing has been added. The script qsp-sample-core-timing.simics
+	  demonstrates how it can be used.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6119"></a>6.0.48 (build 6119)
+</p><ul><li><b>QSP-x86</b><ul><li>The QSP-x86 now uses the new PCIe
+      libraries, including the pcie-downstream-port-legacy. The minimum
+      required version of Simics-Base is now 6.0.103</li></ul></li><li><b>X58 Base Functionality</b><ul><li>Renamed module to X58-legacy to
+      make room for new module with devices ported to new PCIe
+      library</li></ul></li><li><b>X58 ICH10 Hierarchical Components</b><ul><li>The PCIe devices on the northbridge
+      have been replaced with new versions, using the new PCIe
+      libraries. This also resolves a reset issue with the PCIe
+      devices attached to the socket bus
+      (bug #SIMICS-9363).</li></ul></li><li><b>X58 devices</b><ul><li>Initial port of X58 devices to new
+      PCIe libraries</li></ul></li></ul></li><li><p><a name="__rn_build_id_6110"></a>6.0.46 (build 6110)
+</p><ul><li><b>Common</b><ul><li>Simics no longer comes with documentation
+  in PDF format.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6106"></a>6.0.45 (build 6106)
+</p><ul><li><b>ICH Base Functionality</b><ul><li>Fixed bug when LPC was disconnected
+      from the PCIe bus but didn't remove its mappings.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6098"></a>6.0.44 (build 6098)
+</p><ul><li><b>CPU generic</b><ul><li> Added support for obtaining the
+      CPU frequency from an object implementing the
+      <code>frequency</code> interface.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6095"></a>6.0.42 (build 6095)
+</p><ul><li><b>x86 CPUs</b><ul><li> Reading the PC from an
+    instrumentation memory callback issued by a vector instruction
+    could sometimes return an old PC value, this is now fixed,
+    (bug #22012278089). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6091"></a>6.0.41 (build 6091)
+</p><ul><li><b>QSP-x86</b><ul><li>Updated target scripts to use breakpoint
+    commands from bp-manager. The minimum required version of Simics-Base is
+    now 6.0.62</li></ul></li></ul></li><li><p><a name="__rn_build_id_6086"></a>6.0.40 (build 6086)
+</p><ul><li><b>QSP-x86</b><ul><li>The simics-pcie-demo-driver was recompiled
+      so that binary and source match.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6084"></a>6.0.39 (build 6084)
+</p><ul><li><b>QSP-x86</b><ul><li> Scripts for booting from specified
+      disk images, using the UEFI BIOS, are now distributed. The
+      <code>targets/qsp-x86/qsp-dvd-boot.simics</code> script is
+      similar to the earlier distributed DVD boot script, but now uses
+      UEFI, and there is
+      also <code>targets/qsp-x86/qsp-usb-boot.simics</code> for
+      booting from a USB disk image, and
+      <code>targets/qsp-x86/qsp-hdd-boot.simics</code> for booting
+      from the hard disk using a bootable OS image file. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6082"></a>6.0.38 (build 6082)
+</p><ul><li><b>Common</b><ul><li>Documentation in HTML format has been added.
+  </li></ul></li></ul></li><li><p><a name="__rn_build_id_6074"></a>6.0.37 (build 6074)
+</p><ul><li><b>QSP-x86</b><ul><li> Removed assignment of the
+    <code>$bios_image</code> variable from the <code>qsp-system.include</code>
+    script. The script will terminate if <code>$bios_image</code> has not been set.
+<p>
+    The <code>$bios_image</code> is now set by <code>setup.include</code> or 
+    <code>.simics</code> scripts, as expected  
+    (bug #16236). </p></li></ul></li></ul></li><li><p><a name="__rn_build_id_6070"></a>6.0.36 (build 6070)
+</p><ul><li><b>QSP-x86</b><ul><li> Introduced the
+    <i>writable_state_dir</i> script parameter
+    for easy use of the <b>enable-writable-persistent-state</b>
+    command. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6068"></a>6.0.35 (build 6068)
+</p><ul><li><b>CPU generic</b><ul><li> Reduce the dynamic memory foot-print of
+    automatic hypersim (even further).
+    (bug #1507506841) and
+    (bug #SIMICS-16237). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6066"></a>6.0.34 (build 6066)
+</p><ul><li><b>x86 CPUs</b><ul><li> Fixed an instrumentation bug where some
+    memory-accesses was not shown
+    in the "cached" instruction callbacks. To fix this, the
+    <code>x86_access_t</code> enum values was changed a bit, but
+    binary compatibility has been maintained as far as possible.
+    This enum is distributed in the base-package's arch/x86.h.  It
+    is recommended to upgrade the base package and any modules
+    depending on this file.
+    Added a new <code>x86_access_type</code> interface to get hold
+    of the textual representation (long and short) of the enum values
+    (bug #SIMICS-16124). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6063"></a>6.0.33 (build 6063)
+</p><ul><li><b>QSP-x86</b><ul><li> A recently introduced performance
+    degradation was fixed. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6062"></a>6.0.32 (build 6062)
+</p><ul><li><b>QSP-x86</b><ul><li> Added the missing PCIe demo target scripts
+    on Windows. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6060"></a>6.0.31 (build 6060)
+</p><ul><li><b>Intel e1000 Network Adapters</b><ul><li> The <code>EEC.AutoRD</code> bit is now set by
+    default to indicate that the
+    auto EEPROM read has finished
+    (bug #14012262984). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6056"></a>6.0.30 (build 6056)
+</p><ul><li><b>x86 CPUs</b><ul><li> Remove obsolete
+    ASSERT(get_event_counter(cpu) &gt;= 0) from monitor_helper
+    (bug #1801172704). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6054"></a>6.0.29 (build 6054)
+</p><ul><li><b>x86 CPUs</b><ul><li> VMP can now use the hardware EPT when
+    simulating a virtualization
+    workload using EPT, which in many situations greatly improves performance.
+    A VMXMON version 1.15.54 or later is needed for this feature to work.
+    The performance enhancement can be turned off with
+    the <b>disable-vmp-feature
+    nested_ept</b> command. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6050"></a>6.0.28 (build 6050)
+</p><ul><li><b>x86 CPUs</b><ul><li> A problem with the VMP Intel® Virtual
+     Machine Control Structure (Intel ® VMCS) implementation has been
+     fixed.  The issue manifested itself as random malfunctions when running
+     virtualization workloads. The VMXMON kernel module (version 1.15.53)
+     contains part of the fix
+     (bug #SIMICS-15801). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6043"></a>6.0.27 (build 6043)
+</p><ul><li><b>CPU generic</b><ul><li> Correctly reduce the memory foot-print for
+    automatic hypersim
+    detection. The previous attempt was not working
+    (bug #1507506841). </li></ul></li><li><b>Common</b><ul><li> Fixed a problem on Windows where the
+    installer still asked for
+    the Model Builder key (bug #SIMINT-1236). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6040"></a>6.0.26 (build 6040)
+</p><ul><li><b>QSP-x86</b><ul><li> The
+    <code>targets/qsp-x86/qsp-clear-linux-pcie-demo.simics</code>
+    target script runs on Windows host as well. Source code of the driver
+    and test program is included. </li></ul></li><li><b>x86 CPUs</b><ul><li> The <b>break-on-processor-reset</b> and
+    <b>unbreak-processor-reset</b> commands are now available on x86
+    processor cores (bug #SIMICS-13540). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6039"></a>6.0.25 (build 6039)
+</p><ul><li><b>QSP-x86</b><ul><li> Added
+    <code>targets/qsp-x86/qsp-clear-linux-pcie-demo.simics</code>
+    target script as well as binaries used by the scripts. It boots Clear
+    Linux and operates a SystemC PCIe device for
+    demo purpose. </li></ul></li><li><b>x86 CPUs</b><ul><li> The idle behavior for instructions like HLT
+    and MWAIT and
+    various wait states has been changed such that the step counter
+    is not advanced while the CPU is idle.
+    The old behavior, where both the step counter and the cycle
+    counter were advanced, can be restored by
+    setting the <i>use_halt_steps</i> attribute to TRUE
+    (bug #SIMICS-8754). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6037"></a>6.0.24 (build 6037)
+</p><ul><li><b>CPU generic</b><ul><li> Made messages from the
+    <b>register-break</b> command uniform
+    with messages from other breakpoints
+    (bug #SIMICS-15051). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6033"></a>6.0.23 (build 6033)
+</p><ul><li><b>X58 ICH10 Hierarchical Components</b><ul><li> Removed the <b>ich10_lan</b> class
+    and the <code>old_lan</code>
+    parameter in favor of <b>ich10_lan_v2</b>
+    (bug #SIMICS-14097). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6032"></a>6.0.22 (build 6032)
+</p><ul><li><b>Common</b><ul><li> Support for Python 2.7 has been removed.
+    Simics now only embeds
+    a Python 3 interpreter. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6030"></a>6.0.21 (build 6030)
+</p><ul><li><b>Common</b><ul><li> The separation of source code into separate
+    packages has been
+    removed. Source code is now included directly into
+    each package. </li></ul></li><li><b>x86 CPUs</b><ul><li> Fixed a problem where instructions with the
+    LOCK prefix could
+    cause a Simics crash. </li><li> Fixed flags calculation for CMPXCHG
+    instruction in D-STC hit case. </li><li> I/O instructions are executed identically
+    in VMP, JIT and interpreter
+    modes. Previously the instructions could set CPU stall, controlled by
+    <i>port_io_slow_cycles</i> attribute, of
+    different duration. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6028"></a>6.0.20 (build 6028)
+</p><ul><li><b>CPU generic</b><ul><li> Avoid huge memory consumption when doing
+    automatic hypersim
+    detection for large complex blocks
+    (bug #1507506841). </li></ul></li><li><b>Common</b><ul><li> The installers for Linux and macOS have
+    been updated.
+    Support for fallback mode of decryption keys has
+    been removed. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6025"></a>6.0.19 (build 6025)
+</p><ul><li><b>x86 CPUs</b><ul><li> Added missing NMI interrupt to the
+    implementation of the
+    exception interface, (bug #SIMICS-14623). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6024"></a>6.0.18 (build 6024)
+</p><ul><li><b>x86 CPUs</b><ul><li> Fixed performance regression caused by less
+    JIT code generated
+    (bug #SIMICS-14608). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6023"></a>6.0.17 (build 6023)
+</p><ul><li><b>QSP-x86</b><ul><li> The
+    <code>targets/qsp-x86/qsp-dvdboot.simics</code> and
+    <code>targets/qsp-x86/qsp-pxe-boot.simics</code> target scripts
+    as well as SeaBIOS and SeaVGABIOS images used by the scripts
+    are not distributed anymore. Please use
+    older versions of the package if previously shipped target scripts and
+    image files are needed or try Simics target scripts shipped
+    in the package 2075 (Model Library: Intel® Core™ i7 with X58 and ICH10)
+    (bug #SIMICS-14090). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6022"></a>6.0.16 (build 6022)
+</p><ul><li><b>ICH Base Functionality</b><ul><li> Fixed SPI flash checkpointing issue (bug #1808669046). </li></ul></li><li><b>Intel e1000 Network Adapters</b><ul><li> Fixed SPI flash checkpointing issue (bug #1808669046). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6021"></a>6.0.15 (build 6021)
+</p><ul><li><b>QSP-x86</b><ul><li> The
+    <code>targets/qsp-x86/qsp-clear-linux.simics</code> target script was
+    updated to get use the newer Clear Linux image file (if available).
+    The updated Clear Linux image file is shipped in the 6.0.3 version of
+    the QSP Clear Linux (4094) package. </li><li> The
+    <code>targets/qsp-x86/qsp-linux-common.simics</code> and
+    <code>targets/qsp-x86/qsp-linux-multi.simics</code> scripts creating
+    configurations with a Yocto Linux image are not distributed anymore. Also,
+    the Yocto Linux image is not distributed anymore. Please use older
+    versions of the package if previously shipped target scripts and
+    the image file are needed. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6020"></a>6.0.14 (build 6020)
+</p><ul><li><b>Intel e1000 Network Adapters</b><ul><li> Fixed an error in the multicast lookup
+    algorithm implementation. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6019"></a>6.0.13 (build 6019)
+</p><ul><li><b>ICH Base Functionality</b><ul><li> A bug in the real-time clock device model
+    was fixed. Previously,
+    the device model could misinterpret the date and time set
+    programmatically (bug #SIMICS-13777). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6018"></a>6.0.12 (build 6018)
+</p><ul><li><b>CPU generic</b><ul><li> Fixed an unusual problem where the
+    JIT-compilation engine was
+    disabled when failing to allocate memory with low addresses
+    (only noticed with Python3 and Windows host). Now low
+    address-allocation is not done anymore.
+    (bug #2208230108). </li><li> Remove assertion error checks from
+    (enable/disable)_connection_callbacks methods in
+    the <code>cpu_instrumentation_subscribe</code> interface.
+    This could happen if the user has not yet installed any callback
+    for a connection. Typically the implementation of enable/disable
+    in the connection_interface would call this methods. Now it it
+    is unnecessary to check whether any callbacks has been installed
+    before calling this method. This only affects instrumentation
+    usage available in package 1022. HSD-ES
+    (bug #1808121154). </li></ul></li><li><b>QSP-x86</b><ul><li> The <code>auto_login</code> and
+    <code>auto_login_root</code> parameters were added
+    to the <code>targets/qsp-x86/qsp-clear-linux.simics</code> target script
+    (bug #SIMICS-12561). </li><li> The UEFI firmware used by the
+    <code>targets/qsp-x86/qsp-clear-linux.simics</code> target script
+    was updated to a newer version. Among other things, the update includes
+    a fix to the issue when boot sequence priority could change unexpectedly.
+    The source code for the UEFI firmware used by Simics is now
+    available
+    at <a class="jdocu" href="https://github.com/tianocore/edk2-platforms" rel="noopener noreferrer" target="_top">https://github.com/tianocore/edk2-platforms</a>. </li></ul></li><li><b>x86 CPUs</b><ul><li> Simics no longer incorrectly requires that
+    the TSS is accessible from the
+    current processor mode when dispatching a task (bug #SIMINT-1092). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6017"></a>6.0.11 (build 6017)
+</p><ul><li><b>x86 CPUs</b><ul><li> Effective memory type is calculated for
+    memory requests performed
+    by PREFETCHh/PREFETCHW instructions and accompanying
+    page walk. </li><li> Corrected effective memory type calculation
+    for certain instruction
+    fetch requests (bug #1806235254). </li><li> Add <code>X86_Vmcs_Read</code> and
+    <code>X86_Vmcs_Write</code> haps
+    corresponding to <code>VMREAD</code> and <code>VMWRITE</code> instructions.
+    Add global and namespace variants of <b>break-vmread</b>,
+    <b>trace-vmread</b>, <b>break-vmwrite</b>,
+    <b>trace-vmwrite</b> commands to track Intel® Virtual Machine
+    Control Structure (Intel ® VMCS) changes through
+    <code>VMREAD</code> and <code>VMWRITE</code> instructions
+    (bug #1409542905). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6015"></a>6.0.10 (build 6015)
+</p><ul><li><b>QSP-x86</b><ul><li> The
+    <code>targets/qsp-x86/qsp-clear-linux.simics</code> target script was
+    updated to get use the newer Clear Linux image file (if available).
+    The updated Clear Linux image file is shipped in the 5.0.1 version of
+    the QSP Clear Linux (4094) package. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6014"></a>6.0.9 (build 6014)
+</p><ul><li><b>CPU generic</b><ul><li> A bug in <b>&lt;cpu&gt;.unbreak-register</b> command was fixed.
+    Previously, the command failed to delete a breakpoint in
+    some cases. </li></ul></li><li><b>X58 ICH10 Hierarchical Components</b><ul><li> The RTC time-zone is now stripped from the
+    <code>rtc_time</code> parameter to
+    avoid triggering the deprecation warning when restoring from checkpoint
+    (bug #SIMICS-12639). </li></ul></li><li><b>x86 CPUs</b><ul><li> The <b>&lt;x86&gt;.print-vmx-cap</b>
+    command was fixed to
+    work in Simics with Python 3. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6013"></a>6.0.8 (build 6013)
+</p><ul><li><b>CPU generic</b><ul><li> A new <b>&lt;cpu&gt;.break-register</b>
+    command has been
+    added, allowing the user to break both when general and control
+    registers are updated. See the command for details. Note that
+    this feature only exists for CPUs which supports the new CPU
+    instrumentation interfaces. The command is added in simics-base
+    rev 5.0.189. To use this new command, both simics-base and cpu
+    packages need to be updated. </li></ul></li><li><b>QSP-x86</b><ul><li> The UEFI firmware used by the
+    <code>targets/qsp-x86/qsp-clear-linux.simics</code> target script
+    was updated to a newer version. The updated version includes fixes to
+    system tables, improved virtualization support and a new logo on the boot
+    screen (bug #1807875714). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6012"></a>6.0.7 (build 6012)
+</p><ul><li><b>X58 ICH10 Hierarchical Components</b><ul><li> Added warning for unsupported RTC time-zone
+    format
+    (bug #SIMICS-12639). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6009"></a>6.0.5 (build 6009)
+</p><ul><li><b>CPU generic</b><ul><li> Fixed a rare instrumentation bug where
+    instruction-after callbacks might be
+    missed in JIT generated code
+    (bug #SIMICS-12789). </li><li> Fixed a bug in measurement of how many
+    instructions that was
+    executed in JIT. Previously, exceptions triggered inside
+    the JIT block, caused too few instructions to be accounted
+    for. This lead to system-perfmeter presenting incorrect JIT% figures
+    (bug #SIMICS-9280). </li></ul></li><li><b>QSP-x86</b><ul><li> Previously, the value of the
+    <code>disk0_image</code> parameter of
+    the <code>targets/qsp-x86/qsp-clear-linux.simics</code> script was ignored
+    because of the error in the script logic. This error
+    was fixed. </li></ul></li><li><b>x86 CPUs</b><ul><li> Added support for accessing pdpte registers
+    from int_register interface. </li><li> Fixed checkpointing of some CPU registers
+    (bug #SIMICS-9218). </li><li> Fix the issue that, for 80186 processors,
+    the command "si -r"
+    does not show register changes for some registers
+    (bug #SIMINT-1028). </li><li> A model bug was fixed: previously, the
+    application processors
+    did not enter "wait for SIPI" state after RESET signal was
+    received (bug #SIMICSTS-18). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6007"></a>6.0.4 (build 6007)
+</p><ul><li><b>Intel e1000 Network Adapters</b><ul><li> Fixed a bug which occurred when attempting
+    to access LAN flash primary
+    region data registers at indices greater than 1 and less
+    than 16. </li></ul></li><li><b>QSP-x86</b><ul><li> An absolute positioning mouse device is now
+    added by default to
+    the Clear Linux configuration. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6006"></a>6.0.3 (build 6006)
+</p><ul><li><b>QSP-x86</b><ul><li> New target script
+    <code>targets/qsp-x86/qsp-clear-linux.simics</code>
+    was added. It allows to boot Clear Linux OS on top of UEFI firmware.
+    Clear Linux OS image is distributed separately in the Simics
+    package 4094. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6005"></a>6.0.2 (build 6005)
+</p><ul><li><b>Intel e1000 Network Adapters</b><ul><li> Fixed handling of PTP packets (bug #SIMINT-1003). </li></ul></li><li><b>X58 Base Functionality</b><ul><li> <b>x58_dmi</b> device model was
+    fixed to ignore writes
+    to lower two bits of Configuration Space Address I/O port
+    (bug #1806517538). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6004"></a>6.0.1 (build 6004)
+</p><ul><li><b>Intel e1000 Network Adapters</b><ul><li> Fixed calculation of TCP/UDP checksum for
+    IPv6. </li></ul></li><li><b>X58 Base Functionality</b><ul><li> <b>x58_dmi</b> device model was
+    fixed to handle inquiry accesses
+    to Configuration Space Data I/O port
+    (bug #1806494346). </li></ul></li></ul></li></ul>
+<p>
+
+
+
+
+
+
+
+
+
+
+
+
+</p><h2 class="jdocu"><a name="Changes-in-Simics-6">3 Changes in Simics 6</a></h2>
+<p>
+
+</p><p>
+</p><ul><li><p><a name="__rn_build_id_6003"></a>6.0.0 (build 6003)
+</p><ul><li><b>QSP-x86</b><ul><li> New parameters <code>show_con0</code>,
+    <code>show_con1</code>,
+    <code>show_gfx_con</code> and <code>hide_consoles</code> have been
+    added. These control the initial visibility of the text and
+    graphics consoles. </li><li> The <code>create_con0</code> and
+    <code>create_con1</code> parameters
+    have been removed. The text consoles are now
+    always created. </li><li> The <code>new_consoles</code> and
+    <code>con_type</code> parameters have
+    no meaning with the new target consoles, and have therefore been
+    removed. </li></ul></li></ul></li></ul>
+
+<h2 class="jdocu"><a name="Limitations">4 Limitations</a></h2>
+<p>
+
+</p><p>
+This section briefly describes the known limitations of the
+Quick-Start Platform x86 package. Please refer to section
+<a class="reference" href="#Detailed-List-of-Limitations">5</a> for a more technical
+description.
+</p><p>
+For model oriented packages, additional limitations may be found in
+the model target guides.
+<br><br>
+</p><p>
+<b>ich10_lpc - model of Intel® ICH10 LPC bridge</b>: 
+</p><ul><li>SIRQ routing is unimplemented.</li><li>Chipset configuration registers are mostly dummy.</li><li>General Purpose I/O is dummy.</li></ul>
+<p>
+
+<b>ich10_sata_f2 - model of Intel® ICH10 SATA controller</b>: 
+FIS-based Switching is not implemented. Port Multipliers are not implemented. Multiple MSI based messages are not implemented. Enclosure Management is not implemented. Command Completion Coalescing is not implemented. Device Sleep is not implemented.
+</p><p>
+
+<b>ich10_smbus - model of Intel® ICH10 SMBus unit</b>: 
+</p><ul><li>I2C read is unimplemented.</li><li>Block transfer in disabled 32-byte buffer is unimplemented.</li><li>Host notify is unimplemented.</li></ul>
+<p>
+
+<b>ich10_usb_uhci - model of Intel® ICH10 USB UHCI</b>: 
+</p><ul><li>Interrupt and isochronous transfers are not supported.</li><li>The bulk and control transfers are only initiated while the attribute async_list_polling_enabled is set.</li><li>Does not handle when USB devices sending NAK or STALL.</li><li>Does not handle USB devices with latency.</li><li>The submit_transfer function must return USB_Transfer_Complicated.</li></ul>
+<p>
+
+<b>ich10_usb_ehci - model of Intel® ICH10 USB EHCI</b>: 
+</p><ul><li>Interrupt and Isochronous transfers not supported</li><li>Cannot handle when USB devices send NAK or STALL status during Control and Bulk transfers</li><li>Cannot handle USB devices with a latency (<b><i>submit_transfer</i></b> must return <code>USB_Transfer_Completed</code>)</li><li>Bulk and Control transfers will only be initiated while the attribute <i>async_list_polling_enabled</i> is set.</li></ul>
+<p>
+
+<b>x58-core-f1-legacy - model of scratchpads and GPIO unit</b>: 
+</p><ul><li>The device is mostly dummy.</li></ul>
+<p>
+
+<b>x58-core-f2-legacy - model of IOH control/status and RAS unit</b>: 
+</p><ul><li>The device is mostly dummy.</li></ul>
+<p>
+
+<b>x58-core-f3-legacy - model of X58 throttling unit</b>: 
+</p><ul><li>The device is mostly dummy.</li></ul>
+<p>
+
+<b>x58-qpi-port0-f0-legacy - model of QuickPath Interconnect port 0/0</b>: 
+</p><ul><li>The device is mostly dummy.</li></ul>
+<p>
+
+<b>x58-qpi-port0-f1-legacy - model of QuickPath Interconnect port 0/1</b>: 
+</p><ul><li>The device is mostly dummy.</li></ul>
+<p>
+
+<b>x58-qpi-port1-f0-legacy - model of QuickPath Interconnect port 1/0</b>: 
+</p><ul><li>The device is mostly dummy.</li></ul>
+<p>
+
+<b>x58-qpi-port1-f1-legacy - model of QuickPath Interconnect port 1/1</b>: 
+</p><ul><li>The device is mostly dummy.</li></ul>
+<p>
+
+<b>x58-pcie-port-legacy - model of X58 PCIe root port</b>: 
+</p><ul><li>The device is mostly dummy and does not support connecting PCIe devices.</li></ul>
+<p>
+
+<b>x58-remap-unit0-legacy - model of DMA/Interrupt remapping unit 0</b>: 
+</p><ul><li>where Intel® VT-d fault compression for primary fault logging is not implemented.</li><li>where Intel® VT-d remapping unit does not cache any DMA or interrupt lookups.</li></ul>
+<p>
+
+<b>x58-remap-unit1-legacy - model of DMA/Interrupt remapping unit 1</b>: 
+</p><ul><li>where Intel® VT-d fault compression for primary fault logging is not implemented.</li><li>where Intel® VT-d remapping unit does not cache any DMA or interrupt lookups.</li></ul>
+<p>
+
+<b>x58-qpi-ncr-f0-legacy - model of QuickPath Interconnect Non-Core Registers</b>: 
+</p><ul><li>The device is mostly dummy.</li></ul>
+<p>
+
+<b>x58-qpi-sad-f1-legacy - model of QPI System Address Decoder Regs</b>: 
+</p><ul><li>The device is mostly dummy.</li></ul>
+<p>
+
+<b>ich10_lan_v2 - model of Intel® ICH10 Gb Ethernet controller</b>: 
+</p><ul><li>Flow Control is unimplemented.</li><li>Power Management is unimplemented.</li><li>Load configuration from non-volatile memory is unimplemented.</li><li>Adjust time in time sync (IEEE 1588) is unimplemented.</li><li>RSS interrupt to specific CPU is unimplemented.</li></ul>
+<p>
+
+<b>X58</b>: 
+    </p><ul>
+      <li>Reboot is only partially supported. Depending on the
+      specific mechanism used for reboot, it may or may not work.
+      </li>
+    </ul>
+  <p>
+
+
+
+</p><h2 class="jdocu"><a name="Detailed-List-of-Limitations">5 Detailed List of Limitations</a></h2>
+<p>
+
+This section describes in detail the known limitations of the
+Quick-Start Platform x86 package. Please refer to
+section <a class="reference" href="#Limitations">4</a> for a more general description.
+</p><p>
+A register or field marked as <i>Not implemented</i> is present with
+read-write semantics but has no side effects on simulation. A register
+marked as <i>Not implemented (design limitation)</i> has the same
+semantics as a "Not implemented" register and there is no
+plan to extend the model with this functionality. A register with
+<i>Lack of documentation</i> has not been implemented because there is
+no available documentation describing its semantics.
+</p><p>
+<br><br>
+</p><p>
+<b>ich10_lpc - model of Intel® ICH10 LPC bridge</b>: 
+</p><p>
+The following banks have limitations:
+</p><ul>
+<li><b>cs_conf</b>: This is a dummy implementation</li>
+<li><b>gpio_conf</b>: This is a dummy implementation</li>
+</ul>
+<p>
+The following registers have limitations:
+</p><ul>
+<li><code>acpi_io_regs::c3_res</code>: Not implemented.</li>
+<li><code>acpi_io_regs::gpe_cntl</code>: Not implemented.</li>
+<li><code>acpi_io_regs::lv2</code>: Not implemented.</li>
+<li><code>acpi_io_regs::lv3</code>: Not implemented.</li>
+<li><code>acpi_io_regs::lv4</code>: Not implemented.</li>
+<li><code>acpi_io_regs::pm1_en</code>: Field <code>PCEXPWAK_DIS</code> - Not implemented. Field <code>PWRBTN_EN</code> - Not implemented. Field <code>RTC_EN</code> - Not implemented.</li>
+<li><code>acpi_io_regs::pm2_cnt</code>: Not implemented.</li>
+<li><code>acpi_io_regs::proc_cnt</code>: Field <code>FORCE_THTL</code> - Not implemented. Field <code>THTL_EN</code> - Not implemented.</li>
+<li><code>acpi_io_regs::smi_en</code>: Field <code>EOS</code> - Not implemented. Field <code>MCSMI_EN</code> - Not implemented. Field <code>SWISMI_TMR_EN</code> - Not implemented.</li>
+<li><code>acpi_io_regs::sw_irq_gen</code>: Not implemented.</li>
+<li><code>acpi_io_regs::tco1_cnt</code>: Field <code>SEND_NOW</code> - Not implemented.</li>
+<li><code>acpi_io_regs::tco2_cnt</code>: Field <code>GPIO11_ALERT_DISABLE</code> - Not implemented.</li>
+<li><code>acpi_io_regs::tco_message1</code>: Not implemented.</li>
+<li><code>acpi_io_regs::tco_message2</code>: Not implemented.</li>
+<li><code>acpi_io_regs::tco_rld</code>: Not implemented.</li>
+<li><code>acpi_io_regs::tco_wdcnt</code>: Not implemented.</li>
+<li><code>acpi_io_regs::uprwc</code>: Not implemented.</li>
+<li><code>cs_conf::buc</code>: Field <code>cbe</code> - Not implemented. Field <code>lan_dis</code> - Not implemented. Field <code>sdo</code> - Not implemented. Field <code>ts</code> - Not implemented.</li>
+<li><code>cs_conf::cg</code>: Field <code>audiod</code> - Not implemented. Field <code>audios</code> - Not implemented. Field <code>dmirx</code> - Not implemented. Field <code>dmitx</code> - Not implemented. Field <code>ehcid</code> - Not implemented. Field <code>ehcis</code> - Not implemented. Field <code>lan</code> - Not implemented. Field <code>lpc</code> - Not implemented. Field <code>pci</code> - Not implemented. Field <code>pciers</code> - Not implemented. Field <code>pcitx</code> - Not implemented. Field <code>prxgen</code> - Not implemented. Field <code>sata1</code> - Not implemented. Field <code>sata2</code> - Not implemented. Field <code>sata3</code> - Not implemented. Field <code>sata4</code> - Not implemented. Field <code>sata5</code> - Not implemented. Field <code>smbcgen</code> - Not implemented. Field <code>uhci</code> - Not implemented.</li>
+<li><code>cs_conf::cir7</code>: Not implemented.</li>
+<li><code>cs_conf::dmc</code>: Not implemented.</li>
+<li><code>cs_conf::dmic</code>: Not implemented.</li>
+<li><code>cs_conf::esd</code>: Not implemented.</li>
+<li><code>cs_conf::fd</code>: Field <code>lpc</code> - Not implemented. Field <code>smbus</code> - Not implemented. Field <code>throt</code> - Not implemented.</li>
+<li><code>cs_conf::fpss</code>: Not implemented.</li>
+<li><code>cs_conf::hdba</code>: Not implemented.</li>
+<li><code>cs_conf::hdd</code>: Not implemented.</li>
+<li><code>cs_conf::ilcl</code>: Not implemented.</li>
+<li><code>cs_conf::iotr0</code>: Not implemented.</li>
+<li><code>cs_conf::iotr1</code>: Not implemented.</li>
+<li><code>cs_conf::iotr2</code>: Not implemented.</li>
+<li><code>cs_conf::iotr3</code>: Not implemented.</li>
+<li><code>cs_conf::lcap</code>: Field <code>apms</code> - Not implemented. Field <code>el0</code> - Not implemented.</li>
+<li><code>cs_conf::lctl</code>: Not implemented.</li>
+<li><code>cs_conf::lsts</code>: Not implemented.</li>
+<li><code>cs_conf::map</code>: Field <code>uhci6</code> - Not implemented.</li>
+<li><code>cs_conf::oic</code>: Field <code>aen</code> - Not implemented. Field <code>asel</code> - Not implemented. Field <code>cen</code> - Not implemented.</li>
+<li><code>cs_conf::pat[0..63]</code>: Not implemented.</li>
+<li><code>cs_conf::pdsw</code>: Not implemented.</li>
+<li><code>cs_conf::ppo</code>: Not implemented.</li>
+<li><code>cs_conf::pvc</code>: Not implemented.</li>
+<li><code>cs_conf::pvs</code>: Not implemented.</li>
+<li><code>cs_conf::rc</code>: Field <code>ll</code> - Not implemented. Field <code>ue</code> - Not implemented. Field <code>ul</code> - Not implemented.</li>
+<li><code>cs_conf::rctcl</code>: Not implemented.</li>
+<li><code>cs_conf::rec</code>: Not implemented.</li>
+<li><code>cs_conf::rp1ba</code>: Not implemented.</li>
+<li><code>cs_conf::rp1d</code>: Not implemented.</li>
+<li><code>cs_conf::rp2ba</code>: Not implemented.</li>
+<li><code>cs_conf::rp2d</code>: Not implemented.</li>
+<li><code>cs_conf::rp3ba</code>: Not implemented.</li>
+<li><code>cs_conf::rp3d</code>: Not implemented.</li>
+<li><code>cs_conf::rp4ba</code>: Not implemented.</li>
+<li><code>cs_conf::rp4d</code>: Not implemented.</li>
+<li><code>cs_conf::rp5ba</code>: Not implemented.</li>
+<li><code>cs_conf::rp5d</code>: Not implemented.</li>
+<li><code>cs_conf::rp6ba</code>: Not implemented.</li>
+<li><code>cs_conf::rp6d</code>: Not implemented.</li>
+<li><code>cs_conf::rpc</code>: Not implemented.</li>
+<li><code>cs_conf::rpfn</code>: Not implemented.</li>
+<li><code>cs_conf::tctl</code>: Not implemented.</li>
+<li><code>cs_conf::trcr</code>: Not implemented.</li>
+<li><code>cs_conf::trsr</code>: Not implemented.</li>
+<li><code>cs_conf::twdr</code>: Not implemented.</li>
+<li><code>cs_conf::ulba</code>: Not implemented.</li>
+<li><code>cs_conf::uld</code>: Not implemented.</li>
+<li><code>cs_conf::v0cap</code>: Not implemented.</li>
+<li><code>cs_conf::v0ctl</code>: Field <code>tvm</code> - Not implemented.</li>
+<li><code>cs_conf::v0sts</code>: Not implemented.</li>
+<li><code>cs_conf::v1cap</code>: Field <code>mts</code> - Not implemented.</li>
+<li><code>cs_conf::v1ctl</code>: Not implemented.</li>
+<li><code>cs_conf::v1sts</code>: Not implemented.</li>
+<li><code>cs_conf::vcap1</code>: Not implemented.</li>
+<li><code>cs_conf::vcap2</code>: Not implemented.</li>
+<li><code>cs_conf::vch</code>: Not implemented.</li>
+<li><code>fixed_io::coproc_err</code>: Not implemented.</li>
+<li><code>fixed_io::nmi_sc</code>: Field <code>iochk_nmi_en</code> - Not implemented. Field <code>pci_serr_en</code> - Not implemented.</li>
+<li><code>fixed_io::port92</code>: Not implemented.</li>
+<li><code>fixed_io::rst_cnt</code>: Field <code>full_rst</code> - Not implemented. Field <code>sys_rst</code> - Not implemented.</li>
+<li><code>pci_config::bios_cntl</code>: Field <code>bioswe</code> - Not implemented. Field <code>ble</code> - Not implemented.</li>
+<li><code>pci_config::bm_break_en</code>: Not implemented.</li>
+<li><code>pci_config::c4_timing_cnt</code>: Not implemented.</li>
+<li><code>pci_config::c5_exit_timing_cnt</code>: Not implemented.</li>
+<li><code>pci_config::cx_state_cnf</code>: Not implemented.</li>
+<li><code>pci_config::feature_vector</code>: Not implemented.</li>
+<li><code>pci_config::gen_pmcon1</code>: Field <code>bios_pcie_en</code> - Not implemented. Field <code>c4_disable</code> - Not implemented. Field <code>c4onc3_en</code> - Not implemented. Field <code>c5_enable</code> - Not implemented. Field <code>clk_run_en</code> - Not implemented. Field <code>cpuslp_en</code> - Not implemented. Field <code>i64en</code> - Not implemented. Field <code>per_smi_sel</code> - Not implemented. Field <code>pwr_btn_lvl</code> - Not implemented. Field <code>ss_en</code> - Not implemented.</li>
+<li><code>pci_config::gen_pmcon2</code>: Not implemented.</li>
+<li><code>pci_config::gen_pmcon3</code>: Field <code>afterg3_en</code> - Not implemented. Field <code>rst_sts</code> - Not implemented. Field <code>s4_state_dis</code> - Not implemented. Field <code>slps4_width</code> - Not implemented. Field <code>slps4_width_en</code> - Not implemented. Field <code>sw_smi_rate</code> - Not implemented.</li>
+<li><code>pci_config::gen_pmcon_lock</code>: Field <code>c_state_cfg_lk</code> - Not implemented. Field <code>slp_s4_lock</code> - Not implemented. Field <code>unlock_c_trans</code> - Not implemented.</li>
+<li><code>pci_config::gpi_rout</code>: Not implemented.</li>
+<li><code>pci_config::io_dec</code>: Field <code>FDD</code> - Not implemented. Field <code>LPT</code> - Not implemented.</li>
+<li><code>pci_config::lpc_en</code>: Field <code>cnf1_en</code> - Not implemented. Field <code>cnf2_en</code> - Not implemented. Field <code>fdd_en</code> - Not implemented. Field <code>gameh_en</code> - Not implemented. Field <code>gamel_en</code> - Not implemented. Field <code>kbc_en</code> - Not implemented. Field <code>lpt_en</code> - Not implemented. Field <code>mc_en</code> - Not implemented.</li>
+<li><code>pci_config::lpc_ibdf</code>: Not implemented.</li>
+<li><code>pci_config::pic_b1h</code>: Not implemented.</li>
+<li><code>pci_config::pmir</code>: Field <code>cf9_gr</code> - Not implemented. Field <code>cf9_lock</code> - Not implemented.</li>
+</ul>
+<p>
+
+
+<b>ich10_sata_f2 - model of Intel® ICH10 SATA controller</b>: 
+</p><p>
+The following registers have limitations:
+</p><ul>
+<li><code>ahci::bohc</code>: Field <code>oos</code> - Not implemented. Field <code>sooe</code> - Not implemented.</li>
+<li><code>ahci::ccc_ports</code>: Not implemented.</li>
+<li><code>pci_config::atc</code>: Not implemented.</li>
+<li><code>pci_config::ats</code>: Not implemented.</li>
+<li><code>pci_config::bfcs</code>: Not implemented.</li>
+<li><code>pci_config::bftd1</code>: Not implemented.</li>
+<li><code>pci_config::bftd2</code>: Not implemented.</li>
+<li><code>pci_config::flr_control</code>: Field <code>iflr</code> - Not implemented.</li>
+<li><code>pci_config::pmcs</code>: Field <code>ps</code> - Not implemented.</li>
+<li><code>pci_config::scgc</code>: Not implemented.</li>
+</ul>
+<p>
+
+
+<b>ich10_sata_f5 - model of Intel® ICH10 SATA</b>: 
+</p><p>
+The following registers have limitations:
+</p><ul>
+<li><code>pci_config::flr_control</code>: Field <code>iflr</code> - Not implemented.</li>
+<li><code>pci_config::pcs</code>: Not implemented.</li>
+<li><code>pci_config::pmcs</code>: Field <code>ps</code> - Not implemented.</li>
+</ul>
+<p>
+
+
+<b>ich10_smbus - model of Intel® ICH10 SMBus unit</b>: 
+</p><p>
+The following registers have limitations:
+</p><ul>
+<li><code>smbus_func::aux_sts</code>: Not implemented.</li>
+<li><code>smbus_func::hst_cnt</code>: Field <code>INTREN</code> - Not implemented. Field <code>KILL</code> - Not implemented. Field <code>LAST_BYTE</code> - Not implemented. Field <code>PEC_EN</code> - Not implemented.</li>
+</ul>
+<p>
+
+
+<b>ich10_usb_ehci - model of Intel® ICH10 USB EHCI</b>: 
+</p><p>
+The following registers have limitations:
+</p><ul>
+<li><code>usb_regs::frindex</code>: The controller may process frames in advance, i.e., before they have been referenced by frindex</li>
+<li><code>usb_regs::prtsc[0..5]</code>: Field <code>force_port_resume</code> - Write-access not implemented. Field <code>over_current</code> - Read-access not implemented. Field <code>port_test_ctrl</code> - Write-access not implemented. Field <code>suspend</code> - Write-access not implemented. Field <code>wake_on_connect_en</code> - Not implemented. Field <code>wake_on_disconnect_en</code> - Not implemented. Field <code>wake_on_over_current_en</code> - Not implemented.</li>
+<li><code>usb_regs::usbcmd</code>: Field <code>async_pm_count</code> - Not implemented (design limitation). This field is a dummy field with no side effects. Field <code>async_pm_en</code> - Not implemented (design limitation). This field is a dummy field with no side effects. Field <code>int_thres_ctrl</code> - Not implemented (design limitation). This field is a dummy field with no side effects. Field <code>light_hcreset</code> - Write-access not implemented.</li>
+<li><code>usb_regs::usbsts</code>: Field <code>async_sched_status</code> - Read-access not implemented. Field <code>reclamation</code> - Read-access not implemented.</li>
+</ul>
+<p>
+
+
+<b>ich10_bridge - model of Intel® ICH10 DMI to PCI unit</b>: 
+</p><p>
+The following registers have limitations:
+</p><ul>
+<li><code>pci_config::bpc</code>: Field <code>PDE</code> - Not implemented. Field <code>PSE</code> - Not implemented. Field <code>RTAE</code> - Not implemented. Field <code>SDP</code> - Not implemented. Field <code>SDTT</code> - Not implemented. Field <code>URLT</code> - Not implemented.</li>
+<li><code>pci_config::dtc</code>: Field <code>AFADE</code> - Not implemented. Field <code>BDT</code> - Not implemented. Field <code>DDT</code> - Not implemented. Field <code>MDT</code> - Not implemented. Field <code>MRLPD</code> - Not implemented. Field <code>MRMPD</code> - Not implemented. Field <code>MRPD</code> - Not implemented. Field <code>NP</code> - Not implemented.</li>
+<li><code>pci_config::spdh</code>: Field <code>HD0</code> - Not implemented. Field <code>HD1</code> - Not implemented. Field <code>HD2</code> - Not implemented. Field <code>HD3</code> - Not implemented.</li>
+</ul>
+<p>
+
+
+<b>x58-ioxapic-legacy - model of X58 IOxAPIC unit</b>: 
+</p><p>
+The following registers have limitations:
+</p><ul>
+<li><code>pci_config::abar</code>: Not implemented.</li>
+<li><code>pci_config::ioapictetpc</code>: Not implemented.</li>
+<li><code>pci_config::rdindex</code>: Not implemented.</li>
+<li><code>pci_config::rdwindow</code>: Not implemented.</li>
+</ul>
+<p>
+
+
+<b>x58-qpi-sad-f1-legacy - model of QPI System Address Decoder Regs</b>: 
+</p><p>
+The following registers have limitations:
+</p><ul>
+<li><code>pci_config::sad_dram_rule[0..7]</code>: Not implemented.</li>
+<li><code>pci_config::sad_hen</code>: Not implemented.</li>
+<li><code>pci_config::sad_interleave_list[0..7]</code>: Not implemented.</li>
+<li><code>pci_config::sad_pam0123</code>: Not implemented.</li>
+<li><code>pci_config::sad_pam456</code>: Not implemented.</li>
+<li><code>pci_config::sad_smram</code>: Not implemented.</li>
+</ul>
+<p>
+
+
+<b>ich10_lan_v2 - model of Intel® ICH10 Gb Ethernet controller</b>: 
+</p><p>
+The following registers have limitations:
+</p><ul>
+<li><code>csr::ait</code>: Not implemented.</li>
+<li><code>csr::ctrl</code>: Field <code>lanphypco</code> - Not implemented. Field <code>lanphypcv</code> - Not implemented. Field <code>lcd_rst</code> - Not implemented. Field <code>rfce</code> - Not implemented. Field <code>tfce</code> - Not implemented.</li>
+<li><code>csr::eec</code>: Not implemented.</li>
+<li><code>csr::eerd</code>: Not implemented.</li>
+<li><code>csr::ert</code>: Field <code>rxt</code> - Not implemented.</li>
+<li><code>csr::extcnf_ctrl</code>: Not implemented.</li>
+<li><code>csr::extcnf_size</code>: Not implemented.</li>
+<li><code>csr::fcrth</code>: Field <code>rt</code> - Not implemented.</li>
+<li><code>csr::fcrtl</code>: Field <code>rt</code> - Not implemented.</li>
+<li><code>csr::fcrtv</code>: Not implemented.</li>
+<li><code>csr::fcttv</code>: Not implemented.</li>
+<li><code>csr::fext</code>: Not implemented.</li>
+<li><code>csr::fextnvm</code>: Not implemented.</li>
+<li><code>csr::fflt[0..3]</code>: Field <code>len</code> - Not implemented.</li>
+<li><code>csr::ffmt[0..127]</code>: Field <code>mask</code> - Not implemented.</li>
+<li><code>csr::ffvt[0..127]</code>: Not implemented.</li>
+<li><code>csr::fla</code>: Not implemented.</li>
+<li><code>csr::fwsm_s</code>: Not implemented.</li>
+<li><code>csr::h2me</code>: Not implemented.</li>
+<li><code>csr::ip4at[0..3]</code>: Not implemented.</li>
+<li><code>csr::ip6at[0..3]</code>: Not implemented.</li>
+<li><code>csr::ipav</code>: Field <code>v41</code> - Not implemented. Field <code>v60</code> - Not implemented.</li>
+<li><code>csr::ledctl</code>: Not implemented.</li>
+<li><code>csr::pba</code>: Field <code>rxa</code> - Not implemented. Field <code>txa</code> - Not implemented.</li>
+<li><code>csr::pbs</code>: Field <code>Size</code> - Not implemented.</li>
+<li><code>csr::pcianacfg</code>: Not implemented.</li>
+<li><code>csr::phy_ctrl</code>: Not implemented.</li>
+<li><code>csr::rctl</code>: Field <code>pmcf</code> - Not implemented.</li>
+<li><code>csr::rqdpc[0..1]</code>: Not implemented.</li>
+<li><code>csr::rx_queue[0..1].rxdctl</code>: Field <code>gran</code> - Not implemented. Field <code>hthresh</code> - Not implemented. Field <code>pthresh</code> - Not implemented. Field <code>wthresh</code> - Not implemented.</li>
+<li><code>csr::status</code>: Field <code>phytype</code> - Not implemented.</li>
+<li><code>csr::strap</code>: Not implemented.</li>
+<li><code>csr::tctl</code>: Field <code>rrthresh</code> - Not implemented. Field <code>rtlc</code> - Not implemented. Field <code>swxoff</code> - Not implemented.</li>
+<li><code>csr::timadjh</code>: Not implemented.</li>
+<li><code>csr::timadjl</code>: Not implemented.</li>
+<li><code>csr::tipg</code>: Not implemented.</li>
+<li><code>csr::tx_queue[0..1].txdctl</code>: Field <code>gran</code> - Not implemented. Field <code>hthresh</code> - Not implemented. Field <code>pthresh</code> - Not implemented. Field <code>wthresh</code> - Not implemented.</li>
+<li><code>csr::wuc</code>: Not implemented.</li>
+<li><code>csr::wufc</code>: Not implemented.</li>
+</ul>
+<p>
+
+
+
+
+
+</p><p>
+</p><h2 class="jdocu"><a name="Notices-amp-Disclaimers">6 Notices &amp; Disclaimers</a></h2>
+<p>
+
+</p><p>
+</p><div class="jdocu_copyright">
+<p>
+No product or component can be absolutely secure.
+</p><p>
+Intel technologies may require enabled hardware, software or
+service activation.
+</p><p>
+Your costs and results may vary.
+</p><p>
+Intel does not control or audit third-party data. You should
+consult other sources to evaluate accuracy.
+</p><p>
+You may not use or facilitate the use of this document in
+connection with any infringement or other legal analysis concerning
+Intel products described herein. You agree to grant Intel a
+non-exclusive, royalty-free license to any patent claim thereafter
+drafted which includes subject matter disclosed herein.
+</p><p>
+No license (express or implied, by estoppel or otherwise) to any
+intellectual property rights is granted by this document.
+</p><p>
+All product plans and roadmaps are subject to change without
+notice.
+</p><p>
+The products described may contain design defects or errors known
+as errata which may cause the product to deviate from published
+specifications. Current characterized errata are available on
+request.
+</p><p>
+Intel disclaims all express and implied warranties, including
+without limitation, the implied warranties of merchantability, fitness
+for a particular purpose, and non-infringement, as well as any
+warranty arising from course of performance, course of dealing, or
+usage in trade.
+</p><p>
+© 2010–2023 Intel Corporation. Intel, the Intel logo,
+and other Intel marks are trademarks of Intel Corporation or its
+subsidiaries. Other names and brands may be claimed as the property of
+others.
+</p><p>
+
+
+</p></div>
+<p>
+
+</p>
+<div class="chain">
+<span></span>
+</div>

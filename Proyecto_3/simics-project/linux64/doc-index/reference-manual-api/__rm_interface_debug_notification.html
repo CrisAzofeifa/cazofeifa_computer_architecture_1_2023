@@ -1,0 +1,241 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>debug_notification</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_context_handler.html">context_handler</a>
+<a href="__rm_interface_debug_query.html">debug_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_debug_notification">debug_notification</a></h1>
+<p>
+
+<a name="debug_notification"></a><a name="debug_notification_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="debug_notification_interface_t2"></a>
+<p>
+   This interface is used to get notifications from events in the
+   debugger. Examples of events are when certain functions, addresses or code
+   lines are hit.
+</p><p>
+   In order to be able to get notifications for symbols, the symbol file
+   containing the debug information must have been added using the
+   <code>debug_setup</code> interface or in some other way.
+</p><p>
+   All notifications take callback functions that are called when the debugger
+   event occurs. The notifications will not stop the simulation, to do so
+   <b><i>SIM_break_simulation</i></b> can be called in the callback.
+</p><p>
+   
+</p><p>
+   For all functions that return an <code>attr_value_t</code>, that return value
+   will consists of a list with two elements. The first element is an error code
+   of <code>debugger_error_t</code> type (see <code>debug_query</code>
+   interface documentation for definition). The second element depends on the
+   first. If the first element is <code>Debugger_No_Error</code>, meaning that
+   the function went well, then the second element will contain the expected
+   return value that is specified per function below. If the first element is
+   another error code, then the second element will be a string describing the
+   error that occurred.
+</p><p>
+   
+</p><p>
+   <a name="notify_context_creationdebug_notification-interface-method"></a>
+   <b><i>notify_context_creation</i></b> provides a callback when a new context
+   that matches the context query <i>query</i> is created or renamed. The
+   callback will also be triggered when a context is renamed, so if the context
+   query matches both the name before and after the context was renamed then
+   there will be two creation callbacks for the same context. When the callback
+   is triggered because of a rename the <i>updated</i> argument of the
+   callback will be true, otherwise if it is triggered because a new context
+   was created the <i>updated</i> argument will be false.
+</p><p>
+   <b><i>notify_context_destruction</i></b> provides a callback when a context
+   that matches the context query <i>query</i> is destroyed.
+</p><p>
+   The callbacks for <b><i>notify_context_creation</i></b> and
+   <b><i>notify_context_destruction</i></b> will contain an ID to the context that
+   was created, updated or destroyed, <i>ctx_id</i>, the tcf_agent object
+   <i>obj</i> and some custom <i>data</i>.
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+The <b><i>notify_context_creation</i></b> and
+   <b><i>notify_context_destruction</i></b> callbacks will only trigger for
+   contexts that have state, this is most commonly the leaf nodes in an OS
+   Awareness node tree.</div><b><i>notify_location</i></b> will give a callback when a memory access of type
+   <i>access</i> is done at the address specified by <i>location</i>,
+   for contexts matching <i>query</i>. The <i>size</i> argument is used
+   to specify the width of the symbol provided by <i>location</i>. For
+   execution notifications a <i>size</i> of 1 is usually used. The maximum
+   value of <i>size</i> is 0x7fffffff. Notifying on location will only work
+   for global symbols. For symbols that are not global, no errors will be given,
+   and no callback will be triggered.
+<p>
+   <b><i>notify_address</i></b> will provide a callback when an <i>address</i>
+   is hit with a certain <i>access</i> type for contexts matching
+   <i>query</i>. The <i>size</i> argument specifies the width of the
+   breakpoint for the notification, with a maximum value of 0x7fffffff.
+   The notification can be set to notify on <i>physical</i> breakpoints
+   instead of virtual, but for that to work a processor or memory space context
+   must be covered by the <i>query</i>. For process related contexts
+   <i>physical</i> should be false.
+</p><p>
+   <b><i>notify_line</i></b> will provide a callback when a specific
+   <i>line</i> and <i>column</i> in a specific source <i>file</i>
+   for a context matching <i>query</i> is executed. The <i>column</i>
+   argument can be set to 0 to not care about column.
+</p><p>
+   The notification functions <b><i>notify_location</i></b>,
+   <b><i>notify_address</i></b> and <b><i>notify_line</i></b> will all provide
+   callbacks on the same format. They will pass the context ID,
+   <i>ctx_id</i>, for which the access occurred. A processor,
+   <i>cpu</i>, which did the access is provided. The
+   <i>instruction_address</i> is the address of the instruction that
+   performed the access. For execution callbacks the callback will occur before
+   the instruction has run, but for read or write accesses the callback will
+   occur after the instruction has run. The <i>data_address</i> will
+   provide which data address was accesses, for execution accesses this is the
+   same as <i>instruction_address</i> but for read or write accesses this
+   is where the actual access was. And <i>size</i> specifies the actual
+   size of the access that was made to trigger the notification, for execution
+   this size is 1.
+</p><p>
+   <b><i>notify_activated</i></b> and <b><i>notify_deactivated</i></b> are used to
+   notify when a context, that matches the <i>query</i>, gets activated or
+   deactivated. The callback for this will include which context,
+   <i>ctx_id</i>, was (de)activated and on what processor, <i>cpu</i>.
+</p><p>
+   For all notifications functions in this interface, on success, the returned
+   value of a notification function will be a cancel ID which can be used to
+   cancel the notification.
+</p><p>
+   If several callbacks occur on the same cycle, then the order for which the
+   callbacks are called is not determined. This means that a
+   <b><i>notify_activated</i></b> callback for one processor can occur before a
+   <b><i>notify_deactivated</i></b> callback on the same processor.
+</p><p>
+   <b><i>notify_callbacks_done</i></b> will be called once all other callbacks
+   that happen because of the same event are done. For example when a move to
+   and a move from is done in the same step then this callback can be used to
+   keep grouped notifications together that occurred at the same time. This
+   will always be called after one or more callbacks have been called.
+</p><p>
+   <b><i>cancel</i></b> is used to cancel a notification by providing it with a
+   cancel ID, <i>cid</i>, that was returned from the notification function.
+   When this goes well the returned value will be nil.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Unknown_Id</em> - The cancel ID, <i>cid</i>, is
+   unknown.</li>
+
+   </ul>
+<p>
+   All callbacks except <b><i>notify_location</i></b>, <b><i>notify_address</i></b>,
+   and <b><i>notify_line</i></b>, with execution access, will occur after the
+   instruction triggering the callbacks has executed. For the callbacks
+   specified here, when using execution access, the callback will occur before
+   the instruction at that location, address or line has executed.
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+In order to get contexts for processes, OS Awareness with a properly
+   configured tracker has to exist. A context will then be created for each OS
+   Awareness node. Without any OS Awareness tracker enabled for the system,
+   contexts will only be available for processors and some memory spaces. The
+   <b><i>notify_activated</i></b> and <b><i>notify_deactivated</i></b> functions will
+   only give callbacks when a tracker is used, because processor contexts are
+   always active. More information about configuring and using OS Awareness and
+   trackers can be found in the <em>Analyzer User's Guide</em></div><div class="note">
+<b>Note:</b>
+For functions that take <i>query</i> as argument, having this set
+   to nil will work the same way as for <code>"*"</code>. A bad context query will
+   result in a <code>Debugger_Incorrect_Context_Query</code> error.</div><pre class="jdocu_small">
+SIM_INTERFACE(debug_notification) {
+        attr_value_t (*notify_context_creation)(
+                conf_object_t *NOTNULL obj, const char *query,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           const char *ctx_id, bool updated),
+                cbdata_register_t data);
+        attr_value_t (*notify_context_destruction)(
+                conf_object_t *NOTNULL obj, const char *query,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           const char *ctx_id), cbdata_register_t data);
+        attr_value_t (*notify_location)(
+                conf_object_t *NOTNULL obj, const char *query,
+                const char *NOTNULL location, unsigned size, access_t access,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           const char *ctx_id, conf_object_t *cpu,
+                           uint64 instruction_address, uint64 data_address,
+                           unsigned size), cbdata_register_t data);
+        attr_value_t (*notify_address)(
+                conf_object_t *NOTNULL obj, const char *query, uint64 address,
+                unsigned size, access_t access, bool physical,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           const char *ctx_id, conf_object_t *cpu,
+                           uint64 instruction_address, uint64 data_address,
+                           unsigned size), cbdata_register_t data);
+        attr_value_t (*notify_line)(
+                conf_object_t *NOTNULL obj, const char *query,
+                const char *NOTNULL file, unsigned line, unsigned column,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           const char *ctx_id, conf_object_t *cpu,
+                           uint64 instruction_address, uint64 data_address,
+                           unsigned size), cbdata_register_t data);
+        attr_value_t (*notify_activated)(
+                conf_object_t *NOTNULL obj, const char *query,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           const char *ctx_id, conf_object_t *cpu),
+                cbdata_register_t data);
+        attr_value_t (*notify_deactivated)(
+                conf_object_t *NOTNULL obj, const char *query,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           const char *ctx_id, conf_object_t *cpu),
+                cbdata_register_t data);
+        attr_value_t (*notify_callbacks_done)(
+                conf_object_t *NOTNULL obj,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj),
+                cbdata_register_t data);
+        attr_value_t (*cancel)(conf_object_t *NOTNULL obj,
+                               debug_cancel_id_t cid);
+};
+#define DEBUG_NOTIFICATION_INTERFACE "debug_notification"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_context_handler.html">context_handler</a>
+<a href="__rm_interface_debug_query.html">debug_query</a>
+</div>

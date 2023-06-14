@@ -1,0 +1,560 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>6 Execution of SystemC Models in the Simics Simulator</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="overview_of_systemc_features.html">5 Overview of SystemC Features</a>
+<a href="limitations.html">7 Limitations</a>
+</div>
+<div class="path">
+<a href="index.html">SystemC* Library</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Execution-of-SystemC-Models-in-the-Simics-Simulator">6 Execution of SystemC Models in the Simics Simulator</a></h1>
+<p>
+
+</p><p>
+When a Simics adapter is created inside Simics, the elaboration phase is run
+which creates the SystemC object hierarchy. SystemC simulation phase involves
+the execution of the SystemC scheduler and is driven by Simics. The Simics
+simulator has a concept of virtual time that all models refer to. This chapter
+covers how SystemC models are executed inside the Simics simulator.
+</p><p>
+</p><h2 class="jdocu"><a name="systemc-simulation-time">6.1 SystemC simulation time</a></h2>
+<p>
+
+The SystemC scheduler is event-driven and events occur at precise points in
+simulation time. Simulation time in SystemC is an integer multiple of the time
+resolution and increases monotonically during simulation. Typically, outside of
+Simics, the SystemC simulation time is advanced by the <b><i>sc_start</i></b>
+function.
+</p><p>
+The simulation time resolution used for SystemC in Simics is by default one
+picosecond. In the SystemC Library, <b><i>sc_start</i></b> is invoked by the
+adapter only. It must never be invoked from within a SystemC model. The adapter
+drives the simulation and keeps track of the current simulation time. To print
+the current simulation time, use the <b>print-time</b> (<b>ptime</b>)
+command on the adapter object with the time option:
+</p><p>
+
+
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>psel dev</b>
+simics&gt; <b>r 1 ps</b>
+simics&gt; <b>ptime -t</b>
+┌─────────┬────────┐
+│Processor│Time (s)│
+├─────────┼────────┤
+│dev      │   0.000│
+└─────────┴────────┘
+</pre><p>
+</p><p>
+It returns the time in seconds as a floating-point value. When the
+<b>dev</b> object is selected as the command line frontend, the simulation
+time can be advanced using the <b>run</b> (<b>r</b>) command.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The description of these commands can be found from <em>Simics Reference
+  manual</em> or help command output from Simics CLI.</div>The pending SystemC events currently registered with the kernel can be listed
+using the <b>print-event-queue</b> (<b>peq</b>) command:
+<p>
+
+</p><pre class="jdocu_small">simics&gt; <b>peq -i</b>
+┌──────────┬──────────┬──────────────┐
+│  Cycle   │  Object  │ Description  │
+├──────────┼──────────┼──────────────┤
+│4999999999│dev.engine│Internal: stop│
+└──────────┴──────────┴──────────────┘
+
+┌─────────────┬──────┬───────────────────────────────────────────────────┐
+│SystemC (ps) │Object│                    Description                    │
+├─────────────┼──────┼───────────────────────────────────────────────────┤
+│1234000000000│dev   │test_sc_devices.dummy_1_event                      │
+│1234000000000│dev   │test_sc_devices.dummy_3_event                      │
+│5678000000000│dev   │test_sc_devices.event_method (static method)       │
+│5678000000000│dev   │test_sc_devices.trigger_method_event               │
+│5678000000000│dev   │test_sc_devices.event_thread (dynamic thread)      │
+│5678000000000│dev   │test_sc_devices.trigger_thread_event               │
+│9876000000000│dev   │test_sc_devices.dummy_2_event                      │
+│9999999999999│dev   │test_sc_devices.event_thread_timed (dynamic thread)│
+└─────────────┴──────┴───────────────────────────────────────────────────┘
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The events posted by the SystemC adapter are treated as Simics simulator
+  internal events, thus <i>-i</i> is needed.</div>The time shown in the <b>ptime</b> command output is relative to the
+current simulation time. Thus, the next event will be triggered after
+1234000000000 ps.
+<p>
+The simulation time depends on the context of the SystemC kernel. Each adapter
+has its own context of the SystemC kernel with its own simulation time and
+events.
+</p><p>
+
+</p><pre class="jdocu_small">simics&gt; <b>psel dev2</b>
+simics&gt; <b>ptime -t</b>
+┌─────────┬────────┐
+│Processor│Time (s)│
+├─────────┼────────┤
+│dev2     │   0.000│
+└─────────┴────────┘
+simics&gt; <b>peq -i</b>
+┌─────┬───────────┬──────────────┐
+│Cycle│  Object   │ Description  │
+├─────┼───────────┼──────────────┤
+│    0│dev2.engine│Internal: stop│
+└─────┴───────────┴──────────────┘
+</pre><p>
+</p><p>
+The above results show that <b>dev</b> and <b>dev2</b> have different
+simulation time and events.
+
+</p><h2 class="jdocu"><a name="Simics-processors-driving-the-SystemC-simulation">6.2 Simics processors driving the SystemC simulation</a></h2>
+<p>
+
+In the Simics simulation framework, the <b>processor</b> concept includes all
+models that actively drive the simulation forward and manage the simulation
+time. Each processor is event-driven and supports one or more types of event
+queues representing: cycles, steps and/or pico-seconds.
+</p><p>
+All Simics processors in the example configuration can be listed using the
+<b>list-processors</b> command.
+</p><p>
+Each adapter (SystemC subsystem) exposes two processors to the rest of the
+Simics simulation system.
+</p><ul>
+  <li>The top-level adapter (<b>dev</b> and <b>dev2</b> in the example
+    above) represent the current time of the SystemC kernel embedded in each
+    adapter. This time might be ahead of the rest of the Simics simulation
+    configuration.</li>
+  <li>The engines, (<b>dev.engine</b> and <b>dev2.engine</b>) are used
+    by the Simics simulation core to drive time forward.</li>
+</ul>
+<p>
+
+</p><pre class="jdocu_small">simics&gt; <b>list-processors -all</b>
+┌───────────┬─┬─────────────────────────┬────────┬─────────┐
+│ CPU Name  │ │        CPU Class        │  Freq  │Scheduled│
+├───────────┼─┼─────────────────────────┼────────┼─────────┤
+│clock      │ │clock                    │1.00 THz│yes      │
+│dev        │ │test_sc_devices          │1.00 THz│no       │
+│dev.engine │ │co-execute               │1.00 THz│yes      │
+│dev2       │*│sample_tlm2_simple_device│1.00 THz│no       │
+│dev2.engine│ │co-execute               │1.00 THz│yes      │
+└───────────┴─┴─────────────────────────┴────────┴─────────┘
+* = selected CPU
+</pre><p>
+</p><p>
+Processor <b>dev</b> and <b>dev2</b> support two kinds of event queues:
+the cycle-based and pico-seconds-based. The frequency is hardcoded as 1000000
+MHz (or equivalently, 1 THz). Thus, 1 cycle equals 1 ps. All SystemC events are
+posted on the SystemC clock using the ps event queue (see how to display
+SystemC events using <b>peq</b> above). Since the processor on
+<b>dev</b>/<b>dev2</b> runs on SystemC simulation time, it is referred
+as the <b>SystemC clock</b> in this document. 
+</p><p>
+The previous example of advancing SystemC simulation time can be achieved using
+cycle as well:
+</p><pre class="jdocu_small">simics&gt; <b>r 1 cycles</b>
+simics&gt; <b>ptime -t</b>
+
+1e-12
+</pre><p>
+</p><p>
+Simics events can be posted on the SystemC clock using either the cycle-based
+or ps-based event queue. Below is an example showing how to post Simics events
+using the cycle-based event queue:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>bp.cycle.break 10</b>
+Breakpoint 1: dev2 will break at cycle 11
+simics&gt; <b>peq -i</b>
+┌─────┬───────────┬───────────────────────────────┐
+│Cycle│  Object   │          Description          │
+├─────┼───────────┼───────────────────────────────┤
+│   10│bp.cycle   │Break event on dev2 at cycle 11│
+│  999│dev2.engine│Internal: stop                 │
+└─────┴───────────┴───────────────────────────────┘
+
+</pre><p>
+</p><p>
+As shown in the above example, besides the user breakpoint set at cycle 10, the
+<b>dev.engine</b> processor is also posting events on the SystemC clock (as
+represented by the <b>dev</b> processor). The <b>dev.engine</b> is
+another Simics processor like the SystemC clock. It supports both a cycle-based
+event queue and a ps event queue. The only difference is how they are scheduled.
+</p><p>
+</p><div class="figure" id="Simics-schedules-the-processors">
+
+<div style="text-align: center">
+<img alt="" src="scheduler.png">
+<div class="caption">Figure 1. Simics schedules the processors</div>
+</div>
+</div>
+
+<p>
+Figure <a class="reference" href="#Simics-schedules-the-processors">1</a> shows how Simics
+schedules the target processors in a single thread in default mode. Another
+mode (the free running mode) is described in section
+<a class="reference" href="#free-running">6.4.3</a>. All blue rectangles are
+Simics target processors which implement the <code>execute</code> interface.
+The thread calling the <code>execute</code> interface is a simulation thread
+managed by the Simics scheduler. <b>clock</b>, <b>dev.engine</b> and
+<b>dev2.engine</b> are three target processors scheduled directly by the
+Simics scheduler in a round-robin fashion. With temporal decoupling, each
+target processor runs multiple simulation steps or cycles (its time quantum)
+before handing over to the next processor.  
+</p><p>
+The SystemC clock (<b>dev</b> and <b>dev2</b>) is not directly
+scheduled by the Simics scheduler. Instead it is indirectly scheduled via the
+adapter’s engine object (<b>dev.engine</b>) which is referred to as the
+<b>Simics clock</b>. This scheduler decoupling enables the SystemC clock to be
+driven both by the Simics clock as well as by the adapter. As described in
+section <a class="reference" href="#systemc-simulation-time">6.1</a>, the SystemC clock drives one
+SystemC kernel context.
+</p><p>
+In most cases, these two clocks are synced. But the SystemC clock could run
+ahead of the Simics clock if needed. For example when a synchronous Simics
+interface calls into the SystemC device, invoking the <b><i>b_transport</i></b>
+function which in turn invokes the <b><i>wait</i></b> function. In this case,
+SystemC time must run forward in order for the <b><i>b_transport</i></b> to return
+so that the Simics interface call can return. See Figure
+<a class="reference" href="#the-SystemC-clock-could-move-ahead-of-the-Simics-clock">2</a>.
+</p><p>
+</p><div class="figure" id="the-SystemC-clock-could-move-ahead-of-the-Simics-clock">
+
+<div style="text-align: center">
+<img alt="" src="sc_ahead.png">
+<div class="caption">Figure 2. the SystemC clock could move ahead of the Simics clock</div>
+</div>
+</div>
+
+<p>
+Besides the processors, from the object hierarchy, there are some other objects
+that handle time: <b>vtime</b>, <b>vtime.cycles</b> and
+<b>vtime.ps</b>. They provide the functionality used by both clocks.
+<b>vtime</b> is used to dispatch pending events and drive the cycle queues.
+<b>vtime.cycles</b> and <b>vtime.ps</b> contains the cycle-based event
+queue and the ps event queue respectively. These objects are considered
+internal and user should not interact with them.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>list-objects substr = vtime -tree</b>
+┐
+├ clock ┐
+│       └ vtime ┐
+│               ├ cycles 
+│               └ ps 
+├ dev ┐
+│     ├ engine ┐
+│     │        └ vtime ┐
+│     │                ├ cycles 
+│     │                └ ps 
+│     └ vtime ┐
+│             ├ cycles 
+│             └ ps 
+└ dev2 ┐
+       ├ engine ┐
+       │        └ vtime ┐
+       │                ├ cycles 
+       │                └ ps 
+       └ vtime ┐
+               ├ cycles 
+               └ ps 
+</pre><p>
+
+</p><h2 class="jdocu"><a name="Performance-tuning">6.3 Performance tuning</a></h2>
+<p>
+
+</p><p>
+The SystemC Library has been optimized to reduce the overhead when running
+SystemC models inside Simics. Normally, there is no need to do performance
+tuning. This section is targeting some advanced usage.
+</p><p>
+</p><h3 class="jdocu"><a name="Disable-DMI">6.3.1 Disable DMI</a></h3>
+<p>
+
+  </p><p>
+In SystemC, using the TLM-2.0 Direct Memory Interface (DMI) offers potentially
+significant increases in simulation speed for simple memory accesses, since it
+bypasses the normal <b><i>b_transport</i></b> calls. An initiator can check the
+<i>DMI allowed</i> attribute of a TLM-2.0 transaction passed through the
+transport interface to see if the target supports it. Since an interconnect
+component is permitted to modify the <i>address</i> attribute and the
+<i>extension pointers</i>, the original transaction needs to be
+deep-copied for potential DMI purposes later on. This deep copy cost some
+performance. For a SystemC device that does not support DMI, the DMI check can
+be disabled to avoid this overhead.
+</p><p>
+For example, following command disables DMI check on the initiator implemented
+in the gasket:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@conf.dev2.gasket_simple_device_target_socket.iface.sc_initiator_gasket.set_dmi(False)</b>
+None
+</pre><p>
+
+</p><h3 class="jdocu"><a name="Scaling">6.3.2 Scaling</a></h3>
+<p>
+
+</p><p>
+The SystemC simulation can be scaled. When the SystemC simulation runs very
+slowly, for example, when too many SystemC events are posted, the overall
+Simics simulation performance is affected. By scaling down the SystemC
+simulation, it allows the other processors to run faster. This can be achieved
+by setting the <i>frequency</i> attribute of <b>dev.engine.vtime</b>.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+In the future, the <i>frequency</i> attribute can be changed directly
+from <b>dev.engine</b>.</div><pre class="jdocu_small">simics&gt; <b>ptime -all</b>
+┌───────────┬─────┬──────┬────────┐
+│ Processor │Steps│Cycles│Time (s)│
+├───────────┼─────┼──────┼────────┤
+│clock      │n/a  │     0│   0.000│
+│dev        │n/a  │  1001│   0.000│
+│dev2       │n/a  │     1│   0.000│
+│dev2.engine│n/a  │     1│   0.000│
+│dev.engine │n/a  │  1001│   0.000│
+└───────────┴─────┴──────┴────────┘
+simics&gt; <b>dev.engine.vtime-&gt;frequency = 1e11</b>
+simics&gt; <b>r 1000 cycles</b>
+simics&gt; <b>ptime -all</b>
+┌───────────┬─────┬──────┬────────┐
+│ Processor │Steps│Cycles│Time (s)│
+├───────────┼─────┼──────┼────────┤
+│clock      │n/a  │  1000│   0.000│
+│dev        │n/a  │  1101│   0.000│
+│dev2       │n/a  │  1001│   0.000│
+│dev2.engine│n/a  │  1001│   0.000│
+│dev.engine │n/a  │  1101│   0.000│
+└───────────┴─────┴──────┴────────┘
+</pre><p>
+</p><p>
+Here the frequency does not relate to how one cycle matches to ps but
+determines how many cycles the processor advances in one <b>delta_tick</b>. By
+dividing it with a factor of 10, <b>dev</b> and <b>dev.engine</b> run
+only 1101 – 1001 = 100 cycles compared with <b>dev2</b> and
+<b>dev2.engine</b> who runs 1001 – 1 = 1000 cycles. This way, the rest of
+the simulation gets more wall clock time to run.
+
+
+</p><h2 class="jdocu"><a name="Performance-scaling">6.4 Performance scaling</a></h2>
+<p>
+
+</p><p>
+SystemC Library supports the general Simics performance scaling feature. The
+feature is described in chapter "Scaling Simics" of
+<em>Simics User's Guide</em>. Here only the SystemC specific parts are
+covered.
+</p><p>
+Simics Accelerator has two different mechanisms that can operate alone
+or work together to improve performance. The first is Simics®
+<em>Multimachine Accelerator</em> which is based upon the cell
+concept. The other mechanism is <em>Multicore Accelerator</em> which
+can parallelize simulation even within cells.
+</p><p>
+</p><h3 class="jdocu"><a name="Multimachine-Accelerator-for-SystemC">6.4.1 Multimachine Accelerator for SystemC</a></h3>
+<p>
+
+Every Simics simulation is split into a set of cells and every processor
+belongs to a cell. By default, all cells run in parallel with each other.
+SystemC related processors from different Simics modules can reside in
+different cells and utilize the power of running in parallel. But SystemC
+related processors from the same Simics module cannot and by default end up in
+the same cell. This limitation comes from the Accellera SystemC kernel which is
+not thread safe (it contains global static variables/pointers). There is an
+automatic check for this requirement whenever the current SystemC related cell
+configuration changes. 
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>dev-&gt;cell</b>
+"default_cell0"
+simics&gt; <b>dev.engine-&gt;cell</b>
+"default_cell0"
+simics&gt; <b>@cell1=SIM_create_object('cell', 'cell1')</b>
+
+simics&gt; <b>dev-&gt;cell = cell1</b>
+[dev error] dev is not placed in the same cell with [dev.engine, ]. The simulation may run into errors or even segfault in multi-threading mode.
+</pre><p>
+</p><p>
+By default, all SystemC related processors from one Simics module reside in the
+same cell (<b>default_cell0</b> in the above example). If processor
+<b>dev</b> is moved to a different cell (<b>cell1</b>), with
+<b>dev.engine</b> still in <b>default_cell0</b>, an error message is
+printed as show in the above example. Do not ignore this error, as the
+simulation will likely run into hard-to-debug type of errors or even segfaults
+in multi-threading mode.
+</p><p>
+The configuration is correct again when <b>dev.engine</b> is moved to
+<b>cell1</b> as well. Since <b>dev</b> and <b>dev2</b> belong to
+different Simics modules, they can reside in different cells.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>dev.engine-&gt;cell = cell1</b>
+simics&gt; <b>set-threading-mode serialized</b>
+simics&gt; <b>set-threading-mode</b>
+┌─────────────┬──────────┬───┬────────────┬─────────────┬───────────┐
+│    cell     │   mode   │#td│time-quantum│max-time-span│min-latency│
+├─────────────┼──────────┼───┼────────────┼─────────────┼───────────┤
+│default_cell0│serialized│  1│      1.0 ns│     (1.0 ns)│    10.0 ms│
+│cell1        │serialized│  1│    (1.0 ns)│     (1.0 ns)│    10.0 ms│
+└─────────────┴──────────┴───┴────────────┴─────────────┴───────────┘
+simics&gt; <b>list-thread-domains</b>
+┌─────────────┬──────┬───────────┐
+│    Cell     │Domain│  Objects  │
+├─────────────┼──────┼───────────┤
+│default_cell0│    #0│dev2.engine│
+│             │      │clock      │
+└─────────────┴──────┴───────────┘
+┌─────┬──────┬──────────┐
+│Cell │Domain│ Objects  │
+├─────┼──────┼──────────┤
+│cell1│    #0│dev.engine│
+└─────┴──────┴──────────┘
+</pre><p>
+
+</p><h3 class="jdocu"><a name="Multicore-Accelerator-for-SystemC">6.4.2 Multicore Accelerator for SystemC</a></h3>
+<p>
+
+With Subsystem threading, multiple host threads can be used to simulate
+multiple processors within each cell concurrently provided that the processors
+do not share memory. SystemC Library supports this execution threading model.
+Just like the cell partition limitation, all SystemC processors from the same
+module must reside in the same thread domain. This is guaranteed by the
+<b>adapter</b> class in SystemC Library so the user can never break
+this invariant. When <b>Multicore Accelerator</b> is enabled, by default, all
+SystemC instances from same module are grouped within the same thread domain.
+SystemC instances from different modules can reside in different thread domains
+and will then benefit from parallel multi-threading.
+</p><p>
+</p><div class="figure" id="cell-and-TD-partitioning">
+
+<div style="text-align: center">
+<img alt="" src="cell_td.png">
+<div class="caption">Figure 3. cell and TD partitioning</div>
+</div>
+</div>
+
+<p>
+Current thread domain partitioning can be checked with
+<b>list-thread-domains</b> command.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@SIM_create_object('sample_tlm2_simple_device', 'dev3')</b>
+simics&gt; <b>set-threading-mode subsystem</b>
+simics&gt; <b>set-threading-mode</b>
+┌─────────────┬─────────┬───┬────────────┬─────────────┬───────────┐
+│    cell     │  mode   │#td│time-quantum│max-time-span│min-latency│
+├─────────────┼─────────┼───┼────────────┼─────────────┼───────────┤
+│default_cell0│subsystem│  2│      1.0 ns│       1.0 ns│    10.0 ms│
+│cell1        │multicore│  1│    (1.0 ns)│       1.0 ns│    10.0 ms│
+└─────────────┴─────────┴───┴────────────┴─────────────┴───────────┘
+
+simics&gt; <b>list-thread-domains</b>
+┌─────────────┬──────┬───────────┐
+│    Cell     │Domain│  Objects  │
+├─────────────┼──────┼───────────┤
+│default_cell0│    #0│clock      │
+├─────────────┼──────┼───────────┤
+│             │    #1│dev2.engine│
+│             │      │dev3.engine│
+└─────────────┴──────┴───────────┘
+┌─────┬──────┬──────────┐
+│Cell │Domain│ Objects  │
+├─────┼──────┼──────────┤
+│cell1│    #0│dev.engine│
+└─────┴──────┴──────────┘
+</pre><p>
+</p><p>
+In the example above, there are three Simics processors scheduled by Simics
+inside <b>default_cell0</b>. The <b>clock</b> resides in the cell TD #0.
+Since <b>dev2</b> and <b>dev3</b> use the same Simics module,
+<b>dev2.engine</b> and <b>dev3.engine</b> reside in TD #1. This allows
+objects in one cell to run in parallel using multiple threads.
+
+</p><h3 class="jdocu"><a name="free-running">6.4.3 Free running</a></h3>
+<p>
+
+</p><p>
+The SystemC simulation can also run in free running mode. In this mode,
+SystemC time synchronization is decoupled from the rest of Simics. The SystemC
+simulation is no longer scheduled in round robin with the other processors and
+clocks as show in Figure <a class="reference" href="#Simics-schedules-the-processors">1</a>. This
+can be achieved by setting the <i>run_continuously</i> attribute of
+<b>dev.engine</b>.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Free running is only supported when the threading mode is
+  <b>subsystem</b> or <b>multicore</b>. </div>
+
+
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>ptime -all</b>
+┌──────────┬─────┬──────┬────────┐
+│Processor │Steps│Cycles│Time (s)│
+├──────────┼─────┼──────┼────────┤
+│clock     │n/a  │     0│   0.000│
+│dev       │n/a  │     0│   0.000│
+│dev.engine│n/a  │     0│   0.000│
+└──────────┴─────┴──────┴────────┘
+simics&gt; <b>psel dev</b>
+simics&gt; <b>r 10001 cycles</b>
+simics&gt; <b>ptime -all</b>
+┌──────────┬─────┬──────┬────────┐
+│Processor │Steps│Cycles│Time (s)│
+├──────────┼─────┼──────┼────────┤
+│clock     │n/a  │ 10000│   0.000│
+│dev       │n/a  │ 10001│   0.000│
+│dev.engine│n/a  │ 10001│   0.000│
+└──────────┴─────┴──────┴────────┘
+simics&gt; <b>set-threading-mode subsystem</b>
+simics&gt; <b>dev.engine-&gt;run_continuously = TRUE</b>
+simics&gt; <b>r 10000 cycles</b>
+simics&gt; <b>ptime -all</b>
+</pre><p>
+</p><p>
+In above example, the SystemC model inside the <b>dev</b> contains a
+heavy workload that will slow down the simulation. When it runs in the default
+mode, the <b>clock</b> and <b>dev</b> are coupled and advanced with
+same cycles. When switched to the free running mode, <b>clock</b> is
+decouple from <b>dev</b> and can move forward in a much faster pace. In the
+above example, when <b>dev</b> and <b>dev.engine</b> move 10000 cycles
+forward, <b>clock</b> has moved much further. The exact number of cycles
+for <b>clock</b> is not deterministic, following is one example of such a
+run.
+</p><p>
+</p><pre class="jdocu_small">┌──────────┬─────┬─────────────┬────────┐
+│Processor │Steps│   Cycles    │Time (s)│
+├──────────┼─────┼─────────────┼────────┤
+│clock     │n/a  │4294999999998│   4.295│
+│dev       │n/a  │        20001│   0.000│
+│dev.engine│n/a  │        20001│   0.000│
+└──────────┴─────┴─────────────┴────────┘
+</pre><p>
+
+
+</p>
+<div class="chain">
+<a href="overview_of_systemc_features.html">5 Overview of SystemC Features</a>
+<a href="limitations.html">7 Limitations</a>
+</div>

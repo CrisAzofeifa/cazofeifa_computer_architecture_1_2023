@@ -1,0 +1,2274 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Link Library Programming Guide</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>Link Library Programming Guide</h1>
+
+<p>
+  
+  
+  
+</p><p>
+</p><h2 class="jdocu"><a name="Introduction">1 Introduction</a></h2>
+<p>
+
+</p><p>
+The link library lets users write Simics link models. A link is used to connect
+devices in different cells, even in different processes, so that they can
+exchange non-instantaneous messages in a deterministic way. Typical links
+include Ethernet and other network connections, but also simpler signal links
+and more abstract communication channels.
+</p><p>
+Much of the functionality of links are the same for different kinds of links;
+that commonality is encapsulated in the link library. This makes it simpler to
+create new link types, since a minimum of new code is required for each new
+link type.
+</p><p>
+Before going further, it is important to realize when <em>not</em> to use the
+link library:
+</p><p>
+</p><ul>
+
+<li>If the devices are expected to all be located in the same configuration
+cell, most of the link library support is unnecessary. It will probably be much
+easier to create a simple broadcast bus object that distribute messages where
+they should go via interface calls.</li>
+
+<li>If the requirement is for a simple point-to-point protocol to exchange
+messages between two devices in different configuration cells,
+the <b>datagram_link</b> might well suffice. It allows simple byte
+strings to be passed from one sender to one or multiple receivers via the
+simple <code>datagram_link</code> interface.</li>
+
+<li>If the requirement is to broadcast messages between a set of devices, once
+again, the <b>datagram_link</b> might be the easiest way forward, as it
+provides just that.</li>
+
+</ul>
+<p>
+The link library, however, is available for more complex usage: multiple
+message types across the link (such as link speed, link status, etc.), special
+addressing (unicast or multicast groups, switching, etc.), special types of
+devices (such as sender and receiver for the signal-link). All of these
+requirements will be more easily expressed, and provide better simulation
+performance, by creating a special-purpose link based on the link library.
+</p><p>
+The rest of this document describes how to create a new link type, using the
+provided <b>datagram_link</b> as an example. The reader is expected to
+know how to develop Simics modules in C. Further information can be found in
+the <em>Model Builder User's Guide</em>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Link-Concepts">2 Link Concepts</a></h2>
+<p>
+
+</p><p>
+A link consists of two Simics configuration classes: link and endpoint. In a
+running simulation, there will exist one link object per link, and one endpoint
+object per device connected to the link.
+</p><p>
+The link and endpoint classes use the link library to handle many of the
+details of link operation. The link library keeps its state in opaque data
+structures attached to the link and endpoint objects. Some of this information
+can be queried via the link library API.
+</p><p>
+When devices connect to the link, they really contact a freshly created
+endpoint object, usually provided by the link component. Any interaction
+between the device and the link goes through that endpoint object.
+</p><p>
+When running in a distributed simulation, a link is represented by an
+identically named instance in each process of the simulation.
+</p><p>
+Link objects may have configuration parameters, which are represented as Simics
+attributes in the link class. These parameters should only be changed when the
+simulation is not running, to avoid indeterminism. In a distributed setup,
+configuration parameters should also be shared with the other instances of the
+same link: the link library provides the
+<b><i>SIMLINK_config_update_value()</i></b> and
+<b><i>SIMLINK_config_remove_value()</i></b> functions for that purpose. For
+example, the <i>goal_latency</i> of the link is implemented as a global
+configuration parameter. More information is available in chapter
+<a class="reference" href="#api">8</a>.
+</p><p>
+Endpoint objects may contain configuration parameters, as well as simulation
+state that can be changed at runtime, since they are only involved with one
+device on the link. For example, the <b>ethernet_switch</b>
+implementation keeps a translation table from MAC addresses to endpoint IDs in
+each endpoint on the link, allowing them to be updated as endpoints learn about
+the connected devices.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Linking-and-Initialization">3 Linking and Initialization</a></h2>
+<p>
+
+</p><p>
+Linking the link library to your module is simply a matter of adding the
+following line to the module's <code>Makefile</code>:
+</p><p>
+</p><pre class="jdocu_small">MODULE_LDFLAGS = -llink
+</pre><p>
+</p><p>
+The <b><i>init_local()</i></b> function in the link module needs to call the
+<b><i>SIMLINK_init_library()</i></b> function:
+</p><p>
+</p><pre class="jdocu_small">void
+init_local(void)
+{
+        /* The link library must always be initialised first. */
+        SIMLINK_init_library();</pre><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Class-Definitions">4 Class Definitions</a></h2>
+<p>
+
+</p><p>
+Each class defines a C <code>struct</code> type to store an instance of the
+class. The <code>struct</code> must start with a <code>conf_object_t</code>,
+and like any Simics configuration object it may also contain any additional
+configuration parameters required by the specific link. As usual, if this
+information needs to be saved in checkpoints, you as the class author are
+responsible for registering attributes that save and restore it.
+</p><p>
+</p><pre class="jdocu_small">typedef struct {
+        conf_object_t obj;
+
+        /* Any link-specific parameters would go here. */
+} datagram_link_t;</pre><p>
+
+</p><pre class="jdocu_small">typedef struct {
+        conf_object_t obj;
+
+        /* Any endpoint-specific state would go here. */
+} datagram_link_endpoint_t;</pre><p>
+
+</p><p>
+Each link type needs to declare a variable of type <code>link_type_t</code> and
+fill it with information used by the link library to access functionality that
+is specific to the link type. Each of the <code>link_type_t</code> member
+functions is described in the chapter <a class="reference" href="#api">8</a>.
+</p><p>
+The link class's <b><i>init()</i></b> method needs to call
+<b><i>SIMLINK_init()</i></b> to attach all link library's internal information to
+the link object. The <b><i>finalize()</i></b> method needs to call
+<b><i>SIMLINK_finalize()</i></b>.
+</p><p>
+</p><pre class="jdocu_small">static conf_object_t *
+datagram_link_alloc_object(void *data)
+{
+        datagram_link_t *dl = MM_ZALLOC(1, datagram_link_t);
+        return &amp;dl-&gt;obj;
+}
+
+static void *
+datagram_link_init_object(conf_object_t *obj, void *data)
+{
+        datagram_link_t *dl = (datagram_link_t *)obj;
+
+        static const link_type_t link_methods = {
+                .msg_to_attr = msg_to_attr,
+                .msg_from_attr = msg_from_attr,
+                .free_msg = free_msg,
+                .marshal = marshal,
+                .unmarshal = unmarshal,
+                .deliver = deliver,
+                .update_config_value = link_config_value_updated,
+                .remove_config_value = link_config_value_removed,
+        };
+        SIMLINK_init(&amp;dl-&gt;obj, &amp;link_methods);
+
+        return &amp;dl-&gt;obj;
+}
+                                                                       </pre><p>
+
+</p><pre class="jdocu_small">static void
+datagram_link_finalize_instance(conf_object_t *obj)
+{
+        SIMLINK_finalize(obj);
+}</pre><p>
+
+</p><p>
+Similarly, the endpoint class's <b><i>init()</i></b>
+and <b><i>finalize()</i></b> methods need to call
+<b><i>SIMLINK_endpoint_init()</i></b> and <b><i>SIMLINK_endpoint_finalize()</i></b>,
+respectively:
+</p><p>
+</p><pre class="jdocu_small">static void *
+datagram_link_endpoint_init_object(conf_object_t *obj, void *data)
+{
+        datagram_link_endpoint_t *dlep =
+                (datagram_link_endpoint_t *)obj;
+        SIMLINK_endpoint_init(&amp;dlep-&gt;obj, false);
+        return dlep;
+}</pre><p>
+
+</p><pre class="jdocu_small">static void
+datagram_link_endpoint_finalize_instance(conf_object_t *ep)
+{
+        SIMLINK_endpoint_finalize(ep);
+}</pre><p>
+
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Depending on the current configuration, endpoint objects might be created
+while no device is yet connected. For that reason, device related operations,
+such as caching an interface, are expected to be done in
+the <b><i>device_changed()</i></b> callback rather than in
+the <b><i>finalize()</i></b> function. See also <code>link_type_t</code>
+documentation for more information and an example.</div>The endpoint class also has to have a <b><i>deinit()</i></b>
+function, which has to be, or at least
+call, <b><i>SIMLINK_endpoint_disconnect()</i></b>.
+<p>
+After declaring the link class with <b><i>SIM_create_class()</i></b>,
+<b><i>SIMLINK_register_class()</i></b> must also be called, with the class as
+argument.
+</p><p>
+Similarly, for the endpoint class, <b><i>SIMLINK_register_endpoint_class()</i></b>
+must be called. It takes two parameters: the endpoint class and the attribute
+type of a checkpointed in-flight link message.
+</p><p>
+</p><pre class="jdocu_small">void
+init_local(void)
+{
+        /* The link library must always be initialised first. */
+        SIMLINK_init_library();
+
+        const class_data_t cl_methods = {
+                .alloc_object = datagram_link_alloc_object,
+                .init_object = datagram_link_init_object,
+                .finalize_instance = datagram_link_finalize_instance,
+                .pre_delete_instance = datagram_link_pre_delete_instance,
+                .delete_instance = datagram_link_delete_instance,
+                .class_desc = "link that broadcasts byte strings",
+                .description = "A link that broadcasts byte strings."
+        };
+        conf_class_t *cl = SIM_register_class("datagram_link_impl", 
+                                              &amp;cl_methods);
+
+        /* Tell the link library what class represents the link */
+        SIMLINK_register_class(cl);
+
+        const class_data_t epcl_methods = {
+                .alloc_object = datagram_link_endpoint_alloc_object,
+                .init_object = datagram_link_endpoint_init_object,
+                .finalize_instance = datagram_link_endpoint_finalize_instance,
+                .pre_delete_instance = SIMLINK_endpoint_disconnect,
+                .delete_instance = datagram_link_endpoint_delete_instance,
+                .class_desc = "endpoint for datagram links",
+                .description = "Endpoint for datagram link objects."
+        };
+        conf_class_t *epcl = SIM_register_class("datagram_link_endpoint",
+                                                &amp;epcl_methods);
+
+        static const datagram_link_interface_t dgram_link_if = {
+                .receive = receive
+        };
+        SIM_register_interface(epcl, "datagram_link", &amp;dgram_link_if);
+
+        /* Tell the link library what class we use for endpoints */
+        SIMLINK_register_endpoint_class(epcl, "d");
+}
+                                                                 </pre><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Link-Specific-Interfaces">5 Link-Specific Interfaces</a></h2>
+<p>
+
+</p><p>
+Endpoints always need to implement interfaces specific to the link type, so
+they can accept messages from the connected
+devices. Here, <b>datagram_link</b> registers
+a <code>datagram_link</code> interface for its endpoint class.
+</p><p>
+</p><pre class="jdocu_small">void
+init_local(void)
+{
+        /* The link library must always be initialised first. */
+        SIMLINK_init_library();
+
+        const class_data_t cl_methods = {
+                .alloc_object = datagram_link_alloc_object,
+                .init_object = datagram_link_init_object,
+                .finalize_instance = datagram_link_finalize_instance,
+                .pre_delete_instance = datagram_link_pre_delete_instance,
+                .delete_instance = datagram_link_delete_instance,
+                .class_desc = "link that broadcasts byte strings",
+                .description = "A link that broadcasts byte strings."
+        };
+        conf_class_t *cl = SIM_register_class("datagram_link_impl", 
+                                              &amp;cl_methods);
+
+        /* Tell the link library what class represents the link */
+        SIMLINK_register_class(cl);
+
+        const class_data_t epcl_methods = {
+                .alloc_object = datagram_link_endpoint_alloc_object,
+                .init_object = datagram_link_endpoint_init_object,
+                .finalize_instance = datagram_link_endpoint_finalize_instance,
+                .pre_delete_instance = SIMLINK_endpoint_disconnect,
+                .delete_instance = datagram_link_endpoint_delete_instance,
+                .class_desc = "endpoint for datagram links",
+                .description = "Endpoint for datagram link objects."
+        };
+        conf_class_t *epcl = SIM_register_class("datagram_link_endpoint",
+                                                &amp;epcl_methods);
+
+        static const datagram_link_interface_t dgram_link_if = {
+                .receive = receive
+        };
+        SIM_register_interface(epcl, "datagram_link", &amp;dgram_link_if);
+
+        /* Tell the link library what class we use for endpoints */
+        SIMLINK_register_endpoint_class(epcl, "d");
+}
+                                                                 </pre><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Communication-Interfaces">6 Communication Interfaces</a></h2>
+<p>
+
+</p><p>
+The link model needs to define a structure that represents all kinds of
+messages that can be sent over the link. This structure should "inherit"
+from <code>link_message_t</code>, by placing it first in
+the <code>struct</code> (so that a pointer to
+a <code>datagram_link_message_t</code> can be cast to a
+<code>link_message_t</code> pointer).
+</p><p>
+</p><pre class="jdocu_small">typedef struct {
+        link_message_t common;               /* should always be first */
+        /* The actual data in the message - in our case an allocated
+           byte string owned by this structure. */
+        bytes_t payload;
+} datagram_link_message_t;</pre><p>
+
+</p><p>
+New messages are allocated with <b><i>MM_MALLOC()</i></b>,
+and <b><i>SIMLINK_init_message()</i></b> is used to fill in the "common" part:
+</p><p>
+</p><pre class="jdocu_small">static link_message_t *
+new_datagram_message(const uint8 *data, size_t len)
+{
+        datagram_link_message_t *m = MM_MALLOC(1, datagram_link_message_t);
+        SIMLINK_init_message(&amp;m-&gt;common);
+        uint8 *d = MM_MALLOC(len, uint8);
+        memcpy(d, data, len);
+        m-&gt;payload = (bytes_t){.data = d, .len = len};
+        return &amp;m-&gt;common;
+}
+                                                      </pre><p>
+
+</p><p>
+Finally, the message is dispatched using the
+<b><i>SIMLINK_send_message()</i></b> or <b><i>SIMLINK_send_message_multi()</i></b>
+functions.
+</p><p>
+</p><pre class="jdocu_small">static void
+receive(conf_object_t *NOTNULL ep, bytes_t msg)
+{
+        SIMLINK_send_message(ep, LINK_BROADCAST_ID, 
+                             new_datagram_message(msg.data, msg.len));
+}</pre><p>
+
+</p><p>
+Messages are delivered to the endpoints' <b><i>deliver()</i></b> callback
+registered by the link. The callback is responsible for translating the message
+into something the receiving device will understand.
+</p><p>
+</p><pre class="jdocu_small">static void
+deliver(conf_object_t *ep, const link_message_t *lm)
+{
+        const datagram_link_message_t *m = 
+                (const datagram_link_message_t *)lm;
+        conf_object_t *dev = SIMLINK_endpoint_device(ep);
+        const char *port = SIMLINK_endpoint_port(ep);
+        const datagram_link_interface_t *dli =
+                SIM_c_get_port_interface(dev, "datagram_link", port);
+        if (dli)
+                dli-&gt;receive(dev, m-&gt;payload);
+        else
+                SIM_log_error(ep, 0, "Device does not implement"
+                              " datagram_link interface");
+}</pre><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Link-Components">7 Link Components</a></h2>
+<p>
+
+</p><p>
+To be part of a standard, component-based configuration, new links have to
+provide a component that will wrap the link implementation and handle
+connections. An important role of the link component is to create and destroy
+endpoint objects as the connections are being made.
+</p><p>
+Links tend to share a lot of common functionality, and link components are no
+exceptions. The link library provides two interfaces to easily create link
+components:
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="Simple-Component">Simple Component</a></h3>
+<p>
+
+</p><p>
+The simplest way to create a link component is to use
+the <b><i>link_components.create_simple()</i></b> function. Here is the component
+definition for <b>datagram_link</b>:
+</p><p>
+</p><pre class="jdocu_small">from link_components import create_simple
+
+class datagram_link(
+    create_simple(link_class = 'datagram_link_impl',
+                  endpoint_class = 'datagram_link_endpoint',
+                  connector_type = 'datagram-link',
+                  class_desc = "datagram link",
+                  basename = 'datagram_link')):
+    """The datagram link component creates a datagram-link, which is a simple
+    broadcast bus forwarding messages (as sequences of bytes) from a sender
+    device to all other devices present of the link. The datagram-link is both
+    an example of how to build a link with the Simics Link Library, and a
+    simple broadcast link that can be reused when multi-cell communication
+    between devices is necessary. Refer to the &lt;cite&gt;Link Library Programming
+    Guide&lt;/cite&gt; for more information."""
+</pre><p>
+
+</p><p>
+Using this simplified method assumes that the link fulfills a number of
+requirements:
+</p><p>
+</p><ul>
+
+<li>The link object can be created without additional configuration.</li>
+
+<li>There is no restriction on the number of connections to the link, beyond
+the connector type check that is done at the component level. The link
+connector takes either an object or an [object, port] two-element list as
+argument. Device connectors should accept an endpoint object as argument.</li>
+
+<li>The link has only one endpoint class. An endpoint can be created without
+additional configuration.</li>
+
+</ul>
+<p>
+Further information is available in
+the <b><i>link_components.create_simple()</i></b> API description, in chapter
+<a class="reference" href="#api">8</a>.
+</p><p>
+If the new link type does not comply with the limitations above, a slightly more
+complex interface is available.
+</p><p>
+
+</p><h3 class="jdocu"><a class="not-numbered" name="Custom-Component">Custom Component</a></h3>
+<p>
+
+</p><p>
+When more flexibility is required, it is possible to create a new component
+class inheriting from <b>link_components.link_component</b>. Two
+functions should be overridden to control how the component handles connections:
+</p><p>
+</p><pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+
+</p><p>
+<b><i>register_connector_templates()</i></b> is responsible for registering the
+description—called <em>template</em> here—of the connectors that
+will be allowed in the link. Each connector template can be associated with a
+number of functions that will be called when a connection is attempted, is
+successful, or is destroyed. Each connector template can also be defined as
+growing, meaning that new connectors will be added dynamically to make sure
+there is always one connector free.
+</p><p>
+<b><i>add_objects()</i></b> is responsible for creating the necessary link object
+and the initial connectors.
+</p><p>
+A more complete explanation of these functions is available in the component
+API in chapter <a class="reference" href="#api">8</a>.
+</p><p>
+
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="api">8 Link Library API</a></h2>
+<p>
+
+</p><p>
+This chapter covers all the types and functions provided by the link library.
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="Link-Library-API">Link Library API</a></h3>
+<p></p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_config_remove_value">SIMLINK_config_remove_value()</a></h4>
+<p>
+
+<a name="SIMLINK_config_remove_value2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_config_remove_value"></a><b>SIMLINK_config_remove_value</b> — remove a link configuration parameter</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_config_remove_value(conf_object_t *link, const char *key);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Make sure that all link objects representing <i>link</i> in the
+     simulation receive a configuration message to remove the configuration
+     parameter <i>key</i>.
+<p>
+     Note that this function may delay the transmission if it is not possible
+     to send the configuration message yet. The message will be buffered and
+     send when possible. The ordering of configuration messages is kept when
+     buffering them.
+</p><p>
+     All link objects representing <i>link</i> in the simulation will
+     be called via the <b><i>remove_config_value()</i></b> function declared in
+     <code>link_type_t</code>, including the one initiating the message.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ser_link</b>, where the ID of the endpoints
+       present on the link is kept as a configuration parameter: 
+       <pre class="jdocu_small">static void
+ser_link_ep_pre_delete_instance(conf_object_t *ep)
+{
+        char ep_id[19];
+        snprintf(ep_id, sizeof(ep_id), "ep%llx", SIMLINK_endpoint_id(ep));
+        SIMLINK_config_remove_value(SIMLINK_endpoint_link(ep), ep_id);
+        SIMLINK_endpoint_disconnect(ep);
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_config_update_value">SIMLINK_config_update_value</a>, <a class="jdocu" href="#__jdocu_seealso_link_type_t"> link_type_t</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_config_update_value">SIMLINK_config_update_value()</a></h4>
+<p>
+
+<a name="SIMLINK_config_update_value2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_config_update_value"></a><b>SIMLINK_config_update_value</b> — update a link configuration parameter</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_config_update_value(conf_object_t *link, const char *key, 
+                            const frags_t *value);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Make sure that all link objects representing <i>link</i> in the
+     simulation will receive a configuration message for the new
+     <i>value</i> of the configuration parameter
+     <i>key</i>. Both <i>key</i> and <i>value</i> are
+     completely link-specific and transported as-is to all objects.
+<p>
+     Note that this function may delay the transmission if it is not possible
+     to send the configuration message yet. The message will be buffered and
+     send when possible. The ordering of configuration messages is kept when
+     buffering them.
+</p><p>
+     All link objects representing <i>link</i> in the simulation will
+     be called via the <b><i>update_config_value()</i></b> function declared in
+     <code>link_type_t</code>, including the one initiating the message.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ethernet_switch</b>, where the ID of all snooper
+       endpoints present on the link are sent as a configuration parameter so
+       they are included even when a packet can be sent directly to the
+       receiver.
+       <pre class="jdocu_small">static void
+snoop_ep_finalize_instance(conf_object_t *ep)
+{
+        ep_finalize_instance(ep);
+
+        /* Tell all endpoints that there's a new snoop in town. */
+        char ep_id[17];
+        snprintf(ep_id, sizeof(ep_id), "%llx", SIMLINK_endpoint_id(ep));
+        frags_t value;
+        frags_init(&amp;value); /* empty value, just to put the
+                               key in the database */
+        SIMLINK_config_update_value(
+                SIMLINK_endpoint_link(ep), ep_id, &amp;value);
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_config_remove_value">SIMLINK_config_remove_value</a>, <a class="jdocu" href="#__jdocu_seealso_link_type_t"> link_type_t</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_clock">SIMLINK_endpoint_clock()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_clock2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_clock"></a><b>SIMLINK_endpoint_clock</b> — return endpoint's clock</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIMLINK_endpoint_clock(const conf_object_t *ep_obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return the endpoint <i>ep</i>'s associated clock object. It will
+     be either the clock object corresponding to the device connected to the
+     endpoint, or the clock chosen when using the endpoint for snooping.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The associated clock object. This function might return
+       <code>NULL</code> if the device associated to an endpoint does not
+       have its queue attribute set. This indicates a configuration problem, as
+       the device would be unable to send or receive link messages.
+     </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_device">SIMLINK_endpoint_device</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_dev_name">SIMLINK_endpoint_dev_name()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_dev_name2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_dev_name"></a><b>SIMLINK_endpoint_dev_name</b> — return the name of the device or snooper to which an endpoint 
+     is connected</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">const char *
+SIMLINK_endpoint_dev_name(const conf_object_t *ep_obj, buffer_t scratch);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return the name of the device or snooper to which the endpoint
+     <i>ep</i> is connected. This function takes an additional
+     <i>scratch</i> parameter that is meant to provide space for
+     putting together the answer when necessary, without allocating any
+     memory. If <i>scratch</i> is used by
+     <b><i>SIMLINK_endpoint_dev_name()</i></b> but is not long enough, the name
+     will be truncated.
+<p>
+     This function is provided for logging purposes.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The name of the device or snooper the endpoint is
+       connected to</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ethernet_hub</b>, to print the name of the
+       device or snooper to which a frame is delivered:
+       <pre class="jdocu_small">#define BUFFER_T(buf) (buffer_t){ .len = sizeof(buf), .data = buf }
+
+static void
+deliver_hub(conf_object_t *ep, const link_message_t *msgdata)
+{
+        uint8 buf[1000];
+        SIM_LOG_INFO(3, ep, 0, "delivering to %s",
+                     SIMLINK_endpoint_dev_name(ep, BUFFER_T(buf)));</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_is_device">
+       SIMLINK_endpoint_is_device</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_device"> SIMLINK_endpoint_device
+     </a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_device">SIMLINK_endpoint_device()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_device2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_device"></a><b>SIMLINK_endpoint_device</b> — return the device to which an endpoint is connected</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIMLINK_endpoint_device(const conf_object_t *ep_obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return the device to which the endpoint <i>ep</i> is connected. If
+     the endpoint is not connected to a device, this function will trigger an
+     assertion failure. This can be checked with
+     <b><i>SIMLINK_endpoint_is_device()</i></b>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The device to which the endpoint is connected</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>datagram_link</b>:
+       <pre class="jdocu_small">static void
+deliver(conf_object_t *ep, const link_message_t *lm)
+{
+        const datagram_link_message_t *m = 
+                (const datagram_link_message_t *)lm;
+        conf_object_t *dev = SIMLINK_endpoint_device(ep);
+        const char *port = SIMLINK_endpoint_port(ep);
+        const datagram_link_interface_t *dli =
+                SIM_c_get_port_interface(dev, "datagram_link", port);
+        if (dli)
+                dli-&gt;receive(dev, m-&gt;payload);
+        else
+                SIM_log_error(ep, 0, "Device does not implement"
+                              " datagram_link interface");
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_is_device">SIMLINK_endpoint_is_device</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_dev_name">
+     SIMLINK_endpoint_dev_name</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_disconnect">SIMLINK_endpoint_disconnect()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_disconnect2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_disconnect"></a><b>SIMLINK_endpoint_disconnect</b> — disconnect an endpoint object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_endpoint_disconnect(conf_object_t *ep_obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Disconnect the endpoint object <i>ep_obj</i> from its link. This
+     function is intended to be called in the <b><i>pre_delete_instance()</i></b>
+     method of an endpoint class. It should never be called in other
+     circumstances, as endpoint objects should <em>not</em> be reused. Note
+     that once the endpoint has been disconnected, it cannot be used for calls
+     to Link Library API functions that takes an endpoint as argument.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ser_link</b>:
+       <pre class="jdocu_small">static void
+ser_link_ep_pre_delete_instance(conf_object_t *ep)
+{
+        char ep_id[19];
+        snprintf(ep_id, sizeof(ep_id), "ep%llx", SIMLINK_endpoint_id(ep));
+        SIMLINK_config_remove_value(SIMLINK_endpoint_link(ep), ep_id);
+        SIMLINK_endpoint_disconnect(ep);
+}</pre><p>
+
+     </p></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_finalize">SIMLINK_endpoint_finalize()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_finalize2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_finalize"></a><b>SIMLINK_endpoint_finalize</b> — finalize an endpoint object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_endpoint_finalize(conf_object_t *ep_obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Finalize the endpoint object <i>ep_obj</i>. This function is
+     intended to be called in the <b><i>finalize_instance()</i></b> method of an
+     endpoint class.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ser_link</b>:
+       <pre class="jdocu_small">static void
+ser_link_ep_finalize_instance(conf_object_t *ep)
+{
+        SIMLINK_endpoint_finalize(ep);
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_init">SIMLINK_endpoint_init</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_id">SIMLINK_endpoint_id()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_id2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_id"></a><b>SIMLINK_endpoint_id</b> — return endpoint's ID</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">uint64
+SIMLINK_endpoint_id(const conf_object_t *ep);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return the endpoint <i>ep</i>'s ID.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The endpoint ID</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+In <b>ser_link</b>, the endpoints IDs are kept as configuration
+       values so they are known in all link objects: 
+       <pre class="jdocu_small">static void
+ser_link_ep_pre_delete_instance(conf_object_t *ep)
+{
+        char ep_id[19];
+        snprintf(ep_id, sizeof(ep_id), "ep%llx", SIMLINK_endpoint_id(ep));
+        SIMLINK_config_remove_value(SIMLINK_endpoint_link(ep), ep_id);
+        SIMLINK_endpoint_disconnect(ep);
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_find_endpoint_by_id">SIMLINK_find_endpoint_by_id</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_init">SIMLINK_endpoint_init()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_init2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_init"></a><b>SIMLINK_endpoint_init</b> — initialize an endpoint object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_endpoint_init(conf_object_t *obj, bool snoop);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Initialize the endpoint object <i>obj</i>. Whether the endpoint is
+     connected to a device or a snooper function is determined by the
+     <i>snoop</i> parameter. This function is intended to be called in
+     the <b><i>init_object()</i></b> method of an endpoint class.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>datagram_link</b>:
+       <pre class="jdocu_small">static void *
+datagram_link_endpoint_init_object(conf_object_t *obj, void *data)
+{
+        datagram_link_endpoint_t *dlep =
+                (datagram_link_endpoint_t *)obj;
+        SIMLINK_endpoint_init(&amp;dlep-&gt;obj, false);
+        return dlep;
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_register_endpoint_class">
+       SIMLINK_register_endpoint_class</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_register_snoop_endpoint_class"> SIMLINK_register_snoop_endpoint_class</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_finalize">
+       SIMLINK_endpoint_finalize
+     </a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_is_device">SIMLINK_endpoint_is_device()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_is_device2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_is_device"></a><b>SIMLINK_endpoint_is_device</b> — return whether an endpoint is connected to a device</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">bool
+SIMLINK_endpoint_is_device(const conf_object_t *ep);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return whether the endpoint <i>ep</i> is connected to a device
+     (as opposed to a link snooper).</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+<code>true</code> if the endpoint is connected
+       to a device, <code>false</code> otherwise</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ethernet_switch</b>, where frames are delivered
+       either to a device endpoint or to a snoop endpoint, using different
+       methods:
+       <pre class="jdocu_small">static void
+switch_deliver_frame(conf_object_t *link, conf_object_t *ep,
+                     vlan_tag_t vlan_tag, uint64 src_epid,
+                     const frags_t *frame)
+{
+        eth_frame_crc_status_t crc_status = Eth_Frame_CRC_Match;
+
+        if (SIMLINK_endpoint_is_device(ep)) {
+                switch_ep_t *swep = (switch_ep_t *)ep;
+                if (frags_len(frame) &gt; 12) {
+                        uint8 src_mac[6];
+                        frags_extract_slice(frame, src_mac, 6, 6);
+                        learn(link, swep, vlan_tag, src_mac, src_epid);
+                }
+                swep-&gt;cep.ifc-&gt;frame(SIMLINK_endpoint_device(ep), frame,
+                                     crc_status);
+        } else {
+                snoop_ep_t *snoop = (snoop_ep_t *)ep;
+                deliver_to_snoop(snoop-&gt;snoop_fun, snoop-&gt;user_data,
+                                 SIMLINK_endpoint_clock(ep), frame,
+                                 crc_status);
+        }
+}
+</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_device">SIMLINK_endpoint_device</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_port"> SIMLINK_endpoint_port</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_link">SIMLINK_endpoint_link()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_link2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_link"></a><b>SIMLINK_endpoint_link</b> — return endpoint's link</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIMLINK_endpoint_link(const conf_object_t *ep);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return the link object to which the endpoint <i>ep</i> is
+     connected.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The link object</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+In <b>ser_link</b>, an endpoint needs to check the maximum size
+       of its buffer by querying its link object:
+       <pre class="jdocu_small">static void
+deliver(conf_object_t *ep, const link_message_t *msgd)
+{
+        ser_link_endpoint_t *slep = (ser_link_endpoint_t *)ep;
+        ser_link_impl_t *slink = (ser_link_impl_t *)SIMLINK_endpoint_link(ep);
+        ser_link_message_t *msg = (ser_link_message_t *)msgd;
+        switch (msg-&gt;msgtype) {
+        case MSG_Char:</pre><p>
+
+     </p></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_endpoint_port">SIMLINK_endpoint_port()</a></h4>
+<p>
+
+<a name="SIMLINK_endpoint_port2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_endpoint_port"></a><b>SIMLINK_endpoint_port</b> — return the device's port to which an endpoint is connected</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">const char *
+SIMLINK_endpoint_port(const conf_object_t *ep_obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return the device's port to which the endpoint <i>ep</i> is
+     connected. If the endpoint is not connected to a device, this function
+     will trigger an assertion failure. This can be checked with
+     <b><i>SIMLINK_endpoint_is_device()</i></b>. 
+<p>
+     The port returned might be <code>NULL</code>, which means that the
+     device is implementing a classic interface rather than a port interface.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The device's port to which the endpoint is
+       connected, or <code>NULL</code> if no port is used</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ser_link</b>, where a pointer to the interface
+       to call for delivery is kept in the endpoint structure: 
+       <pre class="jdocu_small">static void
+ser_link_ep_finalize_instance(conf_object_t *ep)
+{
+        SIMLINK_endpoint_finalize(ep);
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_is_device">SIMLINK_endpoint_is_device</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_device">
+     SIMLINK_endpoint_device</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_finalize">SIMLINK_finalize()</a></h4>
+<p>
+
+<a name="SIMLINK_finalize2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_finalize"></a><b>SIMLINK_finalize</b> — finalize a link object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_finalize(conf_object_t *obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Finalize the link object <i>obj</i>. This function is intended to
+     be called in the <b><i>finalize_instance()</i></b> method of a link class.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ser_link</b>:
+       <pre class="jdocu_small">static void
+datagram_link_finalize_instance(conf_object_t *obj)
+{
+        SIMLINK_finalize(obj);
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_init">SIMLINK_init</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_find_endpoint_by_id">SIMLINK_find_endpoint_by_id()</a></h4>
+<p>
+
+<a name="SIMLINK_find_endpoint_by_id2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_find_endpoint_by_id"></a><b>SIMLINK_find_endpoint_by_id</b> — return an endpoint object given its ID</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIMLINK_find_endpoint_by_id(conf_object_t *link, uint64 id);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return the endpoint object with the ID <i>id</i> if the endpoint
+     is connected to the link <i>link</i>, or <code>NULL</code>
+     otherwise.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Endpoint object, or <code>NULL</code> if not
+       found</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_id">SIMLINK_endpoint_id</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_init">SIMLINK_init()</a></h4>
+<p>
+
+<a name="SIMLINK_init2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_init"></a><b>SIMLINK_init</b> — initialize a link object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_init(conf_object_t *obj, const link_type_t *type);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Initialize the link object <i>obj</i>. The link specific functions
+     that will be called from the link library are gathered in the
+     <code>link_type_t</code> <i>type</i> argument. This function is
+     intended to be called in the <b><i>init_object()</i></b> method of a link.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ser_link</b>:
+       <pre class="jdocu_small">static const link_type_t ser_link_type = {
+        .msg_to_attr = msg_to_attr,
+        .msg_from_attr = msg_from_attr,
+        .free_msg = free_message,
+        .marshal = marshal,
+        .unmarshal = unmarshal,
+        .deliver = deliver,
+        .update_config_value = link_config_value_updated,
+        .remove_config_value = link_config_value_removed,
+        .device_changed = ser_link_ep_device_changed
+};
+
+static conf_object_t *
+ser_link_alloc_object(void *arg)
+{
+        ser_link_impl_t *slink = MM_ZALLOC(1, ser_link_impl_t);
+        return &amp;slink-&gt;obj;
+}
+
+static void *
+ser_link_init_object(conf_object_t *obj, void *arg)
+{
+        ser_link_impl_t *slink = (ser_link_impl_t *)obj;
+        SIMLINK_init(&amp;slink-&gt;obj, &amp;ser_link_type);
+        slink-&gt;buffer_size = 10; /* a reasonable default value? */
+        return obj;
+}
+</pre><p>
+</p><p>
+   
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_register_class">
+       SIMLINK_register_class</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_finalize"> SIMLINK_finalize</a>, <a class="jdocu" href="#__jdocu_seealso_link_type_t"> link_type_t
+     </a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_init_library">SIMLINK_init_library()</a></h4>
+<p>
+
+<a name="SIMLINK_init_library2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_init_library"></a><b>SIMLINK_init_library</b> — initialize the link library</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_init_library(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Initialize the link library. This function is meant to be called in the
+     <b><i>init_local()</i></b> function of a module linked to the library.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>datagram_link</b>:
+       <pre class="jdocu_small">void
+init_local(void)
+{
+        /* The link library must always be initialised first. */
+        SIMLINK_init_library();</pre><p>
+
+     </p></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_init_message">SIMLINK_init_message()</a></h4>
+<p>
+
+<a name="SIMLINK_init_message2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_init_message"></a><b>SIMLINK_init_message</b> — initialize a link message</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_init_message(link_message_t *msg);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Initialize the generic part of a link message.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>datagram_link</b>:
+       <pre class="jdocu_small">static link_message_t *
+new_datagram_message(const uint8 *data, size_t len)
+{
+        datagram_link_message_t *m = MM_MALLOC(1, datagram_link_message_t);
+        SIMLINK_init_message(&amp;m-&gt;common);
+        uint8 *d = MM_MALLOC(len, uint8);
+        memcpy(d, data, len);
+        m-&gt;payload = (bytes_t){.data = d, .len = len};
+        return &amp;m-&gt;common;
+}
+                                                      </pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_link_type_t">link_type_t</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_pre_delete">SIMLINK_pre_delete()</a></h4>
+<p>
+
+<a name="SIMLINK_pre_delete2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_pre_delete"></a><b>SIMLINK_pre_delete</b> — clean-up before link deletion</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_pre_delete(conf_object_t *obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Performs clean-up operations before a link object can be safely
+     deleted. This function is intended to be called in the
+     <b><i>pre_delete_instance()</i></b> method of a link class.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ser_link</b>:
+       <pre class="jdocu_small">static void
+ser_link_pre_delete_instance(conf_object_t *obj)
+{
+        SIMLINK_pre_delete(obj);
+}</pre><p>
+
+     </p></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_register_class">SIMLINK_register_class()</a></h4>
+<p>
+
+<a name="SIMLINK_register_class2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_register_class"></a><b>SIMLINK_register_class</b> — register a link class</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_register_class(conf_class_t *cls);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Complete the class <i>cls</i> with the necessary attributes and
+     interfaces to be a usable link class. This function is meant to be called
+     after <i>cls</i> has been obtained from
+     <b><i>SIM_register_class</i></b>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ser_link</b>:
+       <pre class="jdocu_small">void
+init_local(void)
+{
+        SIMLINK_init_library();
+
+        const class_data_t link_cls_funcs = {
+                .alloc_object = ser_link_alloc_object,
+                .init_object = ser_link_init_object,
+                .finalize_instance = ser_link_finalize_instance,
+                .pre_delete_instance = ser_link_pre_delete_instance,
+                .delete_instance = ser_link_delete_instance,
+                .class_desc = "model of serial link",
+                .description = "Serial link"
+        };
+        conf_class_t *link_cls = SIM_register_class("ser-link-impl",
+                                                    &amp;link_cls_funcs);
+        SIMLINK_register_class(link_cls);
+        SIM_register_typed_attribute(
+                link_cls, "buffer_size", get_link_buffer_size, NULL,
+                set_link_buffer_size, NULL, Sim_Attr_Optional, "i", NULL,
+                "The number of characters that the link may buffer. Must"
+                " be at least one.");
+
+        const class_data_t ep_cls_funcs = {
+                .alloc_object = ser_link_ep_alloc_object,
+                .init_object = ser_link_ep_init_object,
+                .finalize_instance = ser_link_ep_finalize_instance,
+                .pre_delete_instance = ser_link_ep_pre_delete_instance,
+                .delete_instance = ser_link_ep_delete_instance,
+                .class_desc =  "serial link endpoint",
+                .description = "Serial link endpoint"
+        };
+        conf_class_t *ep_cls = SIM_register_class("ser-link-endpoint",
+                                                  &amp;ep_cls_funcs);
+        SIMLINK_register_endpoint_class(ep_cls, "[s]|[si]");
+        </pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_init">SIMLINK_init</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_finalize"> SIMLINK_finalize</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_register_endpoint_class">SIMLINK_register_endpoint_class()</a></h4>
+<p>
+
+<a name="SIMLINK_register_endpoint_class2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_register_endpoint_class"></a><b>SIMLINK_register_endpoint_class</b> — register a link endpoint class</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void 
+SIMLINK_register_endpoint_class(conf_class_t *cls, const char *msg_type);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Complete the class <i>cls</i> with the necessary attributes and
+     interfaces to be a usable link endpoint class. This function is meant to
+     be called after <i>cls</i> has been obtained from
+     <b><i>SIM_register_class</i></b>.
+     <p>
+     <i>msg_type</i> is a string defining the type of the attribute
+     representing a link message, as returned by <b><i>msg_to_attr()</i></b> in
+     <code>link_type_t</code>.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>ser_link</b>:
+       <pre class="jdocu_small">void
+init_local(void)
+{
+        SIMLINK_init_library();
+
+        const class_data_t link_cls_funcs = {
+                .alloc_object = ser_link_alloc_object,
+                .init_object = ser_link_init_object,
+                .finalize_instance = ser_link_finalize_instance,
+                .pre_delete_instance = ser_link_pre_delete_instance,
+                .delete_instance = ser_link_delete_instance,
+                .class_desc = "model of serial link",
+                .description = "Serial link"
+        };
+        conf_class_t *link_cls = SIM_register_class("ser-link-impl",
+                                                    &amp;link_cls_funcs);
+        SIMLINK_register_class(link_cls);
+        SIM_register_typed_attribute(
+                link_cls, "buffer_size", get_link_buffer_size, NULL,
+                set_link_buffer_size, NULL, Sim_Attr_Optional, "i", NULL,
+                "The number of characters that the link may buffer. Must"
+                " be at least one.");
+
+        const class_data_t ep_cls_funcs = {
+                .alloc_object = ser_link_ep_alloc_object,
+                .init_object = ser_link_ep_init_object,
+                .finalize_instance = ser_link_ep_finalize_instance,
+                .pre_delete_instance = ser_link_ep_pre_delete_instance,
+                .delete_instance = ser_link_ep_delete_instance,
+                .class_desc =  "serial link endpoint",
+                .description = "Serial link endpoint"
+        };
+        conf_class_t *ep_cls = SIM_register_class("ser-link-endpoint",
+                                                  &amp;ep_cls_funcs);
+        SIMLINK_register_endpoint_class(ep_cls, "[s]|[si]");
+        </pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_finalize">SIMLINK_endpoint_finalize</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_register_snoop_endpoint_class">SIMLINK_register_snoop_endpoint_class()</a></h4>
+<p>
+
+<a name="SIMLINK_register_snoop_endpoint_class2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_register_snoop_endpoint_class"></a><b>SIMLINK_register_snoop_endpoint_class</b> — register a link snoop endpoint class</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void 
+SIMLINK_register_snoop_endpoint_class(conf_class_t *cls);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Complete the class <i>cls</i> with the necessary attributes and
+     interfaces to be a usable link snoop endpoint class. This function is
+     meant to be called after <i>cls</i> has been obtained from
+     <b><i>SIM_register_class()</i></b>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from the new Ethernet links:
+       <pre class="jdocu_small">void
+init_local(void)
+{
+        SIMLINK_init_library();
+        init_eth_hub_link();
+        init_eth_cable_link();
+        init_eth_switch_link();
+	init_ethernet_crc_table();
+
+        const class_data_t snoop_ep_cls_funcs = {
+                .alloc_object = snoop_ep_alloc_object,
+                .init_object = snoop_ep_init_object,
+                .finalize_instance = ep_finalize_instance,
+                .pre_delete_instance = snoop_ep_pre_delete_instance,
+                .delete_instance = snoop_ep_delete_instance,
+                .description = "Ethernet link snoop endpoint",
+                .class_desc = "an Ethernet link snoop endpoint",
+                .kind = Sim_Class_Kind_Session,
+        };
+        snoop_ep_cls = SIM_register_class("eth-link-snoop-endpoint",
+                                          &amp;snoop_ep_cls_funcs);
+        SIMLINK_register_snoop_endpoint_class(snoop_ep_cls);
+}
+</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_endpoint_finalize">SIMLINK_endpoint_finalize</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_send_message">SIMLINK_send_message()</a></h4>
+<p>
+
+<a name="SIMLINK_send_message2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_send_message"></a><b>SIMLINK_send_message</b> — send a link message</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_send_message(conf_object_t *src_ep_obj,
+                  uint64 dst_id, link_message_t *msg);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Send a message <i>msg</i> from the endpoint
+     <i>src_ep_obj</i> to the destination ID <i>dst_id</i>.
+     The destination may be any valid endpoint ID on the link or
+     <code>LINK_BROADCAST_ID</code>, which will send the message to all
+     endpoints on the link except the sender.
+<p>
+     It is important to note that the ownership of the message
+     <i>msg</i> is passed to the link library when calling
+     <b><i>SIMLINK_send_message()</i></b>. When returning, <i>msg</i> may
+     have been already deallocated and should not be used anymore.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>datagram_link</b>: 
+       <pre class="jdocu_small">static void
+receive(conf_object_t *NOTNULL ep, bytes_t msg)
+{
+        SIMLINK_send_message(ep, LINK_BROADCAST_ID, 
+                             new_datagram_message(msg.data, msg.len));
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_send_message_multi">
+       SIMLINK_send_message_multi</a>, <a class="jdocu" href="#__jdocu_seealso_link_message_t"> link_message_t</a>, <a class="jdocu" href="#__jdocu_seealso_link_type_t"> link_type_t
+     </a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_send_message_multi">SIMLINK_send_message_multi()</a></h4>
+<p>
+
+<a name="SIMLINK_send_message_multi2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_send_message_multi"></a><b>SIMLINK_send_message_multi</b> — send a link message to multiple recipients</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIMLINK_send_message_multi(conf_object_t *src_ep_obj, unsigned num_dsts,
+                           const uint64 *dst_ids, link_message_t *msg);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Send a message <i>msg</i> from the endpoint
+     <i>src_ep_obj</i> to the destinations IDs <i>dst_ids</i>.
+     The length of the <i>dst_ids</i> list is provided by
+     <i>num_dsts</i>. Each destination should be a valid endpoint ID on
+     the link. It is <em>not</em> allowed to be
+     <code>LINK_BROADCAST_ID</code>.
+<p>
+     It is important to note that the ownership of the message
+     <i>msg</i> is passed to the link library when calling
+     <b><i>SIMLINK_send_message_multi()</i></b>. When returning,
+     <i>msg</i> may have been already deallocated and should not be
+     used anymore.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from <b>signal_link</b>, which keeps a list of endpoints
+       to send to and specifically directs its messages to the appropriate
+       endpoints:
+       <pre class="jdocu_small">static void
+send_message(signal_link_endpoint_t *slep, link_message_t *msg)
+{
+        signal_link_t *slink = 
+                (signal_link_t *)SIMLINK_endpoint_link(&amp;slep-&gt;obj);
+        int num_dsts = ht_num_entries_int(&amp;slink-&gt;receivers);
+        uint64 dst_ids[num_dsts];
+        memset(dst_ids, 0, num_dsts * sizeof(uint64));
+        int i = 0;
+        HT_FOREACH_INT(&amp;slink-&gt;receivers, it)
+                dst_ids[i++] = ht_iter_int_key(it);
+        SIMLINK_send_message_multi(&amp;slep-&gt;obj, num_dsts, dst_ids, msg);
+}</pre><p>
+
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIMLINK_send_message">SIMLINK_send_message</a>, <a class="jdocu" href="#__jdocu_seealso_link_message_t"> link_message_t</a>, <a class="jdocu" href="#__jdocu_seealso_link_type_t"> link_type_t</a></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="SIMLINK_snoop_endpoint_create">SIMLINK_snoop_endpoint_create()</a></h4>
+<p>
+
+<a name="SIMLINK_snoop_endpoint_create2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIMLINK_snoop_endpoint_create"></a><b>SIMLINK_snoop_endpoint_create</b> — create a snoop endpoint object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIMLINK_snoop_endpoint_create(conf_class_t *cls, conf_object_t *link,
+                              conf_object_t *clock,
+                              attr_value_t attrs);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This method returns an already created snoop endpoint object. It is meant
+     to be used when implementing a <code>snoop_attach</code> interface,
+     where endpoints can not be created using components as it is usually done.
+     <b><i>SIMLINK_snoop_endpoint_create()</i></b> takes as arguments the class of
+     the snoop endpoint object <i>cls</i>, the link object
+     <i>link</i>, and a list of attributes to set, in the same form as
+     provided to <b><i>SIM_create_object()</i></b>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+A snoop endpoint object</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Example from the new Ethernet links:
+       <pre class="jdocu_small">static conf_object_t *
+default_attach_snoop(conf_object_t *obj, conf_object_t *clock,
+                     ethernet_link_snoop_t snoop_fun, lang_void *user_data)
+{
+        common_link_t *clink = (common_link_t *)obj;
+        attach_snoop_helper(clink, clock);
+        attr_value_t attrs = SIM_make_attr_list(0);
+        snoop_ep_t *snoop = (snoop_ep_t *)SIMLINK_snoop_endpoint_create(
+                snoop_ep_cls, &amp;clink-&gt;obj, clock, attrs);
+        SIM_attr_free(&amp;attrs);
+        snoop-&gt;snoop_fun = snoop_fun;
+        snoop-&gt;user_data = user_data;
+        return &amp;snoop-&gt;cep.obj;
+}</pre><p>
+
+     </p></dd>
+</dl><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="link_message_t">link_message_t</a></h4>
+<p>
+   
+     <a name="link_message_t2"></a>
+     </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_message_t"></a>link_message_t</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+typedef struct link_message link_message_t;
+       </dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Generic part of a link message. This structure should always be the
+         first member of the link message data structure, so that the link
+         library can access the generic part with a simple cast.
+       </dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+The <b>datagram_link</b> example defines its link message in
+         the following way:
+         <pre class="jdocu_small">typedef struct {
+        link_message_t common;               /* should always be first */
+        /* The actual data in the message - in our case an allocated
+           byte string owned by this structure. */
+        bytes_t payload;
+} datagram_link_message_t;</pre><p>
+
+       </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_link_type_t">
+         link_type_t</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_init_message">
+         SIMLINK_init_message
+       </a></dd>
+</dl><p>
+   
+   </p><h4 class="jdocu"><a class="not-numbered" name="link_type_t">link_type_t</a></h4>
+<p>
+   
+   
+     <a name="link_type_t2"></a>
+     </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_type_t"></a>link_type_t</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">typedef struct {
+        attr_value_t (*msg_to_attr)(conf_object_t *link, 
+                                    const link_message_t *msg);
+        link_message_t *(*msg_from_attr)(conf_object_t *link, 
+                                         attr_value_t attr);
+        void (*free_msg)(conf_object_t *link, link_message_t *msg);
+
+        void (*marshal)(conf_object_t *link, const link_message_t *msg,
+                        void (*finish)(void *data, const frags_t *msg),
+                        void *finish_data);
+        link_message_t *(*unmarshal)(conf_object_t *link, 
+                                     const frags_t *msg);
+
+        void (*deliver)(conf_object_t *ep, const link_message_t *msg);
+
+        void (*update_config_value)(conf_object_t *link, const char *key,
+                                    const frags_t *value);
+        void (*remove_config_value)(conf_object_t *link, const char *key);
+        void (*device_changed)(conf_object_t *ep, conf_object_t *old_dev);
+} link_type_t;</pre><p>
+</p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Functions to be defined by the specific link implementation.
+<p>
+          These functions can be classified in four groups:
+</p><p>
+          </p><dl><dt id="dt:message-links-manipulation"><b>Message Links Manipulation</b></dt><dd>The first five functions are related to the link-specific
+          messages.
+<p>
+          All five functions can be called in any execution context and should
+          be thread-safe. They all take the link object as argument, in case it
+          contains information necessary to perform the operation. As the link
+          object is shared between the cells in which it is connected, it
+          should not be modified during execution. Mutable state should be kept
+          in the endpoint objects instead.
+</p><p>
+          <b><i>msg_to_attr()</i></b> transforms the message <i>msg</i>
+          into an <code>attr_value_t</code> value. It is used to checkpoint
+          in-flight messages waiting to be delivered. The value returned will
+          be passed unchanged as argument <i>attr</i> to
+          <b><i>msg_from_attr()</i></b> when loading a checkpoint with pending
+          link messages. Neither function is expected to return an error,
+          although <b><i>msg_from_attr()</i></b> is allowed to return NULL when
+          translating a message it does not care to restore. This can be useful
+          to keep checkpoint compatibility with older versions of the same link
+          that do not always have the same message protocol.
+</p><p>
+          Using the <b>datagram_link</b> as an example, the
+          <b>datagram-link</b> message is defined as:
+</p><p>
+          </p><pre class="jdocu_small">typedef struct {
+        link_message_t common;               /* should always be first */
+        /* The actual data in the message - in our case an allocated
+           byte string owned by this structure. */
+        bytes_t payload;
+} datagram_link_message_t;</pre><p>
+
+</p><p>
+          <b><i>msg_to_attr()</i></b> and <b><i>msg_from_attr()</i></b> are thus
+          defined as:
+</p><p>
+          </p><pre class="jdocu_small">static attr_value_t
+msg_to_attr(conf_object_t *link, const link_message_t *lm)
+{
+        const datagram_link_message_t *m = 
+                (const datagram_link_message_t *)lm;
+        return SIM_make_attr_data(m-&gt;payload.len, m-&gt;payload.data);
+}</pre><p>
+
+          </p><pre class="jdocu_small">static link_message_t *
+msg_from_attr(conf_object_t *link, attr_value_t attr)
+{
+        return new_datagram_message(SIM_attr_data(attr),
+                                    SIM_attr_data_size(attr));
+}</pre><p>
+
+</p><p>
+          <b><i>free_msg()</i></b> is called when the message <i>msg</i>
+          has been delivered to all its destinations and is no longer
+          needed. All memory allocated for <i>msg</i> is expected to be
+          freed, including <i>msg</i> itself. The
+          <b>datagram_link</b> defines <b><i>free_msg()</i></b> as:
+</p><p>
+          </p><pre class="jdocu_small">static void
+free_msg(conf_object_t *link, link_message_t *lm)
+{
+        datagram_link_message_t *m = (datagram_link_message_t *)lm;
+        MM_FREE((uint8 *)m-&gt;payload.data);
+        m-&gt;payload.data = NULL;
+        MM_FREE(m);
+}</pre><p>
+
+</p><p>
+          <b><i>marshal()</i></b> is called when the message <i>msg</i>
+          should be transmitted over a distributed simulation. Its purpose is
+          to serialize the message into a <code>frags_t</code>
+          representation. Rather than returning the marshaled message,
+          <b><i>marshal()</i></b> takes the <i>finish</i> and
+          <i>finish_data</i> arguments, that it is expected to call
+          once the message has been marshaled.
+</p><p>
+          The reason behind this mechanism is that it allows
+          <b><i>marshal()</i></b> to perform its operations with a
+          <code>frags_t</code> variable allocated on the stack, and thus to
+          skip any heap allocation when sending the message. In case memory was
+          allocated anyway, it should be freed just after <i>finish</i>
+          has returned.
+</p><p>
+          </p><pre class="jdocu_small">static void
+marshal(conf_object_t *link, const link_message_t *lm,
+        void (*finish)(void *data, const frags_t *msg), 
+        void *finish_data)
+{
+        const datagram_link_message_t *m = 
+                (const datagram_link_message_t *)lm;
+
+        /* Our message just consists of a byte string, 
+           so this is very easy. */
+        frags_t buf;
+        frags_init_add(&amp;buf, m-&gt;payload.data, m-&gt;payload.len);
+        finish(finish_data, &amp;buf);
+}</pre><p>
+
+</p><p>
+          <b><i>unmarshal()</i></b> does the opposite of <b><i>marshal()</i></b>: it
+          takes a serialized <code>frags_t</code> representation of the message
+          called <i>data</i> and returns a newly allocated link
+          message.
+</p><p>
+          </p><pre class="jdocu_small">static link_message_t *
+unmarshal(conf_object_t *link, const frags_t *data)
+{
+        size_t len = frags_len(data);
+        uint8 bytes[len];
+        frags_extract(data, bytes);
+        return new_datagram_message(bytes, len);
+}</pre><p>
+
+</p><p>
+          </p></dd><dt id="dt:endpoint-configuration"><b>Endpoint Configuration</b></dt><dd>Link endpoints are created as needed by the link
+          component. Depending on how they are created, they may not know yet
+          which device they are connected to, so it might not be possible yet,
+          for example, to cache the device's communication interface in the
+          endpoint's <b><i>finalize()</i></b> function. Additionally, there are
+          cases where the device the endpoint talks to may be changed, such as
+          when inserting a probe object to listen to the traffic.
+<p>
+          In all of these cases, the <b><i>device_changed()</i></b> callback will
+          be called when the endpoint's device attribute is changed
+          <em>and</em> the endpoint has reached to finalize phase. In that
+          callback, the new device can be obtained via
+          <b><i>SIMLINK_endpoint_device()</i></b> and additional operations, such
+          as interface caching, can be safely performed. The old device the
+          endpoint was connected to is provided for convenience as an argument
+          to <b><i>device_changed()</i></b>.
+</p><p>
+          Note that if no device related operations are necessary, this
+          callback may be left unimplemented.
+</p><p>
+          The <b>ser_link</b> implementation of
+          <b><i>device_changed</i></b> is the following:
+</p><p>
+          </p><pre class="jdocu_small">static void
+ser_link_ep_device_changed(conf_object_t *ep, conf_object_t *old_dev)
+{
+        ser_link_endpoint_t *slep = (ser_link_endpoint_t *)ep;
+        slep-&gt;serial_ifc = SIM_c_get_port_interface(
+                SIMLINK_endpoint_device(ep), SERIAL_DEVICE_INTERFACE,
+                SIMLINK_endpoint_port(ep));
+ 
+        if (!old_dev) {
+                char ep_id[19];
+                snprintf(ep_id, sizeof(ep_id), "ep%llx", 
+                         SIMLINK_endpoint_id(ep));
+                frags_t value;
+                frags_init(&amp;value);
+                SIMLINK_config_update_value(SIMLINK_endpoint_link(ep), 
+                                            ep_id, &amp;value);
+        }
+}
+</pre><p>
+</p><p>
+   
+</p><p>
+          </p></dd><dt id="dt:message-delivery"><b>Message Delivery</b></dt><dd>Messages are delivered to the link by calling the
+          <b><i>deliver()</i></b> function. The arguments of <b><i>deliver()</i></b>
+          are the endpoint <i>ep</i> that received the message and the
+          message <i>msg</i> itself. The implementation of
+          <b><i>deliver()</i></b> is expected to call the correct device's
+          function to deliver the message.
+<p>
+          Note that <b><i>deliver()</i></b> can be called in any execution context
+          and should be thread-safe. The link object is shared between the
+          cells in which it is connected, and should not be modified during
+          execution. Mutable state should be kept in the endpoint objects
+          instead.
+</p><p>
+          The <b>datagram_link</b> implementation of
+          <b><i>deliver()</i></b> is the following:
+</p><p>
+          </p><pre class="jdocu_small">static void
+deliver(conf_object_t *ep, const link_message_t *lm)
+{
+        const datagram_link_message_t *m = 
+                (const datagram_link_message_t *)lm;
+        conf_object_t *dev = SIMLINK_endpoint_device(ep);
+        const char *port = SIMLINK_endpoint_port(ep);
+        const datagram_link_interface_t *dli =
+                SIM_c_get_port_interface(dev, "datagram_link", port);
+        if (dli)
+                dli-&gt;receive(dev, m-&gt;payload);
+        else
+                SIM_log_error(ep, 0, "Device does not implement"
+                              " datagram_link interface");
+}</pre><p>
+
+</p><p>
+          </p></dd><dt id="dt:configuration"><b>Configuration</b></dt><dd>The last two functions of <code>link_type_t</code> are taking
+          care of the link configuration itself. In the same way messages needs
+          to be marshaled when sent over a network, the global link
+          configuration needs to be agreed upon when running the simulation in
+          several processes. 
+<p>
+          <b><i>update_config_value()</i></b> is called whenever a configuration
+          parameter has been added or updated. The configuration parameter's
+          name is provided as <i>key</i> and its new value as
+          <i>value</i>, encoded as a <code>frags_t</code>.
+</p><p>
+          <b><i>remove_config_value()</i></b> is called whenever the configuration
+          value <i>key</i> has been removed.
+</p><p>
+          The interpretation of the link configuration messages is link
+          specific. The only configuration parameter that is defined by the
+          link library itself is <i>goal_latency</i>. This is handled
+          entirely internally, although with the same mechanism as exposed
+          here. Configuration changes are initiated by the link objects
+          themselves with the Link Library API functions
+          <b><i>SIMLINK_config_update_value()</i></b> and
+          <b><i>SIMLINK_config_remove_value()</i></b>.
+</p><p>
+          Note that the link object that initiates the configuration change is
+          also called back via <b><i>update_config_value()</i></b> and
+          <b><i>remove_config_value()</i></b>. Note also that the configuration
+          changes may be buffered and sent later if they are initiated too soon
+          for the configuration message to propagate.
+</p><p>
+          Configuration changes should only be initiated while in Global
+          Context, so the two configuration functions above will only be called
+          in Global Context. This allows them to modify properties of
+          the link object itself without needing to care about thread safety.
+</p><p>
+          As an example, here is how <b>ser_link</b> defines these two
+          functions. The serial link keeps track of all endpoints connected to
+          it by saving their ID as a configuration parameter. It also uses a
+          configurable buffer size.
+</p><p>
+          Finally, it is important to note that these two callbacks may be
+          called from a non-execution thread. They should call the Simics API
+          only via <b><i>SIM_thread_safe_callback()</i></b>. This includes calling
+          the <b><i>SIM_log_*</i></b> functions.
+</p><p>
+          </p><pre class="jdocu_small">static void
+link_config_value_updated(conf_object_t *link, const char *key, 
+                          const frags_t *msg)
+{
+        ser_link_impl_t *slink = (ser_link_impl_t *)link;
+        if (strncmp(key, "ep", 2) == 0) {
+                uint64 ep_id = strtoull(key + 2, NULL, 16);
+                SIM_LOG_INFO(4, &amp;slink-&gt;obj, 0,
+                             "Add endpoint: 0x%llx", ep_id);
+                ht_update_int(&amp;slink-&gt;endpoints, ep_id, NULL);
+        } else if (strcmp(key, "buffer_size") == 0) {
+                slink-&gt;buffer_size = frags_extract_be32(msg, 0);
+        } else {
+                ASSERT(false);
+        }
+}
+</pre><p>
+
+          </p><pre class="jdocu_small">static void
+link_config_value_removed(conf_object_t *link, const char *key)
+{
+        ser_link_impl_t *slink = (ser_link_impl_t *)link;
+        if (strncmp(key, "ep", 2) == 0) {
+                uint64 ep_id = strtoull(key + 2, NULL, 16);
+                SIM_LOG_INFO(4, &amp;slink-&gt;obj, 0,
+                             "Remove endpoint: 0x%llx", ep_id);
+                ht_remove_int(&amp;slink-&gt;endpoints, ep_id);
+        } else {
+                ASSERT(false);
+        }
+}
+</pre><p>
+
+</p><p>
+          </p></dd></dl><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_link_message_t">
+         link_message_t</a>, <a class="jdocu" href="#__jdocu_seealso_SIMLINK_init">
+         SIMLINK_init
+       </a></dd>
+</dl><p>
+   
+</p><h3 class="jdocu"><a class="not-numbered" name="Link-Component-API">Link Component API</a></h3>
+<p></p><h4 class="jdocu"><a class="not-numbered" name="link_components.create_simple">link_components.create_simple()</a></h4>
+<p>
+  
+  <a name="create_simple"></a> <a name="link_components-Python-modulecreate_simple"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.create_simple"></a><b>create_simple</b> — create a simple link component class</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">create_simple(link_class, endpoint_class, connector_type,
+              class_desc, basename = None, help_categories = [])</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Create a simple link component class based on the following parameters:
+<p>
+</p><dl><dt id="dt:link_class"><b>link_class</b></dt><dd>Name of the link implementation class</dd><dt id="dt:endpoint_class"><b>endpoint_class</b></dt><dd>Name of the link endpoint class</dd><dt id="dt:connector_type"><b>connector_type</b></dt><dd>Name of the connector type for component
+                             connections</dd><dt id="dt:class_desc"><b>class_desc</b></dt><dd>Component description</dd><dt id="dt:basename"><b>basename</b></dt><dd>Prefix used to create new component names when none
+                       is provided</dd></dl><p></p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+A new component class from which to inherit</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">from link_components import create_simple
+
+class datagram_link(
+    create_simple(link_class = 'datagram_link_impl',
+                  endpoint_class = 'datagram_link_endpoint',
+                  connector_type = 'datagram-link',
+                  class_desc = "datagram link",
+                  basename = 'datagram_link')):
+    """The datagram link component creates a datagram-link, which is a simple
+    broadcast bus forwarding messages (as sequences of bytes) from a sender
+    device to all other devices present of the link. The datagram-link is both
+    an example of how to build a link with the Simics Link Library, and a
+    simple broadcast link that can be reused when multi-cell communication
+    between devices is necessary. Refer to the &lt;cite&gt;Link Library Programming
+    Guide&lt;/cite&gt; for more information."""
+</pre><p>
+</p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="link_components.link_component">link_components.link_component</a></h4>
+<p><a name="link_component"></a> <a name="link_components-Python-modulelink_component"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component"></a><b>link_component</b> — link components base class</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Class from which to inherit when creating a new custom link component.</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="link_components.link_component.add_link_connector">link_components.link_component.add_link_connector()</a></h4>
+<p><a name="add_link_connector"></a> <a name="link_components-Python-modulelink_componentadd_link_connector"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.add_link_connector"></a><b>add_link_connector</b> — add a new initial connector</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_link_connector(self, slot_template, cnt_tmpl)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Add a new initial connector. The <i>slot_template</i>
+argument is the name of the connector in the component. The
+<i>cnt_tmpl</i> argument is the template used for the
+connector, previously registered with
+<b><i>add_connector_template()</i></b>.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="link_components.link_component.add_link_connector_template">link_components.link_component.add_link_connector_template()</a></h4>
+<p><a name="add_link_connector_template"></a> <a name="link_components-Python-modulelink_componentadd_link_connector_template"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.add_link_connector_template"></a><b>add_link_connector_template</b> — add a link connector template</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_link_connector_template(self, name, type, growing,
+                            create_unconnected_endpoint,
+                            get_check_data    = None,
+                            get_connect_data  = None,
+                            check             = None,
+                            connect           = None,
+                            disconnect        = None,
+                            allow_new_cnt     = lambda: True,
+                            allow_destroy_cnt = lambda: True)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function registers a new connector template for the component.
+From this template, connectors will be created either statically, via
+the <b><i>add_objects()</i></b> function, or dynamically if requested.
+Component templates can be customized through the parameters of
+<b><i>add_link_connector_template()</i></b>:
+<p>
+</p><dl><dt id="dt:name"><b>name</b></dt><dd>is the name of the template, which will be saved in
+  each connector, so that they can find out from which template they
+  were created.</dd><dt id="dt:type"><b>type</b></dt><dd>is the connector type.</dd><dt id="dt:growing"><b>growing</b></dt><dd>indicates whether the connector is static, or
+  should grow dynamically as connections are made. Static connectors
+  must be created in <b><i>add_objects()</i></b>, and will act as classic
+  component connectors. A dynamic connector will make sure that there
+  is always a free connector of that template available, by increasing
+  or decreasing the number of connectors of this template in the link.
+  Note that several templates can have the same connector type. Each
+  template will make sure that its connectors grow or shrink
+  separately.</dd><dt id="dt:create_unconnected_endpoint"><b>create_unconnected_endpoint</b></dt><dd>is the function to call when
+  a new endpoint pre-conf-object must be created. This endpoint is not
+  yet connected to a device.</dd><dt id="dt:get_check_data"><b>get_check_data</b></dt><dd>(optional) is called whenever the
+  standard <b><i>get_check_data()</i></b> is called. It may return any
+  <em>additional</em> data necessary for the check() call. The standard
+  <b><i>get_check_data()</i></b> will already return the endpoint
+  object.</dd><dt id="dt:get_connect_data"><b>get_connect_data</b></dt><dd>(optional) is similar to
+  <b><i>get_check_data</i></b>, but for the <b><i>connect()</i></b>
+  call.</dd><dt id="dt:check"><b>check</b></dt><dd>(optional) is called whenever the standard
+  <b><i>check()</i></b> is called. It may return <code>True</code>
+  (connection accepted) or <code>False</code> (connection refused).
+  The standard implementation returns always <code>True</code>.</dd><dt id="dt:connect"><b>connect</b></dt><dd>(optional) is called whenever the standard
+  <b><i>connect()</i></b> is called. The standard <b><i>connect()</i></b>
+  will set the device attribute in the endpoint. <b><i>connect</i></b> may
+  take any additional action it deems necessary.</dd><dt id="dt:disconnect"><b>disconnect</b></dt><dd>(optional) is called whenever the standard
+  <b><i>disconnect()</i></b> is called. The standard
+  <b><i>disconnect()</i></b> does not do anything as the endpoint object
+  will be destroyed soon after. <b><i>disconnect()</i></b> may take any
+  additional action for the disconnection to succeed.</dd><dt id="dt:allow_new_nct"><b>allow_new_nct</b></dt><dd>(optional) is used only for growing
+  connectors. It is called every time a new connection is made to ask
+  if creating a new empty connector is allowed. It may return
+  <code>True</code> (new connector allowed) or <code>False</code>
+  (no new connector). The default function always returns
+  <code>True</code> (unlimited number of connectors allowed, with
+  always one free).</dd><dt id="dt:allow_destroy_cnt"><b>allow_destroy_cnt</b></dt><dd>(optional) is used only for growing
+  connectors. It is called every time a connection is severed to ask if
+  the connector being disconnected should be destroyed. It may return
+  <code>True</code> (destroy the connector) or <code>False</code>
+  (let the connector). The endpoint object associated will be
+  automatically destroyed with the connector, or replaced if the
+  connector is left. The default function returns always
+  <code>True</code> (unlimited number of connectors allowed, with
+  always one free).</dd></dl><p></p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The registered connector template</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_cable(link_components.link_component):
+    """Ethernet cable: this component represents a two-points Ethernet cable,
+    allowing two devices to connect to each other."""
+
+    _class_desc = 'an Ethernet cable component'
+    _help_categories = ['Ethernet']
+    
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_cable'
+
+    class connector_count(SimpleAttribute(0, 'i')):
+        """Total number of occupied connectors"""
+
+    def allow_new_connector(self):
+        if self.connector_count.val == 2:
+            # all connectors are occupied
+            return False
+        elif self.connector_count.val == 1:
+            # there is already one free connector
+            self.connector_count.val += 1
+            return False
+        else:
+            self.connector_count.val += 1
+            return True
+
+    def allow_destroy_connector(self):
+        if self.connector_count.val == 2:
+            # two connectors occupied, so let one become free
+            self.connector_count.val -= 1
+            return False
+        else:
+            # one connector was occupied, one free, so destroy one
+            self.connector_count.val -= 1
+            return True
+
+    def create_unconnected_endpoint(self, cnt):
+        return create_cable_endpoint(self.get_slot('link'), None)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'single-ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint,
+            allow_new_cnt = self.allow_new_connector,
+            allow_destroy_cnt = self.allow_destroy_connector)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-cable-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="link_components.link_component.add_objects">link_components.link_component.add_objects()</a></h4>
+<p><a name="add_objects"></a> <a name="link_components-Python-modulelink_componentadd_objects"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.add_objects"></a><b>add_objects</b> — add link object and initial connectors</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_objects(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should be overridden when inheriting from
+<b>link_component</b>. It is expected to create a
+pre-conf-object for the link and to add the initial connectors of the
+component using <b><i>link_component.add_link_connector()</i></b>.
+<b><i>add_objects()</i></b> is only called when creating a component from
+scratch; when restoring a checkpoint, objects are assumed to have
+already been created.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="link_components.link_component.get_link_object_name">link_components.link_component.get_link_object_name()</a></h4>
+<p><a name="get_link_object_name"></a> <a name="link_components-Python-modulelink_componentget_link_object_name"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.get_link_object_name"></a><b>get_link_object_name</b> — return a unique link object name</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">get_link_object_name(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return a unique link object name based on the link component name.
+This is useful for ensuring that all link components with the same name
+in a distributed simulation will indeed represent the same link.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+A unique link name</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="link_components.link_component.register_connector_templates">link_components.link_component.register_connector_templates()</a></h4>
+<p><a name="register_connector_templates"></a> <a name="link_components-Python-modulelink_componentregister_connector_templates"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_link_components.link_component.register_connector_templates"></a><b>register_connector_templates</b> — register connector templates</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">register_connector_templates(self)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should be overridden when inheriting from
+<b>link_component</b>. It is expected to register the connector
+templates that will be used in <b><i>add_objects()</i></b>. Unlike
+<b><i>add_objects()</i></b>, this function is always called when creating
+the component, either from scratch or when restoring a checkpoint.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class ethernet_switch(link_components.link_component):
+    """Ethernet switch: this component represents a switched Ethernet network,
+    allowing any number of devices to connect and optimizing the packet routing
+    according to what is learned about the MAC addresses talking on the link."""
+    
+    _class_desc = 'an Ethernet switch component'
+    _help_categories = ['Ethernet']
+
+    class basename(link_components.link_component.basename):
+        val = 'ethernet_switch'
+ 
+    def create_unconnected_endpoint(self, cnt):
+        return create_vlan_switch_endpoint(self.get_slot('link'), None,
+                                           None, True)
+
+    def register_connector_templates(self):
+        self.eth_tmpl = self.add_link_connector_template(
+            name = 'ethernet-link-connector',
+            type = 'ethernet-link',
+            growing = True,
+            create_unconnected_endpoint = self.create_unconnected_endpoint)
+
+    def add_objects(self):
+        self.add_pre_obj_with_name('link', 'eth-switch-link',
+                                   self.get_link_object_name(),
+                                   goal_latency = self.goal_latency.val,
+                                   global_id = self.global_id.val)
+        self.add_link_connector('device', self.eth_tmpl)</pre><p>
+</p></dd>
+</dl><p>
+
+</p><p>
+</p>
+<div class="chain">
+<span></span>
+</div>

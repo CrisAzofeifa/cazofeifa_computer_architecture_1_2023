@@ -1,0 +1,465 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>38 Checkpoint Compatibility</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="transactions.html">37 Transactions</a>
+<a href="extension-builder.html">VII Extending Simics</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-simics-programming.html">VI Simics API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="checkpoint-compatibility">38 Checkpoint Compatibility</a></h1>
+<p>
+
+</p><p>
+As your device models evolve, you may feel the need to change attributes or
+devices in ways that might prevent older checkpoints from loading correctly. To
+mitigate this problem Simics includes an API that supports handling checkpoint
+compatibility while keeping the freedom of changing your models as you deem
+necessary.
+</p><p>
+Checkpoint compatibility is based on the concept of <em>build-id</em>:
+</p><p>
+</p><ul>
+
+<li>A build-id is a version number that uniquely identify a set of compiled
+models.</li>
+
+<li>The build-id of newer models is higher than the build-id of older
+models.</li>
+
+<li>Each object saved in a checkpoint is tagged with the build-id of
+the model it was an instance of.</li>
+
+</ul>
+<p>
+As an example, Simics has a single build-id for each distributed build (it
+started at 1500 for the Simics 3.2 release). This build-id is used to
+update checkpoints when standard Simics models are changed.
+</p><p>
+When loading an old checkpoint, Simics will look at the build-id that each
+object claims. Simics will then run the appropriate update functions until all
+objects in the checkpoint are up-to date with the current models. Let us have a
+look at some examples.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Simics maintains backward compatibility for checkpoints one major version
+older than the oldest of the currently supported API versions. Older
+checkpoints might load successfully anyway. If they fail to do so, however, it
+is possible to update them in steps by using intermediate versions of Simics
+where compatibility was still maintained.</div><h2 class="jdocu"><a name="First-Example-A-Simple-Case">38.1 First Example: A Simple Case</a></h2>
+<p>Assume that you have modeled a device with, among other properties, three pins
+called <i>pin0</i>, <i>pin1</i> and <i>pin2</i>. The first
+version of this model was delivered at build-id 100 (an arbitrarily chosen
+number). A checkpoint with this device would look like:
+</p><p>
+</p><pre class="jdocu_small">OBJECT foo TYPE my_device {
+        build_id: 100
+        pin0: 1
+        pin1: 0
+        pin2: 1
+        <i>[…]</i>
+}
+</pre><p>
+</p><p>
+A few months later, you extend that model to handle more pins, to the point
+where it would make more sense to have a single <i>pins</i> attribute
+where bit 0 would represent the state of <i>pin0</i>, and so on. The new
+checkpoint at build-id 110 is the following:
+</p><p>
+</p><pre class="jdocu_small">OBJECT foo TYPE my_device {
+        build_id: 110
+        pins: 0x5            # 0101b
+        <i>[…]</i>
+}
+</pre><p>
+</p><p>
+So far so good, but older checkpoints still contain the three pin<em>n</em>
+attributes so they will fail to load with the newer model. To preserve
+compatibility, you need to write an upgrade function that will convert the
+three pin attributes to the new <i>pins</i> attribute layout. In the
+global commands file, <code>simics_start.py</code>, of your device model, write
+the following:
+</p><p>
+</p><pre class="jdocu_small">from configuration import *
+from update_checkpoint import *
+
+def upgrade_pin_to_pins(obj):
+    obj.pins = (obj.pin2 &lt;&lt; 2) | (obj.pin1 &lt;&lt; 1) | obj.pin0
+    remove_attr(obj, "pin0")
+    remove_attr(obj, "pin1")
+    remove_attr(obj, "pin2")
+
+SIM_register_class_update(110, "my_device", upgrade_pin_to_pins)
+</pre><p>
+</p><p>
+The first two lines will import the necessary classes and functions from
+Simics. The <b><i>upgrade_pin_to_pins()</i></b> function takes an object of class
+<b>my_device</b> and computes the new <i>pins</i> attribute from
+the values of <i>pin0</i>, <i>pin1</i>, and <i>pin2</i>. It
+then removes the obsolete attributes, leaving the object in a valid state for
+build-id 110. The last function call registers the
+<b><i>upgrade_pin_to_pins()</i></b> function as a <em>class upgrade function</em>,
+to be run for all objects of class <b>my_device</b> with a build-id
+lower than 110.
+</p><p>
+When loading a checkpoint with objects of class <b>my_device</b> with a
+build-id inferior to 110, Simics will loop over all matching objects to apply
+<b><i>upgrade_pin_to_pins()</i></b> and make sure that they are all updated.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Second-Example-Changing-the-Class-of-an-Object">38.2 Second Example: Changing the Class of an Object</a></h2>
+<p>
+
+</p><p>
+Although this should be a rare occurrence, you might want to change the class
+of an object. This can be done in a class upgrade function as above, by setting
+the <i>__class_name__</i> attribute:
+</p><p>
+</p><pre class="jdocu_small">from configuration import *
+from update_checkpoint import *
+
+def upgrade_to_new_device(obj):
+    obj.__class_name__ = "my_new_device"
+
+SIM_register_class_update(120, "my_device", upgrade_to_new_device)
+</pre><p>
+</p><p>
+Do not forget that when an object class has changed, no upgrade function
+registered on the former class will apply any longer.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Third-Example-Creating-New-Objects">38.3 Third Example: Creating New Objects</a></h2>
+<p>
+
+</p><p>
+Class upgrade functions are usually enough for simple changes, like adding or
+removing an attribute, but you might need to perform more changes to the
+checkpoint before it can be loaded.
+</p><p>
+As an example, let us take a two-port Ethernet controller modeled in a single
+class:
+</p><p>
+</p><pre class="jdocu_small">OBJECT foo TYPE two-port-ctrl {
+        build-id: 450
+        port0_status: 0xCFF
+        port0_control: 0x10
+        port1_status: 0xC0F
+        port1_control: 0x0
+        <i>[…]</i>
+}
+</pre><p>
+</p><p>
+Later in the development, you need to improve the Ethernet controller to handle
+up to four ports. It might then make more sense to have a class per port, rather
+than a class for the whole controller:
+</p><p>
+</p><pre class="jdocu_small">OBJECT foo_port0 TYPE port-ctrl {
+        build-id: 480
+        status: 0xCFF
+        control: 0x10
+        <i>[…]</i>
+}
+OBJECT foo_port1 TYPE port-ctrl {
+        build-id: 480
+        status: 0xC0F
+        control: 0x0
+        <i>[…]</i>
+}
+</pre><p>
+</p><p>
+Converting older checkpoint is a bit more difficult though, and class upgrade
+functions do not give you enough control to do this properly. You will need a
+more <em>generic upgrade function</em>:
+</p><p>
+</p><pre class="jdocu_small">from configuration import *
+from update_checkpoint import *
+
+def upgrade_two_ports_ctrl(config):
+    deleted = []
+    changed = []
+    added   = []
+    
+    for obj in all_objects(config, "two-port-ctrl"):
+        # build a port 0 object
+        obj_port0 = pre_conf_object(obj.name + "_port0", "port-ctrl")
+        obj_port0.status = obj.port0_status
+        obj_port0.control = obj.port0_control
+
+        # build a port 1 object
+        obj_port1 = pre_conf_object(obj.name + "_port1", "port-ctrl")
+        obj_port1.status = obj.port1_status
+        obj_port1.control = obj.port1_control
+
+        # delete the old object
+        del config[obj.name]
+        deleted.append(obj)
+
+        # add the two new objects
+        config[obj_port0.name] = obj_port0
+        config[obj_port1.name] = obj_port1
+        added.append(obj_port0)
+        added.append(obj_port1)
+
+    return (deleted, changed, added)
+
+SIM_register_generic_update(480, upgrade_two_ports_ctrl)
+</pre><p>
+</p><p>
+A generic upgrade function is called with the complete set of configuration
+objects constituting the checkpoint as argument. The variable <i>config</i>
+is a Python dictionary indexed by the object names. The function is required to
+keep track of all changes it does, in three lists representing the objects
+deleted, changed and added to the configuration.
+</p><p>
+The function loops over all objects of class <b>two-port-ctrl</b> in
+<i>config</i>. For each of them, it creates two <b>port-ctrl</b>
+objects that will represent the port 0 and 1 of the original controller. It
+updates all necessary attributes, then proceeds to delete the old object from
+the configuration, before adding the new ones.
+</p><p>
+When it is finished, the function returns a tuple with the three lists
+containing the deleted, changed and added objects. The last line registers the
+<b><i>upgrade_two_ports_ctrl()</i></b> function as a generic update function to be
+run at build-id 480.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Last-Example-Changing-the-Name-of-an-Object">38.4 Last Example: Changing the Name of an Object</a></h2>
+<p>
+
+</p><p>
+If you need to change the name of an object, you will be forced to do so in a
+generic update function, as you will have to update the checkpoint set itself:
+</p><p>
+</p><pre class="jdocu_small">from configuration import *
+from update_checkpoint import *
+
+def upgrade_to_new_name(config):
+    deleted = []
+    changed = []
+    added   = []
+    
+    i = 0
+    for obj in all_objects(config, "port-ctrl"):
+        del config[obj.name]
+        obj.name = "new-controller%d" % i
+        config[obj.name] = obj
+        changed.append(obj)
+        i = i + 1
+
+    return (deleted, changed, added)
+
+SIM_register_generic_update(500, upgrade_to_new_name)
+</pre><p>
+</p><p>
+Do not forget to report the changed object in the <i>changed</i> object
+list.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Upgrade-Functions-in-More-Details">38.5 Upgrade Functions in More Details</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="Choosing-and-Setting-a-Build-Id">Choosing and Setting a Build-Id</a></h3>
+<p>
+
+</p><p>
+Simics has a unique build-id for each distributed build. It does not make sense
+to follow this setting, as your own development might not match the pace at
+which new builds of Simics are released.
+</p><p>
+You can set a custom build-id in a project using the
+<code>USER_BUILD_ID</code> make variable. <code>USER_BUILD_ID</code> is not a simple
+number: it is composed of a <em>build-id namespace</em> followed by
+a <em>build-id</em>. The build-id namespace is there to define which modules
+are following the same convention for build-id versioning. The build-id sets
+what the current version is.
+</p><p>
+For example, assuming you are delivering a complete set of devices to simulate
+a board, associated to a Simics processor. You might want to set the build-id
+as <code></code><em>company</em><code>.</code><em>board_name</em><code>:0</code>, where <em>company</em> is your
+company name, and <em>board-name</em> is the current project. The newly defined
+build-id namespace will start its versioning at 0, and increase for each
+release.
+</p><p>
+Simics packages reserve the <code>simics</code> namespace for official
+packages. Setting USER_BUILD_ID to use the namespace <code>simics</code> will
+result in an error. Similarly, the namespace <code>__simics_project__</code> is
+reserved to disable the user build-id mechanism, when <code>USER_BUILD_ID</code> is
+left unset.
+</p><p>
+
+</p><h3 class="jdocu"><a class="not-numbered" name="Checkpoint-Format">Checkpoint Format</a></h3>
+<p>
+
+</p><p>
+Objects provided in the configuration set are Python
+<b>pre_conf_object</b> identical to those handled in components. Each
+object has a <i>name</i> and <i>classname</i> attribute. Other
+attributes depend on the checkpoint contents.
+</p><p>
+New objects can be created using the <b>pre_conf_object</b> Python
+class. Adding attributes is just a matter of assigning them a value. Other
+utility functions, described below, are provided for renaming and removing
+attributes.
+</p><p>
+The class of an object can be changed by setting the
+<i>__class_name__</i> attribute to the name of the new class. Both class
+and generic functions are allowed to change the class of an object.
+</p><p>
+The name of an object can be changed by setting the <i>name</i> attribute
+of the object. However, the update function should make sure that the
+checkpoint set is updated to contain the object under its new name, so only
+generic update functions are allowed to perform this change.
+</p><p>
+
+</p><h3 class="jdocu"><a class="not-numbered" name="Utility-Functions">Utility Functions</a></h3>
+<p>
+
+</p><p>
+Some common functions are provided by <code>update_checkpoint</code> to make
+manipulating a checkpoint easy. They are described in detail in the Reference
+Manual:
+</p><p>
+</p><dl><dt id="dt:all_objects-for_all_objects"><b><b><i>all_objects()</i></b>, <b><i>for_all_objects()</i></b></b></dt><dd>Return all
+objects of a given class, or apply a function to all objects of a given
+class.</dd><dt id="dt:remove_attr-rename_attr"><b><b><i>remove_attr()</i></b>, <b><i>rename_attr()</i></b></b></dt><dd>Remove or
+rename an attribute.</dd><dt id="dt:remove_class_attr"><b><b><i>remove_class_attr()</i></b></b></dt><dd>Remove an attribute in all objects
+of a given class.</dd><dt id="dt:remove_class"><b><b><i>remove_class()</i></b></b></dt><dd>Remove all instances of a given
+class.</dd></dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="Class-Upgrade-Functions">Class Upgrade Functions</a></h3>
+<p>
+
+</p><p>
+A class upgrade function is the simplest form of upgrade function. It takes as
+parameter a <code>pre_conf_object</code> Python object of the class it was
+registered for.
+</p><p>
+The function is allowed to change all attributes, including the object class,
+but not its name. It can not destroy or add new objects, since it does not have
+access to the complete configuration.
+</p><p>
+A class upgrade function has no return value. If an error occurs, it can raise
+a <code>CliError</code> exception.
+</p><p>
+Class upgrade functions should generally be declared in the
+<code>simics_start.py</code> of the module in which they are declared.
+</p><p>
+
+</p><h3 class="jdocu"><a class="not-numbered" name="Generic-Upgrade-Functions">Generic Upgrade Functions</a></h3>
+<p>
+
+</p><p>
+A generic upgrade function allows for larger changes in the checkpoint. It
+takes as parameter the complete set of configuration objects. It is called only
+once, at a time where all functions registered for previous build-ids have
+already been called.
+</p><p>
+The function is allowed to perform any operations on the objects of the
+checkpoint, including deleting them, changing their attributes and adding new
+objects. It can also rename objects, but it is responsible for update the
+checkpoint set properly to point at the object under its new name. Renamed
+objects should be listed in the changed objects list.
+</p><p>
+The function must return a tuple of three lists: the list of deleted objects,
+the list of changed objects (only changed attributes) and the list of added
+objects. If an error occurs, it can raise a <code>CliError</code> exception.
+</p><p>
+Generic update functions should be declared in a relevant
+<code>simics_start.py</code> file. If the function is linked to a specific class
+or module, the global commands file of that module is appropriate. In case of
+functions dealing with several classes, the function should be declared in the
+most relevant component's global commands file.
+</p><p>
+
+</p><h3 class="jdocu"><a class="not-numbered" name="Manipulating-Standard-Simics-Objects">Manipulating Standard Simics Objects</a></h3>
+<p>
+
+</p><p>
+In general, you should refrain from touching objects provided with Simics
+in a checkpoint, as they have their own upgrade functions and this might create
+conflicts. However, you may need to add such objects to update your
+checkpoint, for example, if you wish to add a recorder to one of your models
+that was not present before. In that case, you must be careful to indicate the
+Simics build-id of the object you are adding, so future upgrade functions
+can be applied properly. Let us look at an example:
+</p><p>
+</p><pre class="jdocu_small">from configuration import *
+from update_checkpoint import *
+
+def get_available_object_name(config, prefix):
+    i = 0
+    while ("rec%d" % i) in config:
+        i = i + 1
+    return "rec%d" % i
+
+def add_recorder(config):
+    changed = []
+    added = []
+
+    port_ctrl_objects = all_objects(config, "port-ctrl")
+    if not port_ctrl_objects:
+        return ([], [], [])
+
+    recorders = all_objects(config, "recorder")
+    if not recorders:
+        rec_name = get_available_object_name(config, "rec")
+        rec = pre_conf_object(rec_name, "recorder", build_id = 1500)
+        config[rec_name] = rec
+        added.append(rec)
+    else:
+        rec = recorders[0]
+
+    for x in port_ctrl_objects:
+        if not "recorder" in dir(x):
+            setattr(x, "recorder", rec)
+            changed.append(x)
+
+    return ([], changed, added)
+
+SIM_register_generic_update(570, add_recorder)
+</pre><p>
+</p><p>
+The upgrade function adds a recorder if none exists in the checkpoint, then it makes sure that all objects of class <b>port-ctrl</b> have a
+<i>recorder</i> attribute pointing at this recorder. Note the code
+creating the recorder object if none is found: it specifies that the recorder
+created is of build-id 1500 (corresponding to Simics 3.2.0). This will allow
+future upgrade functions to be applied correctly to this new recorder object
+later on.
+</p><p>
+
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="transactions.html">37 Transactions</a>
+<a href="extension-builder.html">VII Extending Simics</a>
+</div>

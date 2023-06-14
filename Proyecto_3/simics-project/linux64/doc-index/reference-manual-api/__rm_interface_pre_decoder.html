@@ -1,0 +1,94 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pre_decoder</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pool_protect.html">pool_protect</a>
+<a href="__rm_interface_processor_cli.html">processor_cli</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pre_decoder">pre_decoder</a></h1>
+<p>
+
+<a name="pre_decoder"></a><a name="pre_decoder_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface extends the <code>cpu_instrumentation_subscribe</code>
+   interface and allows a user to observe and change the bytes in the
+   instruction stream before the target processor tries to decode them.  This
+   can be used to model data encryption of memory or instruction caches with
+   different content than the memory.
+<p>
+   It is currently offered as a separate interface for backwards compatibility,
+   and only available for C/C++ development, i.e., no Python mapping exists.
+   The interface is only implemented for x86 target processors.
+</p><p>
+   The <b><i>register_pre_decoder_cb</i></b> method registers a callback,
+   <i>cb</i> of type <code>pre_decoder_cb_t</code>, which is called before
+   an instruction is decoded an put into Simics internal decode cache. This
+   means that this callback is called only the first time an instruction is
+   executed (unless it is evicted from the decode cache).
+</p><p>
+   The <i>cpu</i> is the processor that decodes the instructions, and
+   <i>connection</i> is the instrumentation connect object that receives
+   the callback. The connection can be NULL, if no connection is available. The
+   <i>data</i> is the callback data for the callback.
+</p><p>
+   See the documentation for the <code>pre_decoder_cb_t</code> for more
+   information.
+</p><p>
+   To remove the callback use either <b><i>remove_callback</i></b> or
+   <b><i>remove_connection_callbacks</i></b> methods in the
+   <code>cpu_instrumentation_subscribe interface</code>. To identify the
+   callback to remove, pass the return value, a <code>cpu_cb_handle_t</code>
+   handle, from the register method or the connection object used. The
+   callback cannot be disabled.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(pre_decoder) {
+        cpu_cb_handle_t *(*register_pre_decoder_cb)(
+                conf_object_t *cpu,
+                conf_object_t *connection,
+                pre_decoder_cb_t cb,
+                lang_void *data);
+};
+#endif
+
+#define PRE_DECODER_INTERFACE "pre_decoder"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global context.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pool_protect.html">pool_protect</a>
+<a href="__rm_interface_processor_cli.html">processor_cli</a>
+</div>

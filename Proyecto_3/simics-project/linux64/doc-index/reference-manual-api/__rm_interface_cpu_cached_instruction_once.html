@@ -1,0 +1,75 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>cpu_cached_instruction_once</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_cpu_cached_instruction.html">cpu_cached_instruction</a>
+<a href="__rm_interface_cpu_cached_stream.html">cpu_cached_stream</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_cpu_cached_instruction_once">cpu_cached_instruction_once</a></h1>
+<p>
+
+<a name="cpu_cached_instruction_once"></a><a name="cpu_cached_instruction_once_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface extends the <code>cpu_cached_instruction</code> interface
+   and allows callbacks to be installed that trigger only once, i.e., after
+   the first time they have been invoked they are automatically
+   removed. Otherwise they are identical to the corresponding methods in the
+   <code>cpu_cached_instruction</code> interface.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(cpu_cached_instruction_once) {
+        void (*register_instruction_before_once_cb)(
+                conf_object_t *cpu,
+                cached_instruction_handle_t *ci_handle,
+                cpu_instruction_cb_t cb,
+                lang_void *user_data,
+                cpu_callback_free_user_data_cb_t free_cb);
+        void (*register_instruction_after_once_cb)(
+                conf_object_t *cpu,
+                cached_instruction_handle_t *ci_handle,
+                cpu_instruction_cb_t cb,
+                lang_void *user_data,
+                cpu_callback_free_user_data_cb_t free_cb);
+};
+
+#define CPU_CACHED_INSTRUCTION_ONCE_INTERFACE "cpu_cached_instruction_once"
+</pre><p>
+
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Threaded Context for all methods, but must be called from a callback
+   registered by the <b><i>register_cached_instruction_cb</i></b> method in the
+   <code>cpu_instrumentation_subscribe</code> interface.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_cpu_cached_instruction.html">cpu_cached_instruction</a>
+<a href="__rm_interface_cpu_cached_stream.html">cpu_cached_stream</a>
+</div>

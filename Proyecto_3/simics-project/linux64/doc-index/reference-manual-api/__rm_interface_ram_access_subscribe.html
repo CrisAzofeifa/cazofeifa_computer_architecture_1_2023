@@ -1,0 +1,126 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ram_access_subscribe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_processor_info_v2.html">processor_info_v2</a>
+<a href="__rm_interface_simple_timing_v2.html">simple_timing_v2</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ram_access_subscribe">ram_access_subscribe</a></h1>
+<p>
+
+<a name="ram_access_subscribe"></a><a name="ram_access_subscribe_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="ram_access_subscribe_interface_t2"></a>
+<p>
+   This interface is used to register callbacks to instrument ram/rom accesses.
+</p><p>
+   The <b><i>register_access_before_cb</i></b> method registers a callback that is
+   called before any memory access reached the backing storage in a ram/rom
+   image. This makes it possible to modify the transaction before it reaches
+   its destination. See the documentation of the <code>ram_access_cb_t</code>
+   type for more information. A <code>ram_cb_handle_t</code> pointer is
+   returned as a reference to the callback.
+</p><p>
+   The <b><i>register_access_after_cb</i></b> method registers a callback that is
+   called after any memory access has reached the backing storage in a ram/rom
+   image. This makes it possible to modify the transaction after the access is
+   completed. See the documentation of the <code>ram_access_cb_t</code>
+   type for more information. A <code>ram_cb_handle_t</code> pointer is
+   returned as a reference to the callback.
+</p><p>
+   Both of these register callbacks above will receive all types of accesses,
+   read, write, or execute, from any initiator hitting any address range. It is
+   up to the callback to filter the information if needed, e.g., to only trace
+   read accesses. Normally, ram/rom pages can be cached in object using them by
+   using the <code>direct_memory_lookup</code> interface. This caching must
+   be blocked by this interface to allow the callbacks to be called. This has
+   severe impact on simulation speed. However, the following method should be
+   used to allow caching for accesses that the callbacks have no interest in.
+</p><p>
+   The <b><i>register_access_filter_cb</i></b> method can be used to register a
+   function callback that allows ram/rom pages to be cached by a user of the
+   <code>direct_memory_lookup</code> interface. If caching is allowed the
+   access may be invisible to the callbacks installed by
+   <b><i>register_access_before_cb</i></b> and <b><i>register_access_after_cb</i></b>
+   methods above. Even if an access is allowed to be cached it does not mean
+   that it will be, which means that the callbacks can be called anyway.
+</p><p>
+   See the documentation of the <code>access_filter_cb_t</code> type for more
+   information about the callback and how to allow caching. A
+   <code>ram_cb_handle_t</code> pointer is returned as a reference to the
+   callback.
+</p><p>
+   The <b><i>remove_callback</i></b> method removes an earlier installed
+   callback. The handle is used to identify the callback to be removed. All
+   register function above returns such handle.
+</p><p>
+   The <b><i>enable_callback</i></b> and <b><i>disable_callback</i></b> methods
+   temporarily enables and disables a previously installed
+   callback. The handle is used to identify the callback. All
+   register function above returns such handle.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(ram_access_subscribe) {
+        void (*remove_callback)(conf_object_t *NOTNULL obj,
+                                ram_cb_handle_t *handle);
+        void (*enable_callback)(conf_object_t *NOTNULL obj,
+                                ram_cb_handle_t *handle);
+        void (*disable_callback)(conf_object_t *NOTNULL obj,
+                                 ram_cb_handle_t *handle);
+        ram_cb_handle_t *(*register_access_before_cb)(
+                conf_object_t *NOTNULL obj,
+                conf_object_t *conn_obj,
+                ram_access_cb_t cb,
+                lang_void *data);
+        ram_cb_handle_t *(*register_access_after_cb)(
+                conf_object_t *NOTNULL obj,
+                conf_object_t *conn_obj,
+                ram_access_cb_t cb,
+                lang_void *data);
+        ram_cb_handle_t *(*register_access_filter_cb)(
+                conf_object_t *NOTNULL obj,
+                conf_object_t *connection,
+                access_filter_cb_t cb,
+                lang_void *data);
+};
+
+#define RAM_ACCESS_SUBSCRIBE_INTERFACE "ram_access_subscribe"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_processor_info_v2.html">processor_info_v2</a>
+<a href="__rm_interface_simple_timing_v2.html">simple_timing_v2</a>
+</div>

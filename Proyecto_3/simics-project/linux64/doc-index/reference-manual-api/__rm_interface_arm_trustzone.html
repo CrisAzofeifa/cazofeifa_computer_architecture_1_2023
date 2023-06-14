@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>arm_trustzone</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_arm_gic_cpu_state.html">arm_gic_cpu_state</a>
+<a href="__rm_interface_bridge.html">bridge</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_arm_trustzone">arm_trustzone</a></h1>
+<p>
+
+<a name="arm_trustzone"></a><a name="arm_trustzone_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is implemented by ARM processors that supports the arm ARM
+   TrustZone feature. The <b><i>get_security_mode</i></b> function returns the
+   current state of the processor, whereas <b><i>mem_op_security_mode</i></b>
+   extracts the mode of a memory operation in progress.
+<p>
+   The <b><i>get_security_mode</i></b> functions corresponds to the expression
+   <code>(cpsr.mode != Monitor &amp;&amp; scr.ns) ? Arm_Trustzone_Non_Secure :
+   Arm_Trustzone_Secure</code>. The <b><i>mem_op_security_mode</i></b> function
+   always returns <code>Arm_Trustzone_Non_Secure</code> when the processor is in
+   non-secure mode, in secure mode it returns the <code>ns</code> bit in the
+   first-level page table entry for the actual area being accessed.
+</p><p>
+   </p><pre class="jdocu_small">typedef enum {
+        Arm_Trustzone_Secure = 0,
+        Arm_Trustzone_Non_Secure = 1
+} arm_trustzone_mode_t;
+
+SIM_INTERFACE(arm_trustzone) {
+        arm_trustzone_mode_t (*get_security_mode)(conf_object_t *NOTNULL obj);
+        arm_trustzone_mode_t (*mem_op_security_mode)(
+                conf_object_t *NOTNULL obj,
+                generic_transaction_t *NOTNULL memop);
+};
+
+#define ARM_TRUSTZONE_INTERFACE "arm_trustzone"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_arm_gic_cpu_state.html">arm_gic_cpu_state</a>
+<a href="__rm_interface_bridge.html">bridge</a>
+</div>

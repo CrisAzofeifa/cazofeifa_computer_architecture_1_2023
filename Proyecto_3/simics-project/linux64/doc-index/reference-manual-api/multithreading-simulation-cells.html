@@ -1,0 +1,203 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.3 Simulation Cells</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="basic-module-requirements.html">2.2 Basic Module Requirements</a>
+<a href="multithreading-thread-domains.html">2.4 Thread Domains</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rmapi-threading-model.html">2 Threading Model</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="multithreading-simulation-cells">2.3 Simulation Cells</a></h1>
+<p>
+
+<a name="cell"></a>
+</p><p>
+A cell is a group of configuration objects which may interact
+with each other through direct function calls.
+If a model needs to communicate with objects in other cells during the
+simulation, it needs to do this through links (see section <a class="reference" href="#Link-Objects">2.3.4</a> or the <em>Link Library Programming Guide</em>). A link always
+introduces a delay in the communication, which means that messages
+cannot be sent and received in the same cycle.
+</p><p>
+In a configuration, a cell is represented by a configuration object of
+class <b>cell</b>. All objects that implement the <code>cycle</code>
+interface (referred to as clocks) automatically have a <i>cell</i>
+attribute that will point to the cell they belong to. Since all Simics objects
+have a <i>queue</i> attribute pointing at a clock object, they will by
+extension belong to the cell of their clock object. This is illustrated
+in the figure below:
+</p><div class="figure" id="cell_partitioning">
+
+<div style="text-align: center">
+<img alt="" src="cell.png">
+<div class="caption">Figure 3. Configuration is partitioned into cells</div>
+</div>
+</div>
+
+<br>Another example is the following configuration:
+<pre class="jdocu_small">OBJECT cell0 TYPE cell {
+}
+OBJECT cell1 TYPE cell {
+}
+OBJECT cpu0 TYPE cpu {
+       cell: cell0
+}
+OBJECT cpu1 TYPE cpu {
+       cell: cell0
+}
+OBJECT cpu2 TYPE cpu {
+       cell: cell1
+}
+OBJECT device0 TYPE device {
+       queue = cpu0
+}
+OBJECT device1 TYPE device {
+       queue = cpu0
+}
+OBJECT device2 TYPE device {
+       queue = cpu2
+}
+</pre><p>
+</p><p>
+In this example, <b>device0</b> has <b>cpu0</b> as a queue, and thus
+belongs to <b>cell0</b>, while <b>device2</b>
+has <b>cpu2</b> as a queue, and thus belongs to <b>cell1</b>.
+</p><p>
+</p><h2 class="jdocu"><a name="Cells-and-Components">2.3.1 Cells and Components</a></h2>
+<p>
+
+</p><p>
+Simics provides an
+automatic cell partitioning based on top-level components. Each
+component object implements a <b><i><a name="create_cell">create_cell</a>()</i></b>
+method that can
+return <code>True</code> or <code>False</code> to the question:
+should a simulation cell be created to contain this component and all
+its sub-components? By default, top-level components return 
+<code>True</code> and all other components return <code>False</code>. 
+By overriding this method, it is possible to 
+automatically create cells at lower levels in the component hierarchy,
+or to disable cell creation altogether. In the latter case, the
+<b><i>create_cell()</i></b> should return <code>False</code> and the 
+components should define cell objects themselves and assign clocks to
+them as appropriate, just as normal configuration objects.
+</p><p>
+The code snippets below show how to overload
+the <b><i>create_cell()</i></b> function for both old-style and hierarchical
+way of writing components.
+</p><p>
+</p><pre class="jdocu_small">class mycomp(component_object):
+    ...
+    def create_cell(self):
+        return False
+
+class mycomp(StandardConnectorComponent): # or StandardComponent
+    ....
+    class component(comp.StandardComponent.component):
+        def create_cell(self):
+            return False
+</pre><p>
+</p><p>
+Cells can also be created independently of components, by
+creating <b>cell</b> objects and setting the <i>cell</i>
+attribute of the clock objects which should belong to the cell.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Compatibility">2.3.2 Compatibility</a></h2>
+<p>
+
+</p><p>
+If clock objects are created that do not point to a cell, then
+a <b>default_cell</b> object will be created, unless it exists already,
+to make sure these clock objects are scheduled as intended.
+This is a simple compatibility mechanism for use with older scripts.
+If you are building your configurations in several steps, but without
+using components, you will have to introduce your own cells and configure them.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Verifying-the-Cell-Partitioning">2.3.3 Verifying the Cell Partitioning</a></h2>
+<p>
+
+</p><p>
+The <b>check-cell-partitioning</b> command checks
+either a checkpoint or the currently loaded configuration for
+violations of the cell partitioning rules—namely, that
+objects belonging to one cell do not have any references to
+objects in another cell. Such references will be shown
+in the form of a chain of attributes connecting the cells.
+</p><p>
+An object is considered to belong to a cell if either it is a cell
+object, or if it refers to or is referred to by an object belonging to
+that cell. Object references are object values in (checkpointed)
+attributes.
+</p><p>
+False positives can be suppressed by defining the attribute
+<i>outside_cell</i> and setting it to true for objects
+that should not be considered part of any cell but still refer
+to other objects in cells. This can be necessary for objects
+that only use these references in safe ways, e.g., in Global Context.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Link-Objects">2.3.4 Links</a></h2>
+<p>
+
+</p><p>
+Links are the only Simics objects that should connect different cells
+together. In other words, link components are allowed to connect to
+device components
+belonging to different cells without breaking the cell isolation rules. This
+works because all communication over the links are asynchronous with a delay
+that is constrained by the synchronization parameters so that the information
+exchange never becomes indeterministic.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+While it is possible to perform cross-cell calls if special
+  precautions are taken, it should be avoided since it likely prevents the
+  simulation from being deterministic even when the simulation is
+  running in the "serial" threading mode.
+</div>
+<h2 class="jdocu"><a name="Synchronization-domains">2.3.5 Synchronization domains</a></h2>
+<p>
+
+</p><p>
+All cells are connected to a <em><a name="synchronization-domain">synchronization domain</a></em> that
+controls the execution in the cells to ensure that they do not run too
+far apart in virtual time. The domain has a <i>min_latency</i>
+parameter that limits the allowed difference in time between clocks in
+all the cells connected to it. This works as a lower limit for the
+latency that link objects can use when communicating between cells.
+</p><p>
+
+</p>
+<div class="chain">
+<a href="basic-module-requirements.html">2.2 Basic Module Requirements</a>
+<a href="multithreading-thread-domains.html">2.4 Thread Domains</a>
+</div>

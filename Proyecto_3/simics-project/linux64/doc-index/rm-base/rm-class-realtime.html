@@ -1,0 +1,132 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>realtime</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-ram_tracer_connection.html">ram_tracer_connection</a>
+<a href="rm-class-recorder.html">recorder</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="realtime"><a href="#realtime">realtime</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+In some cases simulated time may run faster than real time; this can happen if the OS is in a tight idle loop or an instruction halts execution waiting for an interrupt, or if the host machine is simply sufficiently fast. This can cause problems for programs that interact with the real world (for example the user), since time-outs may expire really fast. A <tt>realtime</tt> object will, when enabled, periodically check the simulation speed and wait for a while if it is too high.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-realtime.disable.html">disable</a>
+ – disable real-time behavior</li>
+<li>
+<a href="rm-cmd-realtime.enable.html">enable</a>
+ – enable real-time behavior</li>
+<li>
+<a href="rm-cmd-realtime.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-realtime.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:clock_object">
+<i>clock_object</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>The object used to measure simulated time. This can be any processor in the system.</dd>
+<dt id="dt:speed">
+<i>speed</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>How fast the simulated time runs compared to real time. The default is 1, which means that simulated time runs at the same speed as real time. Note that Simics may be unable to run as fast as requested if the host is not fast enough.</dd>
+<dt id="dt:check_interval">
+<i>check_interval</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>How frequently elapsed simulated time should be compared to elapsed real time. Specified in milliseconds of simulated time; the default is 100. The actual time between comparisons may be less than this. It will never be less than <code>set-time-quantum</code>, so check that setting if you need very fine-grained realtime behavior.</dd>
+<dt id="dt:enabled">
+<i>enabled</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Whether the real-time behavior is enabled or not. Defaults to false.</dd>
+<dt id="dt:drift_compensate">
+<i>drift_compensate</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>The <tt>speed</tt> attribute says how fast the simulation <em>should</em> run, but the actual speed will always deviate a little from that value even if the host is fast enough. To keep these errors from accumulating, the simulation speed has to be adjusted; <tt>drift_compensate</tt> regulates how much it may be adjusted. If set to (for example) 0.25, simulation speed may be increased or decreased by up to 25% if necessary to make up for any accumulated drift with respect to real time. If set to zero (the default), the simulation speed may not be changed at all from its set value.</dd>
+<dt id="dt:rtc_freq">
+<i>rtc_freq</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>Frequency of the realtime clock, in Hz.</dd>
+<dt id="dt:max_oversleep">
+<i>max_oversleep</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The sleep system call will usually sleep somewhat longer than requested. To compensate for this, Simics will ask for a shorter sleep, and busy-wait the rest of the time. This parameter determines how much shorter, in microseconds. (This will only help against delays imposed by the sleep implementation, not against delays caused by other processes on the system.)</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.realtime.html">realtime</a>
+</section>
+<div class="chain">
+<a href="rm-class-ram_tracer_connection.html">ram_tracer_connection</a>
+<a href="rm-class-recorder.html">recorder</a>
+</div>

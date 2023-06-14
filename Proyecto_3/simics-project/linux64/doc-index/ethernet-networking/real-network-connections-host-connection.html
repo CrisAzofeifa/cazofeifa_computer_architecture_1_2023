@@ -1,0 +1,185 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.2.3 Host Connection</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="real-network-connections-ethernet-bridging.html">4.2.2 Ethernet Bridging</a>
+<a href="real-network-access.html">4.3 Accessing Host Ethernet Interfaces</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="real-network.html">4 Connecting to a Real Network</a>
+&nbsp;/&nbsp;
+<a href="real-network-connections.html">4.2 Connection Types</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="real-network-connections-host-connection">4.2.3 Host Connection</a></h1>
+<p> 
+</p><p>
+Simics can connect a simulated network to a virtual Ethernet (TAP)
+interface on the simulation host. The simulation host and the
+simulated machines will then be able to communicate as if they were
+connected to the same Ethernet network. For example, by configuring
+the simulation host with an IP address on the TAP interface, the
+simulation host and the simulated machines will be able to send IP
+traffic to each other.
+</p><p>
+Enabling IP forwarding on the host will also allow the simulated
+machines to access other hosts on the real network, using the host
+operating system's IP routing facilities. Read the instructions after
+the example below for instructions about how to set it up.
+</p><p>
+To connect the simulated network to the TAP interface, the TAP
+interface should be configured on the simulation host, as described in
+section <a class="reference" href="real-network-access-tap.html">4.3.1</a>. Use the
+<b>connect-real-network-host</b> command, which simply takes the
+name of the TAP interface as the <i>interface</i> argument. The
+simulation host will now appear on the simulated network. Configure
+the TAP interface of the host with an IP address from the same subnet
+as the simulated machines, and the simulated machines will be able to
+communicate with the host.
+</p><p>
+Simulated machine configurations provided with Simics usually use IP
+addresses from the 10.10.0.<em>x</em> subnet, so the simulation host
+should typically get an IP address on the form 10.10.0.<em>x</em> with a
+netmask of 255.255.255.0.
+</p><p>
+On Linux, this is configured with <code>ifconfig</code>, which requires
+administrative privileges:
+</p><p>
+</p><pre class="jdocu_small">computer# <b>ifconfig sim_tap0 10.10.0.<em>x</em> netmask 255.255.255.0 up</b>
+</pre><p>
+</p><p>
+On Windows, use these steps instead:
+</p><p>
+</p><ol>
+
+    <li>Open the <b>Network Connections</b> folder of the
+    <b>Control Panel</b>.</li>
+
+    <li>Right-click on the OpenVPN TAP interface to bring up a context
+    menu, and select <em>Properties</em>.</li>
+
+    <li>A property dialog box will open. Select <em>Internet Protocol
+    (TCP/IP)</em> and click on the <b>Properties</b> button.</li>
+
+    <li>A new property dialog box will open. Select <b>Use the
+    following IP address</b> and enter the <em>IP address</em> and
+    <em>Subnet mask</em> the simulation host should use on the
+    simulated network.
+<p>
+    Select an IP address on the form 10.10.0.<em>x</em> and the netmask
+    255.255.255.0. The <em>Default gateway</em> field can typically be
+    left blank.</p></li>
+
+    <li>Click <b>OK</b> in both property dialog boxes.</li>
+
+</ol>
+<p>
+</p><h2 class="jdocu"><a class="not-numbered" name="real-network-connections-host-connection-example">Example</a></h2>
+<p>
+     
+</p><p>
+This example assumes that the simulation is starting from the
+checkpoint prepared in section <a class="reference" href="real-network-examples.html">4.1</a>,
+that there is a correctly set up TAP interface on the simulation host
+for host connection according to section <a class="reference" href="real-network-access-tap.html">4.3.1</a>, and that it has been configured
+with the IP address 10.10.0.1 as described above. Here the name if
+the TAP interface is assumed to be <code>sim_tap0</code>: replace it with
+the name of the TAP interface.
+</p><p>
+To connect the TAP interface to the simulated network, use the
+<b>connect-real-network-host</b> command:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>connect-real-network-host interface = sim_tap0</b>
+No Ethernet link found, created default_eth_switch0.
+Connected board.mb.sb.eth_slot to default_eth_switch0
+[rn0.rn info] Connecting to TAP device 'sim_tap0'
+'default_eth_switch0' connected to real network.
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+On Windows, the message "Connecting to existing TUN/TAP device
+'sim_tap0'" will not appear.</div>Any kind of Ethernet traffic can now pass between the simulated
+network and the simulation host. It should be possible, for example,
+to ping the simulation host from the simulated machine, at the IP
+address configured on the TAP interface:
+<p>
+</p><pre class="jdocu_small">~# <b>ping 10.10.0.1 -c 5</b>
+PING 10.10.0.1 (10.10.0.1) from 10.10.0.40 : 56(84) bytes of data.
+64 bytes from 10.10.0.1: icmp_seq=1 ttl=64 time=1.15 ms
+64 bytes from 10.10.0.1: icmp_seq=2 ttl=64 time=1.11 ms
+64 bytes from 10.10.0.1: icmp_seq=3 ttl=64 time=10.9 ms
+64 bytes from 10.10.0.1: icmp_seq=4 ttl=64 time=1.11 ms
+64 bytes from 10.10.0.1: icmp_seq=5 ttl=64 time=1.11 ms
+
+--- 10.10.0.1 ping statistics ---
+5 packets transmitted, 5 received, 0% loss, time 4037ms
+rtt min/avg/max/mdev = 1.113/3.085/10.932/3.923 ms
+</pre><p>
+</p><p>
+
+</p><p>
+</p><h2 class="jdocu"><a class="not-numbered" name="real-network-connections-host-connection-ip-forwarding">IP Forwarding</a></h2>
+<p>
+     
+</p><p>
+Enabling IP forwarding on the simulation host will allow real machines
+to access the simulated network by routing the traffic through the
+simulation host. This method is called <em> <a name="IPforwarding"></a>IP
+forwarding</em>.
+</p><p>
+On Linux run the following command to set up ip forwarding:
+</p><p>
+</p><pre class="jdocu_small">computer# <b>sysctl -w net.ipv4.ip_forward=1</b>
+net.ipv4.ip_forward = 1
+</pre><p>
+</p><p>
+And to disable IP forwarding again:
+</p><p>
+</p><pre class="jdocu_small">computer# <b>sysctl -w net.ipv4.ip_forward=0</b>
+net.ipv4.ip_forward = 0
+</pre><p>
+</p><p>
+To set it up on Windows, change the registry key
+<code>HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\IPEnableRouter</code>
+from 0 to 1 and reboot. If the key does not exist, create it and give
+it the value 1. To disable IP forwarding, reset the registry key to 0
+and reboot.
+</p><p>
+For the routing to work, both the simulated machines and the machines
+on the real network must be configured: on the simulated machines, a
+route must be added to the real network with the IP address of the
+host's TAP interface as gateway; on the real machines, it is a route
+to the simulated network with the IP address of the simulation host's
+Ethernet interface that should be added.
+</p><p>
+ </p>
+<div class="chain">
+<a href="real-network-connections-ethernet-bridging.html">4.2.2 Ethernet Bridging</a>
+<a href="real-network-access.html">4.3 Accessing Host Ethernet Interfaces</a>
+</div>

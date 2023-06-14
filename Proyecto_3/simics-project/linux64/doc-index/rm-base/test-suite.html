@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>8.1 Test suite</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="test-framework.html">8 Test Framework</a>
+<a href="defining-tests.html">8.2 Defining Test Suites</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="test-framework.html">8 Test Framework</a>
+&nbsp;/&nbsp;</div>
+<h1 id="test-suite">8.1 <a href="#test-suite">Test suite</a></h1>
+<p>A test suite is a directory containing tests. It is identified by the presence
+of a file named <code>SUITEINFO</code>.</p>
+<p></p><h2 id="suiteinfo">8.1.1 <a href="#suiteinfo">SUITEINFO</a></h2>
+<p>Apart from defining its parent directory as a test suite, the contents of a
+<code>SUITEINFO</code> file can also define some properties of the test suite. Each
+line which does not start with a <code>#</code> character defines a parameter. The
+parameter definition is provided as the name of the parameter, a 
+':'-character, and finally the value for the parameter. Whitespace at the
+start and the end of the line is ignored, as well as whitespace characters
+around the ':'.</p>
+<p>Currently the following parameters are accepted:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:timeout">timeout</span><br>
+The amount of time the suite is allowed to run before it is terminated
+by the test system, measured in seconds. The value must be an integer.
+The default value is 60 seconds.</li>
+<li><span class="term" id="dt:disabled_on_hosts">disabled_on_hosts</span><br>
+Host types (<code>linux64</code> or <code>win64</code>) on which the suite should not be run.</li>
+<li><span class="term" id="dt:tags">tags</span><br>
+Space-separated list of tags for the suite. Each tag is an arbitrary
+text; when a tag is passed to <code>test-runner</code> through the <code>--tag</code> argument,
+then only suites containing that tag will be selected.</li>
+</ul>
+</div>
+<p>Using any other parameter name is currently considered a syntax error.</p>
+<p>Example SUITEINFO file:</p>
+<pre><code># give up after 5 minutes
+timeout: 300
+# do not run on Windows host
+disabled_on_hosts: win64
+# suite belongs to two groups
+tags: pci nightly
+</code></pre>
+<p></p>
+
+<div class="chain">
+<a href="test-framework.html">8 Test Framework</a>
+<a href="defining-tests.html">8.2 Defining Test Suites</a>
+</div>

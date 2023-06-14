@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;address_profiler&gt;.address-profile-data</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-accel-vga.wait-for-string.html">&lt;accel-vga&gt;.wait-for-string</a>
+<a href="rm-cmd-address_profiler.address-profile-info.html">&lt;address_profiler&gt;.address-profile-info</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="address_profiler.address-profile-data"></a>
+<h1 id="address_profiler.address-profile-data"><a href="#address_profiler.address-profile-data">&lt;address_profiler&gt;.address-profile-data</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;address_profiler&gt;.address-profile-data</b> [<i>view</i>] [<i>address</i>] [<i>cell-bits</i>] [<i>row-bits</i>] [<i>table-bits</i>] [<i>start</i>] [<i>stop</i>] [<i>lines</i>] [<i>columns</i>] [-same-prefix] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Display a map of (a part of) the address space covered by the address profiler, and the counts of one of its views associated with each address. The view is specified by the <i>view</i> argument; default is view 0. The default behavior is to display the smallest interval that contains all counts; you can change this with either the <i>start</i> and <i>stop</i> or the <i>address</i> and <i>cell-bits</i>, <i>row-bits</i> or <i>table-bits</i> arguments.
+<p>
+Cells that have zero counts are marked with ".". Cells that have a non-zero count, but were rounded to zero, are marked with "o".
+</p><p>
+If one of <i>cell-bits</i>, <i>row-bits</i> or <i>table-bits</i> is specified, then each cell, or each table row, or the entire table is limited to that many bits of address space. By default the display starts at address 0, but if an address is specified with the <i>address</i> argument, the displayed interval is shifted to make that address is visible.
+</p><p>
+If <i>start</i> and <i>stop</i> are specified, the display is limited to the smallest interval containing both addresses.
+</p><p>
+The maximum number of lines and columns in the table are limited by the <i>lines</i> and <i>columns</i> arguments (the default is 20 lines, 8 columns). The scale of the map is adjusted to fit this limit.
+</p><p>
+Normally, the display chooses an appropriate prefix for the count of each cell; with the <tt>-same-prefix</tt> flag, all counts will be forced to have the same prefix. This is useful if a lot of small but non-zero values makes it hard to spot the really big values.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-accel-vga.wait-for-string.html">&lt;accel-vga&gt;.wait-for-string</a>
+<a href="rm-cmd-address_profiler.address-profile-info.html">&lt;address_profiler&gt;.address-profile-info</a>
+</div>

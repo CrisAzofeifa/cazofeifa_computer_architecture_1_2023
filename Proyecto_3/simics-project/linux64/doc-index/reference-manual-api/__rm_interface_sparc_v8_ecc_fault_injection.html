@@ -1,0 +1,79 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>sparc_v8_ecc_fault_injection</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_sparc_v8.html">sparc_v8</a>
+<a href="__rm_interface_spr.html">spr</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_sparc_v8_ecc_fault_injection">sparc_v8_ecc_fault_injection</a></h1>
+<p>
+
+<a name="sparc_v8_ecc_fault_injection"></a><a name="sparc_v8_ecc_fault_injection_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(sparc_v8_ecc_fault_injection) {
+        void (*inject_instr_access_exception)(conf_object_t *cpu);
+        void (*inject_data_access_exception)(conf_object_t *cpu);
+        void (*inject_reg_access_error)(conf_object_t *cpu);        
+};
+#define SPARC_V8_ECC_FAULT_INJECTION_INTERFACE "sparc_v8_ecc_fault_injection"
+</pre><p>
+</p><p>
+
+   Support the injection of uncorrectable ECC faults. It can be used to
+   inject (1) V8_Exc_Data_Access_Exception,
+   (2) V8_Exc_Instruction_Access_Exception, and
+   (3) V8_Exc_R_Register_Access_Error. The functions in this interface
+   can only be called by breakpoint callback functions. Once an ecc
+   fault is injected, new ecc faults can not be injected until the current
+   one is handled.
+   </p><p>
+   The <b><i>inject_data_access_exception</i></b> plants an
+   V8_Exc_Data_Access_Error for memory access on a location. The fault is
+   injected when the breakpoint callback function of the location is called.
+</p><p>
+   The <b><i>inject_instr_access_exception</i></b> plants an
+   V8_Exc_Instruction_Access_Exception for an instruction, and this fault is
+   injected when the breakpoint callback function of the instruction location
+   is called.
+</p><p>
+   The <b><i>inject_data_access_exception</i></b> is used for injecting
+   V8_Exc_R_Register_Access_Error for a register access. It is right now not
+   implemented.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_sparc_v8.html">sparc_v8</a>
+<a href="__rm_interface_spr.html">spr</a>
+</div>

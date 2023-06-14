@@ -1,0 +1,80 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>A Handling DBGHELP.DLL</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="feature-list-stall-cache.html">6 Processor-specific Features and Limitations</a>
+<a href="uefi-fw-trk-uefi-notification-update.html">B Update UEFI For Notification Tracking</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 id="handling-dbghelp-dll">A <a href="#handling-dbghelp-dll">Handling DBGHELP.DLL</a></h1>
+<p>To be able to debug a PE binary that has been compiled with <em>Microsoft Visual Studio<sup>*</sup></em>, the library <code>DBGHELP.DLL</code> must be available for Simics. Because of licensing reasons, <code>DBGHELP.DLL</code> cannot be distributed with Simics. When required, Simics will load <code>DBGHELP.DLL</code> from <code>%simics%/win64/lib/DBGHELP.DLL</code>. If this fails, <code>DBGHELP.DLL</code> will instead be loaded from the default installation directories of either <em>Visual Studio</em> or <em>Windows Driver Kits</em>: </p>
+<ul>
+<li><code>C:\Program Files (x86)\Microsoft Visual Studio [version]\Common7\IDE\Remote Debugger\x64\dbghelp.dll
+     </code></li>
+<li><code>C:\Program Files (x86)\Windows Kits\[version]\Debuggers\x64\dbghelp.dll
+       </code></li>
+</ul>
+<p>If <code>DBGHELP.DLL</code> could not be loaded, an Simics will log an error, and the user is required to perform these steps: </p>
+<ol>
+<li>
+<p>Quit Simics. </p>
+</li>
+<li>
+<p>Find a 64-bit version of <code>DBGHELP.DLL</code>, or if not available, install either <em>Visual Studio</em> or download and install <em>Windows Driver Kit</em> from <a href="https://developer.microsoft.com/en-us/windows/hardware/windows-driver-kit" rel="noopener noreferrer" target="_top">https://developer.microsoft.com/en-us/windows/hardware/windows-driver-kit</a></p>
+</li>
+<li>
+<p>If <code>DBGHELP.DLL</code> cannot be automatically loaded by Simics, or if a specific version <code>DBGHELP.DLL</code> is needed, copy it to either to the Simics project or installation: </p>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:simics-project">Simics project</span><br>
+Do one of the following: </p>
+<ul>
+<li>Create the directory <code>[project]\win64\lib</code> and copy <code>DBGHELP.DLL</code> to this directory. </li>
+<li>From Simics CLI, use the command <code>&lt;tcf_agent&gt;.copy-dbghelp</code>. </li>
+</ul>
+</li>
+<li>
+<p><span class="term" id="dt:simics-installation">Simics installation</span><br>
+To do this administor permissions are required. Copy <code>DBGHELP.DLL</code> to:</p>
+<p><code>C:\Program Files\Simics\Simics 6\Simics 6.0\win64\lib</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Restart Simics. Information about <code>DBGHELP.DLL</code> can be seen by running:<br>
+<code>&lt;tcf_agent&gt;.status</code>. </p>
+</li>
+</ol>
+
+<div class="chain">
+<a href="feature-list-stall-cache.html">6 Processor-specific Features and Limitations</a>
+<a href="uefi-fw-trk-uefi-notification-update.html">B Update UEFI For Notification Tracking</a>
+</div>

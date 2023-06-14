@@ -1,0 +1,110 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ethernet_common</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ethernet_cable.html">ethernet_cable</a>
+<a href="__rm_interface_ethernet_probe.html">ethernet_probe</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ethernet_common">ethernet_common</a></h1>
+<p>
+
+<a name="ethernet_common"></a><a name="ethernet_common_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(ethernet_common) {
+        void (*frame)(conf_object_t *NOTNULL obj, const frags_t *frame,
+                      eth_frame_crc_status_t crc_status);
+};
+#define ETHERNET_COMMON_INTERFACE "ethernet_common"
+</pre><p>
+</p><p>
+   
+</p><p>
+   This interface is implemented by objects that receive Ethernet frames, both
+   Ethernet devices and Ethernet link endpoints.
+</p><p>
+   There is a single function <b><i>frame</i></b> which sends an Ethernet frame,
+   without preamble nor SFD (Start Frame Delimiter), but with a CRC field.
+</p><p>
+   The <i>crc_status</i> parameter provides out-of-band information on
+   the contents of the frame with regards to the CRC field using one of the
+   values in the <code>eth_frame_crc_status_t</code> enum:
+</p><p>
+   
+   </p><ul>
+     <li><code>Eth_Frame_CRC_Match</code> means that the frame contents are
+     correct. The CRC field in the frame should not be relied upon as its
+     computation may have been skipped for optimization, and it may contain any
+     value, including zero, a random value or a correctly computed CRC.</li>
+
+     <li><code>Eth_Frame_CRC_Mismatch</code> means that the frame contents are
+     incorrect. The CRC field in the frame must contain a CRC that does not
+     match the frame contents, i.e., to send an incorrect frame on the link,
+     you must make sure that the CRC field will not match when computed.</li>
+
+     <li><code>Eth_Frame_CRC_Unknown</code> means that the relation between the
+     frame contents and the CRC field is unknown. The relation can be
+     established by computing the frame's CRC and comparing it to the frame's
+     CRC field.</li>
+   </ul>
+   
+<pre class="jdocu_small">typedef enum {
+        Eth_Frame_CRC_Match,
+        Eth_Frame_CRC_Mismatch,
+        Eth_Frame_CRC_Unknown
+} eth_frame_crc_status_t;</pre><p>
+
+</p><p>
+   When a device calls a link's <b><i>frame</i></b> function, it can set
+   crc_status to any of the three values. If the link receives a
+   <code>Eth_Frame_CRC_Unknown</code>, it will compute the CRC itself to set the
+   status to <code>Eth_Frame_CRC_Match</code> or <code>Eth_Frame_CRC_Mismatch</code>.
+</p><p>
+   When a link calls a device's <code>frame</code> function, crc_status will be set
+   to either <code>Eth_Frame_CRC_Match</code> or <code>Eth_Frame_CRC_Mismatch</code>,
+   and never <code>Eth_Frame_CRC_Unknown</code>.
+</p><p>
+   When two devices are directly connected to each others without using a link,
+   the interpretation of <code>Eth_Frame_CRC_Unknown</code> is up to the devices'
+   implementation.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>frame</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ethernet_cable.html">ethernet_cable</a>
+<a href="__rm_interface_ethernet_probe.html">ethernet_probe</a>
+</div>

@@ -1,0 +1,85 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_smm_notification</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_monitor_notification.html">x86_monitor_notification</a>
+<a href="__rm_interface_x86_unplug.html">x86_unplug</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_smm_notification">x86_smm_notification</a></h1>
+<p>
+
+<a name="x86_smm_notification"></a><a name="x86_smm_notification_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Objects registered in processor's <i>smm_listeners</i> attribute will
+   be called via the <b><i>notification</i></b> method whenever the CPU's enters
+   and leaves SMI handler. SMI handler entry occurs on SMI processing. SMI
+   handler exit occurs by RSM instruction execution. Please note that for both
+   SMI handler entry and SMI handler exit <b><i>notification</i></b> method will be
+   invoked twice: at the beginning of the entry/exit and at the end when CPU
+   state was already modified. <i>event</i> argument says if entry/exit is
+   performed, <i>phase</i> argument equals to <b>X86_Smm_Phase0</b> for
+   the beginning of the event and to <b>X86_Smm_Phase1</b> for the end.
+<p>
+   <a name="x86_smm_event_type_t"></a>
+    
+</p><pre class="jdocu_small">typedef enum x86_smm_event_type {
+    X86_Smm_Enter,
+    X86_Smm_Leave
+} x86_smm_event_type_t;</pre><p>
+
+</p><p>
+   <a name="x86_smm_phase_type_t"></a>
+    
+</p><pre class="jdocu_small">typedef enum x86_smm_phase_type {
+    X86_Smm_Phase0,
+    X86_Smm_Phase1
+} x86_smm_phase_type_t;</pre><p>
+
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(x86_smm_notification) {
+        void (*notification)(conf_object_t *listener, conf_object_t *cpu,
+                             x86_smm_event_type_t event,
+                             x86_smm_phase_type_t phase);
+};
+#define X86_SMM_NOTIFICATION_INTERFACE "x86_smm_notification"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_monitor_notification.html">x86_monitor_notification</a>
+<a href="__rm_interface_x86_unplug.html">x86_unplug</a>
+</div>

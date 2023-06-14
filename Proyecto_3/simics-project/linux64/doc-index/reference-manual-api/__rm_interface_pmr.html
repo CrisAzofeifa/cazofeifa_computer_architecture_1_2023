@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pmr</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pcie_port_control.html">pcie_port_control</a>
+<a href="__rm_interface_port_space.html">port_space</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pmr">pmr</a></h1>
+<p>
+
+<a name="pmr"></a><a name="pmr_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(pmr) {
+        uint64 (*get)(
+                conf_object_t *obj,
+                int pmr_number,
+                bool instruction_read);
+        void (*set)(
+                conf_object_t *obj,
+                int pmr_number,
+                uint64 value,
+                bool instruction_write);
+};
+#define PMR_INTERFACE "pmr"
+</pre><p>
+</p><p>
+
+   This interface provides a way for a user to write their own handler for the
+   performance monitor register bank. The processor's <code>pmr_handler</code>
+   attribute should be set point at the to the module, which implements the pmr
+   interface. When set, all reads and writes toward the defined PMR registers
+   will be forwarded to the user module instead. Simics CPU module will perform
+   all the privilege checks and only forward the read/write if it is permitted.
+</p><p>
+   The supervisor registers are checkpointed by the CPU module and the register
+   content for the PMR registers is distributed to the user module in the
+   finalize phase, after the pmr_handler has been set.
+</p><p>
+   The function <b><i>get</i></b> is used for attribute reads, int_register reads
+   or for <code>mfpmr</code> instructions. The value for the PMR register should be
+   returned. The <i>instruction_read</i> will be true only for
+   <code>mfpmr</code> instructions, allowing distinction between register reads by
+   the user and instructions which could have side-effects.
+</p><p>
+   Similar, the <b><i>set</i></b> function is used for attribute writes,
+   int_register writes or for <code>mtpmr</code> instructions. The
+   <i>instruction_write</i> will be true only for <code>mtpmr</code>
+   instructions. The <i>value</i> indicates the value written to the
+   PMR register.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pcie_port_control.html">pcie_port_control</a>
+<a href="__rm_interface_port_space.html">port_space</a>
+</div>

@@ -1,0 +1,291 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7.5 Using SimicsFS with FUSE</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="usb-disks.html">7.4 USB disks</a>
+<a href="using-tftp.html">7.6 Using TFTP</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="simicsfs">7.5 Using SimicsFS with FUSE</a></h1>
+<p>
+
+<a name="SimicsFS"></a>
+</p><p>
+SimicsFS with FUSE is a new implementation based on FUSE, Filesystem in
+Userspace, which is supported by most Linux systems[1]. This is a client-server
+solution, which is more feature complete and with better performance than the
+old SimicsFS kernel module and device solution.
+</p><p>
+The Simics extension, SimicsFS with FUSE, will grant a simulated Linux system
+access to the file system of the host computer from inside the simulation. This
+allows more storage space for the target system and may make copying files to
+and from the target system unnecessary as they can be accessed directly from the
+host file system.
+</p><p>
+The SimicsFS client, used for SimicsFS with FUSE, is a regular Linux user-space
+application that allows non-privileged users to mount and unmount file systems.
+The FUSE kernel module needs to be included in the Linux kernel and the libfuse
+userspace library[2] in the Linux distribution.
+</p><p>
+All accesses to the host filesystem will be made with the privileges of the user
+starting the Simics session.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+[1] FUSE is compatible with all Linux kernels since version 2.4.
+  [2] SimicsFS client is compatible with FUSE 2.6 or later.
+</div>Some characteristics/limitations for SimicsFS with FUSE:
+<p>
+</p><ul>
+  <li>The user can only mount on a mountpoint, for which the user has write
+    permission.</li>
+  <li>The mountpoint is owned by the user.</li>
+  <li>No other user (including root) can access the contents of the mounted file
+    system (although this can be relaxed by using the allow_other and allow_root
+    mount options).</li>
+  <li>All file system operations on the host are performed by the user running
+    Simics, indifferent to which user requested the operations in the target
+    system. Therefore even a super user on the target is constrained by the
+    file system permissions of the user running Simics.</li>
+  <li>SimicsFS does not perform any character set transformation of characters
+    in the file paths, so if different character sets are used on the
+    simulated target and on the host, the characters may be interpreted
+    differently.</li>
+  <li>SimicsFS is currently not using wide characters on Windows, and valid file
+    path names are therefore limited to ASCII characters.</li>
+  <li>Read-only files on the target system may not be copied to the mounted
+    file system. See workaround in section <a class="reference" href="#simicsfs-fuse-using">7.5.2</a>.
+  </li>
+  <li>On Windows, the SimicsFS client only has partial access to the actual
+    permissions of files and directories. Some permissions are not correctly
+    reported, nor configurable by the client. See table below.</li>
+</ul>
+<p>
+Limitations for Windows hosts:
+<table>
+
+  <tbody><tr><td class="jdocu_border"><b>Operation</b></td><td class="jdocu_border"><b>Restriction</b></td></tr>
+
+  <tr><td class="jdocu_border">Read</td>
+    <td class="jdocu_border">Read accesses cannot be denied, any attempts are silently ignored.
+  </td></tr>
+
+  <tr><td class="jdocu_border">Read</td>
+    <td class="jdocu_border">Unreadable files may still appear readable, but reading will fail.
+  </td></tr>
+
+  <tr><td class="jdocu_border">Soft-link</td>
+    <td class="jdocu_border">Windows filesystems do not support it.</td></tr>
+
+  <tr><td class="jdocu_border">Add/Remove</td>
+    <td class="jdocu_border">Write permission on the directory is ignored.</td></tr>
+
+</tbody></table>
+</p><p>
+</p><h2 class="jdocu"><a name="simicsfs-fuse-install">7.5.1 Installing SimicsFS client</a></h2>
+<p>
+  
+  The SimicsFS client is installed on some disk images distributed with Simics.
+  Where there is also a <code>/host</code> directory and definitions in
+  <code>/etc/fstab</code> for mounting SimicsFS with the command
+  <code>mount /host</code> by root. Then the host files become accessible by root
+  alone.
+</p><p>
+  If you run your own Linux distribution you have to compile SimicsFS client
+  yourself. The source code is located in the
+  <code>src/misc/simicsfs-client/</code> directory and in the
+  <code>src/misc/libmagicpipe/</code> directory of the Base package (pkg 1000).
+  The Linux kernel must be compiled with FUSE support and the file system must
+  include libfuse.
+</p><p>
+  Example definition in the <code>/etc/fstab</code> for mounting SimicsFS with
+  the command <code>mount /host</code> by root:
+</p><p>
+  </p><pre class="jdocu_small">    <b>simicsfs-client      /host      fuse     defaults,noauto       0 0</b>
+  </pre><p>
+</p><p>
+  Replace <code>/host</code> with your mount point. The simicsfs-client
+  executable must be located in a directory included in the PATH environment
+  variable, either by placing it there or adding its directory.
+</p><p>
+  With the user option it is also possible to define entries in
+  <code>/etc/fstab</code> for normal users to mount and unmount SimicsFS.
+  Example showing mount of host user home directory on directory
+  <code>&lt;dir&gt;</code>:
+</p><p>
+  </p><pre class="jdocu_small">    <b>simicsfs-client  &lt;dir&gt;  fuse  <img alt="Line break" src="nextline.png">
+defaults,noauto,user,modules=subdir,subdir=/home/&lt;user&gt;  0 0</b>
+  </pre><p>
+</p><p>
+  The <code>&lt;dir&gt;</code> directory must be empty and have write
+  permission for the user. The user mounts with the command
+  <code>mount &lt;dir&gt;</code> and unmounts with the command
+  <code>fusermount -u &lt;dir&gt;</code>.
+</p><p>
+  See the fstab and fuse documentation ("man fstab", "man fuse") for more
+  information about the available mount options.
+
+</p><h2 class="jdocu"><a name="simicsfs-fuse-using">7.5.2 Using SimicsFS client</a></h2>
+<p>
+  
+  The SimicsFS client requires the SimicsFS server to be started:
+  </p><pre class="jdocu_small"> simics&gt; <b>start-simicsfs-server</b></pre><p>
+</p><p>
+  Example commands showing how to mount SimicsFS with the command
+  <code>simicsfs-client</code>:
+  </p><ul>
+    <li>Mount host root directory on directory <code>&lt;dir&gt;</code>:
+      <pre class="jdocu_small">~:$ <b>simicsfs-client &lt;dir&gt;</b></pre><p></p></li>
+    <li>Mount host user home directory on directory <code>&lt;dir&gt;</code>:
+      <pre class="jdocu_small">	~:$ <b>simicsfs-client &lt;dir&gt; -omodules=subdir,subdir=/home/&lt;user&gt;</b>
+    </pre><p></p></li>
+  </ul>
+<p>
+  Example command showing how to unmount SimicsFS:
+  </p><ul>
+    <li>Unmount SimicsFS on directory <code>&lt;dir&gt;</code>:
+      <pre class="jdocu_small">~:$ <b>fusermount -u &lt;dir&gt;</b></pre><p></p></li>
+  </ul>
+<p>
+  Example commands showing how to mount SimicsFS on <code>/host</code>
+  directory by root with definition in <code>/etc/fstab</code>, see section
+  <a class="reference" href="#simicsfs-fuse-install">7.5.1</a>:
+  </p><ul>
+    <li>Mount host root directory on <code>/host</code>:
+      <pre class="jdocu_small">~:$ <b>mount /host</b></pre><p></p></li>
+    <li>Mount host user home directory on <code>/host</code>:
+      <pre class="jdocu_small">	~:$ <b>mount /host -omodules=subdir,subdir=/home/&lt;user&gt;</b>
+    </pre><p></p></li>
+  </ul>
+<p>
+  Example command showing how to mount SimicsFS on <code>&lt;dir&gt;</code>
+  directory by a normal user:
+  </p><ul>
+    <li>Mount host user home directory on <code>&lt;dir&gt;</code>. A user
+      can not add options to the mount command so the options are added in
+      <code>/etc/fstab</code>, see section <a class="reference" href="#simicsfs-fuse-install">7.5.1</a>.
+      <pre class="jdocu_small">~:$ <b>mount &lt;dir&gt;</b></pre><p></p></li>
+  </ul>
+<p>
+  </p><div class="note">
+<b>Workaround for copying read-only files:</b>
+Read-only files on the
+    target system may not be copied to the mounted file system. A workaround
+    is to first touch the file in the mounted file system, which creates the
+    file with write permission, and then copy the file from the target system to
+    the mounted file system. Finally change permission of the destination file
+    to read-only.
+  </div><div class="note">
+<b>Tip:</b>
+When running Simics on Windows host, replace all '\' in the
+    mount path with '/' to prevent interpretation of escape character by the
+    simulated target software. Example:
+    <pre class="jdocu_small">~:$ <b>simicsfs-client dir -omodules=subdir,subdir=D:/home/&lt;user&gt;</b></pre><p>
+  </p></div>
+<h2 class="jdocu"><a name="simicsfs-path-subst">7.5.3 SimicsFS Path Substitution</a></h2>
+<p>
+  
+</p><p>
+  The host directory mounted from a target system is the root directory by
+  default, but that is configurable from the target system. Although, it may not
+  be feasible or desirable to modify the target system configuration when the
+  host system path changes. The path may also be part of a checkpoint and may
+  not be applicable when the checkpoint is restored again. For these cases the
+  host path can be substituted with a replacement path on the host.
+</p><p>
+  To perform a substitution a path rule must be created. These are applied to
+  every operation, with immediate effect. A rule can be general to all clients
+  or specific to just a group of clients. The rule will look for a substring in
+  the requested path and replace that substring with the new destination path.
+  The substring matching is performed from the beginning of the path, but need
+  not match the whole requested path in the mount command on the target.
+</p><p>
+  A client may thus request an existing or non-existing path on the host. This
+  path will be matched against the defined path rules to see if there is a
+  match. Specific rules are checked first, then the general rules. Therefore a
+  specific rule will always override a general one. Otherwise the rules are
+  matched in the order they were added and only the first matching rule will be
+  applied.
+</p><p>
+  <br><b>EXAMPLES:</b><br>
+</p><p>
+  One of the main use-cases for this feature is to allow access to a user
+  defined path which is configured at run-time without the need to modify the
+  target configuration. For instance the users may want to access their own home
+  directories, without modifying the generic target image. For this purpose they
+  define a mount-point <code>/mnt/home</code> which is configured to
+  mount <code>/home/user</code> on the host. The host path
+  <code>/home/user</code> may not exist on the host and requires the user to
+  configure a path rule to substitute it for the real home directory of the
+  current user.
+  </p><pre class="jdocu_small">    simics&gt; <b>$userhome = (env HOME)</b>
+    simics&gt; <b>&lt;simicsfs-server&gt;.add-path-rule /home/user $userhome</b>
+    ~:$ <b>mount -t simicsfs-client /mnt/home -osubdir,subdir=/home/user</b>
+  </pre><p>
+</p><p>
+  Another major use-case for this feature is to solve the checkpoint problem,
+  where a user has mounted some path on the local machine. This checkpoint is
+  then shared with a colleague, who has similar files stored in another path.
+  The colleague will then need to replace the requested host path with the
+  actual path to the equivalent folder local to this other machine.
+  </p><pre class="jdocu_small">    simics&gt; <b>&lt;simicsfs-server&gt;.add-path-rule /work/simics/proj /my/path/to/proj</b>
+  </pre><p>
+</p><p>
+  Sometimes you may need to differentiate between different clients. When a
+  client registers itself with the simicsfs server, it provides a bit of details
+  on the target that it runs on. Each of these details can be used to select
+  clients for different groups. These groups can then be given as an extra
+  argument to the path rule, which will then only apply to the clients of that
+  group. Once a client is registered, it is assigned a unique magic number.
+  </p><pre class="jdocu_small">    simics&gt; <b>&lt;simicsfs-server&gt;.add-client-group a_team magic 0x0103a1245edb31da</b>
+    simics&gt; <b>&lt;simicsfs-server&gt;.add-path-rule "/" /proj/area_a a_team</b>
+  </pre><p>
+  The first line will create a group called <code>a_team</code> which will consist
+  of the client with magic number <code>0x0103a1245edb31da</code>. Since the magic
+  numbers are unique there can only be one client in this group. The second
+  line will add a path rule that replaces the root directory with
+  <code>/proj/area_a</code>, but only for clients that belong to group
+  <code>a_team</code>.
+  </p><div class="note">
+<b>Path rule limitation:</b>
+The simicsfs-client is not aware of any changes to the path rules, which
+    means that recently accessed files may appear to still be present even
+    though the path rule has changed to point to another destination. Operations
+    on that file, however, will fail.
+  </div>
+<p>
+</p>
+<div class="chain">
+<a href="usb-disks.html">7.4 USB disks</a>
+<a href="using-tftp.html">7.6 Using TFTP</a>
+</div>

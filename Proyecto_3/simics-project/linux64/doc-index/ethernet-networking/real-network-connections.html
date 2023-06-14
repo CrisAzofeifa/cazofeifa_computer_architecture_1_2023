@@ -1,0 +1,210 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.2 Connection Types</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="real-network-examples.html">4.1 Preparing for the Examples</a>
+<a href="real-network-connections-port-forwarding.html">4.2.1 Port Forwarding</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="real-network.html">4 Connecting to a Real Network</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="real-network-connections">4.2 Connection Types</a></h1>
+<p>
+
+</p><p>
+There are three kinds of connections between simulated networks and real
+networks in Simics. The next paragraphs describe how they work, and their
+advantages and drawbacks.
+</p><p>
+All connection types except port forwarding require low-level access to the
+simulation host's Ethernet interfaces, and therefore require administrative
+privileges to set up. However, administrative privileges are, in most
+cases, not needed once the low-level access has been set
+up. See section <a class="reference" href="real-network-access.html">4.3</a> for details.
+</p><p>
+</p><dl><dt id="dt:port-forwarding"><b><a name="port-forwarding"></a>Port forwarding</b></dt><dd>Port forwarding is the easiest connection type to set up for
+    simple usage. It does not require administrative privileges nor
+    any configuration on the simulation host or on the other
+    hosts.
+<p>
+    However, port forwarding is limited to TCP and UDP traffic. Other
+    traffic, for example, ping packets that use the <a name="ICMP">ICMP</a>
+    protocol, will not pass through the connection. Since port
+    forwarding uses ports on the simulation host it is not possible to
+    use incoming ports that are already used by the simulation host,
+    or ports below 1024 without administrative privileges.
+</p><p>
+    Each incoming TCP port, and each incoming or outgoing UDP port
+    require a separate forwarding rule. Therefore, for an application
+    that uses many ports, or random ports, configuration can become
+    cumbersome or nearly impossible without complex
+    communication. Outgoing TCP connections on many or random ports
+    can be handled by NAPT, so that is not a problem.
+</p><p>
+    Port forwarding allows communication between the simulated
+    machines, the simulation host and other hosts on the real
+    network.</p></dd><dt id="dt:ethernet-bridging-connection"><b><a name="Ethernetbridging"></a> <a name="bridging"></a> Ethernet
+		bridging connection</b></dt><dd>With an Ethernet bridging connection, the simulated machines
+    appears to be directly connected to the real network. The
+    connection allows any kind of Ethernet traffic between the
+    simulated and real networks. Usually IP addresses from the IP
+    subnet of the real network are used by the simulated machines, in
+    which case nothing needs to be configured on the real hosts on the
+    real network. However, the simulation host can not be accessed
+    from the simulated machines using an Ethernet bridging connection.
+<p>
+    To use Ethernet bridging, the simulation host needs to be set up
+    for <a name="bridgingTAP"></a> TAP access as described in section
+    <a class="reference" href="real-network-access.html">4.3</a>.
+</p><p>
+    </p></dd><dt id="dt:host-connection"><b><a name="host-connection"></a> Host connection</b></dt><dd>With a host connection, the simulation host is connected to a
+    simulated network, allowing any kind of Ethernet traffic between
+    the simulation host and the simulated machines.
+<p>
+    Host connections also supports <em><a name="IPforwarding"></a>IP
+    forwarding</em>. When using IP forwarding, the operating system of
+    the host routes IP traffic between the real and simulated
+    networks. As above, routes should be configured between the
+    simulated and real networks to make it work.
+</p><p>
+    To use host connections, the host needs to be set up for
+    <a name="bridgingTAP2"></a> TAP access as described in section <a class="reference" href="real-network-access-tap.html">4.3.1</a>.
+</p><p>
+    </p><div class="note">
+<b>Note:</b>
+A raw packet with length X bytes sent from the simulation host
+    through the real network device into the simulated target will have
+    4 Bytes of FCS(frame check sequence) appended. The target machine will
+    actually receive a packet of length X+4 bytes. The NIC model on the
+    target machine usually checks and strips the FCS bytes before it is
+    seen by any software. A raw packet that originates from the target
+    will have an FCS calculated and appended by the NIC model. The real
+    network device will then check the FCS and strip it before sending to
+    the simulation host interface (TAP interface).</div></dd></dl><p></p><div class="figure" id="compare-rn-cnts">
+ <div class="caption">Figure 2. Comparison of real-network
+connections</div> <p>
+  </p><p>
+  </p><p>
+  </p><p>
+  </p><p>
+  </p><p>
+  </p><p>
+  </p><p>
+</p><table>
+
+  <tbody><tr> <td class="jdocu_border"></td> <td class="jdocu_border"><b>Port Forwarding</b></td>
+    <td class="jdocu_border"><b>Ethernet Bridge</b></td>
+    <td class="jdocu_border"><b>Host Connection</b></td></tr>
+
+<tr> <td class="jdocu_border">Need admin rights for config.</td> <td class="jdocu_border">no</td> <td class="jdocu_border">yes</td>
+    <td class="jdocu_border">yes</td> </tr>
+
+<tr> <td class="jdocu_border">Need admin rights to run</td> <td class="jdocu_border">no</td> <td class="jdocu_border">no</td>
+    <td class="jdocu_border">no</td> </tr>
+
+<tr> <td class="jdocu_border">Need real IP available</td> <td class="jdocu_border">no</td> <td class="jdocu_border">yes</td>
+    <td class="jdocu_border">no</td> </tr>
+
+<tr> <td class="jdocu_border">Support UDP/TCP</td> <td class="jdocu_border">yes</td> <td class="jdocu_border">yes</td>
+    <td class="jdocu_border">yes</td> </tr>
+
+<tr> <td class="jdocu_border">Restrict TCP/UDP ports</td> <td class="jdocu_border">yes</td> <td class="jdocu_border">no</td>
+    <td class="jdocu_border">no</td> </tr>
+
+<tr> <td class="jdocu_border">Support all IPv4</td> <td class="jdocu_border">no</td> <td class="jdocu_border">yes</td>
+    <td class="jdocu_border">yes</td> </tr>
+
+<tr> <td class="jdocu_border">Support all Ethernet</td> <td class="jdocu_border">no</td> <td class="jdocu_border">yes</td>
+    <td class="jdocu_border">yes</td> </tr>
+
+</tbody></table>
+</div>
+
+<p>
+The table <a class="reference" href="#compare-rn-cnts">2</a> recapitulates the advantages
+and drawbacks of each type of connection. Basically, for simple TCP
+services like <a name="FTP">FTP</a>, <a name="HTTP">HTTP</a> or <a name="telnet">telnet</a>,
+<a name="port-forwarding2">port forwarding</a> is the way to go. If port forwarding does
+not suffice and if there are available IP addresses on the IP subnet
+of the real network, or for network protocols other than IPv4,
+Ethernet bridging <a name="Ethernetbridging2"></a> is another possibility.
+Finally, if access to the simulated machines from
+the simulation host is required, but port forwarding is not
+sufficient, <a name="host-connection2">host connection</a> might be the solution.
+</p><p>
+All commands that create a connection to the real network start with
+the prefix <b><a name="connect-real-network-">connect-real-network-</a></b>, with different
+suffixes depending on the connection type. They come in two variants.
+</p><p>
+For each connection type there is a global command that assumes that
+there is at most one <a name="Ethernet-linkethernet-link"></a>Ethernet
+link object. If there is no Ethernet link object, a default
+<b>ethernet_switch</b> is created. All Ethernet interfaces of
+all simulated machines in the Simics process are then automatically
+connected to the new Ethernet switch, and the Ethernet switch is
+connected to the real network. This is an easy way to connect all
+simulated machines in the Simics process to the real network with a
+single command. For example, to connect all simulated machines to the
+real network using an Ethernet bridging connection, just type in the
+global command <b>connect-real-network-bridge</b>.
+</p><p>
+For a more complex simulated network setup, not all simulated Ethernet
+interfaces will be connected to the same network. In that case, create
+first the simulated network setup, and then connect specific Ethernet
+links to the real network. For each connection type, there is a
+command with the same name as the global command that can be run on a
+specific Ethernet link object to connect it to the real network. For
+example, with an Ethernet link object named <b>ethernet_hub0</b>,
+use the command <b>ethernet_hub0.connect-real-network-bridge</b>
+to create an Ethernet bridging connection between that particular link
+and the real network.
+</p><p>
+The commands related to port forwarding are an exception to this
+rule. They do not come in variants that can be run on Ethernet links
+objects, but instead have an <i>ethernet-link</i> argument that
+can be used to specify a link.
+</p><p>
+  
+</p><p>
+</p>
+<ul class="subsections">
+<li>
+<a href="real-network-connections-port-forwarding.html">4.2.1 Port Forwarding</a>
+</li>
+<li>
+<a href="real-network-connections-ethernet-bridging.html">4.2.2 Ethernet Bridging</a>
+</li>
+<li>
+<a href="real-network-connections-host-connection.html">4.2.3 Host Connection</a>
+</li>
+</ul>
+<div class="chain">
+<a href="real-network-examples.html">4.1 Preparing for the Examples</a>
+<a href="real-network-connections-port-forwarding.html">4.2.1 Port Forwarding</a>
+</div>

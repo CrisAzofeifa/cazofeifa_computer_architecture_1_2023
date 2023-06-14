@@ -1,0 +1,193 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Object Lifetime in Simics</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>Object Lifetime in Simics</h1>
+
+<p>
+
+
+
+</p><p>
+</p><h2 class="jdocu"><a name="introduction">1 Introduction</a></h2>
+<p>
+
+For an object to participate in Simics checkpointing and reverse execution while keeping determinism it must handle state properly. This application note explains what rules an object must follow and gives some guidelines for handling state. The note assumes that you already know the basics about modeling in Simics and know what the terms <i>attribute</i>, <i>checkpoint</i>, <i>configuration</i> and <i>configuration object</i> means.
+</p><p>
+Both checkpointing and reverse execution deals with saving and restoring state. The state of an object is a chunk of data which fully describes the object as it exists at a particular point in time. In Simics terms the state of an object is the values of its checkpointable attributes. Ideally the attributes should be linearly independent: changing any one attribute should leave the rest unaffected. This is called object state. The state of all the objects in the simulation is called the system state.
+</p><p>
+<i><a name="Derived-state">Derived state</a></i> is data about the system which is not saved in checkpoints, but calculated from the system state. Derived state must only depend on the current system state, not on the history of the system. If a value has any dependency on the history of the system then it must be included in the system state.
+</p><p>
+The rules for handling state mostly deal with how an object's state is saved and restored and how objects are created.  
+</p><p>
+When an object is first constructed it goes through three distinct phases. These phases are the same whether the object is loaded from a checkpoint or newly created. 
+</p><p>
+First the object's <b><i>alloc</i></b> method is called to allocate
+memory for the <code>conf_object_t</code> struct. If this optional method
+is not provided by the class, then Simics will allocate the memory. A
+reason for the class to implement <b><i>alloc</i></b> is to co-allocate
+the configuration object with the class-specific payload for the
+object. This method receives the <code>conf_class_t</code> as a parameter,
+which is useful in implementations of generated classes,
+where <b><i>SIM_get_class_data</i></b> is used. 
+</p><p>
+Next the <b><i>init</i></b> method is called, to do class specific
+initialisation, and to set default values for the objects attributes,
+or for attributes of the object's hierarchical descendants. This
+method may allocate separate memory for class-specific object data if
+co-allocation was not used. Then the object's attribute setters are
+called to set the initial values for its attributes. Finally the
+object's <b><i>finalize</i></b> method is called, where the object can do
+any initialization that require the attribute values, but should avoid
+calling any interface methods on other objects. Once the object has
+gone through these phases it is fully constructed and can participate
+in the simulation and reverse execution. At this point
+the <b><i>objects_finalized</i></b> method is called, where the object
+can call interface methods on other objects as part of the
+initialization process.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+In DML use the <b><i>post_init</i></b> instead of <b><i>finalize</i></b>.
+</div>If several objects are created at the same time, they go through the
+three phases together: first all objects' <b><i>alloc</i></b> methods are
+called, then all <b><i>init</i></b> methods, then all the attributes of
+all the objects are set, then all the <b><i>finalize</i></b> methods are
+called, and finally the <b><i>objects_finalized</i></b> methods are called. This
+means that an object can not assume that the rest of the objects in
+the system are fully created until its <b><i>objects_finalized</i></b> method is
+called. However, the initialisation uses the hierarchical order of the
+objects, so in each method callback, the object can assume that the
+method has already been called for all its ancestors.
+<p>
+Reverse execution works by saving something akin to checkpoints and using these checkpoints to restore objects when you run the simulation in reverse. Restoring these checkpoints does not create new object, instead the state of the already existing objects is changed to reflect the state stored in the checkpoint. This is done by setting the checkpointable attributes of the objects. This means that once the object is constructed it must be prepared to have all its checkpointable attributes set, but only to values the attributes have had during the simulation.
+</p><p>
+This note starts with describing the rules for all these cases, then it finishes with a section containing common patterns for managing object state.
+</p><p>
+
+</p><h2 class="jdocu"><a name="creating-objects">2 Creating Objects</a></h2>
+<p>
+
+As mentioned in the introduction objects are created in three distinct phases. This is called configuring the object, and once all the three phases are complete the object is said to be configured. This section goes through the phases in more detail and explains the rules for each phase.
+</p><p>
+During the first phase you must not access any object state or derived
+state in this object or any other object since this state is not valid
+yet. This means that all you can do in the <b><i>init</i></b> method is
+to obtain pointers to other objects using <b><i>SIM_get_object</i></b>,
+and to set default values for the object's attributes, or the
+attributes of its descendants. The purpose of the <b><i>init</i></b>
+method is to give the object a known initial state. This state will
+then be changed by the attribute setters during the second phase.
+</p><p>
+In the second phase the object's attributes are set in the same order
+as they were registered by the object's class. The rules for the
+setters are the same as for the <b><i>init</i></b> method, except
+that they can access the values of attributes which have already been
+set. There is currently no way to control the order a DML device's
+attributes are registered, so in this case you cannot depend on any
+other attribute's value.
+</p><p>
+In the final phase, when the <b><i>finalize</i></b> method is called, the
+object's state is fully set and the method can access it
+freely. However, this method should avoid accessing state in other
+objects, which can instead be done in <b><i>objects_finalized</i></b>. It
+can also be done in <b><i>finalize</i></b>, but then the object must
+ensure that the object it is calling is configured, by
+using <b><i>SIM_require_object</i></b>.
+</p><p>
+In <b><i>objects_finalized</i></b>, you can freely call interface methods
+in other objects, but avoid methods which change state, since the
+state should be the same as the state which was configured to keep the
+same behavior when simulating from a checkpoint as was exhibited when
+the checkpoint was saved.
+</p><p>
+
+</p><h2 class="jdocu"><a name="getting-and-setting-attributes">3 Getting and Setting Attributes</a></h2>
+<p>
+
+</p><p>
+Once an object is configured it must be prepared for calls to its attribute setters and getters. For attributes which are not saved as part of a checkpoint there are no rules for what the getters and setters can do and these attributes will not be discussed further in this document, but for checkpointable attributes there are some rules.
+</p><p>
+Getters can be called at any time, and the getter function should return the attribute's current value without changing any state in the system.
+</p><p>
+Setters can be called at any time, most often by reverse execution to restore a saved state. To keep determinism when running with reverse execution it is important that a setter only sets the value of its attribute and not affect any other state in the system.
+</p><p>
+A setter can check to see if it is called as part of an initial
+configuration or when the object is already configured by calling
+the <b><i>SIM_object_is_configured</i></b> function. This can be used to
+implement attributes which cannot be changed after the initial
+configuration or to delay calculation of derived state to
+the <b><i>finalize</i></b> method.
+
+</p><h2 class="jdocu"><a name="common-patterns">4 Common Patterns</a></h2>
+<p>
+
+It can be hard to know how to handle state in complex systems, where several objects communicate with each other and there is a lot of derived state. This section presents some common patterns for how to handle this.
+</p><p>
+</p><h3 class="jdocu"><a name="Delay-Final-Initialization">4.1 Delay Final Initialization</a></h3>
+<p>
+
+</p><p>
+Sometimes an object may need to calculate some derived state every
+time some attributes changes. This can be hard to get right during the
+initial configuration before all the attributes are set to their
+configured values. Instead delay this calculation to
+the <b><i>finalize</i></b> method where you are sure that all
+the attributes have been set.
+
+</p><h3 class="jdocu"><a name="Constant-State">4.2 Constant State</a></h3>
+<p>
+
+  </p><p>
+Since each attribute setter is called by itself it is hard to know
+when and how to calculate derived state which depends on more than one
+attribute. If the attributes the derived state is calculated from
+cannot change during runtime in the real system you do not need to
+make it possible to change them after the initial configuration of
+your object. This makes it much easier to calculate the derived state,
+since it can be done in the <b><i>finalize</i></b> method, like
+in the Delay Final Initialization pattern above.
+</p><p>
+To avoid accidental changes of the attributes after the initial configuration you can add checks in the attribute checker to look for such changes and report errors. To check if the attribute is set as part of the initial configuration or not use the <b><i>SIM_object_is_configured</i></b> function. To allow the object to work with reverse execution you should only report errors when the value of the attribute actually changes, not when it is set to the same value it already has.
+
+</p><h3 class="jdocu"><a name="Connecting-to-a-Bus-or-a-Link">4.3 Connecting to a Bus or a Link</a></h3>
+<p>
+
+Assume that you have some kind of bus in your system which several devices can be connected to. The bus must know which devices are connected to be able to forward messages to the right destination and the devices needs to know about the bus to be able to send messages to it.
+</p><p>
+If we keep this state in both the devices and the bus we have duplicate state and when a device's bus attribute gets set it must notify the bus that it has connected to it, but this is not allowed since this modifies the state of another object during an attribute change. If we instead keep the state about the devices in each device and let the list of connected devices in the bus be derived state we can connect to the bus when a device's bus attribute is set, since no state changes in the bus.
+</p><p>
+If the other devices on the bus should be notified when a device connects or disconnects from the bus we cannot connect and disconnect from the bus when the bus attribute in the device is set, since devices connected to the bus may change their state in response to the connect and disconnect messages. Instead you must call the connect method when the devices on the bus are fully initialized. Devices are usually turned on by a reset signal or a register write once the simulation is started and this is a much better time to connect to the bus.
+
+
+</p>
+<div class="chain">
+<span></span>
+</div>

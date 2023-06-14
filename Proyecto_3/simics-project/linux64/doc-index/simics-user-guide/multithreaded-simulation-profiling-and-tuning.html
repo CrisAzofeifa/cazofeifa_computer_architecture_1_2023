@@ -1,0 +1,223 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>16.2 Multithreaded Simulation Profiling and Tuning</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="system-perfmeter.html">16.1 Measuring Performance</a>
+<a href="platform-effects.html">16.3 Platform Effects</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="simulation-performance.html">16 Simulation Performance</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Multithreaded-Simulation-Profiling-and-Tuning">16.2 Multithreaded Simulation Profiling and Tuning</a></h1>
+<p>
+
+<a name="mtprof"></a>
+<a name="Multithreaded-Simulation-Profiler"></a>
+</p><p>
+With Simics Accelerator, simulation performance can be increased by
+utilizing host system parallelism. Simics exploits available
+target system parallelism and spreads the load over available host
+cores, in order to increase performance.
+</p><p>
+Simics Accelerator has two different mechanisms that can operate alone
+or work together to improve performance. The first
+is Simics® <em>Multimachine Accelerator</em> which is based upon the cell
+concept. The other mechanism is <em>Multicore Accelerator</em> which
+can parallelize simulation even within cells.
+</p><p>
+A cell ideally contains tightly coupled parts of the target system
+(typically one or more CPUs and associated devices). Different cells
+can be simulated in parallel with <em>Multimachine Accelerator</em>
+(which is default on), but unless <em>Multicore Accelerator</em> is
+enabled (default off), a single cell will be simulated in a
+single-threaded fashion (see chapter <a class="reference" href="scaling-simics.html">17</a>
+for more details).
+</p><p>
+</p><h2 class="jdocu"><a name="mtprof2">16.2.1 Simics® Multimachine Accelerator</a></h2>
+<p>
+
+The Multithreaded Simulation Profiler tool (<b>mtprof</b>) can be
+used to analyze some performance aspects of multithreaded simulation.
+Mtprof is primarily useful to
+</p><p>
+</p><ul>
+<li>detect parallelism bottlenecks</li>
+<li>predict how fast the simulation would run on a more parallel host machine</li>
+<li>provide some insights into the performance impact of various latency setting.</li>
+</ul>
+<p>
+The Multithreaded Simulation Profiler helps in understanding threading
+behavior at the Multimachine Accelerator level. There is no explicit
+tool support for optimizing specific Multicore Accelerator issues.
+</p><p>
+The Multithreaded Simulation Profiler is started with the following command:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>enable-mtprof</b>
+</pre><p>
+</p><p>
+When mtprof is enabled, Simics keeps track of how much CPU time is spent
+simulating each cell in the system. Once Simics has been running for a while,
+it is possible to ask mtprof for an overview:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>mtprof.cellstat</b>
+============================================================
+  cellname                    rt   %elapsed  %cputime
+------------------------------------------------------------
+  ebony3.cell3             77.0s     93.6%    80.0% 
+  ebony1.cell1              8.9s     10.9%     9.3% 
+  ebony2.cell2              8.2s     10.0%     8.5% 
+  ebony0.cell0              2.1s      2.5%     2.1% 
+------------------------------------------------------------
+  elapsed_realtime         82.2s    100.0%    85.5%
+============================================================
+</pre><p>
+</p><p>
+From the above output, we can conclude that cell3 is a
+limiting factor: the other cells frequently have to wait upon
+this cell in order to keep the virtual time in sync. Investigating
+why cell3 is so expensive to simulate is the next natural step:
+there might be an expensive poll loop or the idle
+optimization might not function properly, for instance. Other potential
+ways to address the load imbalance include
+</p><ul>
+<li>enabling <em>Multicore Accelerator</em> for the cell if applicable</li>
+<li>splitting cell3 into multiple cells (if it contains multiple CPUs and Multicore Accelerator is not applicable)</li>
+<li>changing the step rate of CPUs belonging to cell3.</li>
+</ul>
+<p>
+The mtprof tool can also be used to estimate how fast the simulation
+would run on a machine with enough host cores
+to allow Simics to assign a dedicated host core to each cell:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>mtprof.modelstat</b>
+============================================================
+  latency      rt_model  realtime/rt_model
+------------------------------------------------------------
+    10 ms        81.9s       100.4%
+    40 ms        81.2s       101.2%
+   160 ms        80.3s       102.4%
+   640 ms        78.6s       104.6%
+============================================================
+</pre><p>
+</p><p>
+The latency column corresponds to various values for <b>set-min-latency</b>.
+In this case, the simulation was executed with a 10 ms latency, which
+means that the model predicts that the simulation would take 81.9 s
+to run (which is pretty close to the measured value of 82.2 s above).
+</p><p>
+It is important to note that the performance model does not take
+modified target behavior, due to different latency settings, into account
+(which can be a huge factor if the cells interact). With substantial
+inter-cell interaction, only the row corresponding to the current
+latency setting should be trusted.
+</p><p>
+Below is an example from a more evenly loaded system run with a 
+min-latency of 1 ms:
+</p><pre class="jdocu_small">simics&gt; <b>mtprof.modelstat</b>
+============================================================
+  latency      rt_model  realtime/rt_model
+------------------------------------------------------------
+     1 ms        35.3s       107.4%
+     4 ms        29.5s       128.8%
+    16 ms        25.9s       146.3%
+    64 ms        24.2s       156.5%
+============================================================
+</pre><p>
+</p><p>
+In this case, we see that increasing the latency setting to
+about 16 ms would improve simulation performance substantially
+(once again, without taking changed target behavior into account).
+</p><p>
+
+<br>
+Quite often, the target behavior is not static but varies with
+simulated time. In that case, it is often useful to export the
+collected data and plot it using an external tool:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>mtprof.save-data output.txt</b>
+</pre><p>
+</p><p>
+The exported data is essentially the information provided
+by <b>mtprof.cellstat</b> and/or <b>mtprof.modelstat</b>,
+but expressed as a function of virtual time (exported in a plot
+friendly way). The <b>mtprof.save-data</b> command takes
+multiple flags which can be used to customize the
+output. One useful flag is <i>-oplot</i>:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>mtprof.save-data mtprof-plot.m -oplot</b>
+</pre><p>
+</p><p>
+which outputs the data in the form of an Octave file together with
+commands which plots the data.
+</p><p>
+The mtprof tool currently does not support Multicore Accelerator.
+</p><p>
+
+</p><h2 class="jdocu"><a name="performance-Multicore-Accelerator">16.2.2 Multicore Accelerator</a></h2>
+<p>
+
+</p><p>
+Whether to use Multicore Accelerator or not depends heavily on the
+workload of the system that is being modeled. Multicore Accelerator
+performs best for systems with CPU intensive tasks, with little
+communication, and a low I/O rate. The <b>print-device-access-stats</b>
+and <b>system-perfmeter</b> commands can be use measure the
+frequency of I/O operations in the system. (I/O operations are
+expensive in Multicore Accelerator mode.)
+</p><p>
+Note that some systems perform well even if the number of target
+instructions per I/O operation is as low as 300 while others perform
+bad even though this number is considerably higher. Different target
+systems behave differently, and in the end, one have to benchmark each
+system by itself to get highest possible performance. As a guideline,
+if a target system executes less than 10,000 instructions per I/O
+operation on average, one might have to consider switching off
+Multicore Accelerator, or tune the system software in order to achieve
+good performance.
+</p><p>
+The <b>enable-multicore-accelerator</b> command provides some
+tuning and settings for Multicore Accelerator. For more information,
+see the documentation for the <b>enable-multicore-accelerator</b>
+command.
+</p><p>
+It is probably best practice to try to optimize the cell partitioning
+as described in section <a class="reference" href="#mtprof2">16.2.1</a> to find the most resource
+demanding cells first, and then switching on Multicore Accelerator for
+those cells (if available host cores still exists). Currently, it is
+not possible to restrict a number of host cores for particular target
+CPUs. Simics will instead automatically balance the system as
+efficient as possible.
+
+</p>
+<div class="chain">
+<a href="system-perfmeter.html">16.1 Measuring Performance</a>
+<a href="platform-effects.html">16.3 Platform Effects</a>
+</div>

@@ -1,0 +1,213 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>cycle</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_cpu_memory_query.html">cpu_memory_query</a>
+<a href="__rm_interface_cycle_control.html">cycle_control</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_cycle">cycle</a></h1>
+<p>
+
+<a name="cycle"></a><a name="cycle_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><dl><dt id="dt:interface-methods"><b>Interface Methods</b></dt><dd>The <code>cycle</code> interface is typically implemented by
+  processors, but can be implemented by other objects as well. Its purpose is
+  to handle events based on time. The cycle queue has a cycle as the smallest
+  time unit. The cycle queue also has an associated frequency which makes it
+  possible to define events based on seconds or picoseconds.
+<p>
+  The <b><i>get_frequency</i></b> function returns the frequency in Hertz for
+  the <i>queue</i>. Most objects implementing <code>cycle</code> also
+  have a notification mechanism for frequency changes through the
+  <code>simple_dispatcher</code> interface in the <i>cpu_frequency</i>
+  port. It is recommended that such a notification mechanism is used to get
+  updates rather than polling with <b><i>get_frequency</i></b>.
+</p><p>
+  The current number of cycles executed by the <i>queue</i> is returned
+  by <b><i>get_cycle_count</i></b>. Time elapsed since the queue was created is
+  returned by <b><i>get_time</i></b> (in seconds) and <b><i>get_time_in_ps</i></b>
+  (in picoseconds); this will be equal to the value returned
+  by <b><i>get_cycle_count</i></b> divided by the value returned
+  by <b><i>get_frequency</i></b> if the frequency has been constant since time
+  zero.
+</p><p>
+  The <b><i>cycles_delta</i></b> function returns the highest number of cycles
+  <i>obj</i> can run <em>before</em> it passes the absolute local time
+  <i>when</i>, assuming no frequency change occurs in the
+  meantime. Note that <b><i>cycles_delta</i></b> can raise an exception if
+  <i>when</i> was too far ahead in the future. The
+  <b><i>cycles_delta_from_ps</i></b> function performs the same function, for an
+  absolute local time expressed in picoseconds.
+</p><p>
+  The <b><i>post_cycle</i></b> function will schedule an event that will occur
+  after <i>cycles</i> counted from local current time at
+  <i>queue</i>. The <b><i>post_time</i></b> function is similar but takes
+  <i>seconds</i> as argument, while <b><i>post_time_in_ps</i></b> takes
+  a number of <i>picoseconds</i>. The arguments
+  <i>cycles</i>, <i>seconds</i> and
+  <i>picoseconds</i> must be nonnegative.
+</p><p>
+  An event previously posted can be removed by calling <b><i>cancel</i></b>. The
+  <b><i>cancel</i></b> function takes a function <i>pred</i> as argument
+  which is called when a matching event is found. The event is only removed if
+  <i>pred</i> returns <code>1</code>. 
+</p><p>
+  The <b><i>find_next_cycle</i></b>, <b><i>find_next_time</i></b> and
+  <b><i>find_next_time_as_ps</i></b> functions take the same arguments as
+  <b><i>cancel</i></b> but only return the number of cycles, seconds or
+  picoseconds before the event occur. The <i>evclass</i> is the event
+  class, <i>obj</i> is the object posting the event, and
+  <i>user_data</i> is pointer to data used as a parameter when calling
+  the callback function defined in the <i>evclass</i>.
+  If no matching event was found, <b><i>find_next_cycle</i></b> and
+  <b><i>find_next_time</i></b> return −1;
+  <b><i>find_next_time_as_ps</i></b> returns <code>ILLEGAL_DURATION</code>.
+</p><p>
+  The <b><i>events</i></b> method returns a list of all pending events in
+  expiration order. Each element is a four-element list containing the event
+  object, the event class name, the expiration time counted in cycles as an
+  integer and the event description as given by the event class
+  <b><i>describe</i></b> method, or NIL for events whose event class does not
+  define that method.
+</p><p>
+  What happens to already posted events when a frequency change occurs is
+  implementation dependent. Simics processors will scale the cycle queue to
+  keep the time left before triggering events equal across the frequency
+  change. Note that the new times will be rounded to entire cycles during the
+  scaling, so approximations may occur when switching between high and low
+  frequencies.</p></dd><dt id="dt:implementation"><b>Implementation</b></dt><dd>It is implementation dependent how the queue is implemented, whether
+  cycles or seconds are used as underlying time unit, and what happens when the
+  frequency is changed.
+<p>
+  Objects implementing the cycle interface are usually meant to be scheduled by
+  Simics itself. For this to happen, a number of conditions must be fulfilled:
+</p><p>
+  </p><ul>
+
+  <li>Each schedulable object implementing the <code>cycle</code> interface
+  must be controlled by an object implementing the <code>execute</code>
+  interface. It can be the same object that implements the
+  <code>execute</code> interface. The object implementing the
+  <code>execute</code> interface points to the object implementing the
+  <code>cycle</code> interface via its <i>queue</i> attribute.</li>
+
+  <li>Any schedulable object implementing the <code>cycle</code> interface
+  must inform Simics about changes in frequency by calling the
+  <b><i>VT_clock_frequency_change</i></b> function. That also applies to the
+  initial frequency set when the object is created.</li>
+
+  <li>For schedulable objects, the <code>cycle</code> interface must be
+  registered with <b><i>SIM_register_clock</i></b>, which will also add some
+  Simics specific attributes to the corresponding class. Beyond those, the
+  implementor of the <code>cycle</code> can use any checkpoint
+  representation. The <i>name</i> field in the event class data
+  structure is unique, and the attribute setter function for checkpoint restore
+  can use <b><i>VT_get_event_class</i></b> to get the event class structure
+  corresponding to an event class name.</li>
+
+  </ul></dd></dl><p></p><pre class="jdocu_small">
+SIM_INTERFACE(cycle) {
+
+        cycles_t (*get_cycle_count)(conf_object_t *queue);
+        double (*get_time)(conf_object_t *queue);
+        cycles_t (*cycles_delta)(conf_object_t *NOTNULL clock,
+                                 double when);
+
+        uint64 (*get_frequency)(conf_object_t *queue);
+
+        void (*post_cycle)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                cycles_t cycles,
+                lang_void *user_data);
+        void (*post_time)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                double seconds,
+                lang_void *user_data);
+
+        void (*cancel)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+
+        cycles_t (*find_next_cycle)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+
+        double (*find_next_time)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+
+        attr_value_t (*events)(conf_object_t *NOTNULL obj);
+
+        /* new picoseconds based functions */
+        local_time_t (*get_time_in_ps)(conf_object_t *queue);
+        cycles_t (*cycles_delta_from_ps)(conf_object_t *NOTNULL clock,
+                                         local_time_t when);
+        void (*post_time_in_ps)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                duration_t picoseconds,
+                lang_void *user_data);
+
+        duration_t (*find_next_time_in_ps)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+};
+
+#define CYCLE_INTERFACE "cycle"
+</pre><p>
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_cpu_memory_query.html">cpu_memory_query</a>
+<a href="__rm_interface_cycle_control.html">cycle_control</a>
+</div>

@@ -1,0 +1,628 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i8042</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-i3c_wire.html">i3c_wire</a>
+<a href="rm-class-i82077.html">i82077</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="i8042"><a href="#i8042">i8042</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The i8042 device models a legacy PC keyboard controller together with a 105-key standard keyboard, and a mouse with three buttons, three buttons and a wheel or five buttons and a wheel.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, io_memory, keyboard, mouse
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-i8042.ctrl-alt-del.html">ctrl-alt-del</a>
+ – send ctrl-alt-del to console</li>
+<li>
+<a href="rm-cmd-i8042.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-i8042.key-down.html">key-down</a>
+ – send key down event</li>
+<li>
+<a href="rm-cmd-i8042.key-press.html">key-press</a>
+ – send key press</li>
+<li>
+<a href="rm-cmd-i8042.key-down.html">key-up</a>
+ – send key up event</li>
+<li>
+<a href="rm-cmd-i8042.right-button.html">left-button</a>
+ – set button state</li>
+<li>
+<a href="rm-cmd-i8042.right-button.html">middle-button</a>
+ – set button state</li>
+<li>
+<a href="rm-cmd-i8042.mouse-up.html">mouse-down</a>
+ – move mouse</li>
+<li>
+<a href="rm-cmd-i8042.mouse-up.html">mouse-left</a>
+ – move mouse</li>
+<li>
+<a href="rm-cmd-i8042.mouse-up.html">mouse-right</a>
+ – move mouse</li>
+<li>
+<a href="rm-cmd-i8042.mouse-up.html">mouse-up</a>
+ – move mouse</li>
+<li>
+<a href="rm-cmd-i8042.right-button.html">right-button</a>
+ – set button state</li>
+<li>
+<a href="rm-cmd-i8042.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:reset_target">
+<i>reset_target</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Object implementing the <tt>x86_reset_bus</tt> interface.</dd>
+<dt id="dt:irq_dev">
+<i>irq_dev</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Interrupt device implementing the <tt>simple_interrupt</tt> interface.</dd>
+<dt id="dt:console">
+<i>console</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Console device implementing the 'gfx_con' or 'gfx_console' or 'keyboard_console' interfaces.</dd>
+<dt id="dt:kbd_irq_level">
+<i>kbd_irq_level</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt level of the keyboard. Use to send interrupts to irq_dev using the <tt>simple_interrupt</tt>.</dd>
+<dt id="dt:mouse_irq_level">
+<i>mouse_irq_level</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt level of the mouse. Use to send interrupts to irq_dev using the <tt>simple_interrupt</tt>.</dd>
+<dt id="dt:next_write">
+<i>next_write</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The next write expected on the command port. <tt>0 = Undefined</tt>, <tt>1 = Command</tt>, <tt>2 = Output</tt>, <tt>3 = Mouse</tt>, and <tt>4 = MouseBuffer</tt>.</dd>
+<dt id="dt:obuffer">
+<i>obuffer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The next data that will be read from the keyboard.</dd>
+<dt id="dt:mfull">
+<i>mfull</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>True if <tt>obuffer</tt> contains mouse data.</dd>
+<dt id="dt:ofull">
+<i>ofull</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>True if <tt>obuffer</tt> contains data.</dd>
+<dt id="dt:ifull">
+<i>ifull</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>True if input buffer full flag. Always false in the current implementation.</dd>
+<dt id="dt:command_last">
+<i>command_last</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>True if the last write to the keyboard was a command.</dd>
+<dt id="dt:selftest_ok">
+<i>selftest_ok</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>True if the selftest flag signals OK.</dd>
+<dt id="dt:scan_convert">
+<i>scan_convert</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Flag whether we do scan code conversion.</dd>
+<dt id="dt:mouse_irq_en">
+<i>mouse_irq_en</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mouse interrupt enabled flag.</dd>
+<dt id="dt:mouse_disabled">
+<i>mouse_disabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mouse disabled flag.</dd>
+<dt id="dt:mouse_connected">
+<i>mouse_connected</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mouse connected flag.</dd>
+<dt id="dt:kbd_irq_en">
+<i>kbd_irq_en</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Keyboard interrupt enabled flag.</dd>
+<dt id="dt:kbd_disabled">
+<i>kbd_disabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Keyboard disabled flag.</dd>
+<dt id="dt:sent_time">
+<i>sent_time</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>The last time we sent an interrupt.</dd>
+<dt id="dt:cmd_buttons">
+<i>cmd_buttons</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The state of the mouse buttons as set by the <tt>button-event</tt> pseudo attribute. Bit 0 = left button pressed, bit 1 = right button pressed, and 2 = middle button pressed.</dd>
+<dt id="dt:irq_sent">
+<i>irq_sent</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set to <tt>1</tt> if the keyboard interrupt line is raised, <tt>2</tt> if the mouse interrupt is raised, or <tt>0</tt> otherwise.</dd>
+<dt id="dt:key_enabled">
+<i>key_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flag saying if the keyboard is enabled.</dd>
+<dt id="dt:key_caps_lock">
+<i>key_caps_lock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Caps lock led flag.</dd>
+<dt id="dt:key_num_lock">
+<i>key_num_lock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Num lock led flag.</dd>
+<dt id="dt:key_scroll_lock">
+<i>key_scroll_lock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Scroll lock led flag.</dd>
+<dt id="dt:led_caps_lock">
+<i>led_caps_lock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o|[os]</code>
+<br>Caps lock led signal target.</dd>
+<dt id="dt:led_num_lock">
+<i>led_num_lock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o|[os]</code>
+<br>Num lock led signal target.</dd>
+<dt id="dt:led_scroll_lock">
+<i>led_scroll_lock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o|[os]</code>
+<br>Scroll lock led signal target.</dd>
+<dt id="dt:key_scan_codes">
+<i>key_scan_codes</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Selected scan codes.</dd>
+<dt id="dt:key_buffer">
+<i>key_buffer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br><tt>(<i>b0</i>, <i>b1</i>, ..., <i>b15</i>)</tt> Controller keyboard output data.</dd>
+<dt id="dt:key_first">
+<i>key_first</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Index of the next data that will be read from the <tt>key_buffer</tt>.</dd>
+<dt id="dt:key_buf_num">
+<i>key_buf_num</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of entries used after <tt>key_first</tt> in the <tt>key_buffer</tt>.</dd>
+<dt id="dt:key_next_write">
+<i>key_next_write</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Command expected for the next write to the controller. <tt>0 = Undefined</tt>, <tt>1 = Led</tt>, <tt>2 = Typematic</tt>, and <tt>3 = Scan</tt>.</dd>
+<dt id="dt:mou_enabled">
+<i>mou_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mouse enabled flag.</dd>
+<dt id="dt:mou_two_to_one">
+<i>mou_two_to_one</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Scaling is 2:1 flag.</dd>
+<dt id="dt:mou_resolution">
+<i>mou_resolution</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mouse resolution. The resolution is <tt>1 &lt;&lt; <i>value</i></tt> counts / mm.</dd>
+<dt id="dt:mou_sample_rate">
+<i>mou_sample_rate</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Sample rate in Hz.</dd>
+<dt id="dt:mou_buffer">
+<i>mou_buffer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{48}]</code>
+<br><tt>(<i>b0</i>, <i>b1</i>, ..., <i>b47</i>)</tt> Controller output mouse data.</dd>
+<dt id="dt:mou_first">
+<i>mou_first</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Index of next data in <tt>mou_buffer</tt>.</dd>
+<dt id="dt:mou_buf_num">
+<i>mou_buf_num</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of entries used from <tt>mou_first</tt> in <tt>mou_buffer</tt>.</dd>
+<dt id="dt:mou_next_write">
+<i>mou_next_write</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Command expected for the next write to the mouse controller. <tt>0 = Undefined</tt>, <tt>1 = Resolution</tt>, and <tt>3 = SampleRate</tt>.</dd>
+<dt id="dt:mouse_type">
+<i>mouse_type</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Modeled mouse type. <tt>0 = 3-button mouse</tt> (default), <tt>1 = 3-button wheel mouse</tt>, and <tt>2 = 5-button wheel mouse</tt>.</dd>
+<dt id="dt:mouse_mode">
+<i>mouse_mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mode operating mode. <tt>0 = 3-button mode</tt>, <tt>1 = 3-button wheel mode</tt>, and <tt>2 = 5-button wheel mode</tt>.</dd>
+<dt id="dt:mode_select_state">
+<i>mode_select_state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mode selection state. <tt>0 = knocking not in progress</tt>, <tt>1 = having set sample rate to 200 Hz once</tt>, <tt>2 = having set sample rate to 200 Hz twice</tt>, and <tt>3 = having set sample rate to 100 Hz</tt>.</dd>
+<dt id="dt:mouse_movement_x">
+<i>mouse_movement_x</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mouse movement since last packet.</dd>
+<dt id="dt:mouse_movement_y">
+<i>mouse_movement_y</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mouse movement since last packet.</dd>
+<dt id="dt:mouse_movement_z">
+<i>mouse_movement_z</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mouse movement since last packet.</dd>
+<dt id="dt:mouse_report_button_state">
+<i>mouse_report_button_state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Mouse button state in last packet.</dd>
+<dt id="dt:mouse_current_button_state">
+<i>mouse_current_button_state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Current mouse button state.</dd>
+<dt id="dt:mouse_event">
+<i>mouse_event</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>Unknown</code>
+<br><i>Write-only</i>. Forces mouse events. Writes to indices <tt>0</tt> through <tt>5</tt> result in movement in directions <tt>up</tt>, <tt>down</tt>, <tt>left</tt>, <tt>right</tt>, <tt>wheel up</tt>, or <tt>wheel down</tt> by <tt><i>value</i></tt> mm.</dd>
+<dt id="dt:key_event">
+<i>key_event</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>Unknown</code>
+<br><i>Write-only</i>. Forces keyboard events. Writing <tt><i>value</i></tt> (an integer) to index <i>i</i> forces key number <i>i</i> to be pressed if <tt><i>value</i></tt> is false, or released if <tt><i>value</i></tt> is true.</dd>
+<dt id="dt:button_event">
+<i>button_event</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>Unknown</code>
+<br><i>Write-only</i>. Forces mouse button events. Writing <tt><i>value</i></tt> to index <tt>0</tt> (<tt>1</tt>, <tt>2</tt>, <tt>3</tt>, or <tt>4</tt>) causes the left (right, middle, fourth, or fifth) button to be pressed if <tt><i>value</i></tt> is false, or released if <tt><i>value</i></tt> is false.</dd>
+<dt id="dt:shift_l_down">
+<i>shift_l_down</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Status of the left shift key.</dd>
+<dt id="dt:shift_r_down">
+<i>shift_r_down</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Status of the right shift key.</dd>
+<dt id="dt:ctrl_l_down">
+<i>ctrl_l_down</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Status of the left ctrl key.</dd>
+<dt id="dt:ctrl_r_down">
+<i>ctrl_r_down</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Status of the right ctrl key.</dd>
+<dt id="dt:alt_l_down">
+<i>alt_l_down</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Status of the left alt key.</dd>
+<dt id="dt:alt_r_down">
+<i>alt_r_down</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Status of the right alt key.</dd>
+<dt id="dt:fast_a20">
+<i>fast_a20</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The fast A20 bit (port 92h).</dd>
+<dt id="dt:fast_init">
+<i>fast_init</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The fast init bit (port 92h).</dd>
+<dt id="dt:output_port">
+<i>output_port</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The 8042 controller's output port P2. Only bits 2 and 3 are in this attribute. Use other attributes for the remaining bits.</dd>
+<dt id="dt:output_port_mask">
+<i>output_port_mask</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>One bit set for each locked bit in output port P2.</dd>
+<dt id="dt:allow_keyboard_buffer_overflow">
+<i>allow_keyboard_buffer_overflow</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>By default this attribute is false, which implies that the i8042 will not allow the keyboard buffer to overflow. Instead it will force the console to buffer the input until there is room for it in the keyboard buffer. This makes the console generally easier to work with, since you are guaranteed that it won't drop characters. If you for some reason want to allow keyboard buffer overflows, set this attribute to true.</dd>
+<dt id="dt:irq_freq">
+<i>irq_freq</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The maximum frequency in Hz at which the i8042 will generate interrupts. The default is 2000 Hz, which simulates the timing of a real device. However, some operating systems and X servers may have problems keeping up with that interrupt frequency when run with low processor clock frequencies and may start to lose input. If that happens you can lower the interrupt frequency. 20 Hz seems to work well with X servers on Linux in the configurations distributed with Simics.</dd>
+</dl>
+<h3 id="class-attributes">
+<a href="#class-attributes">Class Attributes</a>
+</h3>
+<dl>
+<dt id="dt:keys">
+<i>keys</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[s*]</code>
+<br>List with the names of all keys on the keyboard. Their index in the list represents the Simics internal key code.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.8042.html">8042</a>
+</section>
+<div class="chain">
+<a href="rm-class-i3c_wire.html">i3c_wire</a>
+<a href="rm-class-i82077.html">i82077</a>
+</div>

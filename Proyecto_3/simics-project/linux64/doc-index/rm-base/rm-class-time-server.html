@@ -1,0 +1,91 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>time-server</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-textcon.html">textcon</a>
+<a href="rm-class-top-component.html">top-component</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="time-server"><a href="#time-server">time-server</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The time-server class provides virtual time services to programs running outside of Simics. It provides those services through a text protocol on a user defined TCP port.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:port">
+<i>port</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i|n</code>
+<br>TCP port for server. Use 0 for any port (the actual port can be read back from this attribute). Set to Nil to disable the server.</dd>
+<dt id="dt:poll_interval">
+<i>poll_interval</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>Time server resolution in simulated seconds. Only valid in poll mode.</dd>
+<dt id="dt:virtual_time_delta">
+<i>virtual_time_delta</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>The value in this attribute is added to the queue time to get the time that is returned in virtualtime queries. Only used in poll mode.</dd>
+<dt id="dt:poll_mode_enabled">
+<i>poll_mode_enabled</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>When set, the time-server will operate in poll mode, meaning it will periodically poll the time and return the polled value in queries. If not set, the time server will always return the current time in queries. Polled mode offers better performance when the time server is queried at a high frequency, but does not support events</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.time-server-c.html">time-server-c</a>
+</section>
+<div class="chain">
+<a href="rm-class-textcon.html">textcon</a>
+<a href="rm-class-top-component.html">top-component</a>
+</div>

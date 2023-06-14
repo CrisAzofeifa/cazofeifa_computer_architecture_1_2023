@@ -1,0 +1,165 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>16 Simulation Performance</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="performance.html">IV Performance</a>
+<a href="system-perfmeter.html">16.1 Measuring Performance</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Simulation-Performance">16 Simulation Performance</a></h1>
+<p>
+
+<a name="MIPS"></a>
+<a name="slowdown"></a>
+</p><p>
+This chapter covers various topics related to Simics performance and what can
+be done to measure and improve it. It discusses the general performance
+features provided by Simics. For ways to scale the simulation even
+further see chapter <a class="reference" href="scaling-simics.html">17</a>.
+</p><p>
+Simics is a fast simulator utilizing various techniques such as run-time code
+generation to optimize performance. In some cases Simics can execute code
+faster than the target system being simulated, while it can also be
+considerably slower in other cases.
+</p><p>
+There are four major <a name="execution-modes">execution modes</a> Simics uses to execute
+target instructions: <a name="hypersimulation">hypersimulation</a>, <a name="VMP">VMP</a>,
+<a name="JIT">JIT</a> and <a name="interpreted-mode">interpreted mode</a>.
+</p><p>
+Hypersimulation means that Simics detects repetitive work performed
+by the target code and performs the effects of the code without
+actually having to run the code. In the most simple case this is a
+simple idle loop, but it can also be applied to more complex examples
+such as spin-locks and device polling. This is the fastest execution mode.
+</p><p>
+VMP, which is a part of Simics's x86 models, utilizes the
+virtualization capabilities of modern processors to run target
+instructions directly. This typically results in high simulation
+performance, but the host and target needs have the same instruction
+set, and you have to do special set up to enable it. VMP is currently
+only supported on x86 hosts.
+</p><p>
+JIT mode uses run-time code generation to translate blocks of the
+target instructions into blocks of host instructions. JIT mode is when
+Simics runs such translated blocks. This mode is supported by most
+target processor models in Simics.
+</p><p>
+Interpreted mode interprets the target instructions one by
+one. This mode is the slowest, but it is always available.
+</p><p>
+<br>There are basically two ways to measure Simics performance:
+</p><ul>
+<li>How fast the instructions are being simulated, typically measured in million
+target instructions per host second (MIPS).</li>
+<li>How fast the virtual times elapses.</li>
+</ul>
+In most cases the user is mostly interested in the first. Simics
+should execute instructions as fast as possible to finish the workload
+in shortest possible time.  However, since Simics is a full system
+simulator, it is also important that the virtual time on the simulated
+machine advances quickly. That is important in cases where a program
+or operating system is waiting on a timer to expire or an interrupt
+from a device in order to proceed with the workload.
+<p>
+If we divide the wall-clock time on the host that Simics executes on, with the
+elapsed virtual time on the target machine, we get a slowdown number.
+</p><div style="text-align: center">
+slowdown = Time<sub>host</sub>/Time<sub>virtual</sub>
+</div>
+A slowdown number of 2.3 means that Simics performance is 2.3 times slower than
+the system it simulates. A slowdown value of less than 1.0 means that Simics
+manages to execute the corresponding code faster than the system it simulates.
+The slowdown depends on various factors:
+<ul>
+<li>The performance of the host which Simics runs on.</li>
+<li>The application which runs in Simics.</li>
+<li>The frequency of the target being simulated.</li>
+<li>The simulator time model.</li>
+</ul>
+The default time model in Simics is that each target instruction takes one target cycle
+to execute. That is the default, <i>Instructions Per Cycle</i> (IPC) is 1.0.
+This is a simplification (but in many cases an adequate approximation)
+compared to the actual time it takes on the real hardware to execute instructions.
+It is possible to change the IPC number using
+the <b>&lt;cpu&gt;.set-step-rate</b> command. For example:
+<pre class="jdocu_small">simics&gt; <b>board.mb.cpu0.core[0][0].set-step-rate ipc = 1.5</b>
+Setting step rate to 3/2 steps/cycle
+simics&gt; <b>board.mb.cpu0.core[0][0].set-step-rate ipc = 0.5</b>
+Setting step rate to 1/2 steps/cycle
+</pre><p>
+In the first example, IPC of 1.5 means that Simics needs to execute 3
+instructions for 2 cycles to elapse. In the second example, for each
+instruction executed two cycles elapse. Thus, with a lower IPC value,
+virtual time will progress faster and simulation slowdown will
+decrease.
+</p><p>
+Note that there is nothing wrong in changing the default IPC when it comes to
+the accuracy of the simulation. In many cases, the IPC observed for a given
+benchmark is much lower than the 1.0 that Simics assumes, and matching it will
+both make the simulation closer to the real hardware and improve the simulation
+speed, at least in virtual time. Simulations that profits most from this change
+are simulations involving devices and long memory latencies.
+</p><p>
+
+
+
+
+
+
+
+</p>
+<ul class="subsections">
+<li>
+<a href="system-perfmeter.html">16.1 Measuring Performance</a>
+</li>
+<li>
+<a href="multithreaded-simulation-profiling-and-tuning.html">16.2 Multithreaded Simulation Profiling and Tuning</a>
+</li>
+<li>
+<a href="platform-effects.html">16.3 Platform Effects</a>
+</li>
+<li>
+<a href="workload-characteristics.html">16.4 Workload Characteristics</a>
+</li>
+<li>
+<a href="hypersimulation.html">16.5 Hypersimulation</a>
+</li>
+<li>
+<a href="vmp.html">16.6 VMP</a>
+</li>
+<li>
+<a href="performance-tweaks.html">16.7 Performance Tweaks</a>
+</li>
+</ul>
+<div class="chain">
+<a href="performance.html">IV Performance</a>
+<a href="system-perfmeter.html">16.1 Measuring Performance</a>
+</div>

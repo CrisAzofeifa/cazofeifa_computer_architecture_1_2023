@@ -1,0 +1,188 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_machine_notification</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_control_v2.html">osa_control_v2</a>
+<a href="__rm_interface_osa_machine_query.html">osa_machine_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_machine_notification">osa_machine_notification</a></h1>
+<p>
+
+<a name="osa_machine_notification"></a><a name="osa_machine_notification_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_machine_notification_interface_t2"></a>
+<p>
+   <a name="notify_mode_changeosa_machine_notification-interface-method"></a>
+   <b><i>notify_mode_change</i></b> registers a callback function that will be
+   called when processor <i>cpu</i> changes processor mode. The
+   callback function will be called with the processor that changed mode
+   <i>cpu</i>, the mode previous to the change <i>old_mode</i> and
+   the mode after the change <i>new_mode</i>.
+</p><p>
+   <a name="notify_exceptionosa_machine_notification-interface-method"></a>
+   <b><i>notify_exception</i></b> registers a callback function that will be
+   called when processor <i>cpu</i> takes an exception with exception
+   number <i>exc_num</i>. The callback function <i>cb</i> will be
+   called with the processor <i>cpu</i> causing the exception and
+   exception number <i>exc_num</i> of that exception.
+</p><p>
+   <a name="notify_control_regosa_machine_notification-interface-method"></a>
+   <b><i>notify_control_reg</i></b> registers a callback function that will be
+   called when a control register, with register number <i>reg_num</i>, in
+   processor <i>cpu</i> is updated. The callback function <i>cb</i>
+   will be called with the processor <i>cpu</i>, register number
+   <i>reg_num</i> and the written register <i>value</i> (see
+   Core_Control_Register_Write documentation for more details) as
+   arguments. The register number for a certain register can be retrieved with
+   the <b><i>get_register_number</i></b> function.
+</p><p>
+   <a name="notify_control_reg_readosa_machine_notification-interface-method"></a>
+   <b><i>notify_control_reg_read</i></b> registers a callback function that will
+   be called when a control register, with register number <i>reg_num</i>,
+   in processor <i>cpu</i> is read. The callback function <i>cb</i>
+   will be called with the processor <i>cpu</i> and register number
+   <i>reg_num</i> as arguments. The register number for a certain register
+   can be retrieved with the <b><i>get_register_number</i></b> function.
+</p><p>
+   <a name="notify_exec_breakpointosa_machine_notification-interface-method"></a>
+   <b><i>notify_exec_breakpoint</i></b>,
+   <a name="notify_read_breakpointosa_machine_notification-interface-method"></a>
+   <b><i>notify_read_breakpoint</i></b> and
+   <a name="notify_write_breakpointosa_machine_notification-interface-method"></a>
+   <b><i>notify_write_breakpoint</i></b> plant breakpoints of length
+   <i>len</i> for processor <i>cpu</i> on <i>address</i>.
+   The breakpoint is of type execution, read, write respectively. The
+   <i>virt</i> argument specifies if <i>address</i> is a virtual
+   or physical address. The callback function <i>cb</i> is called when
+   the breakpoint is hit.
+   The arguments of the callback functions are the processor that the
+   breakpoint hit on <i>cpu</i> and the <i>address</i>
+   (virtual or physical depending on what the breakpoint was registered as)
+   that was hit.
+   Callbacks functions for <b><i>notify_read_breakpoint</i></b> and
+   <b><i>notify_write_breakpoint</i></b> also gets the access size <i>len</i>
+   of the read or write.
+   The callback function for <b><i>notify_write_breakpoint</i></b> additionally
+   has the previous value <i>old_val</i> at the address written and the new
+   value <i>new_val</i> that is being written passed as arguments. Reading
+   the actual memory from the callback will result in reading the new value that
+   has been written as the callback is called after the write is done.
+   On x86 virtual breakpoints use linear addresses (as opposed to logical
+   addresses).
+</p><p>
+   For all functions, the <i>tracker</i> argument should be the tracker
+   calling this interface. This makes it possible for a hypervisor tracker to
+   handle guests differently.
+</p><p>
+   All methods that register a notification callback take <i>data</i> as an
+   argument which will be passed on to callback function. These methods return
+   a cancel ID to be used with the <b><i>cancel</i></b> method to cancel the
+   callback. A returned value of 0 means that an error occurred and no callback
+   was registered, in which case the caller is responsible for freeing the
+   callback <i>data</i>.
+</p><p>
+   <a name="cancelosa_machine_notification-interface-method"></a>
+   <b><i>cancel</i></b> cancels the callback function with ID <i>cancel_id</i>
+   and will free the callback <i>data</i> associated with the
+   notification. This ID will have been returned from the function that
+   registered the callback.
+</p><p>
+   </p><pre class="jdocu_small">
+typedef enum {
+        OSA_Read_One_Byte = 1,
+        OSA_Read_Two_Byte = 2,
+        OSA_Read_Four_Byte = 4,
+        OSA_Read_Eight_Byte = 8,
+} osa_read_len_t;
+
+SIM_INTERFACE(osa_machine_notification) {
+        cancel_id_t (*notify_mode_change)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu,
+                void (*cb)(cbdata_call_t data, conf_object_t *cpu,
+                           processor_mode_t old_mode,
+                           processor_mode_t new_mode),
+                cbdata_register_t data);
+        cancel_id_t (*notify_exception)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, int exc_num,
+                void (*cb)(cbdata_call_t data, conf_object_t *cpu, int exc_num),
+                cbdata_register_t data);
+        cancel_id_t (*notify_control_reg)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, int reg_num,
+                void (*cb)(cbdata_call_t data, conf_object_t *cpu, int reg_num,
+                           uint64 value),
+                cbdata_register_t data);
+        cancel_id_t (*notify_exec_breakpoint)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, uint64 address, uint64 len,
+                bool virt,
+                void (*cb)(cbdata_call_t data, conf_object_t *cpu,
+                           uint64 address),
+                cbdata_register_t data);
+        cancel_id_t (*notify_read_breakpoint)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, uint64 address, unsigned len,
+                bool virt,
+                void (*cb)(cbdata_call_t data, conf_object_t *NOTNULL cpu,
+                           uint64 address, unsigned len),
+                cbdata_register_t data);
+        cancel_id_t (*notify_write_breakpoint)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, uint64 address, unsigned len,
+                bool virt,
+                void (*cb)(cbdata_call_t data, conf_object_t *NOTNULL cpu,
+                           uint64 address, unsigned len, uint64 old_val,
+                           uint64 new_val),
+                cbdata_register_t data);
+        void (*cancel)(conf_object_t *NOTNULL obj,
+                       conf_object_t *NOTNULL tracker, cancel_id_t cancel_id);
+        cancel_id_t (*notify_control_reg_read)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, int reg_num,
+                void (*cb)(cbdata_call_t data, conf_object_t *cpu, int reg_num),
+                cbdata_register_t data);
+};
+
+#define OSA_MACHINE_NOTIFICATION_INTERFACE "osa_machine_notification"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_control_v2.html">osa_control_v2</a>
+<a href="__rm_interface_osa_machine_query.html">osa_machine_query</a>
+</div>

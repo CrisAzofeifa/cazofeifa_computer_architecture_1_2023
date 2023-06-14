@@ -1,0 +1,46 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.4 Workload Positioning and Cache Models</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="programmatically-constructing-a-cache-hierarchy.html">5.3 Programmatically constructing a cache hierarchy</a>
+<a href="using-simple-cache.html">5.5 Using Simple Cache</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="caches.html">5 Cache Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 id="workload-positioning-and-cache-models">5.4 <a href="#workload-positioning-and-cache-models">Workload Positioning and Cache Models</a></h1>
+<p>In the previous examples, it is worth noticing that connecting the caches to the processors can be done separately from defining the system. It is thus possible to define and remove the caches at any time during the simulation: for example, the operating system boot and workload setup can be done with Simics in normal mode to create a checkpoint. The checkpoint is then reloaded and the caches are then setup.</p>
+<p>To get decent cache statistics, it is important to run at least a 10 - 100 million instructions to warm up the caches before actually starting to do measurements. Note that this is only a rough advice; the precise warm-up time needed will depend on the cache model and the workload. A simple way is to make sure that the entire last-level cache is filled with data in all ways, but this has turned out to be an over estimate. All workloads does not need the entire cache to be filled. For more information on cache warming, see the paper <em>Adaptive Cache Warming for Faster Simulations</em> from RAPIDO ’17 January 23-25, 2017.</p>
+<p>To tear down and remove the cache hierarchy you can use the command <code>cachetool.delete</code> (will not remove any namespace objects that have been inserted). You can also temporarily disable the caches by using the <code>cachetool.disable-instrumentation</code> command. And then enable them again by <code>cachetool.enable-instrumentation</code>.</p>
+<p>When the caches are disabled the performance is much better but it not as fast as removing the caches altogether.</p>
+
+<div class="chain">
+<a href="programmatically-constructing-a-cache-hierarchy.html">5.3 Programmatically constructing a cache hierarchy</a>
+<a href="using-simple-cache.html">5.5 Using Simple Cache</a>
+</div>

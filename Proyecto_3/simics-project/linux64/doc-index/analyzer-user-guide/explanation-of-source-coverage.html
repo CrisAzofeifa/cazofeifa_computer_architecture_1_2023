@@ -1,0 +1,54 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.6 Explanation of source coverage</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="raw-code-coverage-format.html">4.5 Raw Code Coverage Format</a>
+<a href="code-coverage-limitations.html">4.7 Limitations</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="code-coverage.html">4 Code Coverage</a>
+&nbsp;/&nbsp;</div>
+<h1 id="explanation-of-source-coverage">4.6 <a href="#explanation-of-source-coverage">Explanation of source coverage</a></h1>
+<p>This section will explain why the source reports can sometimes look like it would be incorrect and why the reports might differ from reports created by other tools, such as <em>gcov</em>.</p>
+<p>Simics code coverage will rely only on what the debug information provides and does not have any extra information about if a source line is considered executable, contains branches, etc. Only lines which have instructions associated with them are considered executable, this means for example that variable declarations will not be marked as executable and that only one line of a multi-line expression might be marked as executable.</p>
+<p>Sometimes the source report might look strange, especially when optimization and inlining is involved. As an example, see figure <a class="reference" href="#coverage-explained-case">22</a>, which is a simple example that shows how a uncovered line can occur between two covered lines, without any branches involved. Similar cases usually occur when running coverage on a Linux kernel.</p>
+<figure id="coverage-explained-case">
+<p><img alt="" src="code-coverage-red-line-between-green.png"></p><figcaption>Figure 22. Source report for the inlined <code>helper</code> function.</figcaption><p></p>
+</figure>
+<p>One would likely expect that line <em>50</em> would be green if both line <em>49</em> and line <em>51</em> are green as there is no branch involved. But this does not have to be the case and the report is actually correct.</p>
+<p>This function is defined in a header file and will be inlined into two other functions, named <code>one</code> and <code>another</code>. Line <em>48</em> will be optimized out when inlining into the <code>another</code> function, while line <em>50</em> will be optimized out for the <code>one</code> function. Line <em>49</em> and <em>51</em> will be included in both functions. In the example only the <code>one</code> function has been executed so lines included in that will be green, while lines only included in the <code>another</code> function will be red. If a shared line has been executed by any function it will be marked as green.</p>
+<p>The output in figure <a class="reference" href="#coverage-explained-case-with-functions">23</a> is the same collected coverage as above, but with the <code>-show-line-functions</code> flag passed to the <code>&lt;code_coverage&gt;.html-report</code> command. This will show which functions make use of each line. This reveals what was explained above, that line <em>50</em> is only included by the <code>another</code> function and therefore it is red as the <code>another</code> function has not executed. Line <em>48</em> is only included by the <code>one</code> function, but that function has executed so that line is green. Both lines <em>49</em> and <em>51</em> are used by both functions so they will be green as one of the functions has executed.</p>
+<figure id="coverage-explained-case-with-functions">
+<p><img alt="" src="code-coverage-red-line-between-green-with-functions.png"></p><figcaption>Figure 23. Source report for the inlined <code>helper</code> function, showing functions that use each line.</figcaption><p></p>
+</figure>
+
+<div class="chain">
+<a href="raw-code-coverage-format.html">4.5 Raw Code Coverage Format</a>
+<a href="code-coverage-limitations.html">4.7 Limitations</a>
+</div>

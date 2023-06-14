@@ -1,0 +1,245 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>23 Memory Spaces</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="part-system-modeling.html">IV Creating Virtual Systems</a>
+<a href="creating-configurations.html">24 Components</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-system-modeling.html">IV Creating Virtual Systems</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="memory-space">23 Memory Spaces</a></h1>
+<p>
+
+<a name="memory-space"></a>
+<a name="address-space"></a>
+</p><p>
+This chapter shows you how to use the memory spaces in Simics.
+Memory spaces is a fundamental abstraction in Simics providing support
+for generic 64-bit address spaces into which memory and devices can be
+mapped. More concretely a memory space takes a stream of transactions
+to an address space and distributes them to devices mapped into the
+address space in a highly efficient manner while optionally providing
+address translations, byte swapping, and break point support. Memory
+space objects can be cascaded to form arbitrarily complex mappings and
+support dynamic reconfiguration and remapping at run time through
+attributes to support modeling of buses with dynamic addressing.
+</p><p>
+</p><h2 class="jdocu"><a name="Memory-Space-Basics">23.1 Memory Space Basics</a></h2>
+<p>
+
+</p><p>
+Simics memory-spaces are handled by the generic <b>memory-space</b>
+class. A <b>memory-space</b> object implements interface functions for
+memory accesses, and it has attributes specifying how the mappings are set up.
+</p><p>
+The most important attribute in a memory-space is the <i>map</i>
+attribute.  This is a list of mapped objects that may contain devices, RAM and
+ROM objects, and other memory-spaces. In addition to the <i>map</i>
+attribute, there is also a <i>default_target</i> attribute that is used
+for accesses that do not match any of the targets in the map list.
+</p><p>
+Python example of a <b>memory-space</b> object where already created
+objects are mapped into a new memory space:
+</p><p>
+</p><pre class="jdocu_small">@mem = pre_conf_object('phys_mem', 'memory-space')
+@mem.map = [[0x00000000, conf.ram0,    0, 0,          0xa0000],
+            [0x000a0000, conf.vga0,    1, 0,          0x20000],
+            [0x000c0000, conf.rom0,    0, 0,          0x10000],
+            [0x000f0000, conf.rom0,    0, 0,          0x10000],
+            [0x00100000, conf.ram0,    0, 0x100000, 0xff00000],
+            [0xfee00000, conf.apic0,   0, 0,           0x4000],
+            [0xffe81000, conf.hfs0,    0, 0,               16],
+            [0xffff0000, conf.rom0,    0, 0,          0x10000]]
+@mem.default_target = [conf.pci_mem0, 0, 0, conf.pci_mem0]
+@SIM_add_configuration([mem], None)
+</pre><p>
+</p><p>
+The fields for an entry in the map list are as follows:
+</p><p>
+</p><dl><dt id="dt:base"><b>base</b></dt><dd>The start address of the mapping in the memory space.
+</dd><dt id="dt:object"><b>object</b></dt><dd>Reference to the mapped object or port. In the
+case of an object mapping this is just the object and in the case of a
+port mapping it is a two element list: [object, port name]. One common
+example for the use of port mappings is mapping banks of DML devices.  </dd><dt id="dt:function"><b>function</b></dt><dd>An object specific identification number for this
+mapping. The function number is typically only used by older device models
+with several mappings. When such a device is accessed, the function number can
+be used to figure out what mapping it was accessed through. Newer device
+models use port mappings instead. If a port mapping is used the function
+number is not passed on to the target device. The function number is part of
+the <code>map_info_t</code> <code>struct</code>, which is passed as a parameter
+of all <code>io_memory</code> interface functions.</dd><dt id="dt:offset"><b>offset</b></dt><dd>The start offset in the target object. This is often used
+when a memory-space is mapped in another memory-space. Example: memory-space B
+is mapped in space A at base 0x4000 with length 0x1000, and with offset
+0x2000. If an access is made in space A at address 0x4010, it will be forwarded
+to space B at address 0x2010. Without any offset in the mapping, the resulting
+address would have been 0x10.  </dd><dt id="dt:length"><b>length</b></dt><dd>The size of the mapping in bytes.
+</dd><dt id="dt:target"><b>target</b></dt><dd>(optional) If <em>object</em> is not the final
+destination for the access, then <i>target</i> is a reference to the
+actual target object or port. It has the same format as
+<b>object</b>. This is described in more details in the section about
+different mapping types.</dd><dt id="dt:priority"><b>priority</b></dt><dd>(optional) The priority of the mapping. The
+highest priority is -32768, and the lowest is 32767; the default is 0.
+If mappings overlap, then the priority field specifies what mapping
+that has precedence. It is an error if overlapping mappings have the
+same priority. Usually overlapping mappings should be avoided, but for
+bridges that catch unclaimed accesses in specific address ranges the
+priority field is useful. There are also devices that have overlapping
+mappings that have different priorities, and in that case the priority
+field in the map list can be used.</dd><dt id="dt:align-size"><b>align-size</b></dt><dd>(optional) The <i>align-size</i> can be used
+if a target does not support large accesses. Accesses that crosses an alignment
+boundary will be split into several transactions by the Simics memory
+system. By default this will be set to 4 bytes for port-space devices and 8
+bytes for other devices, but it is not used for memory.</dd><dt id="dt:byte-swap"><b>byte-swap</b></dt><dd>(optional) Some device mappings swap the data
+bytes in a transaction, to support mixed-endian environments.
+Mappings with an <i>align-size</i> of 2, 4, or 8 may set the
+<i>byte-swap</i> field to one of 0 to 3 where 0 is <code>none</code>,
+1 is <code>bus</code>, 2 is <code>bus-trans</code> and 3 is <code>trans</code>.
+As the name suggests,
+<code>none</code> performs no swapping while <code>bus</code> swaps data based
+on the <i>align-size</i> setting. If any swapping is used,
+<code>bus</code> is most common. It is also possible to swap all bytes of
+the access based on the access size by using <code>trans</code> and
+finally combine the two swappings into <code>bus-trans</code>. As an
+example, consider a mapping with a 4-byte align-size and memory at
+address 0 that contains the following bytes: <code>0x00 0x01 0x02
+0x03</code>. A 2-byte big-endian read access at address 0 will give the
+following values as results. No swap: <code>0x0001</code>, bus swap:
+<code>0x0302</code>, bus and transaction swap: <code>0x0203</code> and
+transaction swap: <code>0x0100</code>.  </dd></dl><p>
+</p><h2 class="jdocu"><a name="Memory-Space-Commands">23.2 Memory Space Commands</a></h2>
+<p>
+
+</p><p>
+All mappings in a memory-space can be viewed with the
+<b>&lt;memory-space&gt;.map</b> command. Example:
+</p><pre class="jdocu_small">simics&gt;  board.mb.nb.pci_mem.map
+       Base Object                  Fn Offset   Length Target              Prio Align Swap
+    0xa0000 board.mb.gpu.dmap_space       0x0  0x20000                        0
+    0xc0000 board.mb.shadow               0x0  0x40000 board.mb.shadow_mem    1
+ 0xfec00000 board.mb.sb.ioapic            0x0     0x20                        0     8
+ 0xffe00000 board.mb.rom                  0x0 0x200000                        0
+  -default- board.mb.dram_space           0x0
+</pre><p>
+</p><p>
+Another useful command is <b>devs</b>, that lists all mapped devices in
+the system.
+</p><pre class="jdocu_small">simics&gt;  devs
+ Count    Device        Space            Range                                   Func/Port
+       0  chmmu0        phys_io0         0x0000040000400000 - 0x0000040000400047    0
+       0  e2bus24B_1    bus_pcicfg24B    0x0000000000000800 - 0x00000000000008ff  255
+       0  empty0_0      phys_io0         0x000007fff0800060 - 0x000007fff080006f    0
+       0  empty1_0      phys_io0         0x000007fff091e000 - 0x000007fff091e11f    0
+       0  fpost_data0   phys_io0         0x000007fff0104000 - 0x000007fff0105fff    0
+       0  glm0          bus_pcicfg25B    0x0000000000001000 - 0x00000000000010ff  255
+<i>[…]</i>
+</pre><p>
+</p><p>
+It is also possible to modify mappings interactively from the command line, or
+from a script, by using the <b>add-map</b> and <b>del-map</b>
+memory-space commands. Try <code>help &lt;memory-space&gt;.add-map</code> from the
+command line for more information or refer to the <em>API Reference
+Manual</em>.
+</p><p>
+Additionally memory mappings can be viewed in the GUI see <em>Getting
+Started</em> or the <em>Simics User's Guide</em> for details.
+
+</p><h2 class="jdocu"><a name="Memory-Mapping-Use-Cases">23.3 Memory Mapping Use Cases</a></h2>
+<p>
+
+</p><p>
+There are a few different kinds of memory mappings.
+All use the format described in the previous section.
+</p><p>
+</p><dl><dt id="dt:device-mapping"><b>Device Mapping</b></dt><dd>The most common kind of mapping. It
+is used for devices, RAM and ROM objects. The <i>target</i> field is
+not set. For devices this is often a port mapping.  </dd><dt id="dt:translator-mapping"><b>Translator Mapping</b></dt><dd>Sometimes the address has to be modified between memory-spaces, or the
+destination memory-space depends on the address or some other aspect of
+the access. In these cases a <i>translator</i>
+can be used. A translator mapping is specified with the translator in the
+<i>object</i> field, and the default target as <i>target</i>. The translator
+has to implement either the <code>translator</code> or
+the <code>translate</code> interface. When an access reaches
+a translator mapping, the <b><i>translate</i></b> function in the interface
+is called. Please refer to the documentation of the <code>translator</code>
+and the <code>translate</code> interfaces for more information about their
+usage.
+</dd><dt id="dt:translate-to-ram-rom-mapping"><b>Translate to RAM/ROM Mapping</b></dt><dd>Used to map RAM and ROM objects with a translator first. The <i>object</i>
+field is set to the translator, and <i>target</i> is set to the RAM/ROM object.
+</dd><dt id="dt:space-to-space-mapping"><b>Space-to-space Mapping</b></dt><dd>Map one memory-space in another. The <i>object</i> field
+is set to the destination memory-space object.
+</dd><dt id="dt:bridge-mapping"><b>Bridge Mapping</b></dt><dd>A bridge mapping is typically used for mappings that are set up by some
+kind of bridge device. The purpose of a bridge mapping is to handle accesses
+where nothing is mapped, in a way that corresponds to the bus architecture.
+For a bridge mapping, the <i>object</i> field is set to the bridge device,
+implementing the <code>bridge</code> interface. The <i>target</i> field is
+set to the destination memory-space. If both a translator
+and a bridge are needed,
+they must be implemented by the same object. If an access is made where nothing
+is mapped, the memory-space by default returns the <code>Sim_PE_IO_Not_Taken</code>
+pseudo exception. But if the access was made through a bridge mapping, the
+bridge device will be called to notify it about the unmapped access. It can
+then update any internal status registers, specify a new return exception,
+and set the data that should be returned in the case of a read access. Since
+the bridge is associated with the mapping and not the memory-space itself,
+several bridges can exist for one space, and devices doing accesses directly
+to the memory-space in question will not affect the bridge for non-mapped
+addresses. In the latter case, the device itself has to interpret the
+<code>Sim_PE_IO_Not_Taken</code> exception. The <code>Sim_PE_IO_Error</code> exception,
+indicating that a device returned an error is also sent to the bridge. Finally,
+bridges are called for accesses that generate <code>Sim_PE_Inquiry_Outside_Memory</code>,
+i.e., an inquiry access where nothing is mapped. In this case the bridge
+may have to set a default return value, such as −1.
+</dd></dl><p>
+</p><h2 class="jdocu"><a name="Avoiding-Circular-Mappings">23.4 Avoiding Circular Mappings</a></h2>
+<p>
+
+</p><p>
+Since memory-spaces can be mapped in other memory-spaces, it is
+possible to create loops where accesses never reach any target
+device. One typical case is a PCI memory-space with bridges that has
+both downstream and upstream mappings. In a real system, the bridge
+typically does not snoop its own transactions and there will be no
+loop. In Simics there are usually no bridge devices mapped between
+different memory-spaces, instead the bridge will create space-to-space
+mappings. The bridge has to be careful to avoid addresses which will
+cause loops between memory-spaces when accessed.
+</p><p>
+To catch invalid configurations Simics will make sure that an access
+does not loop by terminating it after 512 memory-space transitions. If
+this limit is reached, it is considered a configuration error and
+Simics will stop.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="part-system-modeling.html">IV Creating Virtual Systems</a>
+<a href="creating-configurations.html">24 Components</a>
+</div>

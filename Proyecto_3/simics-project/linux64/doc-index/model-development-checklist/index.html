@@ -1,0 +1,699 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Simics Model Development Checklist</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>Simics Model Development Checklist</h1>
+
+<p>
+      
+      
+      
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Simics-Model-Development-Checklist">1 Simics Model Development Checklist</a></h2>
+<p>
+
+</p><p>
+This application note provides a checklist for use when developing models of
+devices and systems for Simics. The intention is to help developers with
+creating high quality models that work well in Simics, including future
+versions, that behave in a way that Simics users expect models to, and that
+can be used together with other device models easily.
+</p><p>
+</p><h3 class="jdocu"><a name="Generic-Checklist">1.1 Generic Checklist</a></h3>
+<p>
+
+</p><p>
+This section describes important generic items that should be taken into
+consideration when working with Simics. This applies if one is writing device
+models, components or general functionality to extend Simics.
+</p><p>
+</p><dl><dt id="dt:ge-01-checkpointing"><b><em>GE-01</em> — Checkpointing</b></dt><dd>Device models and other
+Simics extensions must support checkpointing. All state associated with the
+modeled machine should be included in the checkpoint. The simulation session
+is not checkpointed. Simply loading a machine, taking a checkpoint without
+having advanced the simulation and restarting from that checkpoint should
+result in the same machine state. The same should be true at anytime during the
+simulation and care must be taken to checkpoint any transient state in a
+module, such as pending events.
+<p>
+For more information refer to the sections about events and attributes in
+"Programming with DML", the section about general usability in
+"Building Well-Behaved Models" and the section about configuration attributes
+in "Overview" in the <em>Model Builder User's Guide</em>. Also refer to
+the section "Configuration and Checkpointing" in the
+<em>Simics User's Guide</em> </p></dd><dt id="dt:ge-02-reverse-execution"><b><em>GE-02</em> — Reverse Execution</b></dt><dd>Models that are deterministic and support checkpointing also work with
+reverse execution. But the performance of the attribute get/set methods, as
+well as their memory consumption, are more important. Use
+<b>image</b> objects for storing data-type attributes, such as internal 
+memories, of more than a few kilo bytes. This can have dramatic effects on 
+performance, especially when reverse execution is enabled. See also
+<i>GE-13</i>.
+<p>
+For more information refer to the sections about events and attributes in
+"Programming with DML", the section about general usability in
+"Building Well-Behaved Models" and the section about configuration attributes
+in "Overview" in the <em>Model Builder User's Guide</em>. Also refer to
+the section "Configuration and Checkpointing" in the
+<em>Simics User's Guide</em> </p></dd><dt id="dt:ge-03-use-the-most-recent-api"><b><em>GE-03</em> — Use the Most Recent API</b></dt><dd>The most recent version of the Simics API should be used. Functions and
+interfaces marked as deprecated should be avoided.
+<p>
+The latest API is documented in the <i>Reference Manuals</i> included in each
+Simics package.
+</p></dd><dt id="dt:ge-04-use-standard-simics-interfaces"><b><em>GE-04</em> — Use Standard Simics Interfaces</b></dt><dd>The Simics <em>interface</em> mechanism should be used when communicating
+between objects. The standard interface types should be used when possible,
+allowing newly developed objects to connect to existing ones. References
+between objects should be implemented using attribute, with the type
+"os" for port interfaces, "o" for interfaces implemented
+by the object without any port and "n" to allow no connection. It is
+recommended that all three variants are supported, i.e. "os|o|n".
+<p>
+For more information see the section about Simics interfaces in "Overview" in
+the <em>Model Builder User's Guide</em>. The standard interfaces are
+documented in the <i>Reference Manuals</i> included in each Simics package.
+</p></dd><dt id="dt:ge-05-host-independence"><b><em>GE-05</em> — Host Independence</b></dt><dd>Code should be written to work on both little- and big-endian host systems. Operating system
+specifics should be avoided if possible, allowing code to run on Windows and
+Linux. Any access to the host, for example a real network, real display, real
+USB, etc, should be in a separate "host access" module and not in the device
+itself</dd><dt id="dt:ge-06-use-compiler-to-catch-possible-errors"><b><em>GE-06</em> — Use Compiler to Catch Possible Errors</b></dt><dd>All code should compile without warnings. It is recommended that the
+default flags for the compiler in the Simics build environment are used. For
+GCC, this is something like <code>-O2 -Wall -Werror</code>.</dd><dt id="dt:ge-07-implement-info-and-status-commands"><b><em>GE-07</em> — Implement <b>info</b> and <b>status</b>
+Commands</b></dt><dd>All Simics classes should have an <b>info</b> and a <b>status</b>
+command. The <b>info</b> shows static information about an object.
+Required attributes used for configuration are typically presented here. The
+<b>status</b> command shows dynamic information about an object. For
+really detailed information, a class specific command is better suited.
+Objects that do not have any dynamic information should print this fact in the
+<b>status</b> command output.
+<p>
+For more information refer to the section about general usability in
+"Building Well-Behaved Models" in the <em>Model Builder
+User's Guide</em>.
+</p></dd><dt id="dt:ge-08-check-for-memory-leaks"><b><em>GE-08</em> — Check for Memory Leaks</b></dt><dd>A module should not leak memory while running the simulation, including
+when taking checkpoints and using reverse execution. The internal Simics
+command <b>mm-list-*</b> can be used to see where memory has been
+allocated. To enable the command, set the environment variable
+<code>SIMICS_MEMORY_TRACKING</code> before starting Simics and enable internal
+commands, using the
+<b>enable-unsupported-feature "malloc-debug"</b> command.
+<p>
+For more information see the application note on
+<em>Debugging User-Developed Simics Modules</em>.
+</p></dd><dt id="dt:ge-09-no-side-effects-on-attribute-reads"><b><em>GE-09</em> — No Side Effects on Attribute Reads</b></dt><dd>There should never be any side effects when attributes are read. It should
+always be possible to read out attribute values without affecting the model.
+<p>
+For more information refer to the sections about attributes in
+"Programming with DML" and the section about configuration attributes in
+"Overview" in the <em>Model Builder User's Guide</em>.
+</p></dd><dt id="dt:ge-10-class-attribute-and-command-documentation"><b><em>GE-10</em> — Class, Attribute and Command Documentation</b></dt><dd>Classes, non-internal attributes and CLI commands should all be properly
+documented. For attributes that users may change, all allowed values have to
+be described.
+<p>
+For more information refer to the sections about structuring DML code in
+"Building Well-Behaved Models" and "Adding New Commands" in the
+<em>Model Builder User's Guide</em>.
+</p></dd><dt id="dt:ge-11-follow-naming-guidelines"><b><em>GE-11</em> — Follow Naming Guidelines</b></dt><dd>Try to use coherent naming when creating files, classes, components,
+objects, attributes and commands in Simics. As a general rule, use lower case
+names. Abbreviations may be written in all capital letters, but avoid mixing
+upper and lower case letters, e.g., do not use capitalization. Avoid special
+characters and stick to plain ASCII.
+<p>
+</p><dl><dt id="dt:directories-c-c-dml-and-simics-files"><b>Directories, C/C++, DML and .simics files</b></dt><dd>Use dash instead of underscore. Do not use spaces.</dd><dt id="dt:python-files"><b>Python files</b></dt><dd>Use underscore instead of dash since the file name is used as a module
+    name in Python.
+  </dd><dt id="dt:component-modules"><b>Component Modules</b></dt><dd>Component modules typically end with the <code>-comp</code> suffix.</dd><dt id="dt:classes-and-components"><b>Classes and components</b></dt><dd>Use dash or underscore for class names in C and DML.<br>
+    Use underscore for class and component names in Python (mandatory).
+  </dd><dt id="dt:objects-and-attributes"><b>Objects and attributes</b></dt><dd>Use underscore in all names to simplify Python wrapping. Support
+    for using dashes in these names will be removed in the future.
+  </dd><dt id="dt:commands"><b>Commands</b></dt><dd>Use dash to separate words. Commands typically have the form
+    &lt;verb&gt;-&lt;noun&gt;, for example <code>list-objects</code>.
+  </dd></dl><p>Look at the existing naming for things not covered by the guidelines here.
+</p></dd><dt id="dt:ge-12-avoid-using-indexed-attributes"><b><em>GE-12</em> — Avoid Using Indexed Attributes</b></dt><dd>Index support for attributes should only be added if it is really needed
+for performance reasons. When lists attributes have index support, the index
+should run from 0 up to <i>size</i> − 1. If this is not the
+case, a dictionary attribute should be used instead of a list.</dd><dt id="dt:ge-13-write-deterministic-models"><b><em>GE-13</em> — Write Deterministic Models</b></dt><dd>A simulation model should behave <em>exactly</em> the same way when it is
+run with identical external stimuli (e.g., using a recorder, or only scripted
+input). Never use host functions that do not behave identically between runs in
+your model, such as <b><i>gettimeofday()</i></b> or <b><i>rand()</i></b>.
+<p>
+This is essential for reverse execution to work correctly, and greatly helps in
+pinpointing bugs, as those are guaranteed to be repeatable in a deterministic
+simulation.
+</p><p>
+For more information refer to the section about general usability in
+"Building Well-Behaved Models" in the <em>Model Builder User's Guide</em>.
+</p><p>
+</p></dd><dt id="dt:ge-14-check-spelling"><b><em>GE-14</em> — Check Spelling</b></dt><dd>All user visible strings should be checked for correct spelling and
+grammar.</dd><dt id="dt:ge-15-do-not-assert-on-user-errors"><b><em>GE-15</em>— Do not Assert on User Errors</b></dt><dd>Errors that can be triggered by a user, for example by running target
+software that does not follow the specification should not cause Simics to
+assert. For errors signalling use log messages of the "info", "spec-violation"
+or "error" type depending on severity. Assert should only be used to protect
+against bugs in the simulator code.</dd><dt id="dt:ge-16-do-not-use-deprecated-features"><b><em>GE-16</em> — Do Not Use Deprecated Features</b></dt><dd>Avoid using features listed as deprecated in the
+<em>Simics Migration Guide</em>. Check the <b>prefs</b> object for
+settings (attributes) whose names start with <code>legacy_</code>. Make sure your
+system works with all such settings turned off. Also run Simics with the
+<i>-wdeprecated</i> command line argument and make sure that there are
+no run-time warnings generated during simulation.
+</dd><dt id="dt:ge-17-avoid-saving-attributes-as-binary-data"><b><em>GE-17</em> — Avoid Saving Attributes as Binary Data</b></dt><dd>Structured attribute data should not be saved in binary form, since it
+prevents user inspection, for example by the info and status commands, and
+makes it difficult to keep compatibility with old checkpoints. Binary data
+should only be used when saving memory images and similar.</dd></dl><p>
+</p><h3 class="jdocu"><a name="Device-Checklist">1.2 Device Checklist</a></h3>
+<p>
+
+</p><p>
+This section describes important items that, in addition to the generic
+checklist, should be taken into consideration when writing device models. For
+more in depth understanding of the importance of these items, please refer to
+the <em>Model Builder User's Guide</em>.
+</p><p>
+</p><dl><dt id="dt:de-01-source-code-in-dml"><b><em>DE-01</em> — Source Code in DML</b></dt><dd>Device models should in general be written in DML. Example of an exception
+to this rule is code for algorithms already available, or better expressed, in
+some other language.</dd><dt id="dt:de-02-reset-support"><b><em>DE-02</em> — Reset Support</b></dt><dd>Models of devices with one or more reset inputs should properly implement
+reset. The Simics <code>signal</code> interface should be used as input with
+one port interface for each reset input.</dd><dt id="dt:de-03-logging"><b><em>DE-03</em> — Logging</b></dt><dd>The standard Simics log mechanism should be used to trace things happening
+in the device. It is important that target software access to unimplemented
+registers and features of the device are properly logged with the correct
+type.
+<p>
+A message is most of the time a fragment or, more rarely, one or more complete
+sentences. If it is a fragment, the message shall start with a lowercase letter
+(with the obvious exception for words and abbreviations that shall start with
+an uppercase letter) and have no period at the end. Sentences shall start with
+an uppercase letter and end with a period.
+</p><p>
+In DML, a typical log statement may read: <code>log info, 2, 0: "increased
+counter: %d", value;</code>.
+</p><p>
+Do not use exclamation marks and avoid question marks.
+Multiple question marks in a row
+shall never be used.
+</p><p>
+Do not start an "info" message with the words "error",
+"unimplemented" or "spec_violation", use the appropriate log-type instead.
+</p><p>
+Do not start an "error" message with the word "error", it is
+just a repetition. The word "error" might be appropriate inside the message but
+should in most circumstances be avoided. Same goes for
+the "critical", "spec_violation", and "unimplemented" log-types.
+</p><p>
+Do not use newlines, in particular not at the end of the message. Also do not
+use multiple log statements to output longer messages, include
+everything in one statement. It is up to the presentation layer to output a long
+message in a readable format.
+</p><p>
+Do not mention the name of the object or class which the message refers to, as it
+is implicitly given by the log statement and output in the log message
+prefix.
+</p><p>
+For abbreviations and other special words, write them as specified in the
+"Dictionary" chapter of the "Writing Documentation" manual or in the
+<code>src/docs/common/simics-documentation-word-list</code> or
+<code>src/docs/internal/documentation-manual/usage.docu</code> files.
+Here are some examples: IRQ, DMA, CPU, CPUs.
+</p><p>
+A message followed by a more specific message, such as:
+<code>"can't open file "abc": no such file or directory"</code>
+should be (as above) separated by a colon. If even more specific messages
+follow, these are also appended using a colon as separator.
+</p><p>
+A message which contains some extra information at the end should be written
+as: <code>"read from register XYZ (value = 0x5000)"</code>
+</p><p>
+Do not use cryptic abbreviations such as @, addr, idx, reg, len. Instead use:
+at, address, index, register, length
+</p><p>
+Do not use variable names (if they aren't complete words) in log messages with log
+levels 1-3. If values are output, it should be possible to understand what the
+value represents without reading the source code. I.e. it should be possible to
+understand the log message without reading the source code.
+</p><p>
+Do not use assert statements on conditions that can be triggered by users, see
+<i>GE-15</i>.
+</p><p>
+Use pre-defined DML templates for different implementations. Log level is
+automatically handled in some of these templates. For example, <code>reserved</code>,
+<code>unimplemented</code> and <code>read_only</code>. Full list and descriptions about
+these templates can be found in the <em>Model Builder DML 1.2</em> reference
+manual.
+</p><p>
+Spec-violation and unimplemented messages are typically logged on level 1.
+Sometimes they are first logged at log level 1 then log level 3 for spam reduction
+when unimplemented registers or features are always accessed. log level 3 should
+be avoided for spec-violation.
+</p><p>
+For more information refer to "Logging" in the <em>Model Builder User's
+Guide</em>.
+</p></dd><dt id="dt:de-04-avoid-sim_-functions-when-modeling-behavior"><b><em>DE-04</em> — Avoid <code>SIM_</code> Functions when Modeling
+    Behavior</b></dt><dd>Code that models the behavior of a device should avoid <code>SIM_</code> and
+internal <code>VT_</code> functions as far as possible. Such functions
+are mainly intended for simulator specifics such as configuration and logging,
+but not to model the actual device. Simics interfaces should be used instead
+to communicate with other objects that a device is connected to. The most
+common exceptions are <code>SIM_</code> functions used to access fields in the
+<code>generic_transaction_t</code>, timing API functions and event API functions
+for devices not written in DML.</dd><dt id="dt:de-05-avoid-attribute-access-when-modeling-behavior"><b><em>DE-05</em> — Avoid Attribute Access when Modeling Behavior</b></dt><dd>Simics attributes are intended for configuration and diagnostic access to
+a device. Communication between devices should use Simics interfaces and not
+rely on reading or writing attributes.
+<p>
+For more information see the section about Simics interfaces in "Overview" in
+the <em>Model Builder User's Guide</em>. The standard interfaces are
+documented in the <i>Reference Manuals</i> included in each Simics package.
+</p></dd><dt id="dt:de-06-handle-persistent-storage"><b><em>DE-06</em> — Handle Persistent Storage</b></dt><dd>Some kinds of storage are persistent and survive power cycling, for example
+NVRAMs, certain device registers, and disk images. Models of such entities
+should be handled as persistent in Simics, allowing the
+<b>save-persistent-state</b> and <b>load-persistent-state</b> commands
+to work properly for simulating power off followed by power on.  To check 
+which images are marked as persistent, use the <b>list-persistent-images</b>
+command. 
+<p>
+The <code>image</code> interface on objects of the Simics
+<b>image</b> class provides a way to
+mark an image object as holding persistent data. Custom disk and storage
+models must call this interface on their associated image objects, if 
+they are persistent. 
+</p><p>
+Device register and device state saved in attributes are marked as
+persistent by using the <code>Sim_Attr_Persistent</code> flag on the attribute
+when it is registered with Simics.
+</p><p>
+For NVRAMs the <b>persistent-ram</b> class can be used. 
+</p><p>
+For more information see the section about saving and restoring persistent
+data in "Configuration and Checkpointing" in the
+<em>Simics User's Guide</em>
+</p></dd><dt id="dt:de-07-use-dml-device-class-library-code"><b><em>DE-07</em> — Use DML Device Class Library Code</b></dt><dd>Device models should share common code if possible, such as the generic
+PCI, I2C or MII device code, see the <em>Model Builder User's Guide</em>.
+</dd><dt id="dt:de-08-document-limitations"><b><em>DE-08</em> — Document Limitations</b></dt><dd>Parts and features of a device that is not modeled should be described in
+documentation. For devices written in DML, use the <i>limitations</i>
+parameter. For devices not written in DML add the information to the class
+documentation. Use free form complete sentences or bullet lists:
+<p>
+</p><pre class="jdocu_small">&lt;ul&gt;
+  &lt;li&gt;The X device does not implement Y hashing.&lt;/li&gt;
+  &lt;li&gt;The Z feature does not work with the Windows 7 driver.&lt;/li&gt;
+  &lt;li&gt;...&lt;/li&gt;
+&lt;/ul&gt;
+</pre><p>
+</p><p>
+See the <em>DML Reference Manual</em> for more information.
+</p><p>
+Unimplemented registers, or registers with limited functionality, should use
+the standard Simics log mechanism with the <code>Sim_Log_Unimplemented</code> type
+to log any accesses.
+</p></dd><dt id="dt:de-09-performance"><b><em>DE-09</em> — Performance</b></dt><dd>Devices should be written with performance in mind. In general this simply
+means avoiding expensive operations and using events instead of polling. The
+<em>Model Builder User's Guide</em> includes a discussion on
+performance for device models.
+</dd><dt id="dt:de-10-internal-device-to-device-register-access"><b><em>DE-10</em> — Internal Device to Device Register Access</b></dt><dd>Device objects should use the <code>int_register</code> interface if it
+has to access registers in another object directly. The typical case is for
+objects that represent tightly coupled devices. In other situations the devices
+can use the architecturally specified way of communicating, for example by
+doing memory mapped accesses or sending bus transactions if a bus interface
+exists.
+<p>
+The <code>int_register</code> interface is documented in the
+<i>Simics Reference Manual</i></p></dd><dt id="dt:de-11-handle-inquiry-accesses"><b><em>DE-11</em> — Handle inquiry accesses</b></dt><dd>Device objects should handle inquiry accesses without performing any side
+effects beyond changing the state of the register itself. This is done
+automatically for registers which does not override the <b><i>read_access</i></b>
+and <b><i>write_access</i></b> methods, but if you override these methods or
+implement the access at the bank level you have to implement it yourself.
+</dd><dt id="dt:de-12-reboot-support"><b><em>DE-12</em> — Reboot Support</b></dt><dd>A machine model should support system reboot. This means software reboot
+and commands to trigger any reset buttons. Reset signals are typically
+distributed between simulated devices using the <code>signal</code>
+interface unless reset is already  part of some technology specific interface
+such as the <code>pci_device</code> interface.</dd><dt id="dt:de-13-optional-attributes-should-be-optional"><b><em>DE-13</em> — Optional attributes should be optional</b></dt><dd>Any optional attribute should be truly optional. It should make
+sense and be possible to instantiate the object without setting any
+optional attributes. Accesses to the device should not cause
+simulation errors if any optional attributes are not set, for example
+dereferencing a NIL pointer for an optional object attribute.</dd><dt id="dt:de-14-support-multiple-instantiation"><b><em>DE-14</em> — Support Multiple Instantiation</b></dt><dd>It should always be possible to create multiple instances of a device
+model, for example to have several similar systems networked together.</dd><dt id="dt:de-15-use-standard-memory-classes-when-possible"><b><em>DE-15</em> — Use Standard Memory Classes When Possible</b></dt><dd>When modeling address spaces, reusing the Simics
+<b>memory-space</b> or <b>port-space</b> classes is almost
+always possible. Similarly, the <b>ram</b>, <b>rom</b> and
+<b>persistent-ram</b> classes should be used to model RAM and ROM.
+This is true also for on-chip memory, unless the memory is very small, perhaps
+a few kilobytes or less. The storage for larger memory areas should be
+implemented using the standard <b>image</b> class, that provides delta
+checkpointing and efficient run-time memory handling.
+</dd><dt id="dt:de-16-only-use-the-device-api"><b><em>DE-16</em> — Only Use the Device API</b></dt><dd>When writing device models only the Device API should be used. API
+function, and interfaces, from the Simulator API should not be used. The
+Device API is documented in the Model Builder User's Guide. See also
+<i>DE-04</i> about avoiding <code>SIM_</code> functions.</dd><dt id="dt:de-17-support-deletion"><b><em>DE-17</em> — Support Deletion</b></dt><dd>It should be possible to delete object of the device class. All allocated
+memory should be freed, events should be cancelled, etc.
+</dd></dl><p></p><h4 class="jdocu"><a name="Ethernet-Devices">1.2.1 Ethernet Devices</a></h4>
+<p>&nbsp;
+</p><p>
+</p><dl><dt id="dt:et-01-separate-transceiver-phy-model"><b><em>ET-01</em> — Separate Transceiver (PHY) Model</b></dt><dd>Ethernet devices where the transceiver is visible to the software, for
+example exposed by the <em>MII</em> or similar interface, should have the
+transceiver modeled as a separate object in Simics. This allows for reuse of
+transceivers and a number of such models already exist, including a generic
+MII transceiver.
+<p>
+For more information see the section on Ethernet transceiver in
+"Modeling Ethernet Devices" in the <em>Model Builder User's
+Guide</em>.
+</p></dd><dt id="dt:et-02-bandwidth-limitation"><b><em>ET-02</em> — Bandwidth Limitation</b></dt><dd>Ethernet devices should use the standard bandwidth limitation support
+provided by the <code>ieee_802_3_phy_v3</code> interface. This interface is
+used when communicating with PHY devices.</dd><dt id="dt:et-03-configurable-mac-address"><b><em>ET-03</em> — Configurable MAC Address</b></dt><dd>Ethernet devices should provide a way to set the Ethernet MAC 
+address when setting up the system.  Typically by providing a 
+<code>mac_address</code> attribute.</dd></dl><p>
+</p><h4 class="jdocu"><a name="Interrupt-Devices">1.2.2 Interrupt Devices</a></h4>
+<p>
+
+&nbsp;
+</p><p>
+</p><dl><dt id="dt:in-01-edge-vs-level-triggered-interrupts"><b><em>IN-01</em> — Edge vs. Level Triggered Interrupts</b></dt><dd>Interrupt inputs are either edge or level triggered. The device should
+correctly model the kind used for each input.</dd><dt id="dt:in-02-use-signal-interface-ports-for-input"><b><em>IN-02</em> — Use <code>signal</code> Interface Ports for
+Input</b></dt><dd>Each interrupt input should be implemented using a port interface of the
+<code>signal</code> type.</dd></dl><p>
+</p><h4 class="jdocu"><a name="PCI-Devices">1.2.3 PCI Devices</a></h4>
+<p>
+
+&nbsp;
+</p><p>
+</p><dl><dt id="dt:pc-01-the-print-pci-config-regs-command"><b><em>PC-01</em> — The <b>print-pci-config-regs</b> Command</b></dt><dd>The standard <b>&lt;pci-device&gt;.print-pci-config-regs</b> command
+should be supported by all PCI devices.</dd><dt id="dt:pc-02-expansion-rom"><b><em>PC-02</em> — Expansion ROM</b></dt><dd>Components for PCI devices that may be configured with an on-board ROM
+image should have a <code>bios</code> attribute that is the image file for the
+expansion ROM.</dd></dl><p>
+</p><h4 class="jdocu"><a name="Serial-Devices">1.2.4 Serial Devices</a></h4>
+<p>
+
+&nbsp;
+</p><p>
+</p><dl><dt id="dt:se-01-intentionally-left-out"><b><em>SE-01</em> — <em>Intentionally left out.</em></b></dt><dd></dd><dt id="dt:se-02-support-baud-rate-but-allow-override"><b><em>SE-02</em> — Support Baud Rate but Allow Override</b></dt><dd>Serial devices should obey the baud rate setting since software may not
+work with an unrealistic timing behavior. Still, for simulator performance
+reasons, it is often of interest to optionally run faster in virtual time than
+the actual device would.
+<p>
+
+</p></dd></dl><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="Processor-Model-Checklist">1.3 Processor Model Checklist</a></h3>
+<p>
+
+</p><p>
+This section describes important items that, in addition to the generic
+checklist, should be taken into consideration when writing processor models.
+For more information about processor models, see the
+<em>Processor Model Integration Guide</em>.
+</p><p>
+</p><dl><dt id="dt:pr-01-trigger-standard-haps"><b><em>PR-01</em> — Trigger Standard Haps</b></dt><dd>Processor models should trigger standard haps.</dd><dt id="dt:pr-02-support-common-processor-commands"><b><em>PR-02</em> — Support Common Processor Commands</b></dt><dd>Processor should implemented the same set of commands with the same
+semantics as pre-existing processor models.</dd><dt id="dt:pr-03-support-standard-interfaces"><b><em>PR-03</em> — Support Standard Interfaces</b></dt><dd>Interfaces listed in the Processor Model Integration Guide should be
+supported by a processor model.</dd><dt id="dt:pr-04-simics-style-register-names"><b><em>PR-04</em> — Simics Style Register Names</b></dt><dd>To support remote GDB and allow portable Simics scripts, register names
+used in the int register interface must be Simics style names.</dd></dl><p>
+</p><h3 class="jdocu"><a name="Component-Checklist">1.4 Component Checklist</a></h3>
+<p>
+
+</p><p>
+This section describes important items that, in addition to the generic
+checklist, should be taken into consideration when writing components. For
+more in depth understanding of the importance of these items, please refer to
+the <em>Model Builder User's Guide</em>.
+</p><p>
+</p><dl><dt id="dt:co-01-checkpointing-of-connection-information"><b><em>CO-01</em> — Checkpointing of Connection Information</b></dt><dd>Information that a component receives from another component in a connect
+method call may have to be checkpointed in case that information has to be
+used again. This is sometimes the case with hot-plug connections.</dd><dt id="dt:co-02-naming-of-components-and-objects"><b><em>CO-02</em> — Naming of Components and Objects</b></dt><dd>Until there are proper guidelines for component, connector, and object
+names, check existing objects in Simics for examples. Some common names are:
+<ul>
+<li><code>eth_adapter</code> — basename for Ethernet PCI cards.</li>
+<li><code>ethernet</code> — ethernet-link connector name for components with
+a single ethernet-link connector.</li>
+</ul>
+</dd><dt id="dt:co-03-use-standard-connector-types-when-possible"><b><em>CO-03</em> — Use Standard Connector Types When Possible</b></dt><dd>The standard component connector types are listed in the
+<em>Model Builder User's Guide</em>. By using the standard
+types, the component can more easily be reused in other systems.
+</dd><dt id="dt:co-04-correct-component-abstraction"><b><em>CO-04</em> — Correct Component Abstraction</b></dt><dd>Components should represent real separate hardware entities with standard
+hardware interfaces, such as PCI or Ethernet. It should only be possible to
+build valid systems using components and their connectors. More low-level kinds
+of connections should be done between configuration objects within the
+components.
+</dd><dt id="dt:co-05-implement-standard-attributes-and-names"><b><em>CO-05</em> — Implement Standard Attributes and Names</b></dt><dd>Components should implement standard attributes, and in some cases have
+well defined sub-strings in their names, that are used by the GUI to extract
+system information. This applies to top-level components, components with
+memory, Ethernet connectors or disks on them. A complete list is included in
+the section about component references in "Components" in
+the <em>Model Builder User's Guide</em>. Some commonly used
+component attribute names are:
+<ul>
+<li><code>cpu_frequency</code></li>
+<li><code>num_cpus</code></li>
+<li><code>num_cores</code></li>
+<li><code>memory_megs</code> — for components with RAM.</li>
+<li><code>rtc_time</code> — format: "YYYY-MM-DD HH:MM:SS Z".</li>
+<li><code>mac_address</code> — single Ethernet device.</li>
+<li><code>mac_address0, mac_address1, ...</code>
+    — multiple Ethernet devices.</li>
+<li><code>size</code> — for disk components.</li>
+</ul>
+<p>
+</p></dd><dt id="dt:co-06-slot-names"><b><em>CO-06</em> — Slot Names</b></dt><dd>The slot names in the component should be chosen with care since there can
+be name conflicts with attributes and commands for the component. The priority
+order for conflicting names are defined in the
+<em>Model Builder User's Guide</em>.
+</dd><dt id="dt:co-07-intentionally-left-out"><b><em>CO-07</em> — <em>Intentionally left out.</em></b></dt><dd></dd><dt id="dt:co-08-component-error-handling"><b><em>CO-08</em> — Component Error Handling</b></dt><dd>It should always be possible to create a non-instantiated component as long
+as the provided arguments are valid. If the component requires any external
+file, for example, then it should check for its existence and possibly signal
+any error in the <code>pre_instantiate</code> method. The
+<code>connect_&lt;connection&gt;()</code>, <code>add_objects()</code> and
+<code>post_instantiate()</code> methods should never trigger any errors.
+</dd><dt id="dt:co-09-optional-attributes"><b><em>CO-09</em> — Optional Attributes</b></dt><dd>Component attributes should in general be made optional with well chosen
+default values instead of being required.
+</dd><dt id="dt:co-10-on-board-software"><b><em>CO-10</em> — On-board Software</b></dt><dd>Boot software such as BIOS, OBP and other firmware that is
+resident on the hardware should be setup as part of the component. If
+changing the firmware makes sense, then there should be a configuration
+attribute to set the image file to use.
+</dd></dl><p>
+</p><h3 class="jdocu"><a name="System-Checklist">1.5 System Checklist</a></h3>
+<p>
+
+</p><p>
+This section describes important items that, in addition to the generic
+checklist, should be taken into consideration when assembling a larger system.
+See also the "Target Script Checklist".
+</p><p>
+</p><dl><dt id="dt:sy-01-reuse-of-existing-models"><b><em>SY-01</em> — Reuse of Existing Models</b></dt><dd>Since developing a new device model may involve a lot of work, it is
+a good idea to make sure that no previous model of the device exists. Also
+similar device models can be useful if code can be shared between them.</dd><dt id="dt:sy-02-build-simicsfs-for-linux-target"><b><em>SY-02</em> — Build SimicsFS for Linux Target</b></dt><dd>If Linux is supported for the target system, then a SimicsFS kernel module
+should be built and installed on the Linux image.</dd><dt id="dt:sy-03-moved-to-st-01"><b><em>SY-03</em> — <em>Moved to ST-01.</em></b></dt><dd></dd><dt id="dt:sy-04-moved-to-st-02"><b><em>SY-04</em> — <em>Moved to ST-02.</em></b></dt><dd></dd><dt id="dt:sy-05-moved-to-st-06"><b><em>SY-05</em> — <em>Moved to ST-06.</em></b></dt><dd></dd><dt id="dt:sy-06-moved-to-st-08"><b><em>SY-06</em> — <em>Moved to ST-08.</em></b></dt><dd></dd><dt id="dt:sy-07-moved-to-st-17"><b><em>SY-07</em> — <em>Moved to ST-17.</em></b></dt><dd></dd><dt id="dt:sy-08-moved-to-st-18"><b><em>SY-08</em> — <em>Moved to ST-18.</em></b></dt><dd></dd><dt id="dt:sy-09-moved-to-st-20"><b><em>SY-09</em> — <em>Moved to ST-20.</em></b></dt><dd></dd><dt id="dt:sy-10-only-create-device-objects-from-components"><b><em>SY-10</em> — Only Create Device Objects from Components</b></dt><dd>All objects implementing the functionality of a target system should be
+created by components. There should not be any model objects created
+automatically when loading modules. Also target scripts should only create
+component objects and no other model objects.</dd></dl><p>
+</p><h3 class="jdocu"><a name="Target-Script-Checklist">1.6 Target Script Checklist</a></h3>
+<p>
+
+This section describes important items that, in addition to previous
+checklists, should be taken into consideration when writing the target scripts
+for a virtual platforms.
+</p><dl><dt id="dt:st-01-follow-machine-script-guidelines"><b><em>ST-01</em> — Follow Machine Script Guidelines</b></dt><dd>The <code>.simics</code> and <code>.include</code> scripts for a machine
+should follow the guidelines in the section about ready-to-run
+configurations in "Configuration and Checkpointing" in
+the <em>Simics User's Guide</em>. For
+example the setup of the simulated hardware should be separate from the
+software configuration. See also "System Configurations" in the
+<em>Model Builder User's Guide</em>.
+</dd><dt id="dt:st-02-possible-to-start-from-all-simics-scripts"><b><em>ST-02</em> — Possible to Start from All <code>.simics</code>
+Scripts</b></dt><dd>It should be possible to start any <code>.simics</code> file from scratch.
+Scripts that require other files to have run first, or require CLI variables to
+be set, should have the <code>.include</code> suffix.</dd><dt id="dt:st-03-location-independence"><b><em>ST-03</em> — Location Independence</b></dt><dd>It should be possible to launch a target script in Simics no matter what the
+current directory of Simics is. The <code>%simics%</code> path marker can be
+used to reference other scripts in a Simics project, the same, or other
+packages.
+</dd><dt id="dt:st-04-do-not-advance-the-simulation"><b><em>ST-04</em> — Do not Advance the Simulation</b></dt><dd>A target script should not run the simulation, but start all processors at
+step and cycle 0. Script branches can be used to automate setup needed while
+the system is booting although adding support for it in a system component
+is recommended, to make sure checkpoints can be taken early.
+</dd><dt id="dt:st-05-supply-system-information-for-gui-views"><b><em>ST-05</em> — Supply System Information for GUI Views</b></dt><dd>The target viewer should report correct information about the system in both
+the built-in Winsome GUI and in Eclipse.
+</dd><dt id="dt:st-06-proper-command-error-handling"><b><em>ST-06</em> — Proper Command Error Handling</b></dt><dd>Errors that are detected in a script should be reported using the
+<b>interrupt-script</b> command. Using the <b>quit</b> command is not
+advisable in scripts since it will close the interactive session for a user.
+It is not needed either since Simics will exit on errors anyway when run in
+batch mode.</dd><dt id="dt:st-07-check-for-external-files"><b><em>ST-07</em> — Check for External Files</b></dt><dd>If the script uses files which are not included in the same package, it
+  should verify their presence before referencing them and, if needed,
+  interrupt the script. The <b>lookup-file</b> command searches for a
+  file and, if not found, it emits an error message and interrupts the
+  script. Otherwise, use the two commands <b>file-exists</b>
+  and <b>interrupt-script</b>.
+</dd><dt id="dt:st-08-naming-of-the-top-component"><b><em>ST-08</em> — Naming of the Top Component</b></dt><dd>A machine script (<code>&lt;architecture&gt;-system.include</code>) should create
+the top level component with the name configured by the <code>$machine_name</code>
+variable. If this variable is not set, it should default to the system name.
+The name of the created component should then be saved in <code>$system</code>. It
+will typically be the same as <code>$machine_name</code> unless there is a name
+collision. See also "System Configurations" in the
+<em>Model Builder User's Guide</em>.
+<p>
+For example:
+</p><pre class="jdocu_small">(in decl) param machine_name : string = "board"
+$system = (create-chassis-qsp-x86 name = $machine_name)
+</pre><p>
+</p><p>
+As a result, multiple machines can be instantiated in the following way:
+</p><pre class="jdocu_small">$machine_name = machine1
+run-command-file "%simics%/targets/qsp-x86/firststeps.simics"
+$machine_name = machine2
+run-command-file "%simics%/targets/qsp-x86/firststeps.simics"
+</pre><p>
+The old component prefix support should not be used anymore as it will be
+removed in the future.
+</p></dd><dt id="dt:st-09-use-common-script-to-create-ethernet-network"><b><em>ST-09</em> — Use Common Script to Create Ethernet Network</b></dt><dd>If applicable to the system being modeled, use the
+<code>targets/common/add-eth-link.include</code> script to create a simulated
+Ethernet network and to configure the service-node.
+</dd><dt id="dt:st-10-include-an-ethernet-network"><b><em>ST-10</em> — Include an Ethernet Network</b></dt><dd>Target scripts should create an Ethernet network by default and connect the
+primary Ethernet adapter of the system to it.
+</dd><dt id="dt:st-11-no-connection-to-the-real-network"><b><em>ST-11</em> — No Connection to the Real Network</b></dt><dd>Target scripts should not connect the virtual Ethernet network to the real
+network by default.
+</dd><dt id="dt:st-12-allow-parameterization"><b><em>ST-12</em> — Allow Parameterization</b></dt><dd>Target scripts should allow users to modify its behavior by setting parameters
+using CLI variables. All parameters should be optional and have good default
+values. For boolean variables, TRUE/FALSE should be used. See also
+<i>ST-13</i>.
+</dd><dt id="dt:st-13-use-standard-parameter-variables"><b><em>ST-13</em> — Use Standard Parameter Variables</b></dt><dd>The following standard variables should be implemented if applicable for the
+target system:
+  <dl><dt id="dt:memory_gigs-or-memory_megs"><b>$memory_gigs or $memory_megs</b></dt><dd>Amount of system memory in GiB or MiB.</dd><dt id="dt:freq_mhz"><b>$freq_mhz</b></dt><dd>Frequency of the main processor cores in MHz.</dd><dt id="dt:num_cpus"><b>$num_cpus</b></dt><dd>The number or processors in the target system; compare with
+      <code>$cpu_cores</code>.</dd><dt id="dt:cpu_cores"><b>$cpu_cores</b></dt><dd>The number of cores on processor components and SoCs with
+      multiple cores. Use this parameter when <code>$num_cpus</code>
+      would be misleading.</dd><dt id="dt:cpu_class"><b>$cpu_class</b></dt><dd>The name of the processor class for systems that support more than
+        one kind of processor.</dd><dt id="dt:host_name"><b>$host_name</b></dt><dd>The name of the target system. Used as name of the top component. (For
+        legacy reasons this variable has a confusing name. It should really be
+        called $target_name.)</dd><dt id="dt:mac_address"><b>$mac_address</b></dt><dd>The MAC (Ethernet) address of the primary network controller.</dd><dt id="dt:disk_image"><b>$disk_image</b></dt><dd>The file name of an image to use for the primary disk.</dd><dt id="dt:disk_size"><b>$disk_size</b></dt><dd>The size of the file in <code>$disk_image</code>, if it cannot be
+        automatically determined from the file.</dd><dt id="dt:rtc_time"><b>$rtc_time</b></dt><dd>The starting time of the RTC (Real Time Clock) in the
+        <code>"YYYY-MM-DD HH:MM:SS UTC"</code> format.</dd><dt id="dt:ip_address"><b>$ip_address</b></dt><dd>The primary IP address of the system. (If it can be set.)</dd><dt id="dt:connect_real_network"><b>$connect_real_network</b></dt><dd>Connect the virtual Ethernet network to the real network using
+        port-forwarding/NAT.</dd></dl><p>The following variables are automatically supported if the
+  <code>targets/common/add-eth-link.include</code> script is used to create a
+  virtual Ethernet network. Scripts creating their own Ethernet network without
+  using <code>add-eth-link.include</code> should support some subset of these
+  variables.
+  </p><dl><dt id="dt:create_network"><b>$create_network</b></dt><dd>Boolean variable specifying if a simulated Ethernet network link should
+        be created together with the system.</dd><dt id="dt:eth_link"><b>$eth_link</b></dt><dd>The name of an existing Ethernet link object.</dd><dt id="dt:service_node"><b>$service_node</b></dt><dd>The name of an existing service node object.</dd><dt id="dt:service_node_ip_address"><b>$service_node_ip_address</b></dt><dd>The IP address of the <code>$service_node</code> object on the
+        <code>$eth_link</code> link.</dd><dt id="dt:dhcp_pool_ip"><b>$dhcp_pool_ip</b></dt><dd>The first address in the pool of IP addresses used for DHCP in the
+        $service_node.</dd><dt id="dt:dhcp_pool_size"><b>$dhcp_pool_size</b></dt><dd>The size of the IP address pool used for DHCP in the
+         <code>$service_node</code>. Set to 0 to disable DHCP.</dd><dt id="dt:network_goal_latency"><b>$network_goal_latency</b></dt><dd>The requested network latency of the <code>$eth_link</code> link.</dd><dt id="dt:eth_link_gid"><b>$eth_link_gid</b></dt><dd>The global identifier for the <code>$eth_link</code> link, used in
+        distributed simulation.</dd></dl><p></p></dd><dt id="dt:st-14-do-not-leak-cli-variables"><b><em>ST-14</em> — Do not Leak CLI Variables</b></dt><dd>CLI variables are global by default. Scripts should try to make variables local
+if possible, or unset them after use, to avoid conflicts with other scripts.
+See also <i>ST-15</i>.
+</dd><dt id="dt:st-15-support-multi-machine-setup"><b><em>ST-15</em> — Support Multi-Machine Setup</b></dt><dd>It should be possible to create multiple target machines by setting the
+<code>$host_name</code> variable and then running the target start script (with the
+<code>-local</code> flag) without getting any conflicts.
+</dd><dt id="dt:st-16-configure-os-awareness"><b><em>ST-16</em> — Configure OS Awareness</b></dt><dd>All top-level components should have <code>software</code> slot with an
+<b>os_awareness</b> component in it. This is typically created in the
+<code>&lt;architecture&gt;-system.include</code> script:
+<pre class="jdocu_small">new-os-awareness $system.software
+</pre><p>
+</p><p>
+If the OS awareness framework in Simics supports the operating system that is
+configured on the machine, then a parameter file should be created that matches
+the operating system and that is loaded in the software setup script (i.e. the
+<code>&lt;architecture&gt;-&lt;software&gt;-setup.include</code> file), typically
+using:
+</p><pre class="jdocu_small">$system.software.load-parameters &lt;architecture&gt;-&lt;software&gt;.params
+</pre><p>
+</p><p>
+For more details refer to the section "OS Awareness Details" in the
+<em>Analyzer User's Guide</em>.
+</p></dd><dt id="dt:st-17-do-not-reference-objects-by-name"><b><em>ST-17</em> — Do Not Reference Objects by Name</b></dt><dd>Simics scripts should not expect that objects created as part of components
+will get certain names. When creating a component, the returned component name
+can be saved in a variable for later use.
+<pre class="jdocu_small">$console = (new-text-console-comp)
+$console.con-&gt;title = "new title"
+</pre><p>
+When referencing component and objects created by another machine script, the
+<code>$system</code> variable (<i>ST-08</i>) will provide a reference to the
+top-level component created by that script.
+</p></dd><dt id="dt:st-18-set-up-a-valid-cell-partitioning"><b><em>ST-18</em> — Set Up a Valid Cell Partitioning</b></dt><dd>Check that the cell partitioning set up by the script is correct
+by using <b>check-cell-partitioning</b>, both after the script has
+run and for checkpoints taken of the system.
+For more information see the section on simulation cells in
+the "Multithreading" section of the <em>API Reference Manual</em>.
+</dd><dt id="dt:st-19-keep-default-global-simulation-settings"><b><em>ST-19</em> — Keep default global simulation settings </b></dt><dd>Scripts should not modify default simulation settings. Examples of
+settings that should not be done in scripts: changing log-level
+(<b>log-level 2</b>), explicitly enabling reverse execution
+(<b>enable-reverse-execution</b>).
+</dd><dt id="dt:st-20-keep-target-scripts-simple"><b><em>ST-20</em> — Keep Target Scripts Simple</b></dt><dd>While following the guidelines in this section, also try to keep the target
+scripts as simple as possible. Avoid switching between Python and CLI for
+example. If Python code is needed in a target script, then some component is
+probably not powerful enough or some new CLI command is needed.
+</dd></dl><p>
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Notices-amp-Disclaimers">2 Notices &amp; Disclaimers</a></h2>
+<p>
+
+</p><p>
+</p><div class="jdocu_copyright">
+<p>
+No product or component can be absolutely secure.
+</p><p>
+Intel technologies may require enabled hardware, software or
+service activation.
+</p><p>
+Your costs and results may vary.
+</p><p>
+Intel does not control or audit third-party data. You should
+consult other sources to evaluate accuracy.
+</p><p>
+You may not use or facilitate the use of this document in
+connection with any infringement or other legal analysis concerning
+Intel products described herein. You agree to grant Intel a
+non-exclusive, royalty-free license to any patent claim thereafter
+drafted which includes subject matter disclosed herein.
+</p><p>
+No license (express or implied, by estoppel or otherwise) to any
+intellectual property rights is granted by this document.
+</p><p>
+All product plans and roadmaps are subject to change without
+notice.
+</p><p>
+The products described may contain design defects or errors known
+as errata which may cause the product to deviate from published
+specifications. Current characterized errata are available on
+request.
+</p><p>
+Intel disclaims all express and implied warranties, including
+without limitation, the implied warranties of merchantability, fitness
+for a particular purpose, and non-infringement, as well as any
+warranty arising from course of performance, course of dealing, or
+usage in trade.
+</p><p>
+© 2010–2023 Intel Corporation. Intel, the Intel logo,
+and other Intel marks are trademarks of Intel Corporation or its
+subsidiaries. Other names and brands may be claimed as the property of
+others.
+</p><p>
+
+
+</p></div>
+<p>
+
+</p>
+<div class="chain">
+<span></span>
+</div>

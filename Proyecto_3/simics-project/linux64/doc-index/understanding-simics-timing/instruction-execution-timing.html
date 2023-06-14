@@ -1,0 +1,98 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3 Instruction Execution Timing</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="events.html">2 Events</a>
+<a href="multiprocessor-simulation.html">4 Multiprocessor Simulation</a>
+</div>
+<div class="path">
+<a href="index.html">Understanding Simics Timing</a>
+&nbsp;/&nbsp;</div>
+<h1 id="instruction-execution-timing">3 <a href="#instruction-execution-timing">Instruction Execution Timing</a></h1>
+<h2 id="simics-in-order">3.1 <a href="#simics-in-order">Simics in-order</a></h2>
+<p>In the default model, the execution of a step takes no time by itself, and steps are run in program order. This is called the Simics <em>in-order</em> model. It implements the basic instruction set abstraction that instructions execute discretely and sequentially. This minimalistic approach makes simulation fast but does not attempt to model execution timing in any way.</p>
+<p>Normally one step is executed every cycle, so that the step and cycle counts are the same. See the section <strong>Changing the Step Rate</strong> for how to change this.</p>
+<h2 id="stalling">3.2 <a href="#stalling">Stalling</a></h2>
+<p>The in-order model can be extended by adding <em>timing models</em> to control the timing of memory operations, typically using the <a href="../model-builder-user-guide/memory-and-timing.html#iim-implementing">memory hierarchy interface</a>. When timing models are introduced, steps are no longer atomic operations taking no time. A step performing a memory operation (whether an instruction fetch or a data transaction) can stall for a number of cycles. Cycle events are performed during the stalling period as time goes forward. Step events are performed just before the step execution, as in the default model. Simics executes one step at a time, but with varying timing for each step, so the simulation is still performing an in-order execution of the instruction flow. The basic step rate can also be changed; see the section <strong>Changing the Step Rate</strong> below.</p>
+<h2 id="choosing-an-execution-mode">3.3 <a href="#choosing-an-execution-mode">Choosing an Execution Mode</a></h2>
+<p>Choosing an execution mode is matter of trade-off between performance and accuracy. The stalling mode is notably slower than in-order, but allows for memory timing models to operate correctly and, as a consequence, also allows for inspection of all memory transactions. By using checkpoints, it is possible to switch between the two modes, since a checkpoint created in the in-order mode can be loaded in stall mode. The simple in-order mode can thus be used to reach interesting parts of the simulation quickly, and the stall mode is used to simulate those parts.</p>
+<h2 id="changing-the-step-rate">3.4 <a href="#changing-the-step-rate">Changing the Step Rate</a></h2>
+<p>The <em>step rate</em> is the number of steps executed each cycle, disregarding any stalling. It is expressed as the quotient q/p. By default, p=q=1; this schedules one step to run in each cycle. This can be changed by using the <code>&lt;processor&gt;.set-step-rate</code> command. For example,</p>
+<pre><code>
+cpu0.set-step-rate "3/4"
+</code></pre>
+<p>will set the step rate of <code>cpu0</code> to 3/4; that is, three steps every four cycles.</p>
+<p>If q&lt;p, then some cycles will execute no step at all; if q&gt;p, then some cycles will execute more than one step. The step rate parameters are currently limited to 1 ≤ p ≤ 128 with p=2<sup>k</sup> for some integer k, and 1 ≤ q ≤ 128.</p>
+<p>Setting a non-unity step rate can be used to better approximate the timing of a target machine averaging more or less than one instruction per cycle. It can also be used to compensate for Simics running instructions slower than actual hardware when it is desirable to have the simulated time match real time; specifying a lower step rate will cause simulated time go faster. Finally, a lower step rate may improve simulator performance by reducing the number of instructions executed between consecutive simulated timer interrupts. This is, however, to a high degree depending on the workload in question. Some workloads even benefit from a larger number of steps between timer interrupts.</p>
+<p>The step rate is sometimes called IPC (instructions per cycle), and its inverse, the <em>cycle rate</em>, may be called CPI (cycles per instruction). The actual rates will depend on how many extra cycles are added by stalling.</p>
+<p>Let us look at an example using a single Ebony card. We will first run 1 million steps with the default settings:</p>
+<pre><code>
+simics&gt; c 1000000
+[cpu0] v:0xfff8a610 p:0x1fff8a610  mftbu r5
+simics&gt; print-time
+processor                 steps             cycles    time [s]
+cpu0                    1000000            1000000       0.010
+</code></pre>
+<p>The processor has run 1 million steps, taking 1 million cycles to execute them. Let us set the cycle rate to the value mentioned above, 3 steps for every 4 cycles:</p>
+<pre><code>
+simics&gt; cpu0.set-step-rate "3/4"
+simics&gt; cb 1200000
+simics&gt; c
+[cpu0] v:0xfff8a634 p:0x1fff8a634  bl 0xfff8a608
+simics&gt; print-time
+processor                 steps             cycles    time [s]
+cpu0                    1900000            2200000       0.022
+simics&gt; 
+</code></pre>
+<p>When running the next 1.2 million cycles, the processor executes only 900000 steps, which corresponds to the 3/4 rate that we configured.</p>
+<h2 id="suspending-time-or-execution">3.5 <a href="#suspending-time-or-execution">Suspending Time or Execution</a></h2>
+<p>It is possible to set the step rate to infinity, or equivalently, to suspend simulated time while executing steps. This is done by setting the <code>step_per_cycle_mode</code> processor attribute to one of the following values:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:constant"><code>"constant"</code></span><br>
+Steps are executed at the constant and finite rate specified in the <code>step_rate</code> attribute </li>
+<li><span class="term" id="dt:infinite"><code>"infinite"</code></span><br>
+Steps are executed with no progress in simulated time </li>
+</ul>
+</div>
+<p>While time is suspended, the cycle counter does not advance, nor are any time events run. To the simulated machine this appears as if all instructions are run infinitely fast. Using the same example as above, we set the step per cycle mode to "infinite" to prevent the simulated time from advancing:</p>
+<pre><code>
+simics&gt; cpu0-&gt;step_per_cycle_mode = "infinite"
+simics&gt; c 1000000
+[cpu0] v:0xfff8a614 p:0x1fff8a614  cmpw r3,r5
+simics&gt; print-time
+processor                 steps             cycles    time [s]
+cpu0                    1000000                  0       0.000
+simics&gt;
+</code></pre>
+<p>Conversely, it is possible set the step rate to zero, thus suspending execution while letting simulated time pass. This can be done by stalling the processor for a finite time (see <strong>Stalling</strong> above) or by <em>disabling</em> the processor for an indefinite time. Disabling and re-enabling processors is done with the commands <code>&lt;processor&gt;.enable</code> and <code>&lt;processor&gt;.disable</code>.</p>
+<p>The processor has executed 1 million steps but the simulated time has not advanced. Note that setting this mode would probably prevent a machine like Ebony from booting since many hardware events (like interrupts) are time-based.</p>
+
+<div class="chain">
+<a href="events.html">2 Events</a>
+<a href="multiprocessor-simulation.html">4 Multiprocessor Simulation</a>
+</div>

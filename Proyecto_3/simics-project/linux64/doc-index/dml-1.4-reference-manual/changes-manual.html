@@ -1,0 +1,481 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>B.6 Backward incompatible changes, not automatically converted</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="changes-auto.html">B.5 Language differences handled by the port-dml script</a>
+<a href="grammar.html">C Formal Grammar</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="changes.html">B Changes from DML 1.2 to DML 1.4</a>
+&nbsp;/&nbsp;</div>
+<h1 id="backward-incompatible-changes-not-automatically-converted">B.6 <a href="#backward-incompatible-changes-not-automatically-converted">Backward incompatible changes, not automatically converted</a></h1>
+<p>A number of changes are not taken care of by the conversion script.
+Many incompatibilities can be captured as errors already in DML 1.2,
+by passing the <code>--strict-dml12</code> argument. This can be used to
+split the conversion process into smaller steps: by running with
+this flag <em>before</em> running <code>port-dml.py</code>, one can
+apply manual fixes one by one and validate each fix in isolation;
+this means that the result of <code>port-dml.py</code> will contain
+fewer errors.</p>
+<p>The following incompatible changes are caught as errors or warnings
+by the <code>--strict-dml12</code> flag:</p>
+<ul>
+<li>
+<p>In classic DML 1.2, an unused template is allowed to instantiate
+a non-existing template. This is not permitted in DML 1.4.</p>
+</li>
+<li>
+<p><a id="dollar_changes"> In DML 1.4, <code>$</code> is no longer used
+for object references, and top-level object scope is therefore merged
+with the global scope. This means that you cannot both declare a bank X
+(referenced as $X in 1.2, as X in 1.4) and a global constant X (referenced
+as X in both 1.2 and 1.4).</a></p><a id="dollar_changes">
+</a></li><a id="dollar_changes">
+<li>
+<p>When inlining a method with a constant value as an argument,
+the argument will no longer be considered constant in the method body
+if the argument was declared with a type. In classic DML 1.2, a constant
+is always inlined as a constant, whose type might not match with the
+declared type.</p>
+</li>
+<li>
+<p>Anonymous banks (syntax: <code>bank { ... }</code>) are no longer
+allowed.</p>
+</li>
+<li>
+<p>DML 1.2 permitted certain C keywords, e.g. <code>signed</code> and
+<code>register</code>, to be used as names of local variables. This is no longer
+permitted.</p>
+</li>
+<li>
+<p>Integer arithmetic works differently in DML 1.4. In short, all operands to
+arithmetic operands are promoted to 64 bits before performing the
+operation, much like 16- and 8-bit operands are promoted to 32 bits in C.</p>
+<p>Also, many semantic irregularities and bugs in 1.2 semantics have been
+corrected in 1.4.</p>
+</li>
+<li>
+<p>It is no longer permitted to use a register or field object as operand
+to the <code>!</code> operator. In classic DML 1.2, there was a loophole that
+permitted this.</p>
+</li>
+<li>
+<p>In DML 1.2, you can reference a method in an <code>interface</code> object
+by casting it to a function pointer type. That is no longer permitted
+in DML 1.4.</p>
+</li>
+<li>
+<p>The <code>goto</code> statement has been removed from DML 1.3. We
+plan to re-introduce a restricted variant of the goto statement
+which is only allowed to jump forward, and to an enclosing scope.</p>
+</li>
+<li>
+<p>It is no longer allowed to iterate over the undocumented <code>vect</code>
+type in a <code>select</code> statement. In classic DML 1.2, this was
+permitted but had unexpected behaviour.</p>
+</li>
+<li>
+<p>If a method argument has type <code>const char *</code>, it is no
+longer permitted to pass a string literal.</p>
+</li>
+<li>
+<p>The <code>!</code> operator is stricter in 1.3; in particular, it no longer
+accepts a constant integer as operand. Other condition expressions, like
+the <code>if</code> condition or <code>&amp;&amp;</code> operands, no
+longer accept the 0 or 1 literal; use <code>false</code> or <code>true</code>
+instead.</p>
+</li>
+<li>
+<p>In DML 1.4, the <code>sizeof</code> and <code>typeof</code> operators
+require that the operand is an lvalue.</p>
+</li>
+<li>
+<p>A reference to an <code>implement</code> object can no longer be used as
+a value.</p>
+</li>
+<li>
+<p>In classic DML 1.2, one could write <code>extern X;</code> to declare that
+some symbol X is externally defined as a C symbol, without providing a hint
+on the type of X. This is not permitted in DML 1.4.</p>
+</li>
+<li>
+<p>The undocumented <code>c_name</code> parameter no longer has an effect
+on <code>interface</code> objects. This may affect old C + DML integrations.</p>
+</li>
+<li>
+<p>A method's input parameters now belong to the method's top
+scope, instead of a separate scope. Thus, it is illegal to declare a
+variable in method's top scope which shadows a method
+parameter.</p>
+</li>
+<li>
+<p>In classic DML 1.2, the <code>loggroup X;</code> statement would expose the
+log group as an identifier <code>X</code> in generated C code. This is no longer
+done, which may affect old C + DML integrations.</p>
+</li>
+</a></ul><a id="dollar_changes">
+<p>The following incompatible changes are <em>not</em> caught
+by <code>--strict-dml12</code>, and must be adjusted manually:</p>
+</a><ul><a id="dollar_changes">
+</a><li><a id="dollar_changes">
+</a><p><a id="dollar_changes">The </a><a href="utility.html#templates-for-reset">API for initialization and reset</a>
+has been rewritten. The most important differences:</p>
+<ul>
+<li>
+<p>When the device is initialized, all registers are reset to the
+new <code>init_val</code> parameter, defaulting to zero. In 1.2,
+similar results were achieved by performing a hard reset.</p>
+</li>
+<li>
+<p>The <code>hard_reset</code> and <code>soft_reset</code> methods in
+banks and devices, typically called to trigger a reset, are no
+longer available by default. The methods can be created by
+instantiating templates from the <code>utility.dml</code>
+library (the templates are named <code>hreset</code>
+and <code>sreset</code>, respectively).</p>
+</li>
+<li>
+<p>The <code>hard_reset</code> and <code>soft_reset</code> methods in
+registers and fields also do not exist by default. They are also
+created when instantiating <code>hreset</code> and <code>sreset</code>
+templates.</p>
+</li>
+<li>
+<p>The <code>hard_reset_value</code> and <code>soft_reset_value</code>
+parameters in registers and fields are no longer
+recognized. Instead, the default implementations of
+the <code>hard_reset</code> and <code>soft_reset</code> methods
+invoke the <code>init</code> method, effectively replacing
+the <code>hard_reset_value</code> and <code>soft_reset_value</code>
+parameters with <code>init_val</code>. You must now override
+the <code>soft_reset</code> method explicitly in order to provide
+different reset values for hard and soft reset.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>The API for declaring event objects has changed. Just like in
+DML 1.2, the event callback is defined by a
+method <code>event</code>, and the event is posted by a
+method <code>post</code>. A number of things have changed since 1.2:</p>
+<ul>
+<li>
+<p>Instead of defining a parameter <code>timebase</code> in each
+event object, you must now instantiate one of six predefined
+templates in each event object:</p>
+<dl><dt id="dt:simple_time_event-simple_cycle_event">
+<p><code>simple_time_event</code>, <code>simple_cycle_event</code></p>
+</dt><dd>
+<p>Event without data. The <code>event</code> method takes no
+arguments, and the <code>post</code> method only takes a single
+argument, the delay.</p>
+</dd><dt id="dt:uint64_time_event-uint64_cycle_event">
+<p><code>uint64_time_event</code>, <code>uint64_cycle_event</code></p>
+</dt><dd>
+<p>Event with integer data. The <code>post</code> method takes
+an argument of type <code>uint64</code> in addition to the
+delay argument. This argument is later passed on to
+the <code>event</code> method, which takes a
+single <code>uint64</code> argument.</p>
+</dd><dt id="dt:custom_time_event-custom_cycle_event">
+<p><code>custom_time_event</code>, <code>custom_cycle_event</code></p>
+</dt><dd>
+<p>Event with custom data. The <code>post</code> method takes
+an argument of type <code>void *</code> in addition to the
+delay argument. This value is later passed on to
+the <code>event</code> method, which takes a
+single <code>void *</code> argument.</p>
+</dd></dl>
+<p>The difference between the <code>*_time_event</code>
+and <code>*_cycle_event</code> templates is similar to the
+difference between <code>timebase = "seconds"</code>
+and <code>timebase = "cycles"</code> in DML 1.2. I.e., when a
+method argument or return value represents time, then the
+variant of the method in a <code>*_time_event</code> template
+represents time as a floating-point number, representing
+(simulated) seconds, whereas the variant in
+a <code>*_cycle_event</code> template represents time as an
+integer, representing CPU cycles.</p>
+</li>
+<li>
+<p>The method <code>event</code> is abstract in all templates. In
+DML 1.2, there was a not-so-useful default implementation.</p>
+</li>
+<li>
+<p>The methods <code>next</code>, <code>posted</code>
+and <code>remove</code> are not available in
+the <code>custom_*_event</code> templates. They are available in
+the <code>simple_*_event</code> templates without <code>data</code>
+arguments, and in <code>uint64_*_event</code> templates
+with <code>data</code> arguments of type <code>uint64</code>.</p>
+</li>
+<li>
+<p>The
+methods <code>set_event_info</code>, <code>get_event_info</code>
+and <code>destroy</code> are only recognized by
+the <code>custom_*_event</code> templates, where the methods are
+abstract. In the other templates, serialization and
+deserialization are done automatically</p>
+</li>
+<li>
+<p>The <code>describe_event</code> method can no longer be overridden.</p>
+</li>
+<li>
+<p>The <code>post_on_queue</code> method is no longer available.</p>
+</li>
+</ul>
+<p>Example:</p>
+<pre>event simple is (simple_time_event) {
+  method event() {
+    log info: "hello";
+  }
+}
+event parameterized is (uint64_cycle_event) {
+  method event(uint64 data) {
+    log info: "hello %d", data;
+  }
+}
+...
+// no data args needed
+simple.post(1.0);
+assert simple.posted();
+// in uint64_cycle_event, the methods <fun>posted</fun>, <fun>next</fun>
+// and <fun>remove</fun> check that the data argument matches
+parameterized.post(18, 4711);
+assert parameterized.next(4711) == 18;
+assert parameterized.next(42) &lt; 0;
+</pre>
+</li>
+<li>
+<p>The parameters <code>partial</code> and <code>overlapping</code> in banks
+are now <code>true</code> by default.</p>
+</li>
+<li>
+<p>Some rarely used identifiers from C, in particular many C macros
+on the form <code>XYZ_INTERFACE</code>, are no longer automatically
+available in DML. This will cause compile errors on migration, which
+can be resolved by manually adding corresponding symbol definitions
+to the DML file.</p>
+</li>
+<li>
+<p>Methods that can throw an exception must be annotated with the
+new <code>throws</code> keyword:</p>
+<pre><code>method m(bool condition) -&gt; (int) throws {
+    if (condition)
+        throw;
+}
+</code></pre>
+<p>The <code>throws</code> annotation is required if the method contains
+either a throw statement or an invocation of a method with
+the <code>throws</code> annotation, unless all such statements are
+enclosed in <code>try</code> blocks.</p>
+</li>
+<li>
+<p>Assignment operators (<code>=</code> as well
+as <code>+=</code>, <code>*=</code>, etc) are now separate statements, and
+disallowed inside expressions. These statements are allowed in some
+additional places, to replace common uses of assignment
+expressions:</p>
+<ul>
+<li>
+<p>A <code>=</code> statement may contain multiple target
+expressions (<code>a = b = c;</code>). The targets are assigned
+from right to left, like in C.</p>
+</li>
+<li>
+<p>The pre and post sections of a <code>for</code> statement may
+contain any assignment statement. So the following is still valid:</p>
+<pre><code>for (i = j = 0; i &lt; 10; i += 3, j++) { ... }
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>In DML 1.4, methods are no longer declared <code>extern</code>, rather
+they are <code>exported</code> using the <code>export</code> statement.
+An <code>exported</code> method must be declared
+in the top scope, may not throw exceptions, and may have at most one
+return value. The generated C function now has extern linkage, and
+takes a <code>conf_object_t *</code> as its first argument.</p>
+</li>
+<li>
+<p>The syntax of <code>switch</code> statement is now stricter, and now
+requires a conventional switch structure: The switch body must be a
+compound statement starting with a <code>case</code> label,
+all <code>case</code> and <code>default</code> statements must reside
+directly in this statement, and no <code>case</code> may appear after
+the <code>default</code> statement.</p>
+</li>
+<li>
+<p>When declaring a template, a <code>desc</code> string may no
+longer be supplied. Thus, the following is now invalid:</p>
+<pre><code>template t "short description" { ... }
+</code></pre>
+<p>This syntax used to create a parameter <code>desc</code> in the
+objects where the template is instantiated.</p>
+</li>
+<li>
+<p>The <code>#</code> operator is no longer supported. It was seldom
+useful in DML 1.2, and its behaviour was in many ways complex and
+undocumented.</p>
+</li>
+<li>
+<p>It is no longer allowed to refer to objects using the
+names <code>signed</code>, <code>unsigned</code> and <code>this</code>.</p>
+</li>
+<li>
+<p>The expression <code>undefined</code> may no longer be passed as argument to
+an inline method</p>
+</li>
+<li>
+<p>If the condition of a <code>while</code> loop is statically
+evaluated to false, then faulty code in the loop body can cause compile
+errors in DML 1.4. In DML 1.2, the loop body was silently discarded.</p>
+</li>
+<li>
+<p><code>goto</code> statements, as well as goto labels, are not allowed in
+DML 1.4.</p>
+</li>
+<li>
+<p>The parameter <code>persistent</code> in fields is no longer
+supported. It was buggy in 1.2. As a replacement, checkpoint
+fields as separate attributes if persistence differs within a
+register.</p>
+</li>
+<li>
+<p>Objects of <code>register</code> or <code>attribute</code> type with
+<code>configuration="pseudo"</code>, that are either read-only or
+write-only, have to declare this specifically by setting the new
+parameter <code>readable</code> (or <code>writable</code>)
+to <code>false</code>. In 1.2, DMLC used some heuristics to
+automatically guess the user's intent.</p>
+</li>
+<li>
+<p>The parameter <code>allocate_type</code> in <code>attribute</code>
+objects has been removed. Three templates are available as a replacement:</p>
+<ul>
+<li>
+<p><code>uint64_attr</code> replaces <code>allocate_type="uint64"</code></p>
+</li>
+<li>
+<p><code>int64_attr</code> replaces <code>allocate_type="int64"</code></p>
+</li>
+<li>
+<p><code>bool_attr</code> replaces <code>allocate_type="bool"</code></p>
+</li>
+<li>
+<p><code>double_attr</code> replaces <code>allocate_type="double"</code></p>
+</li>
+</ul>
+<p>For the <code>allocate_type</code>
+values <code>"uint8"</code>, <code>"uint16"</code>, <code>"uint32"</code>,
+<code>"int8"</code>, <code>"int16"</code>, and <code>"int32"</code>, the
+corresponding 64-bit template is recommended. There is no
+replacement for <code>allocate_type="string"</code>.</p>
+</li>
+<li>
+<p>In objects of type <code>attribute</code>, <code>register</code>
+and <code>field</code>, storage is now allocated in a separate
+member <code>val</code> instead of the object itself. For example:
+when assigning a value to a register, you might change
+<code>bank.reg = 4;</code> into <code>bank.reg.val = 4;</code>. Note that
+the <code>val</code> member is not automatically created by DMLC; it
+is merely a naming convention used by many standard templates
+(<em><code>type</code>_attr</em> for attributes,
+and <code>alloc</code>, <code>read_write</code>, <code>read_only</code> for
+registers and fields).</p>
+</li>
+<li>
+<p>The following standard parameters have been removed:</p>
+<dl><dt id="dt:object-parameters">
+<p>Object parameters</p>
+</dt><dd>
+<p><code>logobj</code>, <code>indexvar</code></p>
+</dd><dt id="dt:bank-parameters">
+<p><code>bank</code> parameters</p>
+</dt><dd>
+<p><code>mapped_registers</code>, <code>unmapped_registers</code>,
+<code>numbered_registers</code></p>
+</dd><dt id="dt:register-parameters">
+<p><code>register</code> parameters</p>
+</dt><dd>
+<p><code>fields</code>, <code>signed</code></p>
+</dd><dt id="dt:connect-parameters">
+<p><code>connect</code> parameters</p>
+</dt><dd>
+<p><code>interfaces</code></p>
+</dd></dl>
+</li>
+<li>
+<p>The bank parameters <code>miss_bank</code>, <code>miss_bank_offset</code>,
+<code>miss_pattern</code>, <code>function</code> and <code>log_group</code>
+have been tentatively removed; we intend to replace them with
+standard templates.</p>
+</li>
+<li>
+<p>In <code>connect</code> objects, the <code>validate</code>
+and <code>validate_port</code> methods have been merged into one
+method, named <code>validate</code>. This method has the same
+signature and semantics as <code>validate_port</code> in DML 1.2.</p>
+</li>
+<li>
+<p>In objects of type <code>attribute</code>, <code>register</code>
+and <code>connect</code>, the methods <code>before_set</code>
+and <code>after_set</code> are no longer recognized. As a
+replacement, override <code>set</code> with a method that performs
+intended logic before and after an invocation
+of <code>default</code>.</p>
+</li>
+<li>
+<p>The templates <code>signed</code> and <code>noalloc</code> have been
+removed, together with the <code>signed</code>
+and <code>allocate</code> parameters in registers and
+fields.</p>
+</li>
+<li>
+<p>The parameter <code>offset</code> in registers can no longer be set
+to <code>undefined</code>. Instead, use the <code>unmapped</code> template
+to denote an unmapped register.</p>
+</li>
+<li>
+<p>The templates <code>unimplemented</code>, <code>silent_unimplemented</code>,
+<code>read_unimplemented</code> and <code>write_unimplemented</code> have been
+renamed, to <code>unimpl</code>, <code>silent_unimpl</code>,
+<code>read_unimpl</code> and <code>write_unimpl</code>,
+respectively. Also, log levels of logged messages have changed:
+The first message is logged on level 2 by <code>silent_unimpl</code>,
+and level 1 by all the other templates, while subsequent messages
+are logged on level 3 in all templates.</p>
+</li>
+</ul>
+
+<div class="chain">
+<a href="changes-auto.html">B.5 Language differences handled by the port-dml script</a>
+<a href="grammar.html">C Formal Grammar</a>
+</div>

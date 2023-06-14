@@ -1,0 +1,1114 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10 Example Models</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="advanced-programming-with-dml.html">9 Advanced Programming with DML</a>
+<a href="define-new-interface-type.html">11 Defining New Interface Types</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Example-Models">10 Example Models</a></h1>
+<p>
+
+</p><p>
+Three real device models are included in the Simics Base package; an
+AM79C960 (ISA) Ethernet controller, a DS12887 real-time clock and a
+DEC21140A (PCI) Ethernet controller. They contain full source code and
+some tests. You can use these models and tests as examples when
+developing your own device models. This chapter serves as an
+orientation about how those devices are modeled and shows how you can test them
+if you have access to the <i>Enterprise</i> machine
+or <i>Firststeps</i> for the DEC21140A.
+</p><p>
+Source packages also contain devices which can be used as examples. If
+you develop a different kind of model than the ones in Model Builder,
+you may find a device in one of the source packages a better
+example.
+</p><p>
+</p><h2 class="jdocu"><a name="examples-AM79C960-dml">10.1 AM79C960</a></h2>
+<p>
+
+</p><p>
+AM79C960 was a rather common ISA Ethernet card, used mostly in PCs. It is a
+little dated now, but still serves as a good example of how to
+implement Ethernet.
+</p><p>
+The workable source code for the sample device can also be found in the directory
+<code></code><em>[simics]</em><code>/src/devices/AM79C960</code>. If you want to try modifying
+the <b>AM79C960</b> module yourself, we recommend that you set up
+a user project and copy the source code there, as described in section <a class="reference" href="build-environment.html#project-copy-module">3.4</a>.
+</p><p>
+Please do read previous sections in part <a class="reference" href="part-device-modeling.html">II</a>
+to know how to compose and build an empty device, and we will ignore those
+general parts in this section and highlight the methodologies for
+how to efficiently model a specific device.
+</p><p>
+Typical work flow for Simics modeling includes below four stages:
+</p><ul>
+  <li>Modeling materials preparation</li>
+  <li>Architecture design</li>
+  <li>Detailed design</li>
+  <li>Test and continuous integration</li>
+</ul>
+<p>
+As the first stage, modeling materials preparation should be done before
+the modeling of the device, the necessary materials include hardware spec,
+target OS driver, and test applications, and optional software manuals.
+Hardware spec is the most important document, it also
+serves as the root spec of the model and the bridge between modeling team and
+the software team. Do make sure you get the right version of them.
+</p><p>
+We will elaborate the other three stages by tearing down the modeling methdology
+of an AM79C960 device.
+</p><p>
+</p><h3 class="jdocu"><a name="examples-AM79C960-dml-architecture-design">10.1.1 Architecture Design</a></h3>
+<p>
+
+</p><p>
+There is always a system block diagram in the hardware spec, which perfectly
+shows the system level functional blocks, AM79C960 does as well,
+it has even two: one is bus master mode and the other is shared memory mode,
+there are some difference on ISA bus interface unit, since Simics will not
+simulate the details of a bus arbitration, we could regard them as one
+in the modeling.
+</p><p>
+From the diagram we know that AM79C960 has the major functional blocks like
+ISA/EISA bus, IEEE 802.3 Ethernet port, transmit and receive FIFOs, etc.
+It receives frames from ISA bus and sends them to Ethernet port, and vice versa.
+Our model should focus on those data handling, implement the actions the software
+calls for the device.
+</p><p>
+As Simics is a functional simulator, we need not model details how the device
+works internally, for example, the Ethernet PHY block actually has line
+encoder/decoder (MENDEC), frame preamble detector, etc. sub functional modules,
+yet they are not visible to the software, so we will hide those details
+and handle the data octets directly.
+</p><p>
+Simics itself is built up by several fundentmental modules, we also
+suggest the user to divide the complex device module into several sub modules
+and develop them separately. In each simple module, user always can utilize
+provided well-defined Simics libraries and templates to facilitate the design,
+and through interfaces, each module can be connected with each other efficiently.
+</p><p>
+It's a good practice to try to reuse existing modules and build modular system.
+The <b>AM79C960</b> module simplified the design and implemented
+all functionalities in one module for it's simple enough,
+while if you're modeling a more complex Ethernet controller, it's better
+at least divide it into PHY and MAC modules, then you could reuse
+<code>generic_eth_phy</code> module and get some helpful references from
+the implementation of <code>ich10_lan_v2</code> module,
+avoid duplicating the common PHY and MAC functionalities, and could be able to
+improve them separately and facilitate their debugging.
+</p><p>
+Once the sub modules are defined, we should then begin the interfaces design.
+In Simics, interface is the primary way to transfer data between modules,
+see section <a class="reference" href="programming-with-dml.html#spc-dml-interface">5.5</a> for more details.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-AM79C960-dml-interfaces-design">10.1.2 Interfaces Design</a></h3>
+<p>
+
+</p><p>
+According to the device block diagram, there are several interfaces,
+means connections to outside of the module, should be includes in this model:
+</p><ul>
+  <li>Outging ethernet link</li>
+  <li>Incoming ethernet link</li>
+  <li>Interrupt to CPU</li>
+  <li>ISA bus memory space</li>
+  <li>LED output, resets input, etc. misc ports</li>
+</ul>
+<p>
+The outgoing Ethernet link could be implemented as:
+</p><pre class="jdocu_small">connect link {
+    parameter documentation = "The ethernet-link the device is connected to.";
+    interface ethernet_common;
+}
+</pre><p>
+</p><p>
+Yet, it's more convenient to import <code>ethernet.dml</code> file and use the
+template <code>ethernet_connect</code> instead, it provides handy
+<code>send_frame</code> method by encapsulating the interface call and adaptation
+of the frame data buffer. Once this is connected to outside Ethernet link,
+the device can then send out the frame data via <code>$link.send_frame()</code>
+method.
+</p><p>
+The incoming Ethernet link could be implemented as:
+<span class="jdocu_small">
+ </span></p><pre class="jdocu_small">implement ethernet_common {
+    method frame(const frags_t *frame, eth_frame_crc_status_t crc_status) {
+        local dbuffer_t *buf = new_dbuffer();
+        local uint8 *frame_data = dbuffer_append(buf, frags_len(frame));
+        frags_extract(frame, frame_data);
+        inline $receive_packet(buf);
+        dbuffer_free(buf);
+    }
+}
+</pre><p>
+</p><p>
+ 
+</p><p>
+When other device is trying to send data to this device, the interface method
+<code>frame</code> is called, the user is expected to handle the incoming data
+within the method.
+</p><p>
+Interrupt is a very common interface for the device to inform some internal
+events, ex. one frame is received or transmitted, error condition is detected,
+etc., we can use <code>simple_interrupt</code> interface to do that:
+<span class="jdocu_small">
+ </span></p><pre class="jdocu_small">connect irq_dev {
+    parameter documentation = "The device that interrupts are sent to.";
+    parameter configuration = "required";
+
+    interface simple_interrupt;
+}
+</pre><p>
+</p><p>
+ 
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The <code>simple_interrupt</code> interface is deprecated, user
+should use <code>signal</code> interface in the new design.</div>To record current level of interrupt line and avoid to raise or lower the
+interrupt line twice, we need an attribute something like <code>irq_raised</code>.
+This is also one suggested design practice in Simics to support checkpointing,
+when Simics restores the running from a checkpoint, the current runtime
+interrupt status should be correctly restored as well, this is supported by
+utilizing an attribute, whose value will be automatically saved and restored
+when the checkpoint is written and read.
+<p>
+To support DMA and share memory with the target CPU, we use
+<code>memory_space</code> interface to simulate the bus master function.
+Through this interface, the device is able to access the initialization data
+and Ethernet descriptor rings which are mapped on the system bus:
+</p><pre class="jdocu_small">connect memory {
+    parameter documentation = "The memory space the device shares with the bus";
+    parameter configuration = required;
+    interface memory_space;
+}
+</pre><p>
+</p><p>
+AM79C960 supports both shared memory operations mode and bus master mode.
+In the first mode, AM79C960 is visible as one shared memory space to the master
+CPU, all registers are mapped on the memory space. In the second mode, AM79C960
+has the ability to perform DMA operation, access data from system bus
+directly. In Simics, there needs no special design for DMA controller,
+the device can use interface call to access the memory space at any time.
+</p><p>
+ISA bus logically is seen as an range of linear address memory space from the
+viewpoint of software, but there is no need to implement bus details,
+for example, bus arbitration, IOR/IOW signals, etc., instead, we implement this
+bus functionality by registers bank. DML <code>bank</code> implicitly implements
+the <code>io_memory</code> interface to make it accessible from the CPU,
+user needs only declare the registers offset, name, size etc. parameters,
+and focus on its registers logic design, which in many cases is the most
+important and time-consuming part in a device modeling.
+</p><p>
+Don't forget to check the interfaces configuration, some of them are optional
+and may be left unconnected during initialization or even all the runtime.
+So, in case the interface is optional, user needs to check the connection before
+calling its methods, just like what <b>AM79C960</b> module does in
+<code>send_packet()</code> method:
+</p><pre class="jdocu_small">method send_packet() {
+    local physical_address_t txd_addr;
+    // ... other preparation statements
+    if ($link.obj != NULL) {
+        // ... prepare frame buffer
+        call $link.send_frame(frame, false);
+    } else {
+        log info, 2: "not connected, not packet sent";
+    }
+    // ... post handling of sending
+}
+</pre><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-AM79C960-dml-registers-design">10.1.3 Registers Design</a></h3>
+<p>
+
+</p><p>
+Most of the device logics are triggered by register accessing, we could design
+those logics into the registers' side effect or some global functions. It's a
+good style to design (declare) the registers bank in one place and implement
+them at another place, it makes the implementation clear.
+</p><p>
+Let's take mac_address as an example, it's a primary attribute for an Ethernet
+controller. The mac_address locates at I/O registers address 0 ~ 5, which are
+set by the CPU. By utilizing <code>data_accessor</code> template, any writing
+to register aprom_0 ~ aprom_5 is also updating the mac_address attribute,
+which is then be used to check destination address when a frame is received.
+</p><p>
+Another example is the package transmitting, which is triggered by CSR0 writing.
+This occurs when the driver prepared the data to be transmitted, configured
+the descriptor ring accordingly, and then writes the CSR0 to start transmitting.
+To implement this behavior, we add side effect to the CSR0 writing:
+</p><pre class="jdocu_small">register csr0 {
+    data uint1 do_transmit_demand;
+    method after_write(memop) {
+        if ($do_transmit_demand == 1) {
+            $do_transmit_demand = 0;
+            inline $transmit_demand();
+        }
+    }
+    field TDMD[3] "Transmit Demand" {
+        method write(value) {
+            if (value == 1) {
+                $this = 1;
+                $do_transmit_demand = 1;
+            }
+            // ignore write 0; cleared by send_packet()
+        }
+    }
+    method transmit_demand() {
+        inline $send_packet();
+    }
+}
+</pre><p>
+We update the demand bit when writing, as well as other bits in case more than
+one bits are written, then check the demand bit after writing. It's better to
+implement the packet sending outside of the register definition,
+for it could be quite complex.
+</p><p>
+From related register bits definition and explanation of descriptor ring buffer
+management, we can conclude below procedure when transmitting one packet frame
+(Refer to <code>send_packet()</code> method for the implementation):
+</p><ol>
+  <li>Check if the previous transmitting is finished, quit immediately if it
+      was not, the new transmitting will be scheduled by the event queue.</li>
+  <li>Clear the TDMD flag, to let other blocks and software know the status.</li>
+  <li>Read the transmit descriptor, which should have been prepared by
+      the driver.</li>
+  <li>Check if it is connected to a link, it may be left unconnected.</li>
+  <li>If it's connected, read the actual frame data and send them
+      by calling the interface method.</li>
+  <li>Update the registers and write back the transmit descriptor.</li>
+  <li>Check if the event queue has pending packets to be sent.</li>
+</ol>
+<p>
+Let's also take a look at receiving a packet, this occurs when external device
+call the <code>ethernet_common</code> interface method (Refer to
+<code>receive_packet()</code> method for the implementation):
+</p><ol>
+  <li>Buffer the incoming frame.</li>
+  <li>Check RXON to see if the device is ready to receive.</li>
+  <li>Read the receive descriptor and check related length.</li>
+  <li>Check the MAC address to determine whether the device should handle
+      this packet.</li>
+  <li>If yes, write the frame data to the receive buffer.</li>
+  <li>Update related flags and raise interrupt to inform the driver to read.</li>
+</ol>
+<p>
+The descriptor ring used by transmitting and receiving block is a very common
+data structure for the Ethernet controller, let's take a look at the transmit
+descriptor ring implementation in this device as an example.
+<span class="jdocu_small">
+ </span></p><pre class="jdocu_small">struct txd_t {
+    physical_address_t addr;
+    uint1 OWN;
+    uint1 STP;
+    uint1 ENP;
+    uint16 size;
+}
+
+method txd_from_buf(uint8* buf) -&gt; (txd_t txd) {
+    txd.addr = buf[0] | buf[1] &lt;&lt; 8 | buf[2] &lt;&lt; 16;
+    txd.OWN = buf[3][7];
+    txd.STP = buf[3][1];
+    txd.ENP = buf[3][0];
+    txd.size = - (buf[4] | buf[5] &lt;&lt; 8);
+}
+
+method txd_to_buf(txd_t txd, uint8* buf) {
+    local int neg_size = - txd.size;
+    buf[0] = txd.addr[7:0];
+    buf[1] = txd.addr[15:8];
+    buf[2] = txd.addr[23:16];
+    buf[3] = (txd.OWN &lt;&lt; 7) | (txd.STP &lt;&lt; 1) | (txd.ENP &lt;&lt; 0);
+    buf[4] = neg_size[7:0];
+    buf[5] = neg_size[15:8];
+    buf[6] = 0;
+    buf[7] = 0;
+}
+</pre><p>
+</p><p>
+ 
+</p><p>
+The descriptor ring buffer is built up by numbers of descriptors,
+each descriptor entry has the same 8 bytes structure, when reading out one
+transmit descriptor, <b>AM79C960</b> module extracts its inner data
+and assigns them to a <code>txd_t</code> type value, for later on convenient access.
+At writing back, the value is mapped back to the buffer data structure
+accordingly.
+</p><p>
+Indexing of the descriptor ring buffer is some tricky, it originally locates at
+the transmit ring counter register at CSR74, yet this device uses
+an attribute <code>curr_txd</code> to simulate its behavior, it works well from
+the software point of view and is quite simple to be implemented:
+<span class="jdocu_small">
+ </span></p><pre class="jdocu_small">attribute curr_txd {
+    parameter documentation = "Index of the current transmit descriptor";
+    parameter allocate_type = "uint8";
+    parameter configuration = "optional";
+    method addr() -&gt; (physical_address_t address) {
+        address = $xmt_descr_tbl_addr + ($this * TXD_SIZE);
+    }
+    method next() {
+        $this = ($this + 1) % $xmt_descr_tbl_length;
+    }
+}
+</pre><p>
+</p><p>
+ 
+</p><p>
+The <b>AM79C960</b> model is far from complete, it implements just
+enough functionalities that the device can be used with Linux 2.4. There always
+are too many registers to be implemented, in practice, we only
+implement the least sets registers the software can work correctly, and leave
+those not necessary as unimplemented (could use <code>unimpl</code> type logging
+to record). This completeness could be verified by target software, so when
+the software is upgraded, the model probably will have to be updated as well.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examplesAM79C960-dml-other-elements-design">10.1.4 Other Elements Design</a></h3>
+<p>
+
+</p><p>
+Attributes are also widely used in Simics to record internal state or be exposed
+to user for configuration and debugging, for example, the 64-bit
+<code>Logical Address Filter</code> that resides in CSR8 - CSR11 is stored in the
+<i>logical_address_filter</i> attribute. Some of the registers, for example,
+CSR24 and CSR25 that contain <code>Base Address of Receive Ring</code>, are not even
+implemented and the values are only stored in separate attributes.
+</p><p>
+Another example is <code>poll_interval</code>, it originally locates in CSR47, but
+we could use an attribute to simply the implementation, while keep the ability
+to configure that at runtime.
+</p><p>
+In case the device needs some asynchronous handling, such as deferred
+transmitting process, Simics provides <code>event</code> to support this behavior:
+</p><pre class="jdocu_small">event poll_txd {
+    parameter timebase = "seconds";
+    method event(void *param) {
+        inline $send_packet();
+        inline $poll_txd.post($poll_interval, NULL);
+    }
+}
+</pre><p>
+</p><p>
+This event periodically polls the transmit descriptor ring buffer, if there are
+any descriptors previously pending to be transmitted, they'll be checked again
+by the event handler. The polling is then rescheduled for the next round.
+</p><p>
+There is no need to design the event in receiving block, every time the packet
+is received, it can be handled immediately.
+</p><p>
+Simics provides <code>template</code> to avoid duplicating the same codes, one good
+example for this common practice is <code>data_accessor</code>:
+<span class="jdocu_small">
+ </span></p><pre class="jdocu_small">template data_accessor {
+    parameter configuration = "pseudo";
+    parameter data;
+    parameter msb;
+    parameter lsb;
+    parameter ignore_write default false;
+    parameter mac_register default false;
+
+    method get -&gt; (value) {
+        inline $read()-&gt;(value);
+    }
+    method set(value) {
+        inline $write(value);
+    }
+    method read()-&gt;(value) {
+        value = $data[$msb:$lsb];
+    }
+    method write(value) {
+        if (!$ignore_write) {
+            $data[$msb:$lsb] = value;
+        }
+    }
+}
+</pre><p>
+</p><p>
+ 
+</p><p>
+This template implements register default get/set and read/write behaviors, and
+the user could customize this kind of register by setting <code>parameter</code>
+accordingly. Remember that, the user can always find good templates from
+<code>utility.dml</code> library and define their own templates as they like.
+</p><p>
+Any device needs some methods to be reset to known states, Simics device
+by default has soft_reset and hard_reset, which are called when the device is
+soft- and hard- reset, those two resets will reset all banks and registers
+recursively by default, unless those explicitly ignored, such as CSR1 and CSR2:
+<span class="jdocu_small">
+ </span></p><pre class="jdocu_small">register csr1 is (read_write) {
+        method soft_reset() {
+            // ignore
+        }
+        // should be read/write accessible only when STOP is set
+    }
+
+    register csr2 is (read_write) {
+        method soft_reset() {
+            // ignore
+        }
+        // should be read/write accessible only when STOP is set
+    }
+    </pre><p>
+</p><p>
+ 
+</p><p>
+they override the default soft_reset behavior, so prevent them to be reset
+to the default value during soft reset.
+</p><p>
+In case there are some other elements are to be initialized, such as attributes,
+user can place them in <code>init()</code> or <code>post_init()</code> method,
+see section <a class="reference" href="device-modeling-overview.html#attribute_init">4.2.7.3</a> for more details.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-AM79C960-dml-run-test">10.1.5 Run the AM79C960 model tests</a></h3>
+<p>
+
+</p><p>
+Functional tests and integration tests are both heavily used in Simics device
+modeling, normally functional tests locates at the <code>test</code> subdirectory
+in the device module, user could execute <code>make test</code> to perform them
+at any time.
+Integration tests are much more complex, user needs to connect devices and
+components in the Simics configuration and run the target OS, generally use
+target application to test the device models.
+</p><p>
+<b>AM79C960</b> does not provide functional tests,
+so we will not explain that here.
+Yet if your distribution contains the simulated machine <em>enterprise</em>,
+you can find the Simics script <code>enterprise-common.simics</code>
+in the directory <code></code><em>[simics]</em><code>/targets/440bx</code>. Let's see
+how to utilize this script to verify the functionalities of this model.
+This file creates an enterprise machine using the <b>AM79C960</b>
+module. The AM79C960 object is called
+<b>enterprise.motherboard.lance.lance</b>.
+</p><p>
+To do something interesting with the AM79C960 model it needs to be connected
+to something that it can talk to. The default setup for the enterprise system
+has the AM79C960 controller connected to a <b>service-node</b>
+via an Ethernet switch.
+</p><p>
+
+
+
+</p><p>
+Start the simulation and let the machine boot and login as the user
+<code>root</code>. No password is required. Stop the simulation and set the log
+level of the <b>lance</b> object to 2:
+</p><p>
+
+
+</p><p>
+
+
+
+</p><p>
+
+
+
+</p><pre class="jdocu_small">simics&gt;  <b>enterprise.motherboard.lance.lance.log-level 2</b>
+[enterprise.motherboard.lance.lance] Changing log level: 1 -&gt; 2
+</pre><p>
+</p><p>
+You can now start the simulation again and send a ping packet to the
+<b>service-node</b> by entering 
+<code>ping -c 1 10.10.0.1</code>
+in the console on the simulated
+machine. The <b>lance</b> object will log what happens:
+</p><p>
+
+</p><p>
+</p><pre class="jdocu_small">[enterprise.motherboard.lance.lance info] Packet sent, dst 20:20:20:20:20:00, src 10:10:10:10:10:30, length 102 bytes
+[enterprise.motherboard.lance.lance info] packet received, dst 10:10:10:10:10:30, src 20:20:20:20:20:00, length 102 bytes
+[enterprise.motherboard.lance.lance info] MAC address matches, packet accepted
+</pre><p>
+</p><p>
+The enterprise machines sends a 102-byte packet to the
+<b>service-node</b> and receives a 102-byte reply. These are
+the actual ping request and ping reply.
+</p><p>
+If you want more detailed logs you can change the log level to 3 or 4. At log
+level 3 a lot more information about what is going on in the device will be
+logged. The device polls for packets to transmit regularly, so this will cause
+a lot of output. At log level 4 all accesses that the processor does to the
+device will also be logged.
+</p><p>
+By the test applications we make sure the basic transmitting and receiving work
+well and the driver can access the device as expected. As a good practice,
+we should document those key unimplemented features as limitations at the top of
+the model, just like <b>AM79C960</b> module does:
+</p><pre class="jdocu_small">parameter limitations = ("&lt;ul&gt;"
+    + "..."
+    + "&lt;li&gt;The ISA bus configuration registers are not implemented&lt;/li&gt;"
+    + "..."
+    + "&lt;/ul&gt;");
+</pre><p>
+</p><p>
+In case new features are required, we could define the new test scenarios and
+develop that add-on features based on this ready model, continuously improve
+the model's completeness.
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="examples-DS12887-dml">10.2 DS12887</a></h2>
+<p>
+
+</p><p>
+DS12887 is a very common real-time clock device. It is used, among other
+places, in common PCs. There are also many other devices that are extensions
+of the DS12887, for example, DS17485 and M5823.
+</p><p>
+It may be good to have the documentation for the DS12887 chip when looking at
+the sample code, so that you can compare the code to the specification. The
+documentation can be found on the Internet, search for <code>ds12887.pdf</code> on
+<a class="jdocu" href="http://www.google.com" rel="noopener noreferrer" target="_top">www.google.com</a> and you will find several links to it.
+</p><p>
+The source code for the sample device can be found in the directory
+<code></code><em>[simics]</em><code>/src/devices/DS12887</code>. If you want to try modifying
+the DS12887 yourself, we recommend that you set up a user project and copy
+the source code there, as described in section
+<a class="reference" href="build-environment.html#project-copy-module">3.4</a>.
+</p><p>
+The source code of the DS12887 module is quite richly commented, so if you have
+the documentation for the DS12887 chip you should hopefully be able to
+understand most of the code without too much problem.
+</p><p>
+</p><h3 class="jdocu"><a name="examples-DS12887-dml-architecture-design">10.2.1 Architecture Design</a></h3>
+<p>
+
+</p><p>
+Refer to the address map of DS12887 from the spec, the major function 
+blocks of the DS12887 block diagram is clearly the calendar and 
+alarm ram (block "CLOCK, CALENDAR, AND ALARM RAM") and the control registers
+(block "REGISTERS A,B,C,D"). The output signals of this model are also
+simple, the main output signal is the interrupt (signal "IRQ").
+We can abstract DS12887 with a real time clock device, it increases its internal
+time counter per second. The date and time are stored in registers. Alarm 
+interrupts can be controlled by registers if clock match the values in alarm
+registers. As Simics is a functional simulator, we do not need to exactly
+model such details. Instead we design an attribute <i>base_rtc_time</i> 
+to store absolute time, so that we only update RTC time when time registers
+are really accessed. Also when registers are accessed we compute and schedule
+the alarm interrupt rather than compare and decide if the alarm interrupt needs 
+to be triggered. This is also known as common practice to improve the simulation
+performance.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-DS12887-dml-registers-design">10.2.2 Registers Design</a></h3>
+<p>
+
+</p><p>
+As registers are the main function blocks of DS12887. Firstly we write the 
+layout of the register banks. The address and size of registers can be found
+in the documentation.
+</p><p>
+</p><pre class="jdocu_small">bank registers {
+    parameter register_size = 1;
+    parameter function = 1;
+
+    register seconds            @ 0;
+    ...
+    register nvram[114]         @ 14 + $i;
+}</pre><p>
+</p><p>
+As we introduced previously, we implement the model to update the time registers 
+"lazily". The handling logic looks more complicated than absolutely necessary,
+but does help simulation performance. A simple implementation could post an
+event that raises the <code>UIP</code> flag and then an event that lowers the
+<code>UIP</code> flag, updates the time registers and compares them with the
+alarm registers each simulated second. Such simple implementation actually would
+lead to many regular Simics events just for idle loop, 
+in case if the time registers and alarm registers are not really accessed. 
+To avoid having to frequently post these events, the model instead saves the
+simulated time that the real-time clock time was last set, and the time it was
+set to. From this information the current real-time clock time can be
+calculated at any time, and the time registers are only updated when they are
+read. We actually develop template <i>time_register</i> to include such time
+updating methods as <i>update_time_registers_conditional()</i> and 
+<i>writeback_time_registers()</i> so time registers can adopt such
+functionalities. There is a comment above the <i>base_time</i> attribute in
+the source code that describes more detailedly about the time representation.
+</p><p>
+Similarly, events for the alarm interrupt, periodic interrupt and update-ended
+interrupt are only posted if the corresponding interrupt flag is not already
+raised. We also develop template <i>interrupt_event</i> to implement such interrupt
+scheduling functionalities, mostly by the <i>update_time()</i> method in it. The 
+interrupt related registers or register fields, for example, the alarm registers,
+can adopt the template. This implementation means that, if Linux does not use 
+the device after the boot, as we generally observed in our simulated scenarios, 
+the model will have good simulation performance since it does not need to post
+any more events once Linux has booted.
+</p><p>
+DS12887 spec well describes the control registers. The 3 DV bits in register <i>a</i>
+enable the oscillator and interrupt posting. The 4 rate-selection bits decide how
+to generates the periodic interrupt. Register <i>b</i> include the interrupt enable 
+bits, and the interrupt flag bits are in register <i>c</i>. To better maintain such 
+interrupt functionalities we implement common method update_IRQF() to check, update
+those fields, and raise or lower the interrupt. This is also a common practice  
+eventually seen in interrupt processing of every DML devices. Interrupt related 
+events and register fields can do individual update, then call the common method 
+to sync the interrupt state, without spreading similar or even inconsistent code
+in different DML code pieces. 
+</p><p>
+A difference between the documentation of the DS12887 and the model is that the
+model has two register banks, while the documentation only describes one. This
+is because of the way the device is used in PCs. The registers
+described in the documentation correspond to the <i>registers</i>
+bank. When the device is used in a PC a small translation device with two
+registers that forwards accesses to the registers of the DS12887 is mapped in
+the port space. This translation device corresponds to the
+<i>port_registers</i> bank. If you want to use the model as a pure DS12887,
+just ignore the <i>port_registers</i> bank.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-DS12887-dml-interfaces-design">10.2.3 Interfaces Design</a></h3>
+<p>
+
+</p><p>
+According to the functions described in the spec, there are several interfaces
+should be included in this model:
+</p><ul>
+    <li>Interrupt output</li>
+    <li>Reset signal</li>
+    <li>Clock</li>
+</ul>
+<p>
+We can use the interrupt interface <code>simple_interrupt</code> to really trigger
+the interrupt from DS12887 internal events:
+</p><p>
+<span class="jdocu_small">
+ </span></p><pre class="jdocu_small">connect irq_dev {
+    parameter documentation = "The device that interrupts are sent to,"
+        + " or Nil if the interrupt line is not connected to anything.";
+    parameter configuration = "optional";
+
+    interface simple_interrupt;
+}
+</pre><p>
+</p><p>
+ 
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The <code>simple_interrupt</code> is obsoleted by the 
+<code>signal</code> interface.</div>In Simics, every registers and fileds have a default hard_reset() and 
+soft_reset() method. They will set the register to <i>hard_reset_value</i> 
+and <i>soft_reset_value</i>, respectively. But most registers and fields in 
+the DS12887 either ignore reset or are cleared to 0 on reset, so it is useful to
+have template to override the default method.
+<p>
+<span class="jdocu_small">
+ </span></p><pre class="jdocu_small">template ignore_reset {
+    method hard_reset() {
+    }
+    method soft_reset() {
+    }
+}
+</pre><p>
+</p><p>
+ 
+</p><p>
+For example, the <i>RS</i> field of register <i>a</i> ignore reset 
+signal. We can implement it as this:
+</p><pre class="jdocu_small">field RS [3:0] is (read, ignore_reset) {
+...
+}</pre><p>
+</p><p>
+We connect to an outside timer to get the current virtual time. We need it to
+calculate the real time.
+</p><p>
+<span class="jdocu_small">
+ </span></p><pre class="jdocu_small">local conf_object_t *clock = SIM_object_clock($dev.obj);
+    if (clock == NULL) {
+        log error: "device does not have a time queue/clock";
+    } else {
+        SIM_require_object(clock);
+    }
+    </pre><p>
+</p><p>
+ 
+</p><p>
+One amazing capacity of Simics environment is checkpointing and reverse execution.
+So Simics environment might automatically store or restore DS12887 states
+to or from a Simics checkpoint. This actually leads to an extra step
+in Simics modeling to see if the model is checkpointing safe. For a Simics timer
+model as DS12887, reschedule its time events or time interrupts after restore is
+generally needed. Aware of that, we also implement the <i>temporal_state</i>
+interface of such computing and rescheduling.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-DS12887-dml-other-elements-design">10.2.4 Other Elements Design</a></h3>
+<p>
+
+</p><p>
+We mainly picked alarm interrupts as interrupt example in previous sections. 
+Actually DS12887 also support periodic interrupts and update-ended interrupts.
+The implementing experience of alarm interrupts can be easily used in other
+interrupts according to the details described in the spec.
+</p><p>
+Templates facilitate Simics model code consistency, debugging and device hierarchy.
+For example, we also implement template <i>rtc_register</i> to be used by
+all time and alarm registers, which contains methods for register value range
+checking and converting between BCD format and binary format. DML enables
+template parameters so that the template method just implement the value
+boundary checking logic and leave the boundary value setting to each individual
+registers. We also implement other templates as <i>hour_rtc_register</i>,
+<i>time_alarm_register</i>, <i>irq_flag</i>, <i>irq_enable_flag</i>
+accordingly.
+</p><p>
+There are some DS12887 hardware functionalities are not needed in Simics functional
+modeling. For example, we do not need the details of oscillator but just need to
+monitor if it is enabled or not, to trigger the interrupts, from the DV bits of
+register <i>a</i>. We do not implement the power switch because this is 
+generally not needed in a functional simulation. We also do not implement the daylight
+saving time and square wave output functionalities since we do not observe 
+software requiring it. We record such non-implemented functionalities with
+<code>limitations</code> parameter for future enhancement.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-DS12887-dml-running">10.2.5 Running the DS12887 model</a></h3>
+<p>
+
+</p><p>
+If your distribution contains the simulated machine <em>enterprise</em>, you
+can find the Simics script <code>enterprise-common.simics</code> in the
+directory <code></code><em>[simics]</em><code>/targets/440bx</code>. This file creates an
+enterprise machine using the <b>DS12887</b> module.
+The DS12887 object is called <b>rtc0</b>.
+</p><p>
+You can, for example, log what is happening to the device during the boot by
+setting the log level of the <b>rtc0</b> object to 3:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>rtc0.log-level 3</b>
+[rtc0] Changing log level: 1 -&gt; 3
+simics&gt; c
+[rtc0 info] Update-ended interrupt triggered, raising UF.
+Pressing return
+[rtc0 info] Periodic interrupt frequency set to 1024.000000 Hz.
+[rtc0 info] Periodic interrupt triggered, raising PF.
+[rtc0 info] UF lowered.
+[rtc0 info] PF lowered.
+[rtc0 info] UIE set.
+[rtc0 info] Periodic interrupt triggered, raising PF.
+[rtc0 info] Update-ended interrupt triggered, raising UF.
+[rtc0 info] Raising interrupt.
+[rtc0 info] UF lowered.
+[rtc0 info] PF lowered.
+[rtc0 info] Lowering interrupt.
+[rtc0 info] UIE cleared.
+[rtc0 info] Periodic interrupt triggered, raising PF.
+[rtc0 info] Update-ended interrupt triggered, raising UF.
+</pre><p>
+</p><p>
+If you raise the log level to 4 all access the processor does to the device
+will be logged. The <b>rtc0</b> object is accessed a lot during the boot,
+so you probably do not want to run the entire boot with log level 4.
+</p><p>
+Note that Linux only uses the real-time clock while booting and shutting
+down. Once it has booted it uses other timers to keep the time, so to get Linux
+to access the D12887 again once it has booted, you have to reboot the system.
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="examples-DEC21140A-dml">10.3 DEC21140A</a></h2>
+<p>
+
+</p><p>
+The DEC21140A is a PCI Ethernet card. As the AM79C960, it is obsolete today but
+it provides a good example of a PCI device written in DML.
+Its specification can be found on the Internet, for example by looking for
+<code>ec-qn7nc-te.ps.gz</code> with Google.
+</p><p>
+The source code for the sample device can be found in the directory
+<code></code><em>[simics]</em><code>/src/devices/DEC21140A-dml</code>. If you want to modify the
+<b>DEC21140A-dml</b> module yourself, we recommend that you set up a
+user project and copy the source code there, as described in section <a class="reference" href="build-environment.html#project-copy-module">3.4</a>.
+</p><p>
+</p><h3 class="jdocu"><a name="examples-DEC21140A-dml-architecture-design">10.3.1 Architecture Design</a></h3>
+<p>
+
+</p><p>
+Module <b>DEC21140A-dml</b> is a DML-implemented DEC21140A device,
+the <code>-dml</code> suffix is to differentiate with the old C-implemented one.
+The <b>DEC21140A-dml</b> implementation is more readable and modern
+by utilizing DML powerful modeling features, for example, by importing
+Simics PCI library, the PCI bus implementation is pretty simple and
+the latest PCI bus features are well supported.
+</p><p>
+Both AM79C960 and DEC21140 are Ethernet controllers, they have many common
+parts in Ethernet functionalities, for example, descriptors list (or ring),
+frame transmit and receive handling, etc., the biggest difference is that,
+AM79C960 uses ISA bus, yet DEC21140A uses PCI bus to connect to the host.
+</p><p>
+Another point that should be highlighted here is that, module
+<b>DEC21140A-dml</b> does not implement the PHY layer functionalities
+itself, instead, it reuses <b>generic_eth_phy</b> when building
+the Simics component, this kinds of design practics is highly recommended
+in Simics modeling.
+</p><p>
+With the help of PCI standard library and reusing existing PHY module,
+there are only few necessary device specific implementations to be done,
+including device status transaction, MAC layer packets handling,
+interrupt reporting, etc..
+</p><p>
+For better readability, the source code has been divided into two files:
+</p><dl><dt id="dt:dec21140a-dml"><b><code>DEC21140A.dml</code></b></dt><dd>This file contains the register bank definitions for the PCI configuration,
+device interfaces and the CSR registers.</dd><dt id="dt:dec21140a-eth-dml"><b><code>DEC21140A-eth.dml</code></b></dt><dd>This file contains code to handle the network and Ethernet frames,
+mainly are <code>transmit()</code> and <code>receive()</code> methods.</dd>.
+</dl><p>The two files also indicate the two key parts for this device in modeling,
+the host connections which includes PCI bus and CSR registers,
+and the Ethernet connection.
+</p><p>
+Similar with other Simics modules, the <b>DEC21140A-dml</b> module is
+far from complete, it implements just enough functionalities
+that the device model can be used with Linux.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-DEC21140A-dml-interfaces-design">10.3.2 Interfaces Design</a></h3>
+<p>
+
+</p><p>
+As described in the specification, the DEC21140A and the host driver communicate
+through two data structures: control and status registers (CSRs), descriptor
+lists and data buffers.
+</p><p>
+CSR registers are implemented in a Simics bank, its base address will be
+assigned by BIOS through PCI configuration space BAR register
+when booting the system.
+The descriptors lists locate in the host memory and are composed by pointers to
+the host memory, the <b>DEC21140A-dml</b> module reads and writes
+those descriptors and the real data through DMA function of the PCI bus.
+</p><p>
+With the help of Simics PCI library (by importing the file
+<code>pci/common.dml</code>), module <b>DEC21140A-dml</b>
+only needs to fill the necessary fields in the PCI configuration space to
+implement the PCI bus, such as vendor_id, device_id, BARs, etc..
+</p><p>
+For more info about how to model a PCI device in general, please refer to
+the Technology Guide "PCIe Modeling Library"
+</p><p>
+Ethernet connection is implemented by below interfaces:
+</p><ul>
+  <li><code>ieee_802_3_phy_v2</code>, connect to the outside PHY module,
+      for example, a <b>generic_eth_phy</b> module.</li>
+  <li>Implementation of <code>ieee_802_3_mac</code> and
+      <code>ieee_802_3_mac_v3</code>, to be connected as a MAC module.</li>
+  <li><code>mii_management</code> to allow software to communicate
+      with the PHY.</li>
+</ul>
+<p>
+Interface <code>microwire</code> is to connect to a serial EEPROM,
+where some customizable data, ex. MAC address, are stored in.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-DEC21140A-dml-registers-design">10.3.3 Registers Design</a></h3>
+<p>
+
+</p><p>
+As a good practice, the CSR bank declares those registers and only implements
+small logic size registers in original place, all others logics,
+ex. interrupting and Ethernet frame transferring, are put to another place.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The CSR registers should be designed in the bank which <code>function</code>
+number is equal to the <code>map_func</code> assigned in PCI config bank
+<code>pci_config</code> BARs, so the CSR bank can be accessed by the software
+through PCI bus.</div>Register CSR0 contains the bus mode configuration, but at normal condition,
+we need not implement them, so leave most of them as dummy bits, for example
+the software reset, it's just logged without any real actions,
+this is good enough for the device module to work in the target linux version.
+<p>
+To avoid duplicating the same kind of register behavior, ex. checking device
+status before any writes to the register, three templates are designed, named as
+<code>rw_tx_stopped</code>, <code>rw_rx_stopped</code> and <code>rw_rx_tx_stopped</code>,
+this kind of design pattern is suggested in Simics modeling. For example:
+</p><pre class="jdocu_small">template rw_tx_stopped {
+    method write(value) {
+        if ($csr.csr5.ts != TX_STOPPED &amp;&amp; value != $this)
+            log spec_viol, 3:
+                "writing 0x%x to the %s.%s.%s field with running Tx process",
+                value, $bank.name, $reg.name, $this.name;
+        $this = value;
+    }
+}
+</pre><p>
+</p><p>
+There are two registers are implemented as unmapped registers,
+<code>current_rx_address</code> and <code>current_tx_address</code>, they are updated
+every time the CSR3 and CSR4 registers are written separately, and updated
+accordingly when the descriptors are processed. Doing like this, those two
+registers are kept as internal variables and not able to be accessed from
+the software directly, yet they are still automatically checkpointed by Simics
+and can be accessed by fields, like an ordinary register does.
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-DEC21140A-dml-other-elements-design">10.3.4 Other Elements Design</a></h3>
+<p>
+
+</p><p>
+Interrupt reporting usually needs some pre-checking for the current level, mask
+bits setting, enablement, etc. conditions, so in most cases we implement
+the interrupt raise and lower operation in a dedicated method, just like what
+<b>DEC21140A-dml</b> does to raise an interrupt bit:
+</p><pre class="jdocu_small">method raise_interrupt(int bit) {
+    if ($csr.csr5.itr[bit] == 0)
+        log info, 4: "raise interrupt %d", bit;
+    $csr.csr5.itr[bit] = 1;
+    call $update_interrupts();
+}
+method update_interrupts() {
+    if (($csr.csr5.itr &amp; INT_ABNORMAL_MASK &amp; $csr.csr7.itr_mask) != 0)
+        $csr.csr5.ais = 1 &amp; $csr.csr7.ais_mask;
+    else
+        $csr.csr5.ais = 0;
+    if (($csr.csr5.itr &amp; INT_NORMAL_MASK &amp; $csr.csr7.itr_mask) != 0)
+        $csr.csr5.nis = 1 &amp; $csr.csr7.nis_mask;
+    else
+        $csr.csr5.nis = 0;
+
+    if (($csr.csr5.nis | $csr.csr5.ais) != 0)
+        call $pci_config.pci_raise_interrupt();
+    else
+        call $pci_config.pci_lower_interrupt();
+}
+</pre><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="examples-DEC21140A-dml-run-test">10.3.5 Run the DEC21140A-dml Module</a></h3>
+<p>
+
+</p><p>
+In the QSP-x86 package you can find the
+script <code>qsp-linux-dec21140.simics</code> in the
+directory <code></code><em>[simics]</em><code>/targets/qsp-x86</code>. This
+file creates a QSP-x86 based machine and attaches the DEC21140A-dml
+device to its PCI bus and the Ethernet link. It also detaches the
+internal network device of the QSP-x86 from the Ethernet link, so the
+DEC21140A is the only network device connected to the link.
+</p><p>
+Start the simulation and let the machine boot. Now you can see
+the network device and use it to ping the service node which is
+connected to the Ethernet link:
+</p><p>
+</p><pre class="jdocu_small"># <b>ifconfig eth0</b>
+eth0      Link encap:Ethernet  HWaddr 10:10:10:10:26
+          inet addr:10.10.0.100  Bcast:10.10.0.255  Mask:255.255.255.0
+          ...
+# <b>ping 10.10.0.1</b>
+PING 10.10.0.1 (10.10.0.1): 56(84) bytes of data.
+64 bytes from 10.10.0.1: icmp_seq=1 ttl=31 time=0.063 ms
+64 bytes from 10.10.0.1: icmp_seq=2 ttl=31 time=0.062 ms
+64 bytes from 10.10.0.1: icmp_seq=3 ttl=31 time=0.063 ms
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="examples-generic_eth_phy">10.4 Ethernet PHY chip</a></h2>
+<p>
+
+</p><p>
+The previous section described how to use a DEC21140 device to
+communicate with an Ethernet network from <i>Firststeps</i>
+machine. In the setup, all Ethernet communication goes via a PHY
+chip, represented by the <b>generic_eth_phy</b> device.  A PHY
+chip takes care of the physical layer of the Ethernet protocol; its
+primary task is to redirect traffic between a media access controller
+(MAC) device and an Ethernet network.  The DEC21140A is one example of
+a MAC device; the Ethernet network is represented by an Ethernet link
+in Simics.
+Below interfaces are used to support those behaviors:
+</p><ul>
+  <li><code>ethernet_common</code>, connecting to the outside Ethernet PHY
+    device, this interface can be left unconnected, but the outside Ethernet PHY
+    device to be connected must implement the <code>ethernet_common</code>
+    interface.</li>
+  <li>Optional <code>ethernet_cable</code>, to handle the link status
+    of the peer.</li>
+  <li><code>ieee_802_3_mac</code> or <code>ieee_802_3_mac_v3</code>,
+    connecting to the Ethernet MAC device, at least one of the two interfaces
+    should be connected, if both are connected, only use the
+    <code>ieee_802_3_mac_v3</code> interface.</li>
+  <li>Implementation of <code>ieee_802_3_phy</code>,
+    <code>ieee_802_3_phy_v2</code> and <code>ieee_802_3_phy_v3</code>,
+    to handle access from the Ethernet MAC device. All of the three interfaces
+    have to be implemented simultaneously to support any of the possible
+    interfaces call, yet internally they share the same implementation.</li>
+</ul>
+<p>
+The <b>generic_eth_phy</b> device can be configured by target
+software via the Media Independent Interface (MII), which in Simics is
+represented by the <code>mii_management</code> interface.
+</p><p>
+The source code of the <b>generic_eth_phy</b> module is
+sparsely commented but rather simple. Most of the relevant
+documentation can be found in the IEEE 802.3 standard—in
+particular chapter 22, where the MII registers are specified.
+</p><p>
+The <b>generic_eth_phy</b> model is complete enough to be
+detected and configured correctly by most operating systems.  Much of
+the configuration of a PHY controls which speed to use.  The model
+ignores these settings; instead, the
+attribute <i>tx_bandwidth</i> can be used to manually configure
+the maximum transmission speed.
+</p><p>
+The PHY functionality has been divided between two files:
+</p><p>
+</p><dl><dt id="dt:ieee_phy-dml"><b><code>ieee_phy.dml</code></b></dt><dd>This file contains code to
+handle the network and redirect Ethernet frames.</dd><dt id="dt:ieee_mii_regs-dml"><b><code>ieee_mii_regs.dml</code></b></dt><dd>This file handles run-time
+configuration, and contains the MII registers</dd>.
+</dl><p>These files cannot be used by themselves; they need to be imported by
+a DML file that defines the device. The files have some additional
+requirements, which are documented in comments. The
+file <code>generic_eth_phy.dml</code> combines the two DML files into
+the <b>generic_eth_phy</b> device.
+</p><p>
+This model provides some functional tests in <code>test</code> sub-directory,
+which are helpful to verify the functionalities implementation, each test,
+as we suggest, only tests one functionality and is named on its testing purpose.
+For more details about how to write tests, please refer to chapter
+<a class="reference" href="writing-model-tests.html">16</a>.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="advanced-programming-with-dml.html">9 Advanced Programming with DML</a>
+<a href="define-new-interface-type.html">11 Defining New Interface Types</a>
+</div>

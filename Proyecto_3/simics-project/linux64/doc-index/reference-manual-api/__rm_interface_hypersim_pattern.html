@@ -1,0 +1,111 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>hypersim_pattern</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_hap_listen.html">hap_listen</a>
+<a href="__rm_interface_hypersim_pattern_matcher.html">hypersim_pattern_matcher</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_hypersim_pattern">hypersim_pattern</a></h1>
+<p>
+
+<a name="hypersim_pattern"></a><a name="hypersim_pattern_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Interface that the hypersim pattern handlers should provide
+<p>
+   <b><i>examine_pattern</i></b>:
+   </p><p>
+   This is an optional function which is called when a pattern has been
+   detected. The function allows the hypersim object to do additional checks on
+   the pattern, for instance check patterns in subroutines which are called.
+   </p><p>
+   The hypersim object should return non-NULL if the pattern is considered okay
+   and it wants to get a callback on when it is reached. If there are problems
+   with this pattern and NULL is returned the matched pattern is removed. If
+   the hypersim object refuses the pattern at this location, it might be
+   detected later again, since there is no 'black-list' support.
+   </p><p>
+   The returned value should point to a per-loop structure, that will be passed
+   along in the pattern_triggered() call. Patterns that does not allocate
+   per-loop structures, should return the first argument, the pointer to the
+   object itself.
+</p><p>
+   The <b><i>pattern_triggered()</i></b> function is called when the first
+   instruction in an installed pattern is reached. The cpu and the physical
+   address which reached the pattern is supplied. This is the function where
+   the hypersim class can do its work, such as fast-forward time.
+   </p><p>
+   If the hypersim object notices that it does not want to be called for this
+   address here (preconditions will never be met for instance) it can return
+   false. This will remove the match, but it does not prevent the
+   pattern-matcher from trying again later. Returning true will cause the
+   pattern_triggered() function to be called each time the pattern is reached
+   (as long as the pattern is valid, of course).
+   </p><p>
+   The loop_data parameter is the per-loop data that was previously returned by
+   the pattern in the examine_pattern() call.
+</p><p>
+   <b><i>pattern_invalidated</i></b> is called when any of the write-protected
+   regions associated to a found pattern are written to. This is an optional
+   function. The per-loop user-data parameter is passed, to be properly free'd
+   in a pattern-specific way.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(hypersim_pattern) {
+        void *(*examine_pattern)(conf_object_t *obj,
+                                 pattern_t *pattern,
+                                 conf_object_t *cpu,
+                                 logical_address_t vaddr,
+                                 physical_address_t paddr);
+        bool (*pattern_triggered)(conf_object_t *obj,
+                                  pattern_t *pattern,
+                                  void *loop_data,
+                                  conf_object_t *cpu,
+                                  physical_address_t paddr);
+        void (*pattern_invalidated)(conf_object_t *obj,
+                                    pattern_t *pattern,
+                                    void *loop_data,
+                                    physical_address_t paddr);
+};
+
+#define HYPERSIM_PATTERN_INTERFACE "hypersim_pattern"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all functions.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_hap_listen.html">hap_listen</a>
+<a href="__rm_interface_hypersim_pattern_matcher.html">hypersim_pattern_matcher</a>
+</div>

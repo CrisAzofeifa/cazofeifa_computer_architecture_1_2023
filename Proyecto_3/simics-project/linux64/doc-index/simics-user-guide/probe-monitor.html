@@ -1,0 +1,264 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10.2 Probe Monitor</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="probes-command-set.html">10.1 Probes Command Set</a>
+<a href="probe-streamer.html">10.3 Probe Streamer</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="probes.html">10 Probes</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Probe-Monitor">10.2 Probe Monitor</a></h1>
+<p>
+  
+</p><p>
+  The <code>probe-monitor</code> tool offers a way to read out and present
+  the probe values in continues samples, while the simulation is
+  running.
+  </p><p>
+  All probes being monitored will be presented in a table row
+  for each sample taken, allowing detection of abnormal values
+  during the simulation.
+</p><p>
+  It is possible to add lots of probes to the same probe-monitor,
+  but as the number of probes increase, so does the width of the
+  produced table. Therefore, it can be useful to create several
+  probe-monitors, each showing some group of related feature.
+</p><p>
+  To create a probe-monitor use the <b>new-probe-monitor</b>
+  command. This will create a new object such as <code>pm0</code>
+  which has some additional commands.
+  See figure <a class="reference" href="#pm-example">25</a> for an example.
+</p><p>
+  </p><div class="figure" id="pm-example">
+
+    <pre class="jdocu_small">$&gt; <b>./simics targets/qsp-x86/firststeps.simics num_cores=2</b>
+simics&gt; <b>new-probe-monitor mode = realtime interval=1 -summary</b>      
+simics&gt; <b>pm0.add-probe probe = sim.time.wallclock sim.time.virtual mode = session</b>
+simics&gt; <b>pm0.add-probe probe = sim.time.schedule sim.slowdown sim.esteps sim.mips cpu.esteps cpu.time.schedule cpu.schedule_percent cpu.mips</b>
+simics&gt; <b>run-seconds 60</b>
+┌──────────────────────────────────────────────────────────────┬──────────────────────────────────────┬──────────────────────────────────────┐
+│                                                              │       board.mb.cpu0.core[0][0]       │       board.mb.cpu0.core[1][0]       │
+├──────────┬──────────┬─────────┬────────┬────────────┬────────┼────────────┬─────────┬──────┬────────┼────────────┬─────────┬──────┬────────┤
+│ Session  │ Session  │Sched (s)│Slowdown│   Esteps   │  IPS   │   Esteps   │Sched (s)│Sched%│  IPS   │   Esteps   │Sched (s)│Sched%│  IPS   │
+│Wallclock │ Virtual- │         │        │            │        │            │         │      │        │            │         │      │        │
+│(hh:mm:ss)│   Time   │         │        │            │        │            │         │      │        │            │         │      │        │
+│          │(hh:mm:ss)│         │        │            │        │            │         │      │        │            │         │      │        │
+├──────────┼──────────┼─────────┼────────┼────────────┼────────┼────────────┼─────────┼──────┼────────┼────────────┼─────────┼──────┼────────┤
+│  00:00:01│  00:00:01│378.85 ms│    0.99│   696409015│739.61 M│   531985315│317.16 ms│   84%│  1.68 G│   164423700│ 61.69 ms│   16%│  2.67 G│
+│  00:00:02│  00:00:10│997.38 ms│    0.11│  1158080848│  1.15 G│   714229158│840.88 ms│   84%│849.38 M│   443851690│156.49 ms│   16%│  2.84 G│
+│  00:00:03│  00:00:30│998.06 ms│    0.05│    71030255│ 70.95 M│    56546115│949.91 ms│   95%│ 59.53 M│    14484140│ 48.15 ms│    5%│300.84 M│
+│  00:00:04│  00:00:49│997.34 ms│    0.05│    69869598│ 69.78 M│    56185665│949.43 ms│   95%│ 59.18 M│    13683933│ 47.91 ms│    5%│285.62 M│
+│  00:00:05│  00:00:56│997.45 ms│    0.16│  3271646626│  3.27 G│  3244559622│967.68 ms│   97%│  3.35 G│    27087004│ 29.77 ms│    3%│910.00 M│
+│  00:00:06│  00:00:57│997.85 ms│    0.82│   919200160│917.96 M│   653789980│712.32 ms│   71%│917.83 M│   265410180│285.53 ms│   29%│929.55 M│
+│  00:00:07│  00:00:59│998.80 ms│    0.41│   603301058│603.17 M│   305625523│566.57 ms│   57%│539.43 M│   297675535│432.24 ms│   43%│688.69 M│
+│  00:00:08│  00:00:60│999.04 ms│    1.51│  2209183348│  2.21 G│  1128067814│442.09 ms│   44%│  2.55 G│  1081115534│556.95 ms│   56%│  1.94 G│
+</pre><p>
+</p><div class="caption">Figure 25. Sample probe-monitor session</div>
+</div>
+  
+<p>
+  Here, first a probe-monitor is created, that gets the name <code>pm0</code> by default.
+  The probe-monitor samples the probes each wallclock seconds, which is controlled by the
+  <code>mode</code> and <code>interval</code> arguments.
+</p><p>
+  The <code>-summary</code> flag means all probe values will be displayed
+  when the simulation stops, providing the session or current value
+  for the probes subscribed to, described later.
+</p><p>
+  Next, the <b>pm0.add-probe</b> is issued with two probes using
+  the mode <code>session</code>.  If mode is not specified, it defaults
+  to <code>delta</code> meaning the value presented for the probe is the
+  difference from the previous sample. That is, it shows the value for
+  the sample only.  With the <code>session</code> mode, it instead shows
+  the total value since the probe was added to the monitor. In this case,
+  the accumulated times, both in host wall-clock and the virtual time
+  of the simulated system is displayed.
+  </p><p>
+  Apart from <code>session</code> and <code>delta</code> there is also
+  the <code>current</code> mode which can be selected, which displays the
+  plain probe value, without any adjustments. The <code>current</code>
+  mode is interesting for some probes, which are not monotonically
+  increasing, such as a temperature. It can also be interesting to be
+  used for probes derived from checkpointed state, for example the
+  global virtual time, when the user wants to see the absolute time.
+</p><p>
+  Finally, before the execution is started we add more probes,
+  now using the default <code>delta</code> mode. Here we are mixing
+  some global probes <code>sim.*</code> and some processor specific
+  probes <code>cpu.*</code>. Since there are two host processors
+  in this example, all probes sums up to 14 probes being monitored.
+</p><p>
+  When the simulation is started, the probe-monitor starts to print
+  out table rows for the probes being measured, one second between
+  each sample. Probes which have an object associated will be
+  sorted under that object, so here probes for the two processors
+  have an additional heading showing where the probes belongs.
+</p><p>
+  Some more detailed information on each column or probe, that was monitored
+  in this example.
+</p><p>
+  </p><dl><dt id="dt:session-wallclock-hh-mm-ss-sim-time-wallclock"><b>Session Wallclock (hh:mm:ss) - <i>sim.time.wallclock</i></b></dt><dd>This is basically the host time that has elapsed during the
+      simulation.  Note that this time stands still if Simics is not
+      executing.  If the true wallclock is desired (which increments
+      even when Simics is not simulating), the
+      probe <code>host.time.wallclock</code> can be used instead.  The
+      time here is presented as hours, minutes and second format.
+    </dd><dt id="dt:session-virtual-time-hh-mm-ss-sim-time-virtual"><b>Session Virtual-Time (hh:mm:ss) - <i>sim.time.virtual</i></b></dt><dd>This probe returns the virtual time of the simulation.  The
+      virtual time for all processors are pretty much in sync, but
+      there can be small differences. The probe simply selects the
+      first processor that it finds and presents that.  Similar to
+      wall clock, and all <code>session</code> or
+      <code>current</code> times are presented in hours, minutes and
+      second format.
+    </dd><dt id="dt:sched-s-sim-time-schedule"><b>Sched (s) - <i>sim.time.schedule</i></b></dt><dd>This is another aspect of time in Simics, namely how much time
+      that Simics scheduler have requested the different processor to
+      be scheduled in total. In a multi-threaded simulation this time
+      can be much greater than the wallclock time, since each
+      execution thread can run in parallel.  The monitor presents any
+      delta times with a second metric-prefix, giving much higher
+      resolution.
+    </dd><dt id="dt:slowdown-sim-slowdown"><b>Slowdown - <i>sim.slowdown</i></b></dt><dd>The slowdown probes gives an measurement on how fast virtual
+      time elapses compared to wallclock time. Any value below one
+      means that the virtual time goes faster then the host wallclock.
+      This provides a hint on how fast the simulation is.
+      <p>
+      A value of 0.5 means Simics simulation goes twice as fast as the
+      simulated virtual system, while a figure of 2.0 means the simulation goes in
+      half the speed compared to the simulated system. 
+</p><p>
+      </p><div class="note">
+<b>Note:</b>
+Don't take this figure for any kind of exactness to the real system,
+	sim.time.virtual depends on:
+	<ul>
+	  <li>The frequency of the simulated processors.</li>
+	  <li>A simplistic timing models where typically one
+	    instruction always takes one cycle to execute.</li>
+	  <li>Device models are also typically simplistic on how fast
+	    transfers and interrupts occur.</li>
+	  <li>Idle processor can typically consume cycles almost
+	    infinitely fast, which does not happen in real
+	    hardware.</li>
+	</ul>
+	How fast Simics executes also depends on how many processors
+	it schedules, the processor models, the type of workload,
+	threading settings, internal caches and much more.
+	Thus, one needs to take the slowdown figure with a grain of
+	salt, before comparing with other sessions, or even with
+	just with different workloads.
+      </div></dd><dt id="dt:esteps-sim-esteps"><b>Esteps - <i>sim.esteps</i></b></dt><dd>Steps in Simics are roughly equivalent to instructions.  Some
+      processor models however can consume steps while they are
+      stalled. Therefore, the esteps (executed steps) metric is better
+      suited for counting instructions, where the halt-steps have been
+      subtracted from the steps counter.  The simulator
+      global <code>sim.esteps</code> is the total of
+      all <code>cpu.esteps</code> in the system.
+    </dd><dt id="dt:ips-sim-mips"><b>IPS - <i>sim.mips</i></b></dt><dd>(M)IPS is an acronym of (Million) Instructions Per
+      Second. This is a common measurement for looking at the how fast
+      the simulation is. It is calculated as <code>sim.esteps /
+      sim.time.wallclock</code>. Note that, depending on the simulation
+      speed, other prefixes then <code>M</code> is used each sample, for
+      example <code>G</code> for GIPS, or <code>k</code> for kIPS.
+    </dd><dt id="dt:esteps-cpu-esteps"><b>Esteps - <i>cpu.esteps</i></b></dt><dd>The processor specific number of executed steps.
+    </dd><dt id="dt:sched-s-cpu-time-schedule"><b>Sched (s) - <i>cpu.time.schedule</i></b></dt><dd>The amount of time Simics scheduler has scheduled this processor.
+    </dd><dt id="dt:sched-cpu-schedule_percent"><b>Sched% - <i>cpu.schedule_percent</i></b></dt><dd>This probe gives a percent value of how much of the time this
+      processor has been scheduled
+      <code>cpu.time.schedule / sim.time.schedule</code>
+      This can be used to detect bottle-necks in the simulation, if
+      one processor stands for the majority of the time.
+    </dd><dt id="dt:ips-cpu-mips"><b>IPS - <i>cpu.mips</i></b></dt><dd>This probe might look like <code>sim.mips</code> but is actually a
+      bit different.  The processor specific MIPS number is calculated
+      as:
+      <code>cpu.esteps / cpu.time.schedule</code>.  This means that the
+      MIPS numbers here cannot be added together.  Instead this gives
+      an indication of how fast this particular processor executes,
+      given the amount of time it got.  This can be used to detect
+      sub-optimal processor simulation even if the processor runs at a
+      much lower frequency, and consequently is not scheduled as much.
+    </dd></dl><p>When the simulation is finished, the probe-monitor shows a table
+  of all the probes that is monitored provides the current
+  value for all probes, see figure <a class="reference" href="#pm-summary-example">26</a> for
+  the example output.
+  </p><p>
+  </p><div class="figure" id="pm-summary-example">
+
+    <pre class="jdocu_small">┌─────┬────────────┬────────────────────┬────────────────────────┬───────────────────────┐
+│Row #│Display Name│     Probe Name     │         Object         │Session Formatted Value│
+├─────┼────────────┼────────────────────┼────────────────────────┼───────────────────────┤
+│    1│Wallclock   │sim.time.wallclock  │Global                  │            00:00:08.16│
+│    2│Virtual-Time│sim.time.virtual    │Global                  │            00:01:00.00│
+│    3│Sched       │sim.time.schedule   │Global                  │            00:00:07.57│
+│    4│Slowdown    │sim.slowdown        │Global                  │                   0.14│
+│    5│Esteps      │sim.esteps          │Global                  │             9550122021│
+│    6│IPS         │sim.mips            │Global                  │                 1.17 G│
+│    7│Esteps      │cpu.esteps          │board.mb.cpu0.core[0][0]│             6959267798│
+│    8│Sched       │cpu.time.schedule   │board.mb.cpu0.core[0][0]│            00:00:05.88│
+│    9│Sched%      │cpu.schedule_percent│board.mb.cpu0.core[0][0]│                 77.73%│
+│   10│IPS         │cpu.mips            │board.mb.cpu0.core[0][0]│                 1.18 G│
+│   11│Esteps      │cpu.esteps          │board.mb.cpu0.core[1][0]│             2590854223│
+│   12│Sched       │cpu.time.schedule   │board.mb.cpu0.core[1][0]│            00:00:01.69│
+│   13│Sched%      │cpu.schedule_percent│board.mb.cpu0.core[1][0]│                 22.27%│
+│   14│IPS         │cpu.mips            │board.mb.cpu0.core[1][0]│                 1.54 G│
+└─────┴────────────┴────────────────────┴────────────────────────┴───────────────────────┘
+</pre><p>
+</p><div class="caption">Figure 26. Probe-Monitor Summary Printout</div>
+</div>
+  
+<p>
+  The <i>Session Formatted Value</i> represents the probe value
+  formatted accordingly to the probe properties. If probes have been
+  added with the <code>current</code> mode and additional <i>Current
+  Formatted Value</i> column is also displayed.
+  </p><p>
+  It is also possible to get the same results printed out with
+  the <b>pm0.summary</b> command, where it is possible to request
+  more floating point decimals to be presented with
+  the <code>float-decimals</code> argument.
+</p><p>
+  The <b>pm0.status</b> shows the settings of the probe-monitor,
+  including which probes that are currently monitored.  Probes can be
+  removed with the <b>pm0.remove-probe</b> command and it is possible
+  to change the sampling settings of the probe-monitor itself with
+  the <b>pm0.sampling-settings</b> command.
+  </p><p>
+  While the probe-monitor prints out the table data why it executes,
+  all data is also saved internally.  To show the entire history of
+  all samples, the <b>pm0.print-table</b> can be used and the data
+  can also be saved into a <code>.csv</code> with
+  the <b>pm0.export-table-csv</b> command. Any data in the csv
+  file will be unformatted, allowing easily import in a spreadsheet
+  for further analyses.
+</p>
+<div class="chain">
+<a href="probes-command-set.html">10.1 Probes Command Set</a>
+<a href="probe-streamer.html">10.3 Probe Streamer</a>
+</div>

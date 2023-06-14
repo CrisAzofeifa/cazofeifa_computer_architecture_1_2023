@@ -1,0 +1,131 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.7 test-runner</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="checkpoint-merge.html">2.6 checkpoint-merge</a>
+<a href="project-setup-model-builder-functionality.html">2.8 project-setup Model Builder functionality</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="command-line-tools-and-programs.html">2 Command-Line Tools and Programs</a>
+&nbsp;/&nbsp;</div>
+<h1 id="test-runner">2.7 <a href="#test-runner">test-runner</a></h1>
+<article class="not-numbered not-in-toc doc-item">
+<h2 id="synopsis"><a href="#synopsis">SYNOPSIS</a></h2>
+<pre><code>test-runner [options] [suite-pattern ...]
+</code></pre>
+<h2 id="description"><a href="#description">DESCRIPTION</a></h2>
+<p>List or run Simics tests.</p>
+<p>Simics tests are placed in <em>test suites</em>, which are directories containing a
+<code>SUITEINFO</code> file. By default, the <code>test-runner</code> command searches for test
+suites in the directories <code>test</code>, <code>targets</code> and <code>modules</code> of the Simics
+project, and in the <code>test</code> directory of installed Simics packages.</p>
+<p>If the program is run with the flag <code>--list</code>, the names of all found test
+suites are listed:</p>
+<pre><code>$ ./bin/test-runner --list
+modules/bar/test
+modules/foo/test
+test/t15_checkpoints: [simics]/test/t15_checkpoints
+</code></pre>
+<p>The name of a suite is the path of the directory, relative to the project
+or Simics installation path, using / as directory separator. If the test
+suite is located in the Simics installation, then the absolute path is
+printed as well.</p>
+<p>The flag <code>--test</code> can be used to list the individual tests of each test suite: </p>
+<pre><code>$ ./bin/test-runner --tests --suite=modules/bar/test
+Suite: modules/foo/test
+    s-foo
+    s-info-status
+</code></pre>
+<p>If neither <code>--list</code> nor <code>--tests</code> is passed, all found test suites will be
+run. For example, the command <code>./bin/test-runner --suite=modules/bar/test</code>
+will run all tests of the test suite <code>modules/bar/test</code>. If <code>test-runner</code>
+is run with no arguments, then all tests in all test suites will be run.</p>
+<p>Other than the argument <code>--suite</code>, a <em>suite pattern</em> can also be used to
+filter test suites. If one or more suite patterns are provided, only the
+suites matching at least one of the patterns will be run. A suite matches
+a suite pattern if the pattern is a substring of the suite's name. For
+example, if there is a suite <code>modules/foo/test</code>, then the command
+<code>./bin/test-runner foo</code> will run that suite, and possibly other suites as well.</p>
+<p>When an environment variable <code>TEST_PATTERN</code> is set, the value will be used as
+a pattern to filter the tests to be run within the test suite. The pattern is
+interpreted according to Python's regular expression syntax. For example, if
+the variable is set as <code>export TEST_PATTERN="s-.+DMA-"</code>, then <code>test-runner</code>
+will run tests named <code>s-xyz-DMA-read</code> and <code>s-abc-DMA-write</code>, and skip tests
+named <code>Xs-xyz-DMA-read</code> or <code>s-abc-DMAwrite</code>.</p>
+<p>The variable can also be set to multiple patterns with the semicolon as a
+separator, e.g. <code>export TEST_PATTERN="pattern0;pattern1"</code>. This will run tests
+that match any one of the given patterns.</p>
+<p>By default, all tests run sequentially. When the <code>-j</code> option is passed,
+automatically added <code>s-*.py</code> scripts, may be executed in parallel. The tests
+will be executed in an unspecified order, so <code>-j</code> should only be used if you
+know that there are no dependencies between the tests of the suite.</p>
+<h2 id="options"><a href="#options">OPTIONS</a></h2>
+<dl>
+<dt id="dt:h-help"><tt>-h, --help</tt></dt>
+<dd>show this help message and exit</dd>
+<dt id="dt:details"><tt>--details</tt></dt>
+<dd>print detail help information</dd>
+<dt id="dt:logdir"><tt>--logdir</tt></dt>
+<dd>the directory tests save logfiles in, defaults to [project]/logs/tests</dd>
+<dt id="dt:basedir"><tt>--basedir</tt></dt>
+<dd>the base directory where the modules containing the tests exist, defaults to 'modules'</dd>
+<dt id="dt:moduledirs"><tt>--moduledirs</tt></dt>
+<dd>directories with modules containing tests,separated by ';'</dd>
+<dt id="dt:project-only"><tt>--project-only</tt></dt>
+<dd>disable the tests from Simics packages</dd>
+<dt id="dt:l-list"><tt>-l, --list</tt></dt>
+<dd>list the suites matching the patterns</dd>
+<dt id="dt:t-tests"><tt>-t, --tests</tt></dt>
+<dd>list tests matching the given patterns</dd>
+<dt id="dt:tag-tag"><tt>--tag TAG</tt></dt>
+<dd>Run all suites where a tag in SUITEINFO matches TAG</dd>
+<dt id="dt:suite-suite"><tt>--suite SUITE</tt></dt>
+<dd>specify a test suite to be executed</dd>
+<dt id="dt:n-name-name-name"><tt>-n NAME, --name NAME</tt></dt>
+<dd>specify a test name to be executed</dd>
+<dt id="dt:j-n-jobs-n"><tt>-j N, --jobs N</tt></dt>
+<dd>run up to N Simics script tests in parallel in each test suite; N will be automatically set to the number of processors on the machine if not specified</dd>
+<dt id="dt:v-verbose"><tt>-v, --verbose</tt></dt>
+<dd>print more verbose information when running</dd>
+<dt id="dt:py3"><tt>--py3</tt></dt>
+<dd>Deprecated, no effect.</dd>
+<dt id="dt:py2"><tt>--py2</tt></dt>
+<dd>Deprecated, no effect.</dd>
+</dl>
+<h2 id="return-value"><a href="#return-value">RETURN VALUE</a></h2>
+<p>The exit status is 0 if selected test suites succeed, 1 if there is an
+internal error, and 2 if any test fails.</p>
+<h2 id="see-also"><a href="#see-also">SEE ALSO</a></h2>
+<p>The test framework in the <em>API Reference Manual</em>.</p>
+</article>
+
+<div class="chain">
+<a href="checkpoint-merge.html">2.6 checkpoint-merge</a>
+<a href="project-setup-model-builder-functionality.html">2.8 project-setup Model Builder functionality</a>
+</div>

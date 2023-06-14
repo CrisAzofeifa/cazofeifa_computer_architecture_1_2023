@@ -1,0 +1,255 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.13 Linux Tracker</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="os-awareness-limitations.html">2.12 Limitations</a>
+<a href="cpumode-tracker.html">2.14 CPU Mode Tracker</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="linux-tracker">2.13 <a href="#linux-tracker">Linux Tracker</a></h1>
+<p>The Linux tracker tracks processes and threads in Linux.</p>
+<p>When a processor runs an address that is considered to be in kernel space, processor nodes will be created under the Other node (see <a class="reference" href="#linux-tracker-tree">2</a>) and they will be set as active. Once the OS has come far enough in the boot process for the first processes to start, the tracker will consider the system booted and the Linux tracker will add nodes for processes and threads to form a tree like the one shown in figure <a class="reference" href="#linux-tracker-tree">2</a>.</p>
+<h2 id="node-tree">2.13.1 <a href="#node-tree">Node Tree</a></h2>
+<p>This section describes how the Linux system is represented as a node tree. Figure <a class="reference" href="#linux-tracker-tree">2</a> shows an example of the Linux node tree representation.</p>
+<figure id="linux-tracker-tree">
+<p><img alt="" src="linux-tracker-tree.png"></p><figcaption>Figure 2. Node tree of a Linux tracker</figcaption><p></p>
+</figure>
+<p>There are ten different kinds of nodes: </p>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:kernel-node">Kernel node</span><br>
+(Node 1 in figure <a class="reference" href="#linux-tracker-tree">2</a>.) This node represent the kernel half of Linux. Each processor currently executing in kernel space will be active on this node.</p>
+</li>
+<li>
+<p><span class="term" id="dt:other-node">Other node</span><br>
+(Node 3 in figure <a class="reference" href="#linux-tracker-tree">2</a>.) This node is used to group activity that is not being represented by any of the other nodes. For example when a user space process does a system call.</p>
+</li>
+<li>
+<p><span class="term" id="dt:other-node-s-child-nodes">Other node's child nodes</span><br>
+(Nodes 6 and 7 in figure <a class="reference" href="#linux-tracker-tree">2</a>.) For each processor that is available to the system a new node will be created here.</p>
+</li>
+<li>
+<p><span class="term" id="dt:threads-node">Threads node</span><br>
+(Node 5 in figure <a class="reference" href="#linux-tracker-tree">2</a>.) This node is used to group all kernel threads under one node. If a kernel thread is currently active, so will this node be.</p>
+</li>
+<li>
+<p><span class="term" id="dt:kernel-thread-nodes">Kernel thread nodes</span><br>
+(Node 10 in figure <a class="reference" href="#linux-tracker-tree">2</a>.) A new kernel thread node is created for each new kernel thread. When the task is terminated, the node is destroyed. When the kernel thread is executing, this node will be active. Thread nodes have the following extra properties in addition to the standard ones: </p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:tid">tid</span><br>
+The integer tid ("thread ID") associated with the thread. This is unique in the whole OS instance.</li>
+</ul>
+</div>
+</li>
+<li>
+<p><span class="term" id="dt:idle-node">Idle node</span><br>
+(Node 4 in figure <a class="reference" href="#linux-tracker-tree">2</a>.) This node is used to group activity that is identified as the system being idle. If a processor is idling then this node will be active.</p>
+</li>
+<li>
+<p><span class="term" id="dt:idle-node-s-child-nodes">Idle node's child nodes</span><br>
+(Nodes 8 and 9 in figure <a class="reference" href="#linux-tracker-tree">2</a>.) For each processor that is available to the system a new node will be created here. It will be active when the processor is identified as being idle. This is approximated by the time when a swapper task is running on the specific processor.</p>
+</li>
+<li>
+<p><span class="term" id="dt:userspace-node">Userspace node</span><br>
+(Node 2 in figure <a class="reference" href="#linux-tracker-tree">2</a>.) All processors executing in user-space will be active on this node.</p>
+</li>
+<li>
+<p><span class="term" id="dt:process-nodes">Process nodes</span><br>
+(Nodes 11, 21, 23, and 25. in figure <a class="reference" href="#linux-tracker-tree">2</a>.) Immediately below the user-space node, there is one process node for each process in the system. A new process node is created for each new process, and when a process is terminated, its node is destroyed. Process nodes have the following extra properties in addition to the standard ones: </p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:binary">binary</span><br>
+A string containing the path to the binary that the process is running. This property will only exist if the binary is known.</li>
+<li><span class="term" id="dt:pid">pid</span><br>
+A list containing the pid of this process. This is the same as the thread group ID. </li>
+</ul>
+</div>
+</li>
+<li>
+<p><span class="term" id="dt:process-thread-nodes">Process thread nodes</span><br>
+(Nodes 12, 22, 24, 26, and 27 in figure <a class="reference" href="#linux-tracker-tree">2</a>.) Immediately below each process node is one or more thread nodes representing the threads in the process. Just like the process nodes, these are created and destroyed on demand. Thread nodes have the following extra properties in addition to the standard ones: </p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:pid-2">pid</span><br>
+The integer pid ("process ID") associated with the thread. This is the same for all threads in a process and matches pid for the parent process node.</li>
+<li><span class="term" id="dt:tid-2">tid</span><br>
+The integer tid ("thread ID") associated with the thread. This is unique in the whole OS instance.</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<h2 id="commands">2.13.2 <a href="#commands">Commands</a></h2>
+<p>The Linux tracker composition object includes some useful commands. Use the <code>help</code> command for a specific command to get more detailed information about that command.</p>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:detect-parameters">detect-parameters</span><br>
+Detect parameters to be used by the Linux tracker. The system has to be booted for detection to succeed and for some systems kernel debug information must be provided in order for the tracker to be able to detect parameters. Use the <code>-load</code> flag to load the detected parameters directly and the <em>param-file</em> argument to save the parameters to disk. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.tracker.detect-parameters symbol-file=System.map -load param-file=detect.params</strong>
+[board.software.tracker.tracker_obj info] Detecting settings using 1 processor(s)
+[board.software.tracker.tracker_obj info] Failed to detect kernel module parameters
+[board.software.tracker.tracker_obj info] Successfully detected parameters
+Saved autodetected parameters to detect.params
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:load-parameters">load-parameters</span><br>
+Load configuration parameters for the Linux tracker from a file. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.tracker.load-parameters detect.params</strong>
+
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:save-parameters">save-parameters</span><br>
+Save the current configuration parameters to a file. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.tracker.save-parameters saved.params</strong>
+
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:supports-parameters">supports-parameters</span><br>
+Check if a parameters file is supported by the Linux tracker. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.tracker.supports-parameters saved.params</strong>
+Parameters of kind linux_tracker are supported by board.software.tracker
+</code></pre>
+</li>
+<li>
+<p><span class="term" id="dt:log-syscalls">log-syscalls</span><br>
+Log system calls made by the Linux system. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.tracker.log-syscalls</strong>
+
+simics&gt; <strong>c</strong>
+[board.software.tracker.mapper_obj info] Syscall: 'nanosleep' (35) on node 944 (board.mb.cpu0.core[0][0])
+</code></pre>
+</li>
+</ul>
+</div>    
+<h2 id="availability">2.13.3 <a href="#availability">Availability</a></h2>
+<p>This section gives an overview of systems that are known to work for the Linux tracker. It has been tested on many systems in order to verify that it works using the Linux kernel versions listed in the figure <a class="reference" href="#linux-kernel-versions">3</a>. However, as it is dependent on specific kernel configuration it may not work for a given system even if the kernel version is the same. Even if a kernel version is not listed here as tested it might still work with the tracker.</p>
+<p>The following keywords are used in figure <a class="reference" href="#linux-kernel-versions">3</a> and figure <a class="reference" href="#linux-system-versions">4</a>:</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:kernel-thread">Kernel thread</span><br>
+Indicates if the tracker supports tracking individual kernel threads.</li>
+</ul>
+</div>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:arch">Arch</span><br>
+The target architecture.</li>
+</ul>
+</div>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:version">Version</span><br>
+Indicates the operating system version, or distribution version known to work.</li>
+</ul>
+</div>
+<figure id="linux-kernel-versions">
+<table><thead><tr></tr></thead><tbody>
+<tr><td>Arch</td><td>Version</td><td>Kernel threads</td></tr>
+<tr><td>arcv2</td><td>4.2</td><td>yes</td></tr>
+<tr><td>arm32</td><td>2.6</td><td>no</td></tr>
+<tr><td>arm32</td><td>3.3</td><td>no</td></tr>
+<tr><td>arm64</td><td>5.0</td><td>no</td></tr>
+<tr><td>mips64</td><td>2.6</td><td>yes</td></tr>
+<tr><td>ppc32</td><td>2.6</td><td>yes</td></tr>
+<tr><td>ppc32</td><td>3.8</td><td>yes</td></tr>
+<tr><td>ppc64</td><td>2.6</td><td>no</td></tr>
+<tr><td>x86</td><td>2.6</td><td>no</td></tr>
+<tr><td>x86</td><td>3.7</td><td>no</td></tr>
+<tr><td>x86_64</td><td>2.6</td><td>no</td></tr>
+<tr><td>x86_64</td><td>4.18</td><td>no</td></tr>
+</tbody></table>
+<figcaption>Figure 3. Tested Linux Kernel Versions</figcaption>
+</figure>
+<figure id="linux-system-versions">
+<table><thead><tr></tr></thead><tbody>
+<tr><td>Arch</td><td>Version</td></tr>
+<tr><td>arm32</td><td>Wind River Linux 4.3</td></tr>
+<tr><td>ppc32</td><td>Wind River Linux 3.0</td></tr>
+<tr><td>ppc32</td><td>Wind River Linux 4.3</td></tr>
+<tr><td>ppc32</td><td>Wind River Linux 5.0</td></tr>
+<tr><td>ppc64</td><td>Wind River Linux 5.0</td></tr>
+<tr><td>x86</td><td>Wind River Linux 4.3</td></tr>
+<tr><td>x86_64</td><td>Wind River Linux 3.0</td></tr>
+<tr><td>x86_64</td><td>Wind River Linux 4.0</td></tr>
+<tr><td>x86_64</td><td>Wind River Linux 4.3</td></tr>
+</tbody></table>
+<figcaption>Figure 4. Supported Linux Systems</figcaption>
+</figure>
+<h2 id="system-calls">2.13.4 <a href="#system-calls">System Calls</a></h2>
+<p>The Linux tracker will generate events (see section <a class="reference" href="event-system.html">2.6</a>) when system calls are made in the target software. The name of the event will be <em>"syscall"</em>. A system call notification can be registered in the following way:</p>
+<pre><code>
+notify_event(node_id, "syscall", recursive, syscall_cb, data)
+</code></pre>
+<p>The <em>event_data</em> argument of the callback will be a dictionary containing the system call number and name: </p>
+<pre><code>{'name': &lt;name&gt;, 'number': &lt;number&gt;}
+</code></pre>
+<p>The Linux tracker will try to translate the system call number into the system call name, such as <code>fork</code> or <code>write</code>, if no translation is available the name will be <code>unknown</code>.</p>
+<h2 id="kernel-modules">2.13.5 <a href="#kernel-modules">Kernel Modules</a></h2>
+<p>The Linux tracker can be used to track which kernel modules are loaded and at what addresses their sections are loaded at. This information will then be provided to the debugger. This feature is only supported for x86-64 and arm64 architectures, but could potentially work for other architectures as well.</p>
+<p>There is a <code>&lt;linux_tracker&gt;.list-kernel-modules</code> command on the Linux tracker object and the tracker composition object. This can be used to display all known modules and their sections. Use <code>help</code> on that command for options.</p>
+<p>In order for kernel modules to be tracked, parameter detection (see <a class="reference" href="#system-configuration">2.13.6</a>) symbols have to be provided and must contain the 'modules' symbol. If plain symbols (usually <code>kallsyms</code> or <code>System.map</code>) are provided, then there must be at least one kernel modules inserted and live in order to be able to find kernel modules parameters. Also it is likely needed that at least one processor is running the kernel while performing the detection. If an ELF symbol file (usually <code>vmlinux</code>) with debug information is provided then kernel module parameters can be found without having to have any module currently loaded.</p>
+<p>Kernel modules will be included by default in the parameters if found, but can be enforced to be found by using the <em>kernel-modules</em> argument to the <code>&lt;linux_tracker&gt;.detect-parameters</code> command and setting it to <code>TRUE</code>. Detection will then fail if kernel module parameters are not found. To leave out tracking kernel modules, instead set this argument to <code>FALSE</code>.</p>
+<p>In order for the debugger to be able to find the kernel module binaries, the <code>&lt;linux_tracker&gt;.set-kernel-module-path</code> can be used. This should specify the base directory on the host where the kernel module binaries (with <code>.ko</code> extension) that should be debugged on the target system are located. That directory and it's sub-directories will be scanned for kernel modules and then they will be matched against modules found by the tracker. In order for modules to be matched with files under this path, the file must be named as the kernel module, with the exception that the file can have a dash (<code>-</code>) where the name has an underscore (<code>_</code>), and excluding the <code>.ko</code> suffix.</p>
+<p>When the kernel module path is passed to the debugger it will apply any added path maps to the path, meaning that this can be re-mapped to another location using the debugger's <code>add-pathmap-entry</code> command.</p>
+<p>Another way to debug one or a few kernel modules is to apply path maps for each kernel module name, to the matching kernel module <code>.ko</code> binary on disk. Something like: </p>
+<pre><code> add-pathmap-entry foo_module /tmp/kernel-build/modules/foo-module.ko
+</code></pre>
+<p>Kernel modules can usually not be found if the tracker is enabled while all processors are running outside of the kernel. When that occurs, finding the initial kernel modules will be postponed until a processor has entered the kernel and proper page tables are loaded.</p>
+<h2 id="system-configuration">2.13.6 <a href="#system-configuration">System Configuration</a></h2>
+<p>The Linux tracker depends on its parameters file in order to know how to track the target software. If the target software is updated with a new or reconfigured kernel the parameters needs to be regenerated. This can be done with the <code>detect-parameters</code> command. In order for the parameters detection to work the Linux system must be booted. The <code>detect-parameters</code> command may also require some arguments in order to succeed with the detection, see the build-in help for further details. Use the <code>-load</code> flag to load the detected parameters directly.</p>
+<p>If the system does not contain any OS Awareness software object at all, the system will have to be configured as described in section <a class="reference" href="os-awareness-scripts.html">2.9</a>. After the OS Awareness object has been created, the Linux tracker composition objectcan be added with the <code>insert-tracker</code> command. The <em>tracker</em> argument should be the <code>linux_tracker_comp</code> module.</p>
+<h2 id="limitations">2.13.7 <a href="#limitations">Limitations</a></h2>
+<ul>
+<li>The Linux <code>detect-parameters</code> command can in rare cases take up to ten minutes to complete.</li>
+<li>Trackers that support kernel space information only provide a best effort view. The tracker will only show what the OS reports as active, it will not trace exceptions, interrupts, short lived work that is re-using another context, etc that does not cause a context switch. In addition to that, a userspace process executing in the kernel space will report its activity under the Other node.</li>
+<li>The <a class="reference" href="#availability">2.13.3</a> section list system configurations that the tracker is known to work on; it may very well work on other systems as well. However, even small configuration changes (especially kernel configuration options and shell) may cause the tracker to not work on the same kernel; this is usually not a problem.</li>
+<li>Shutting down or rebooting an OS while having an active tracker is not supported.</li>
+<li>Process relationship, such as a process' parent, children, or siblings, is not exposed in the node tree.</li>
+<li>The MIPS64 Linux tracker can only find the current task when breaking at the <code>finish_task_switch</code> function. So no tasks will be found directly after a <code>enable-tracker</code> command, instead tasks will be found after that function has run.</li>
+<li>The MIPS64 tracker requires a symbol file containing the <code>finish_task_switch</code> symbol when detecting parameters.</li>
+<li>The ARCv2 tracker requires a symbol file containing the <code>_current_task</code> symbol when detecting parameters.</li>
+<li>The ARM64 tracker can only track 64-bit tasks correctly. For 32-bit tasks syscalls and binary properties will be incorrect.</li>
+<li>The tracker will not work for an ARM 32-bit Linux running on an ARM64 processor.</li>
+<li>For x86-64 there is limited support for a Linux target that runs KVM guests. The tracker will ignore any haps or memory accesses that the guest performs, but no tracking of the guest is available. This support can be disabled by clearing the <code>enable_vm_support</code> attribute.</li>
+<li>For other targets than x86-64 there is no support for Linux targets with KVM guests running.</li>
+<li>Kernels with randomized base (<code>RANDOMIZE_BASE</code> kernel configuration option) are only supported for x86-64.</li>
+</ul>
+
+<div class="chain">
+<a href="os-awareness-limitations.html">2.12 Limitations</a>
+<a href="cpumode-tracker.html">2.14 CPU Mode Tracker</a>
+</div>

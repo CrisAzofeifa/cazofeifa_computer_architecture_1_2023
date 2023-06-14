@@ -1,0 +1,1611 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>6 Haps</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-xterm-console.html">xterm-console</a>
+<a href="rm-modules.html">7 Modules</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="haps">6 <a href="#haps">Haps</a></h1>
+<article class="not-numbered">
+<h2 id="Arinc429_Word"><a href="#Arinc429_Word">Arinc429_Word</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type">
+<a href="#callback-type">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+This hap is triggered on every word sent on a arinc429_bus object. In the hap handler, the last_word attribute can be read or modified. Setting it to -1 will drop the packet.</section>
+<h2 id="CLI_Command_Added"><a href="#CLI_Command_Added">CLI_Command_Added</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-2">
+<a href="#callback-type-2">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *command_name);
+</pre>
+<h3 id="description-2">
+<a href="#description-2">Description</a>
+</h3>
+Triggered when a CLI command is defined.</section>
+<h2 id="Component_Change"><a href="#Component_Change">Component_Change</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-3">
+<a href="#callback-type-3">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-3">
+<a href="#description-3">Description</a>
+</h3>
+Internal: Similar to Component_Hierarchy_Change but also triggered for components that are not part of any complete hierarchy including non-instantiated components.</section>
+<h2 id="Component_Hierarchy_Change"><a href="#Component_Hierarchy_Change">Component_Hierarchy_Change</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-4">
+<a href="#callback-type-4">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          conf_object_t *top_level_component);
+</pre>
+<h3 id="description-4">
+<a href="#description-4">Description</a>
+</h3>
+Internal: Triggered when an instantiated component hierarchy is modified. The hap is associated with the top-level component of the modified hierarchy.</section>
+<h2 id="Console_Break_String"><a href="#Console_Break_String">Console_Break_String</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-5">
+<a href="#callback-type-5">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *break_string);
+</pre>
+<h3 id="index">
+<a href="#index">Index</a>
+</h3>
+<code>break_id</code>
+<h3 id="description-5">
+<a href="#description-5">Description</a>
+</h3>
+Triggered when the output matches a string set to break on. The <i>break_id</i> is the number associated with the string breakpoint.</section>
+<h2 id="Core_Address_Not_Mapped"><a href="#Core_Address_Not_Mapped">Core_Address_Not_Mapped</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-6">
+<a href="#callback-type-6">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  physical_address,
+          int64  access_type,
+          int64  size);
+</pre>
+<h3 id="description-6">
+<a href="#description-6">Description</a>
+</h3>
+Triggered when an access to a memory-space has no target and the access does not match any entry in the <tt>outside_memory_whitelist</tt> CPU attribute. The default handler for this hap will signal an error and stop the simulation.</section>
+<h2 id="Core_Asynchronous_Trap"><a href="#Core_Asynchronous_Trap">Core_Asynchronous_Trap</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-7">
+<a href="#callback-type-7">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  trap_number);
+</pre>
+<h3 id="index-2">
+<a href="#index-2">Index</a>
+</h3>
+<code>trap_number</code>
+<h3 id="description-7">
+<a href="#description-7">Description</a>
+</h3>
+SPARC: Triggered when an asynchronous trap occurs. This is either an external interrupt <i>trap number</i> == 0x60 or interrupt level n <i>trap number</i> 0x41 - 0x4F, or an asynchronous trap initiated by the user calling trap_cpu in the sparc-interrupt interface. The Core_External_Interrupt can also be used to catch interrupts, the difference is that Core_Asynchronous_Trap is only triggered if interrupts are enabled.</section>
+<h2 id="Core_At_Exit"><a href="#Core_At_Exit">Core_At_Exit</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-8">
+<a href="#callback-type-8">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-8">
+<a href="#description-8">Description</a>
+</h3>
+Triggered, typically by <tt>SIM_quit</tt>, when Simics exits. The Simics API is not allowed to be used in the hap callbacks (see the Core_Clean_At_Exit hap description if access to the Simics API is needed).</section>
+<h2 id="Core_Back_To_Front"><a href="#Core_Back_To_Front">Core_Back_To_Front</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-9">
+<a href="#callback-type-9">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-9">
+<a href="#description-9">Description</a>
+</h3>
+Deprecated.</section>
+<h2 id="Core_Breakpoint_Change"><a href="#Core_Breakpoint_Change">Core_Breakpoint_Change</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-10">
+<a href="#callback-type-10">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-10">
+<a href="#description-10">Description</a>
+</h3>
+Triggered on an object when breakpoints attached to that object are inserted, deleted or changed in any way.</section>
+<h2 id="Core_Breakpoint_Memop"><a href="#Core_Breakpoint_Memop">Core_Breakpoint_Memop</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-11">
+<a href="#callback-type-11">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  breakpoint_number,
+          generic_transaction_t *memop);
+</pre>
+<h3 id="index-3">
+<a href="#index-3">Index</a>
+</h3>
+<code>breakpoint_number</code>
+<h3 id="description-11">
+<a href="#description-11">Description</a>
+</h3>
+Triggered when a breakpoint is triggered. <tt>breakpoint_number</tt> is the breakpoint number (as returned by <tt>SIM_breakpoint</tt>). If there are multiple breakpoints on an instruction then all installed haps will be run before control is transferred to the frontend (when applicable). The supplied <tt>memop</tt> can be used to figure out details about the transaction.</section>
+<h2 id="Core_Clean_At_Exit"><a href="#Core_Clean_At_Exit">Core_Clean_At_Exit</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-12">
+<a href="#callback-type-12">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-12">
+<a href="#description-12">Description</a>
+</h3>
+Triggered, typically by <tt>SIM_quit</tt>, if Simics exits cleanly, i.e. in Global Context. The Simics API is available. Cleanup code should typically run in the Core_At_Exit hap callbacks instead if possible.</section>
+<h2 id="Core_Conf_Class_Register"><a href="#Core_Conf_Class_Register">Core_Conf_Class_Register</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-13">
+<a href="#callback-type-13">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *class_name);
+</pre>
+<h3 id="description-13">
+<a href="#description-13">Description</a>
+</h3>
+Triggered when a new configuration class has been registered. Called in Global Context.</section>
+<h2 id="Core_Conf_Class_Unregister"><a href="#Core_Conf_Class_Unregister">Core_Conf_Class_Unregister</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-14">
+<a href="#callback-type-14">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *class_name);
+</pre>
+<h3 id="description-14">
+<a href="#description-14">Description</a>
+</h3>
+Triggered when a configuration class has been unregistered. Called in Global Context.</section>
+<h2 id="Core_Conf_Clock_Change_Cell"><a href="#Core_Conf_Clock_Change_Cell">Core_Conf_Clock_Change_Cell</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-15">
+<a href="#callback-type-15">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          conf_object_t *old_cell,
+          conf_object_t *new_cell);
+</pre>
+<h3 id="description-15">
+<a href="#description-15">Description</a>
+</h3>
+Triggered when a clock object changes cell</section>
+<h2 id="Core_Conf_Object_Change_Clock"><a href="#Core_Conf_Object_Change_Clock">Core_Conf_Object_Change_Clock</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-16">
+<a href="#callback-type-16">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          conf_object_t *old_clock,
+          conf_object_t *new_clock);
+</pre>
+<h3 id="description-16">
+<a href="#description-16">Description</a>
+</h3>
+Triggered when an object's reference clock is changed</section>
+<h2 id="Core_Conf_Object_Create"><a href="#Core_Conf_Object_Create">Core_Conf_Object_Create</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-17">
+<a href="#callback-type-17">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-17">
+<a href="#description-17">Description</a>
+</h3>
+Triggered when a new configuration object's <tt>init_object</tt> method returns successfully, but before the object's attributes are set and before the object's <tt>finalize_instance</tt> method is called. Since the object is not fully created hap callbacks must not access any of the object's attributes or call any methods on the object's interfaces. Callbacks are called in Global Context.</section>
+<h2 id="Core_Conf_Object_Created"><a href="#Core_Conf_Object_Created">Core_Conf_Object_Created</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-18">
+<a href="#callback-type-18">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-18">
+<a href="#description-18">Description</a>
+</h3>
+Triggered when a configuration object has been created and finalized. This hap will always be followed by a Core_Conf_Objects_Created hap, but this hap can be triggered for more than one object before the Core_Conf_Objects_Created hap.</section>
+<h2 id="Core_Conf_Object_Delete"><a href="#Core_Conf_Object_Delete">Core_Conf_Object_Delete</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-19">
+<a href="#callback-type-19">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *object_name);
+</pre>
+<h3 id="description-19">
+<a href="#description-19">Description</a>
+</h3>
+Triggered after a configuration object has been deleted. Called in Global Context.</section>
+<h2 id="Core_Conf_Object_Pre_Delete"><a href="#Core_Conf_Object_Pre_Delete">Core_Conf_Object_Pre_Delete</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-20">
+<a href="#callback-type-20">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-20">
+<a href="#description-20">Description</a>
+</h3>
+Triggered just before a configuration object is deleted. Called in Global Context.</section>
+<h2 id="Core_Conf_Object_Rename"><a href="#Core_Conf_Object_Rename">Core_Conf_Object_Rename</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-21">
+<a href="#callback-type-21">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *old_name);
+</pre>
+<h3 id="description-21">
+<a href="#description-21">Description</a>
+</h3>
+Triggered after an object's name has changed. Called in Global Context.</section>
+<h2 id="Core_Conf_Objects_Created"><a href="#Core_Conf_Objects_Created">Core_Conf_Objects_Created</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-22">
+<a href="#callback-type-22">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-22">
+<a href="#description-22">Description</a>
+</h3>
+Triggered if and only if at least one Core_Conf_Object_Created hap has been triggered.</section>
+<h2 id="Core_Conf_Objects_Deleted"><a href="#Core_Conf_Objects_Deleted">Core_Conf_Objects_Deleted</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-23">
+<a href="#callback-type-23">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-23">
+<a href="#description-23">Description</a>
+</h3>
+Triggered when one or more objects have been deleted from the configuration after the Core_Conf_Object_Delete hap has been triggered for all of the objects. Called in Global Context.</section>
+<h2 id="Core_Configuration_Loaded"><a href="#Core_Configuration_Loaded">Core_Configuration_Loaded</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-24">
+<a href="#callback-type-24">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-24">
+<a href="#description-24">Description</a>
+</h3>
+Triggered when a configuration has been loaded. This hap can be triggered several times during a session since it is possible to append a new configuration to the existing one. In most cases it is better to use the <tt>finalize_instance</tt> function in the <tt>class_data_t</tt> instead. That function is called when the object creation is finished. Callbacks are called in Global Context.</section>
+<h2 id="Core_Context_Activate"><a href="#Core_Context_Activate">Core_Context_Activate</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-25">
+<a href="#callback-type-25">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          conf_object_t *other_ctx,
+          conf_object_t *cpu);
+</pre>
+<h3 id="description-25">
+<a href="#description-25">Description</a>
+</h3>
+Triggered when this context replaces another context as the current context of a processor.</section>
+<h2 id="Core_Context_Change"><a href="#Core_Context_Change">Core_Context_Change</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-26">
+<a href="#callback-type-26">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          conf_object_t *cpu);
+</pre>
+<h3 id="description-26">
+<a href="#description-26">Description</a>
+</h3>
+Triggered when the context is set to the current context for a processor.</section>
+<h2 id="Core_Context_Deactivate"><a href="#Core_Context_Deactivate">Core_Context_Deactivate</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-27">
+<a href="#callback-type-27">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          conf_object_t *other_ctx,
+          conf_object_t *cpu);
+</pre>
+<h3 id="description-27">
+<a href="#description-27">Description</a>
+</h3>
+Triggered when another context replaces this context as the current context of a processor.</section>
+<h2 id="Core_Context_Updated"><a href="#Core_Context_Updated">Core_Context_Updated</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-28">
+<a href="#callback-type-28">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-28">
+<a href="#description-28">Description</a>
+</h3>
+Triggered when the context is updated in some way.</section>
+<h2 id="Core_Continuation"><a href="#Core_Continuation">Core_Continuation</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-29">
+<a href="#callback-type-29">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-29">
+<a href="#description-29">Description</a>
+</h3>
+Triggered at the (re)start of the simulation. The <tt>Core_Simulation_Stopped</tt> hap is called when the simulation is stopped. Callbacks called in Global Context.</section>
+<h2 id="Core_Control_Register_Read"><a href="#Core_Control_Register_Read">Core_Control_Register_Read</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-30">
+<a href="#callback-type-30">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  register_number);
+</pre>
+<h3 id="index-4">
+<a href="#index-4">Index</a>
+</h3>
+<code>register_number</code>
+<h3 id="description-30">
+<a href="#description-30">Description</a>
+</h3>
+Triggered when a control register is read. The hap is called before the read is performed; thus no registers have been modified.
+<p>
+Note that if the callback routine breaks to the frontend by raising an exception, the instruction will be replayed possibly causing repeated memory operations.
+</p><p>
+For x86 processors, this hap is triggered when a control register is read using a <tt>mov</tt> or <tt>smsw</tt> instruction (i.e. only explicit reads). Also the hap is triggered when MSRs are read with <tt>rdmsr</tt>, <tt>rdtsc</tt> or <tt>rdtscp</tt> instructions.
+</p><p>
+For PowerPC processors, this hap is triggered by the <tt>mfspr</tt>, <tt>mfmsr</tt> <tt>mfsr</tt> and <tt>mfsrin</tt> instructions (i.e. only explicit reads).</p></section>
+<h2 id="Core_Control_Register_Write"><a href="#Core_Control_Register_Write">Core_Control_Register_Write</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-31">
+<a href="#callback-type-31">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  register_number,
+          int64  value);
+</pre>
+<h3 id="index-5">
+<a href="#index-5">Index</a>
+</h3>
+<code>register_number</code>
+<h3 id="description-31">
+<a href="#description-31">Description</a>
+</h3>
+Triggered when a control register is written. Note that <i>value</i> is not (necessarily) the final contents in the register. When the callback is called, the processor register has not yet been updated with the new value.
+<p>
+If the callback routine breaks to the frontend by raising an exception, the instruction will be replayed possibly causing repeated memory operations.
+</p><p>
+For x86 processors, this hap is triggered by <tt>clts</tt>, <tt>lmsw</tt>, and <tt>mov</tt>. Also the hap is triggered when MSRs are written with <tt>wrmsr</tt> instruction. Page fault updates of CR2 should be caught with the Core_Exception hap.
+</p><p>
+For PowerPC processors, this hap is triggered by the <tt>mtspr</tt>, <tt>mtmsr</tt>, <tt>mtsr</tt> and <tt>mtsrin</tt> instructions (i.e. only explicit writes).</p></section>
+<h2 id="Core_DSTC_Flush_Counter"><a href="#Core_DSTC_Flush_Counter">Core_DSTC_Flush_Counter</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-32">
+<a href="#callback-type-32">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  type,
+          int64  virtual_address,
+          int64  physical_address,
+          int64  counter);
+</pre>
+<h3 id="description-32">
+<a href="#description-32">Description</a>
+</h3>
+Triggered when the DSTC flushes a line's hit counter. It reports how many hits the STC recorded since the line was inserted.</section>
+<h2 id="Core_Device_Access_Memop"><a href="#Core_Device_Access_Memop">Core_Device_Access_Memop</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-33">
+<a href="#callback-type-33">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          generic_transaction_t *memop);
+</pre>
+<h3 id="description-33">
+<a href="#description-33">Description</a>
+</h3>
+Triggered when a device access is performed.</section>
+<h2 id="Core_Disable_Breakpoints"><a href="#Core_Disable_Breakpoints">Core_Disable_Breakpoints</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-34">
+<a href="#callback-type-34">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  reenable);
+</pre>
+<h3 id="description-34">
+<a href="#description-34">Description</a>
+</h3>
+Disable (or reenable) all breakpoints. This hap is primarily used to improve reverse performance in certain situations.</section>
+<h2 id="Core_Discard_Future"><a href="#Core_Discard_Future">Core_Discard_Future</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-35">
+<a href="#callback-type-35">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-35">
+<a href="#description-35">Description</a>
+</h3>
+Triggered when recorded events should be forgotten. Called in Global Context.</section>
+<h2 id="Core_Exception"><a href="#Core_Exception">Core_Exception</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-36">
+<a href="#callback-type-36">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  exception_number);
+</pre>
+<h3 id="index-6">
+<a href="#index-6">Index</a>
+</h3>
+<code>exception_number</code>
+<h3 id="description-36">
+<a href="#description-36">Description</a>
+</h3>
+Triggered when an exception/trap is taken by a processor. The hap occurs before side-effects, control transfers included, have taken place.
+<p>
+Interrupting the simulation by calling <tt>SIM_break_simulation</tt> inside the hap will cause the simulation to stop right before the exception (and the trapping instruction, if any). The simulation state will then be as it was prior to the execution of the instruction or exception. Continuing the simulation will then re-run the exception, this time without calling hap functions.
+</p><p>
+Depending on the processor model, some state may actually have changed in an idempotent way when the hap occurs, but this should not be relied upon.
+</p><p>
+The exact meaning of the exception number depends on the simulated processor architecture. The <tt>exception</tt> interface can be used to translate the number to an exception name.</p></section>
+<h2 id="Core_Exception_Return"><a href="#Core_Exception_Return">Core_Exception_Return</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-37">
+<a href="#callback-type-37">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  exception_number);
+</pre>
+<h3 id="index-7">
+<a href="#index-7">Index</a>
+</h3>
+<code>exception_number</code>
+<h3 id="description-37">
+<a href="#description-37">Description</a>
+</h3>
+Triggered when an exception/trap handler finishes execution. The hap is triggered before any processor state has changed.
+<p>
+The following instructions trigger this hap (by processor class):
+</p><p>
+MIPS: <tt>eret</tt> and <tt>deret</tt>
+</p><p>
+PowerPC (32): <tt>rfi</tt> and <tt>rfci</tt>
+</p><p>
+PowerPC (64): <tt>rfi</tt>, <tt>rfid</tt> and <tt>hrfid</tt>
+</p><p>
+SH: <tt>rte</tt>
+</p><p>
+SPARC: <tt>done</tt> and <tt>retry</tt>
+</p><p>
+x86/x86-64: The <tt>iret</tt> family.
+</p><p>
+The <i>exception_number</i> parameter is only valid for SPARC processors.</p></section>
+<h2 id="Core_External_Interrupt"><a href="#Core_External_Interrupt">Core_External_Interrupt</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-38">
+<a href="#callback-type-38">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  source_mid);
+</pre>
+<h3 id="index-8">
+<a href="#index-8">Index</a>
+</h3>
+<code>source_mid</code>
+<h3 id="description-38">
+<a href="#description-38">Description</a>
+</h3>
+(SPARC only) Triggered when a processor receives an external interrupt. The trigger object is the receiving cpu, and <i>source_mid</i> is the mid of the sending cpu/device. The hap will be triggered even if interrupts are disabled, but not if the interrupt logic is busy.</section>
+<h2 id="Core_Frequency_Changed"><a href="#Core_Frequency_Changed">Core_Frequency_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-39">
+<a href="#callback-type-39">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  old_freq,
+          int64  new_freq);
+</pre>
+<h3 id="description-39">
+<a href="#description-39">Description</a>
+</h3>
+Triggered when the frequency of a cycle queue has changed. Parameters are the old and new frequencies in Hz.</section>
+<h2 id="Core_Global_Message"><a href="#Core_Global_Message">Core_Global_Message</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-40">
+<a href="#callback-type-40">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *message);
+</pre>
+<h3 id="description-40">
+<a href="#description-40">Description</a>
+</h3>
+Experimental</section>
+<h2 id="Core_Hap_Callback_Installed"><a href="#Core_Hap_Callback_Installed">Core_Hap_Callback_Installed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-41">
+<a href="#callback-type-41">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  hap_number,
+          int64  range_low,
+          int64  range_high);
+</pre>
+<h3 id="index-9">
+<a href="#index-9">Index</a>
+</h3>
+<code>hap_number</code>
+<h3 id="description-41">
+<a href="#description-41">Description</a>
+</h3>
+Triggered before a callback is installed. The callback called by this hap is not allowed to install any hap callbacks.</section>
+<h2 id="Core_Hap_Callback_Removed"><a href="#Core_Hap_Callback_Removed">Core_Hap_Callback_Removed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-42">
+<a href="#callback-type-42">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  hap_number,
+          int64  range_low,
+          int64  range_high);
+</pre>
+<h3 id="index-10">
+<a href="#index-10">Index</a>
+</h3>
+<code>hap_number</code>
+<h3 id="description-42">
+<a href="#description-42">Description</a>
+</h3>
+Triggered after a callback has been unregistered. The callback called by this hap is not allowed to remove any hap callbacks.</section>
+<h2 id="Core_Hap_Type_Added"><a href="#Core_Hap_Type_Added">Core_Hap_Type_Added</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-43">
+<a href="#callback-type-43">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *hap_name);
+</pre>
+<h3 id="description-43">
+<a href="#description-43">Description</a>
+</h3>
+Triggered when a new hap type is added to the simulator. The hap is not triggered for the initial set of core haps. Callbacks called in Global Context.</section>
+<h2 id="Core_Image_Activity"><a href="#Core_Image_Activity">Core_Image_Activity</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-44">
+<a href="#callback-type-44">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  type,
+          int  onoff);
+</pre>
+<h3 id="description-44">
+<a href="#description-44">Description</a>
+</h3>
+Triggered on I/O activity in an image object.</section>
+<h2 id="Core_Initial_Configuration"><a href="#Core_Initial_Configuration">Core_Initial_Configuration</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-45">
+<a href="#callback-type-45">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-45">
+<a href="#description-45">Description</a>
+</h3>
+Deprecated - Use the Core_Configuration_Loaded hap instead.</section>
+<h2 id="Core_Log_Groups_Change"><a href="#Core_Log_Groups_Change">Core_Log_Groups_Change</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-46">
+<a href="#callback-type-46">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  log_group_mask);
+</pre>
+<h3 id="description-46">
+<a href="#description-46">Description</a>
+</h3>
+Triggered when the active log groups of an object changes</section>
+<h2 id="Core_Log_Level_Change"><a href="#Core_Log_Level_Change">Core_Log_Level_Change</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-47">
+<a href="#callback-type-47">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  new_log_level);
+</pre>
+<h3 id="description-47">
+<a href="#description-47">Description</a>
+</h3>
+Triggered when the log level of an object changes</section>
+<h2 id="Core_Log_Message"><a href="#Core_Log_Message">Core_Log_Message</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-48">
+<a href="#callback-type-48">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  type,
+          char *message);
+</pre>
+<h3 id="index-11">
+<a href="#index-11">Index</a>
+</h3>
+<code>log type</code>
+<h3 id="description-48">
+<a href="#description-48">Description</a>
+</h3>
+Triggered when a log message is registered that is supposed to be logged, i.e. with matching type and group(s) and level.</section>
+<h2 id="Core_Log_Message_Extended"><a href="#Core_Log_Message_Extended">Core_Log_Message_Extended</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-49">
+<a href="#callback-type-49">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  type,
+          char *message,
+          int  level,
+          int64  group);
+</pre>
+<h3 id="description-49">
+<a href="#description-49">Description</a>
+</h3>
+Triggered when a log message is registered that is supposed to be logged according to the log level.</section>
+<h2 id="Core_Log_Message_Filtered"><a href="#Core_Log_Message_Filtered">Core_Log_Message_Filtered</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-50">
+<a href="#callback-type-50">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  type,
+          char *message,
+          int  level,
+          int64  group);
+</pre>
+<h3 id="description-50">
+<a href="#description-50">Description</a>
+</h3>
+Triggered when a log message is registered that is supposed to be logged, i.e. with matching type and group(s) and level.</section>
+<h2 id="Core_Magic_Instruction"><a href="#Core_Magic_Instruction">Core_Magic_Instruction</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-51">
+<a href="#callback-type-51">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  parameter);
+</pre>
+<h3 id="index-12">
+<a href="#index-12">Index</a>
+</h3>
+<code>parameter</code>
+<h3 id="description-51">
+<a href="#description-51">Description</a>
+</h3>
+Triggered when Simics executes a magic instruction. The parameter is taken from the instruction and is architecture-dependent.</section>
+<h2 id="Core_Memory_Space_Map_Changed"><a href="#Core_Memory_Space_Map_Changed">Core_Memory_Space_Map_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-52">
+<a href="#callback-type-52">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-52">
+<a href="#description-52">Description</a>
+</h3>
+Experimental</section>
+<h2 id="Core_Mode_Change"><a href="#Core_Mode_Change">Core_Mode_Change</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-53">
+<a href="#callback-type-53">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  old_mode,
+          int64  new_mode);
+</pre>
+<h3 id="description-53">
+<a href="#description-53">Description</a>
+</h3>
+Triggered when a processor changes privilege mode for whatever reason; usually an exception or return from an exception. The hap occurs after the processor has changed mode but before any instructions have been executed in the new mode.
+<p>
+For x86 processors, the modes are Sim_CPU_Mode_User for CPL 3, and Sim_CPU_Mode_Supervisor for CPL 0-2.
+</p><p>
+For other processors, the modes are Sim_CPU_Mode_User or Sim_CPU_Mode_Supervisor. Some processors also has the Sim_CPU_Mode_Hypervisor mode.</p></section>
+<h2 id="Core_Module_Loaded"><a href="#Core_Module_Loaded">Core_Module_Loaded</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-54">
+<a href="#callback-type-54">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *module_name);
+</pre>
+<h3 id="description-54">
+<a href="#description-54">Description</a>
+</h3>
+Triggered when a module is loaded into Simics. Called in Global Context.</section>
+<h2 id="Core_Multicore_Acceleration_Changed"><a href="#Core_Multicore_Acceleration_Changed">Core_Multicore_Acceleration_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-55">
+<a href="#callback-type-55">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  on/off);
+</pre>
+<h3 id="description-55">
+<a href="#description-55">Description</a>
+</h3>
+Triggered when the multicore-accelerator feature is enabled or disabled.</section>
+<h2 id="Core_Multithreading_Changed"><a href="#Core_Multithreading_Changed">Core_Multithreading_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-56">
+<a href="#callback-type-56">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  on/off);
+</pre>
+<h3 id="description-56">
+<a href="#description-56">Description</a>
+</h3>
+Triggered when multithreaded simulation is enabled or disabled.</section>
+<h2 id="Core_Not_Implemented"><a href="#Core_Not_Implemented">Core_Not_Implemented</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-57">
+<a href="#callback-type-57">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  line,
+          char *file,
+          char *rcsid,
+          char *message,
+          int64  data);
+</pre>
+<h3 id="description-57">
+<a href="#description-57">Description</a>
+</h3>
+Triggered when the simulator encounters unimplemented functionality.</section>
+<h2 id="Core_Preferences_Changed"><a href="#Core_Preferences_Changed">Core_Preferences_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-58">
+<a href="#callback-type-58">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-58">
+<a href="#description-58">Description</a>
+</h3>
+Triggered when an attribute in the prefs object is written. Called in Global Context.</section>
+<h2 id="Core_Processor_Schedule_Changed"><a href="#Core_Processor_Schedule_Changed">Core_Processor_Schedule_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-59">
+<a href="#callback-type-59">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-59">
+<a href="#description-59">Description</a>
+</h3>
+Triggered when the scheduling order of the processors has changed. Called in Global Context.</section>
+<h2 id="Core_Project_Changed"><a href="#Core_Project_Changed">Core_Project_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-60">
+<a href="#callback-type-60">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-60">
+<a href="#description-60">Description</a>
+</h3>
+Triggered when a new Simics project directory is selected. Called in Global Context.</section>
+<h2 id="Core_Recent_Files_Changed"><a href="#Core_Recent_Files_Changed">Core_Recent_Files_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-61">
+<a href="#callback-type-61">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-61">
+<a href="#description-61">Description</a>
+</h3>
+Triggered when the list of recently used files has changed. Called in Global Context.</section>
+<h2 id="Core_Rexec_Active"><a href="#Core_Rexec_Active">Core_Rexec_Active</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-62">
+<a href="#callback-type-62">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  active_flag);
+</pre>
+<h3 id="description-62">
+<a href="#description-62">Description</a>
+</h3>
+Triggered when reverse execution support is activated or deactivated. Called in Global Context.</section>
+<h2 id="Core_Simulation_Mode_Change"><a href="#Core_Simulation_Mode_Change">Core_Simulation_Mode_Change</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-63">
+<a href="#callback-type-63">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  simulation_mode);
+</pre>
+<h3 id="index-13">
+<a href="#index-13">Index</a>
+</h3>
+<code>simulation_mode</code>
+<h3 id="description-63">
+<a href="#description-63">Description</a>
+</h3>
+Triggered when the simulation mode for the processor has changed.</section>
+<h2 id="Core_Simulation_Stopped"><a href="#Core_Simulation_Stopped">Core_Simulation_Stopped</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-64">
+<a href="#callback-type-64">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  exception,
+          char *error_string);
+</pre>
+<h3 id="index-14">
+<a href="#index-14">Index</a>
+</h3>
+<code>exception</code>
+<h3 id="description-64">
+<a href="#description-64">Description</a>
+</h3>
+Triggered when the simulation stops. <i>exception</i> will always be <tt>SimExc_No_Exception</tt>, and <i>error_string</i> will always be NULL. After this hap, simulation will not advance (triggering <tt>Core_Continuation</tt>) until <tt>SIM_continue</tt> is called again. Callbacks called in Global Context.</section>
+<h2 id="Core_Skipto_Progress"><a href="#Core_Skipto_Progress">Core_Skipto_Progress</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-65">
+<a href="#callback-type-65">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  progress);
+</pre>
+<h3 id="description-65">
+<a href="#description-65">Description</a>
+</h3>
+Triggered with an estimate of skip-to progress. Called in Global Context.</section>
+<h2 id="Core_Sync_Instruction"><a href="#Core_Sync_Instruction">Core_Sync_Instruction</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-66">
+<a href="#callback-type-66">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  type);
+</pre>
+<h3 id="index-15">
+<a href="#index-15">Index</a>
+</h3>
+<code>type</code>
+<h3 id="description-66">
+<a href="#description-66">Description</a>
+</h3>
+Triggered when an synchronizing instruction is executed. The <tt>type</tt> parameter describe what kind of instruction is executing. Its encoding is specific to each architecture.
+<p>
+For SH, this hap is triggered when a <tt>synco</tt> instruction is executed. The type contains 0.
+</p><p>
+For SPARC-V9, this hap is triggered when a <tt>membar</tt> or <tt>stbar</tt> instruction is executed. For <tt>membar</tt>, the type contains the 7-bit field cmask|mmask specified in the instruction. For stbar, the type is 8 (equivalent to <tt>membar #StoreStore</tt>).
+</p><p>
+For x86, this hap is triggered when a <tt>fence</tt> instruction is executed. The type is set from the list provided by the <tt>x86_sync_instruction_type_t</tt> enum.</p></section>
+<h2 id="Core_Time_Transition"><a href="#Core_Time_Transition">Core_Time_Transition</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-67">
+<a href="#callback-type-67">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  in_the_past);
+</pre>
+<h3 id="description-67">
+<a href="#description-67">Description</a>
+</h3>
+Triggered whenever there is a transition between the past and the present. Called in Global Context.</section>
+<h2 id="Core_Timing_Model_Change"><a href="#Core_Timing_Model_Change">Core_Timing_Model_Change</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-68">
+<a href="#callback-type-68">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-68">
+<a href="#description-68">Description</a>
+</h3>
+Triggered on an object when a timing model or snoop device is inserted, deleted, or changed.</section>
+<h2 id="Core_User_Comments_Changed"><a href="#Core_User_Comments_Changed">Core_User_Comments_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-69">
+<a href="#callback-type-69">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-69">
+<a href="#description-69">Description</a>
+</h3>
+Triggered when the list of user comments for a session has changed</section>
+<h2 id="Core_Write_Configuration"><a href="#Core_Write_Configuration">Core_Write_Configuration</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-70">
+<a href="#callback-type-70">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *file_name);
+</pre>
+<h3 id="description-70">
+<a href="#description-70">Description</a>
+</h3>
+Deprecated - Use the checkpoint interface instead</section>
+<h2 id="Eth_Injector_Pcap_Eof"><a href="#Eth_Injector_Pcap_Eof">Eth_Injector_Pcap_Eof</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-71">
+<a href="#callback-type-71">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *pcap_file,
+          int  num_injected,
+          int  pcap_num_pkgs,
+          int  auto_restart);
+</pre>
+<h3 id="description-71">
+<a href="#description-71">Description</a>
+</h3>
+Triggered by the <tt>eth_injector</tt> object when all contents of the pcap file has been sent. The callback function will have the pcap file name, next packet index, total number of packets in the pcap file, and auto-restart as arguments.</section>
+<h2 id="Firewire_Reset"><a href="#Firewire_Reset">Firewire_Reset</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-72">
+<a href="#callback-type-72">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-72">
+<a href="#description-72">Description</a>
+</h3>
+Triggered when the bus is reset. It is invoked after calculating the default topology. During the hap the self_ids attribute can be used to change the self id packets sent to the devices on the bus. The connected_devices attribute can also be changed to modify the mapping from physical id to device.</section>
+<h2 id="Firewire_Transfer"><a href="#Firewire_Transfer">Firewire_Transfer</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-73">
+<a href="#callback-type-73">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-73">
+<a href="#description-73">Description</a>
+</h3>
+Triggered when an packet travels through a firewire bus. During the hap handler the current_transfer attribute of the bus can be used to inspect and/or change the current transfer. If you set it to NULL the transfer is aborted and Firewire_V2_Ack_No_Ack is returned to the initiator of the transfer.</section>
+<h2 id="Gfx_Break"><a href="#Gfx_Break">Gfx_Break</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-74">
+<a href="#callback-type-74">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  gfx_break);
+</pre>
+<h3 id="index-16">
+<a href="#index-16">Index</a>
+</h3>
+<code>break_id</code>
+<h3 id="description-74">
+<a href="#description-74">Description</a>
+</h3>
+Triggered when a graphical breakpoint matches the screen. <i>break_id</i> is the number returned when a breakpoint is set.</section>
+<h2 id="Gfx_Break_String"><a href="#Gfx_Break_String">Gfx_Break_String</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-75">
+<a href="#callback-type-75">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  break_id);
+</pre>
+<h3 id="index-17">
+<a href="#index-17">Index</a>
+</h3>
+<code>break_id</code>
+<h3 id="description-75">
+<a href="#description-75">Description</a>
+</h3>
+Triggered when a graphics breakpoint matches the screen. <i>break_id</i> is the number returned when a breakpoint is set.</section>
+<h2 id="Graphics_Console_New_Title"><a href="#Graphics_Console_New_Title">Graphics_Console_New_Title</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-76">
+<a href="#callback-type-76">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *title);
+</pre>
+<h3 id="description-76">
+<a href="#description-76">Description</a>
+</h3>
+Triggered when the console is assigned a new title.</section>
+<h2 id="Graphics_Console_Show_Hide"><a href="#Graphics_Console_Show_Hide">Graphics_Console_Show_Hide</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-77">
+<a href="#callback-type-77">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  state);
+</pre>
+<h3 id="description-77">
+<a href="#description-77">Description</a>
+</h3>
+Triggered when the console is shown or hidden. The hap argument is 1 when the console is shown and 0 when hidden.</section>
+<h2 id="Internal_Bookmark_List_Changed"><a href="#Internal_Bookmark_List_Changed">Internal_Bookmark_List_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-78">
+<a href="#callback-type-78">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-78">
+<a href="#description-78">Description</a>
+</h3>
+Simics internal. Triggered when a bookmark has been added or deleted.</section>
+<h2 id="Internal_Break_IO"><a href="#Internal_Break_IO">Internal_Break_IO</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-79">
+<a href="#callback-type-79">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  break-id);
+</pre>
+<h3 id="description-79">
+<a href="#description-79">Description</a>
+</h3>
+Simics internal. Triggered on a break-io access.</section>
+<h2 id="Internal_Device_Reg_Access"><a href="#Internal_Device_Reg_Access">Internal_Device_Reg_Access</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-80">
+<a href="#callback-type-80">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          generic_transaction_t *memop,
+          char *port,
+          int  idx,
+          int  func,
+          int64  offset);
+</pre>
+<h3 id="description-80">
+<a href="#description-80">Description</a>
+</h3>
+Simics internal. Triggered on an access to a device register traced with <code>trace-io</code> command.</section>
+<h2 id="Internal_Micro_Checkpoint_Loaded"><a href="#Internal_Micro_Checkpoint_Loaded">Internal_Micro_Checkpoint_Loaded</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-81">
+<a href="#callback-type-81">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="index-18">
+<a href="#index-18">Index</a>
+</h3>
+<code></code>
+<h3 id="description-81">
+<a href="#description-81">Description</a>
+</h3>
+Simics internal</section>
+<h2 id="Internal_SB_Wait"><a href="#Internal_SB_Wait">Internal_SB_Wait</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-82">
+<a href="#callback-type-82">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="index-19">
+<a href="#index-19">Index</a>
+</h3>
+<code>id</code>
+<h3 id="description-82">
+<a href="#description-82">Description</a>
+</h3>
+Simics internal</section>
+<h2 id="Internal_Time_Direction_Changed"><a href="#Internal_Time_Direction_Changed">Internal_Time_Direction_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-83">
+<a href="#callback-type-83">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  rev);
+</pre>
+<h3 id="index-20">
+<a href="#index-20">Index</a>
+</h3>
+<code></code>
+<h3 id="description-83">
+<a href="#description-83">Description</a>
+</h3>
+Simics internal. 'rev' is 1 when reverse execution is initiated, and 0 when reverse execution stops. In addition, a number of haps with rev = -1 may be fired during reverse execution at reverse chronologically ordered moments. This is typically used to update the user interface during reverse execution. </section>
+<h2 id="Internal_Time_Quantum_Changed"><a href="#Internal_Time_Quantum_Changed">Internal_Time_Quantum_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-84">
+<a href="#callback-type-84">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-84">
+<a href="#description-84">Description</a>
+</h3>
+Simics internal. Triggered when the time quantum has changed. The hap is supported in Simics 5 even though it is marked as internal.</section>
+<h2 id="REC_State_Changed"><a href="#REC_State_Changed">REC_State_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-85">
+<a href="#callback-type-85">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  recording,
+          int  playback);
+</pre>
+<h3 id="description-85">
+<a href="#description-85">Description</a>
+</h3>
+Internal</section>
+<h2 id="RTC_Nvram_Update"><a href="#RTC_Nvram_Update">RTC_Nvram_Update</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-86">
+<a href="#callback-type-86">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  index,
+          int64  old_value,
+          int64  new_value);
+</pre>
+<h3 id="index-21">
+<a href="#index-21">Index</a>
+</h3>
+<code>index</code>
+<h3 id="description-86">
+<a href="#description-86">Description</a>
+</h3>
+This hap is triggered when the DS12887-c NVRAM memory is changed.</section>
+<h2 id="Realtime_Enabled"><a href="#Realtime_Enabled">Realtime_Enabled</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-87">
+<a href="#callback-type-87">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  enabled);
+</pre>
+<h3 id="description-87">
+<a href="#description-87">Description</a>
+</h3>
+Internal: Notifies change of realtime enabled status</section>
+<h2 id="Rexec_Limit_Exceeded"><a href="#Rexec_Limit_Exceeded">Rexec_Limit_Exceeded</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-88">
+<a href="#callback-type-88">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  limit_type);
+</pre>
+<h3 id="index-22">
+<a href="#index-22">Index</a>
+</h3>
+<code>limit_type</code>
+<h3 id="description-88">
+<a href="#description-88">Description</a>
+</h3>
+Triggered when a reverse execution resource limit is exceeded.</section>
+<h2 id="SCSI_Disk_Command"><a href="#SCSI_Disk_Command">SCSI_Disk_Command</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-89">
+<a href="#callback-type-89">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  command_number,
+          int64  start,
+          int64  len);
+</pre>
+<h3 id="index-23">
+<a href="#index-23">Index</a>
+</h3>
+<code>command_number</code>
+<h3 id="description-89">
+<a href="#description-89">Description</a>
+</h3>
+Triggered when a SCSI command is received by a SCSI device. The parameters <tt>start</tt> and <tt>len</tt> are only used for read and write commands.</section>
+<h2 id="SN_NAPT_Enabled"><a href="#SN_NAPT_Enabled">SN_NAPT_Enabled</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-90">
+<a href="#callback-type-90">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  enabled);
+</pre>
+<h3 id="index-24">
+<a href="#index-24">Index</a>
+</h3>
+<code></code>
+<h3 id="description-90">
+<a href="#description-90">Description</a>
+</h3>
+Triggered when NAPT is enabled or disabled in a service-node.The argument is 0 when disabled and 1 when enabled.</section>
+<h2 id="TLB_Fill_Data"><a href="#TLB_Fill_Data">TLB_Fill_Data</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-91">
+<a href="#callback-type-91">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  linear,
+          int64  physical,
+          int64  page_size);
+</pre>
+<h3 id="index-25">
+<a href="#index-25">Index</a>
+</h3>
+<code>page_size</code>
+<h3 id="description-91">
+<a href="#description-91">Description</a>
+</h3>
+Triggered when a TLB entry is filled after a table walk. Page size encoding: 0==4k, 1==2M, 2==4M, 3==1G.</section>
+<h2 id="TLB_Fill_Instruction"><a href="#TLB_Fill_Instruction">TLB_Fill_Instruction</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-92">
+<a href="#callback-type-92">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  linear,
+          int64  physical,
+          int64  page_size);
+</pre>
+<h3 id="index-26">
+<a href="#index-26">Index</a>
+</h3>
+<code>page_size</code>
+<h3 id="description-92">
+<a href="#description-92">Description</a>
+</h3>
+Triggered when a TLB entry is filled after a table walk. Page size encoding: 0==4k, 1==2M, 2==4M, 3==1G.</section>
+<h2 id="TLB_Invalidate_Data"><a href="#TLB_Invalidate_Data">TLB_Invalidate_Data</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-93">
+<a href="#callback-type-93">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  linear,
+          int64  physical,
+          int64  page_size);
+</pre>
+<h3 id="index-27">
+<a href="#index-27">Index</a>
+</h3>
+<code>page_size</code>
+<h3 id="description-93">
+<a href="#description-93">Description</a>
+</h3>
+Triggered when a TLB entry is invalidated. The invalidation can be caused by an INVLPG instruction, a write to CR3, or by changes to paging bits in CR0 and CR4. Page size encoding: 0==4k, 1==2M, 2==4M, 3==1G.</section>
+<h2 id="TLB_Invalidate_Instruction"><a href="#TLB_Invalidate_Instruction">TLB_Invalidate_Instruction</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-94">
+<a href="#callback-type-94">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  linear,
+          int64  physical,
+          int64  page_size);
+</pre>
+<h3 id="index-28">
+<a href="#index-28">Index</a>
+</h3>
+<code>page_size</code>
+<h3 id="description-94">
+<a href="#description-94">Description</a>
+</h3>
+Triggered when a TLB entry is invalidated. The invalidation can be caused by an INVLPG instruction, a write to CR3, or by changes to paging bits in CR0 and CR4. Page size encoding: 0==4k, 1==2M, 2==4M, 3==1G.</section>
+<h2 id="TLB_Miss_Data"><a href="#TLB_Miss_Data">TLB_Miss_Data</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-95">
+<a href="#callback-type-95">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  linear_address);
+</pre>
+<h3 id="index-29">
+<a href="#index-29">Index</a>
+</h3>
+<code>linear_address</code>
+<h3 id="description-95">
+<a href="#description-95">Description</a>
+</h3>
+Triggered when a DTLB miss occurs.</section>
+<h2 id="TLB_Miss_Instruction"><a href="#TLB_Miss_Instruction">TLB_Miss_Instruction</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-96">
+<a href="#callback-type-96">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  linear_address);
+</pre>
+<h3 id="index-30">
+<a href="#index-30">Index</a>
+</h3>
+<code>linear_address</code>
+<h3 id="description-96">
+<a href="#description-96">Description</a>
+</h3>
+Triggered when an ITLB miss occurs.</section>
+<h2 id="TLB_Replace_Data"><a href="#TLB_Replace_Data">TLB_Replace_Data</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-97">
+<a href="#callback-type-97">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  linear,
+          int64  physical,
+          int64  page_size);
+</pre>
+<h3 id="index-31">
+<a href="#index-31">Index</a>
+</h3>
+<code>page_size</code>
+<h3 id="description-97">
+<a href="#description-97">Description</a>
+</h3>
+This hap is triggered when a TLB entry is replaced by another. The parameters relate to the old entry, and the insertion of the new entry will trigger a fill hap. Page size encoding: 0==4k, 1==2M, 2==4M, 3==1G.</section>
+<h2 id="TLB_Replace_Instruction"><a href="#TLB_Replace_Instruction">TLB_Replace_Instruction</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-98">
+<a href="#callback-type-98">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int64  linear,
+          int64  physical,
+          int64  page_size);
+</pre>
+<h3 id="index-32">
+<a href="#index-32">Index</a>
+</h3>
+<code>page_size</code>
+<h3 id="description-98">
+<a href="#description-98">Description</a>
+</h3>
+This hap is triggered when a TLB entry is replaced by another. The parameters relate to the old entry, and the insertion of the new entry will trigger a fill hap. Page size encoding: 0==4k, 1==2M, 2==4M, 3==1G.</section>
+<h2 id="Text_Console_New_Title"><a href="#Text_Console_New_Title">Text_Console_New_Title</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-99">
+<a href="#callback-type-99">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *new_title);
+</pre>
+<h3 id="description-99">
+<a href="#description-99">Description</a>
+</h3>
+Triggered when the console is assigned a new title.</section>
+<h2 id="Text_Console_Show_Hide"><a href="#Text_Console_Show_Hide">Text_Console_Show_Hide</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-100">
+<a href="#callback-type-100">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  is_shown);
+</pre>
+<h3 id="description-100">
+<a href="#description-100">Description</a>
+</h3>
+Triggered when the console is shown or hidden. <i>is_shown</i> is 1 when the console is shown and 0 when hidden.</section>
+<h2 id="UI_Record_State_Changed"><a href="#UI_Record_State_Changed">UI_Record_State_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-101">
+<a href="#callback-type-101">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          int  record,
+          int  playback);
+</pre>
+<h3 id="description-101">
+<a href="#description-101">Description</a>
+</h3>
+Internal</section>
+<h2 id="UI_Run_State_Changed"><a href="#UI_Run_State_Changed">UI_Run_State_Changed</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-102">
+<a href="#callback-type-102">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *state);
+</pre>
+<h3 id="description-102">
+<a href="#description-102">Description</a>
+</h3>
+Triggered when the run state changes; not triggered in batch mode. The argument is one of:<dl><dt id="dt:stopped"><tt>"Stopped"</tt></dt><dd>simulation stopped and may not run</dd><dt id="dt:stopped_fwd"><tt>"Stopped_Fwd"</tt></dt><dd>stopped and may run forward</dd><dt id="dt:stopped_fwd_rev"><tt>"Stopped_Fwd_Rev"</tt></dt><dd>stopped and may run forward or reverse</dd><dt id="dt:forwarding"><tt>"Forwarding"</tt></dt><dd>simulation is running forward</dd><dt id="dt:forwarding_rev"><tt>"Forwarding_Rev"</tt></dt><dd>running forward and may run in reverse</dd><dt id="dt:reversing"><tt>"Reversing"</tt></dt><dd>simulation is running in the reverse direction</dd></dl></section>
+<h2 id="Vga_Break_String"><a href="#Vga_Break_String">Vga_Break_String</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-103">
+<a href="#callback-type-103">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *string);
+</pre>
+<h3 id="index-33">
+<a href="#index-33">Index</a>
+</h3>
+<code>string_id</code>
+<h3 id="description-103">
+<a href="#description-103">Description</a>
+</h3>
+Triggered when output matches a string set to break on. The <i>string_id</i> is the id returned by the vga_add_string_notification method in the vga_text interface.</section>
+<h2 id="Vga_Refresh_Triggered"><a href="#Vga_Refresh_Triggered">Vga_Refresh_Triggered</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-104">
+<a href="#callback-type-104">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj);
+</pre>
+<h3 id="description-104">
+<a href="#description-104">Description</a>
+</h3>
+Triggered before picture on screen is updated</section>
+<h2 id="Xterm_Break_String"><a href="#Xterm_Break_String">Xterm_Break_String</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="callback-type-105">
+<a href="#callback-type-105">Callback Type</a>
+</h3>
+<pre>void (*) (lang_void *callback_data,
+          conf_object_t *trigger_obj,
+          char *break_string);
+</pre>
+<h3 id="index-34">
+<a href="#index-34">Index</a>
+</h3>
+<code>break_id</code>
+<h3 id="description-105">
+<a href="#description-105">Description</a>
+</h3>
+Triggered when the output matches a string set to break on. <i>break_id</i> is the number returned when a string breakpoint is set.</section>
+</article>
+<div class="chain">
+<a href="rm-class-xterm-console.html">xterm-console</a>
+<a href="rm-modules.html">7 Modules</a>
+</div>

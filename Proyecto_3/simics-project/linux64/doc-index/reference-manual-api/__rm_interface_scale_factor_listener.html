@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>scale_factor_listener</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_sata.html">sata</a>
+<a href="__rm_interface_serial_device.html">serial_device</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_scale_factor_listener">scale_factor_listener</a></h1>
+<p>
+
+<a name="scale_factor_listener"></a><a name="scale_factor_listener_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>scale_factor_listener</code> interface is used for
+   modeling changes in scale factors. It is mainly used by the
+   <b>frequency_bus</b> device, to allow an external device to
+   affect how much the bus scales its input frequency.
+<p>
+   The <code>scale_factor_listener</code> has exactly the same
+   semantics as the <code>frequency_listener</code> interface, the
+   two interfaces only differ in convention: The parameters to
+   <b><i>scale_factor_listener.set()</i></b> are typically a scale factor
+   rather close to 1, while the parameters of
+   <b><i>frequency_listener</i></b> represent a base frequency in Hz,
+   which is typically significantly larger than 1000000.
+</p><p>
+   See the documentation on the <a class="jdocu" href="__rm_interface_frequency_listener.html">frequency_listener</a>
+   interface for more information.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(scale_factor_listener) {
+        void (*set)(conf_object_t *NOTNULL obj, uint64 numerator,
+                    uint64 denominator);
+};
+
+#define SCALE_FACTOR_LISTENER_INTERFACE "scale_factor_listener"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_sata.html">sata</a>
+<a href="__rm_interface_serial_device.html">serial_device</a>
+</div>

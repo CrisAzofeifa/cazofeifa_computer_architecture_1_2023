@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_unplug_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_unplug.html">x86_unplug</a>
+<a href="simulator-api.html">6 Simulator API</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_unplug_v2">x86_unplug_v2</a></h1>
+<p>
+
+<a name="x86_unplug_v2"></a><a name="x86_unplug_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The methods of the interface are intended to be used
+    by a platform to unplug (and optionally re-plug) CPU cores/threads,
+    effectively hiding them from the #RESET/INIT signals.
+<p>
+    This interface is internal and may change without notice.
+</p><p>
+    The <b>unplug_core</b> method is to disable an operating core with all
+    threads on it.
+    The <b>replug_core</b> method is to enable a core previously unplugged
+    with all threads on it.
+    The <b>disable_core_ht</b> method is to disable HT in the core (not the package).
+    The <b>enable_core_ht</b> method is to enable HT in the core (not the package).
+    The <b>core_is_plugged</b> method returns true if core is plugged.
+    The <b>core_ht_is_enabled</b> method returns true if HT is enabled in the core (not the package).
+    The <b>set_alive_logical_processors</b> method updates number of alive processors reported through CPUID.
+    The <b>get_alive_logical_processors</b> method returns number of alive processors reported through CPUID.
+</p><p>
+    Values returned from enable and disable methods indicate success (1) or failure (0).
+</p><p>
+    </p><pre class="jdocu_small">SIM_INTERFACE(x86_unplug_v2) {
+        int (*unplug_core)(conf_object_t *obj);
+        int (*replug_core)(conf_object_t *obj);
+        int (*disable_core_ht)(conf_object_t *obj);
+        int (*enable_core_ht)(conf_object_t *obj);
+        bool (*core_is_plugged)(conf_object_t *obj);
+        bool (*core_ht_is_enabled)(conf_object_t *obj);
+        void (*set_alive_logical_processors)(conf_object_t *obj, int count);
+        int (*get_alive_logical_processors)(conf_object_t *obj);
+};
+#define X86_UNPLUG_V2_INTERFACE "x86_unplug_v2"
+</pre><p>
+</p><p>
+    
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+    
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_unplug.html">x86_unplug</a>
+<a href="simulator-api.html">6 Simulator API</a>
+</div>

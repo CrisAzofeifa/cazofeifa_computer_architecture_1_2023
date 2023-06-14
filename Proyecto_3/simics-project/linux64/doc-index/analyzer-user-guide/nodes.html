@@ -1,0 +1,65 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.2 The Node Tree</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="tracker-activation.html">2.1 Tracker Activation</a>
+<a href="osa-commands.html">2.3 Commands</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="the-node-tree">2.2 <a href="#the-node-tree">The Node Tree</a></h1>
+<p>A tracker—when activated—monitors the machine state and the associated mapper represents it as a tree of nodes, in a hierarchical way. Other objects and scripts can query this tree, and register callbacks that trigger when it changes.</p>
+<p>The node tree usually represents the state of the operating system. A node can map against a software entity such as a thread. Other nodes group child nodes based on a property they share, such as being part of the same process or running under the same access level. Another possibility is to group by guest OS for a Hypervisor, as the framework supports stacked node trees.</p>
+<p>Each tree will consist of a single root node at the base. This root node usually provides the overall system details, such as the name of the operating system.</p>
+<p>The node tree changes over time, and nodes will be created and destroyed as processes and threads are born and die.</p>
+<p>The OSA framework provides a couple of interfaces in order to operate on the node tree. For getting the state of the node tree there is the <code>osa_node_tree_query</code> interface. For monitoring changes to the node tree the <code>osa_node_tree_notification</code> interface can be used. See the <em>API - Reference Manual</em> for details about these interfaces and section <a class="reference" href="software-tracker-scripting.html">2.5</a> for scripting examples.</p>
+<p>In the interfaces and commands used to interact with the node tree, every node is identified by a <em>node ID</em>, which is an integer that is unique. The IDs are never reused by the framework.</p>
+<p>Each node has a set of named <em>properties</em> that contain information about what the node represents. Which properties exist depends on the type of node, but the properties listed below are the standard properties, which all nodes have (except where noted):</p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:name">name</span><br>
+The name of this node. Unlike the ID, it does not need to be unique.</li>
+<li><span class="term" id="dt:extra_id">extra_id</span><br>
+A list of properties that will uniquely identify nodes at the same level. All nodes that have the same parent node must have the same value for <code>extra_id</code>. If the list is empty, the property <code>name</code> should be used to identify the node. The <code>extra_id</code> property is useful for finding a unique node without having to know its node ID.</li>
+</ul>
+</div>
+<p>Each tracker defines its own set of node properties. See documentation for each tracker for further details.</p>
+<p>The <code>node-tree</code> command can be used to print the current node tree. See figure <a class="reference" href="node-tree-patterns.html#np-fake-tree">1</a> for an illustration of a node tree.</p>
+<p>A node can be active for a certain processor in which case all its ancestors will also be active. The exact meaning of this depends on the node type, but for a thread node this means that the thread is executing on the active processor. To see which processors a certain node is active on the <code>get_current_processors</code> function in the <code>osa_node_tree_query</code> interface can be used. To get a list of all active nodes the <code>get_current_nodes</code> function in the same interface can be used.</p>
+<p>The following rules apply for active nodes: </p>
+<ol>
+<li><em>If a node is active on a processor, its parent is also active on that processor.</em> Therefore all its ancestors all the way to the root node will also be active on that processor. This is because a child node always represents a subset of its parent.</li>
+<li><em>If two nodes are active for the same processor, then one must be a descendant of the other.</em> This is a consequence of processors being able to do just one thing at a time. For example, it is not possible for a processor to run more than one thread at a time.</li>
+</ol>
+
+<div class="chain">
+<a href="tracker-activation.html">2.1 Tracker Activation</a>
+<a href="osa-commands.html">2.3 Commands</a>
+</div>

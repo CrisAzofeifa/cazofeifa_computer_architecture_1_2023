@@ -1,0 +1,279 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.9 Debugging Target Software</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="hardware-inspection.html">2.8 Hardware inspection</a>
+<a href="code-coverage-of-target-software.html">2.10 Code Coverage of Target Software</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="debugging-target-software">2.9 <a href="#debugging-target-software">Debugging Target Software</a></h1>
+<p>Simics comes with a built-in command line debugger for debugging the target software. This section describes how to get started with the Simics debugger. We start of with and example of debugging a Linux kernel module, then go through</p>
+<ul>
+<li>how to set up and enable the debugger, </li>
+<li>how to select debug contexts, </li>
+<li>what debugger commands are available, and </li>
+<li>how to break on a source line or function. </li>
+</ul>
+<p>To follow the examples in this section it is recommended to start Simics with the following script:</p>
+<p><code>%simics%/targets/qsp-x86/qsp-clear-linux-pcie-demo.simics</code> </p>
+<h2 id="example-of-debugging-a-kernel-module">2.9.1 <a href="#example-of-debugging-a-kernel-module">Example of debugging a kernel module</a></h2>
+<p>This example demonstrates how to debug a custom built kernel module. We use the <code>simics-pcie-demo-driver</code> module, which is included in the <code>QSP-x86</code> package. The example comes with both a kernel module binary and source code for that.</p>
+<p>To locate the installation directory with the example files, run the following command in Simics:</p>
+<pre><code class="language-simics">simics&gt; <strong>lookup-file "%simics%/targets/qsp-x86/target-source/simics-pcie-demo-driver"</strong>
+</code></pre>
+<p>In this example we use the Linux tracker. This tool, which is part of the OS Awareness feature, allows keeping track of Linux tasks and processes. The tracker can provide symbol mappings of kernel modules to the debugger, which is the feature we will use in this example.</p>
+<h3 id="configuring-the-linux-tracker">2.9.1.1 <a href="#configuring-the-linux-tracker">Configuring the Linux tracker</a></h3>
+<p>This section describes the steps needed to configure the Linux tracker for kernel module debugging.</p>
+<p>Create a target machine and start simulation: </p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets/qsp-x86/qsp-clear-linux-pcie-demo.simics</strong>
+simics&gt; <strong>run</strong>
+running&gt;
+</code></pre>
+<p>Let the simulation run until Linux has booted, and the kernel module has been inserted. The simulation is stopped automatically by the script at this point.</p>
+<p>Once the system has booted, we can configure the Linux tracker using symbol information for the current kernel. The tracker accepts symbols in two formats.</p>
+<ul>
+<li>Either the kernel image as an ELF binary with debug information, usually named <code>vmlinux</code>, or </li>
+<li>plain text symbols such as <code>/proc/kallsyms</code> from the target system or <code>System.map</code> from the kernel compilation. </li>
+</ul>
+<p>In this example we will extract <code>kallsyms</code> from the target system and use that as symbols.</p>
+<pre><code class="language-simics">simics&gt; <strong>matic0.download /proc/kallsyms cl-kallsyms</strong>
+matic0:job 5 (download kallsyms)
+simics&gt; <strong>matic0.run-until-job</strong>
+matic0:job 5 (download kallsyms) finished
+simics&gt; <strong>machine.software.tracker.detect-parameters symbol-file = cl-kallsyms -load param-file = cl.params kernel-modules = TRUE</strong>
+[machine.software.tracker.tracker_obj info] Detecting settings using 2 processor(s)
+[machine.software.tracker.tracker_obj info] Successfully detected parameters
+Saved autodetected parameters to cl.params
+simics&gt; <strong>machine.software.enable-tracker</strong>
+OSA control enabled.
+</code></pre>
+<p>The next time we use the Linux tracker with the same kernel we can re-use the same parameters again, by loading the detected parameters using the <code>load-parameters</code> command followed by <code>enable-tracker</code>.</p>
+<p>In order for kernel module debugging to work, a path where to find kernel modules on local disk must be set:</p>
+<pre><code class="language-simics">simics&gt; <strong>machine.software.tracker.set-kernel-modules-path path = "%simics%/targets/qsp-x86/target-source/simics-pcie-demo-driver"</strong>
+</code></pre>
+<p>The kernel module binaries on local disk must match ones running in the target kernel.</p>
+<h3 id="adding-path-maps">2.9.1.2 <a href="#adding-path-maps">Adding path maps</a></h3>
+<p>The kernel module was built under <code>/root/swbuild</code>, but the source files on local host are located under <code>targets/qsp-x86/target-source</code>. To allow the debugger to find the source files, set the following path map:</p>
+<pre><code class="language-simics">simics&gt; <strong>add-pathmap-entry /root/swbuild/ "%simics%/targets/qsp-x86/target-source/"</strong>
+</code></pre>
+<h3 id="debugging">2.9.1.3 <a href="#debugging">Debugging</a></h3>
+<p>Enable the debugger: </p>
+<pre><code class="language-simics">simics&gt; <strong>enable-debugger</strong>
+Debugger enabled.
+</code></pre>
+<p>Set a breakpoint on a function in the module. This will trigger once the drivers file device gets some input.</p>
+<pre><code class="language-simics">simics&gt; <strong>bp.source_location.break chari_write -once</strong>
+Breakpoint 6: 0x6 (planted)
+</code></pre>
+<p>Start the simulation:</p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+</code></pre>
+<p>Then output a string to the file device by writing to it from the Linux shell, using the serial console:</p>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>sudo bash -c 'echo 01 &gt; /dev/simics_pcie_demo_driver'</strong>
+</code></pre>
+<p>The simulation should stop with the following output:</p>
+<pre><code class="language-simics">[tcf] Breakpoint 6 on execution in context machine.mb.cpu0.core[0][0]
+</code></pre>
+<p>At this point the current stack frame can be checked using the <code>frame</code> command. We can see that the simulation stopped at <code>chari_write</code> and that the <em>buffer</em> contains <code>"01"</code> as written to the device.</p>
+<pre><code class="language-simics">simics&gt; <strong>frame</strong>
+#0 0xffffffffc019459c in chari_write(filep=(struct file *) 0xffff8881f01f8300, buffer=(const char *) 0x21664d0 "01\n", len=3, offset=(loff_t *) 0xffffc90001383ef0) at /root/swbuild/simics-pcie-demo-driver/simics-pcie-demo-driver.c:365
+
+simics&gt; <strong>list</strong>
+     363  
+     364  #ifdef DRIVER_VERBOSE
+-&gt;   365       pr_info(KBUILD_MODNAME
+     366  	        ": chari_write called, with %d characters of input!\n", (int)len);
+     367  #endif
+</code></pre>
+<p>Set a breakpoint on <em>line 370</em> and advance the simulation to that point:</p>
+<pre><code class="language-simics">simics&gt; <strong>bp.source_line.break filename = "simics-pcie-demo-driver.c" line-number = 370 -once</strong>
+Breakpoint 7: 0x7 (planted)
+simics&gt; <strong>run</strong>
+[tcf] Breakpoint 7 on execution in context machine.mb.cpu0.core[0][0]
+chari_write(filep, buffer=(const char *) 0x21664d0 "01\n", len=3, offset) at /root/swbuild/simics-pcie-demo-driver/simics-pcie-demo-driver.c:370
+370	    while(charsleft &gt;= 2) {
+</code></pre>
+<p>Stepping in the code is done with the <code>step-into</code>, <code>step-over</code> and <code>step-out</code> commands.</p>
+<pre><code class="language-simics">simics&gt; <strong>step-into</strong>
+chari_write(filep, buffer=(const char *) 0x21664d0 "01\n", len=3, offset) at /root/swbuild/simics-pcie-demo-driver/simics-pcie-demo-driver.c:372
+372	        switch(buffer[0]) {
+</code></pre>
+<p>Note that when step is completed the stack frame and current line will be displayed. As the input was <code>"01"</code> the first switch statement should end up at <code>'0'</code> and the second at <code>'1'</code>.</p>
+<pre><code class="language-simics">simics&gt; <strong>step-into</strong>
+373                 case '0': led_no=0; break;
+simics&gt; <strong>step-into</strong>
+386             switch(buffer[1]) {
+simics&gt; <strong>step-into</strong>
+388                 case '1': brightness=1; break;
+simics&gt; <strong>step-into</strong>
+396             hw_update_led_state(led_no,brightness);
+simics&gt; <strong>step-into</strong>
+hw_update_led_state(led_no=0, brightness=1)
+ at /root/swbuild/simics-pcie-demo-driver/simics-pcie-demo-driver.c:146
+    146             if( (led_no&lt;0) || (led_no&gt;5)) {
+</code></pre>
+<p>The program enters another stack frame. Run <code>stack-trace</code> to see the current stack trace:</p>
+<pre><code class="language-simics">simics&gt; <strong>stack-trace maxdepth = 2</strong>
+#0 0xffffffffc01941a0 in hw_update_led_state(led_no=0, brightness=1) at /root/swbuild/simics-pcie-demo-driver/simics-pcie-demo-driver.c:146
+#1 0xffffffffc019465d in chari_write(filep, buffer=(const char *) 0x21664d0 "01\n", len=3, offset) at /root/swbuild/simics-pcie-demo-driver/simics-pcie-demo-driver.c:396
+</code></pre>
+<p>Inspect symbols in the current frame with the <code>sym-value</code> and <code>sym-type</code> commands:</p>
+<pre><code class="language-simics">simics&gt; <strong>sym-value brightness</strong>
+1
+simics&gt; <strong>sym-type brightness</strong>
+int
+</code></pre>
+<p>Change symbol values using the <code>sym-write</code> command: </p>
+<pre><code class="language-simics">simics&gt; <strong>sym-write brightness 0</strong>
+brightness = 0
+</code></pre>
+<p>Step out to return to the outer function, <code>chari_write</code>: </p>
+<pre><code class="language-simics">simics&gt; <strong>step-out</strong>
+chari_write(filep, buffer=(const char *) 0xfab4d0 "01\n", len=3, offset) at /root/swbuild/simics-pcie-demo-driver/simics-pcie-demo-driver.c:400
+400	        buffer    += 2;
+</code></pre>
+<p>Now step to the end of <code>chari_write</code>. The while loop should complete after the first iteration.</p>
+<pre><code class="language-simics">simics&gt; <strong>step-into</strong>
+370	    while(charsleft &gt;= 2) {
+simics&gt; <strong>step-into</strong>
+403	    return len;
+</code></pre>
+<p>We check the return value <code>len</code>, before returning, and see that the function claims that 3 bytes have been consumed.</p>
+<pre><code class="language-simics">simics&gt; <strong>sym-value len</strong>
+3
+</code></pre>
+<div class="note">
+<p>The kernel module used in this example is compiled with some optimizations, meaning that some variables are optimized out and some code paths can appear strange when stepping.</p>
+</div>
+<h2 id="setting-up-and-enabling-the-debugger">2.9.2 <a href="#setting-up-and-enabling-the-debugger">Setting up and enabling the debugger</a></h2>
+<p>The first step in order to use the debugger is to enable it: </p>
+<pre><code class="language-simics">simics&gt; <strong>enable-debugger</strong>
+</code></pre>
+<p>Then symbol files, with debug information, for the target software need to be added in order for debugging to work.</p>
+<pre><code class="language-simics">simics&gt; <strong>add-symbol-file &lt;binary to debug&gt;</strong>
+</code></pre>
+<pre><code class="language-simics">simics&gt; <strong>add-symbol-file "%simics%/targets/qsp-x86/images/debug_example"</strong>
+</code></pre>
+<div class="note">
+<p>OS Awareness trackers can provide symbol files to the debugger instead of having to add them using the command.</p>
+</div>
+<p>In case the source files are not present in the same location as they were compiled, a path map is needed for the debugger to locate the source:</p>
+<pre><code class="language-simics">simics&gt; <strong>add-pathmap-entry &lt;compilation path&gt; &lt;local disk path&gt;</strong>
+</code></pre>
+<p>When the debugger is enabled and the simulations stops the current stack frame will be displayed, under the condition that there is a valid symbol file added for the current debug context and address. </p>
+<pre><code class="language-simics">simics&gt; <strong>add-pathmap-entry /tmp .</strong>
+</code></pre>
+<h2 id="debug-contexts">2.9.3 <a href="#debug-contexts">Debug Contexts</a></h2>
+<p>A <em>debug context</em> represents something that can be debugged, such as:</p>
+<ul>
+<li>a hardware concept, like a processor, </li>
+<li>a process, or </li>
+<li>a thread or similar operating system concept. </li>
+</ul>
+<p>The <code>debug-context</code> command can be used to see current debug context or specify a different one.</p>
+<pre><code class="language-simics">simics&gt; <strong>debug-context</strong>
+dbg0 (the x86QSP1 machine.mb.cpu0.core[0][0])
+simics&gt; <strong>debug-context object = "machine.mb.cpu0.core[1][0]"</strong>
+dbg1 (the x86QSP1 machine.mb.cpu0.core[1][0])
+</code></pre>
+<p>To see available debug context, use the <code>list-debug-contexts</code> command, which optionally can take <em>context-query</em> as argument.</p>
+<pre><code class="language-simics">simics&gt; <strong>list-debug-contexts</strong>
+Fully Qualified Name        | Fully Qualified Name
+----------------------------+---------------------------
+/machine                    | /machine/mb.cpu0.mem[0][0]
+/machine/mb.cpu0.core[0][0] | /machine/mb.cpu0.mem[1][0]
+/machine/mb.cpu0.core[1][0] | 
+</code></pre>
+<p>Th <em>context-query</em> argument can be used to match a subset of contexts. To list contexts directly under root:</p>
+<pre><code class="language-simics">simics&gt; <strong>list-debug-contexts context-query="/*"</strong>
+Fully Qualified Name
+--------------------
+/machine
+</code></pre>
+<p>To match specific processor:</p>
+<pre><code class="language-simics">simics&gt; <strong>list-debug-contexts context-query="/machine/'mb.cpu0.core[1][0]'"</strong>
+Fully Qualified Name
+---------------------------
+/machine/mb.cpu0.core[1][0]
+</code></pre>
+<p>A <em>context query</em> is a method to specify a subset of debug contexts, by specifying context properties and what values to match. The default property is <em>name</em>.</p>
+<p>The forward slashes in the context names are separators. A query consists of a sequence of parts separated by forward slashes. Two wildcards exist, <em>*</em> and <em>**</em>, where one asterisk is used to match any context and two asterisks matches any sequence of contexts.</p>
+<p>Many debugger related commands, such as <code>add-symbol-file</code> and <code>add-pathmap-entry</code>, take <em>context-query</em> as an argument to limit what contexts it applies to. Leaving the argument out, means matching all possible debug contexts.</p>
+<p>As example, for a symbol file to only apply for a specific processor then <code>add-symbol-file</code> should be called with the <em>context-query</em> argument to match the processor name.</p>
+<pre><code class="language-simics">simics&gt; <strong>add-symbol-file context-query="/machine/'mb.cpu0.core[1][0]'" &lt;symbol file&gt;</strong>
+</code></pre>
+<div class="note">
+<p>Extra quotation is added around the processor name. This is needed when the context name contains special characters, such as dots and brackets.</p>
+</div>
+<h2 id="debugger-commands">2.9.4 <a href="#debugger-commands">Debugger commands</a></h2>
+<p>Simics has several debugger commands for investigating the current state, most of them start with the <code>sym-</code> prefix. Here follows some examples of debugger commands: </p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:sym-value">sym-value</span><br>
+Evaluate an expression in the current stack frame, such as getting the value of a variable. </li>
+<li><span class="term" id="dt:sym-source">sym-source</span><br>
+Get the source file and line for an address or a function. </li>
+<li><span class="term" id="dt:sym-function">sym-function</span><br>
+Get the function for an address. </li>
+<li><span class="term" id="dt:sym-address">sym-address</span><br>
+Get the address of a line or symbol. </li>
+<li><span class="term" id="dt:stack-trace">stack-trace</span><br>
+Display the current stack trace with addresses, functions and source lines. </li>
+<li><span class="term" id="dt:frame">frame</span><br>
+Select or display the current stack frame. </li>
+<li><span class="term" id="dt:up-down">up, down</span><br>
+Moves the current stack frame up or down one or more levels. </li>
+<li><span class="term" id="dt:list">list</span><br>
+Lists source code, defaults to showing source at current location. </li>
+</ul>
+</div>
+<p>Simics provides help for all of its commands. It is a good idea to use the <code>help</code> command with the commands to get details and options for the commands.</p>
+<h2 id="breaking-on-a-source-line-or-function">2.9.5 <a href="#breaking-on-a-source-line-or-function">Breaking on a source line or function</a></h2>
+<p>It is possible to stop the simulation when a specific source line or function is hit. To set a breakpoint on a source line use the following command:</p>
+<pre><code class="language-simics">simics&gt; <strong>bp.source_line.break filename = foo.c line-number = 10</strong>
+</code></pre>
+<p>And in a similar way for a function:</p>
+<pre><code class="language-simics">simics&gt; <strong>bp.source_location.break foo</strong>
+</code></pre>
+<p>After setting such breakpoints, the simulation will stop once the source line <code>foo.c:10</code> or the function <code>foo</code> is hit.</p>
+<h2 id="debugging-summary">2.9.6 <a href="#debugging-summary">Debugging Summary</a></h2>
+<p>This concludes this tutorial, in which we have learnt how to use the Simics command line debugger to</p>
+<ul>
+<li>break on a function or source line, </li>
+<li>step in source code, </li>
+<li>show stack traces, </li>
+<li>and investigate and update variables. </li>
+</ul>
+
+<div class="chain">
+<a href="hardware-inspection.html">2.8 Hardware inspection</a>
+<a href="code-coverage-of-target-software.html">2.10 Code Coverage of Target Software</a>
+</div>

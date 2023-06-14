@@ -1,0 +1,106 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>virtual_instruction_breakpoint</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_virtual_data_breakpoint.html">virtual_data_breakpoint</a>
+<a href="__rm_interface_x86_monitor.html">x86_monitor</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_virtual_instruction_breakpoint">virtual_instruction_breakpoint</a></h1>
+<p>
+
+<a name="virtual_instruction_breakpoint"></a><a name="virtual_instruction_breakpoint_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Add and remove virtual-address (and, on x86, linear-address) instruction
+     breakpoints. Every time the processor executes an instruction that
+     intersects the breakpoint's interval, the callback function is called with
+     the processor, and the address and size of the instruction. (The interval
+     includes both endpoints; <i>first</i> must be less than or equal
+     to <i>last</i>.)
+<p>
+     The callback is called before the instruction is executed. If one or more
+     breakpoint callbacks stop the simulation, the stop takes effect before
+     the instruction is run. (This means that once the simulation starts
+     again, the same breakpoints will trigger immediately again. The callback
+     can use <b><i>VT_step_stamp</i></b> to detect re-triggering.) If more than
+     one breakpoint is triggered by the same instruction, the implementation
+     may call their callbacks in any order.
+</p><p>
+     If the filter function is non-null and returns false, the callback is not
+     called. The filter function is supplied with the instruction opcode (the
+     raw bytes of the instruction) and a processor (which may not be the same
+     processor that the breakpoint is set on, but is guaranteed to be of the
+     same class). The filter may base its decision only on the opcode bytes and
+     the string obtained by asking the processor to disassemble the
+     instruction; this allows the implementation to cache the result and omit
+     future calls to the filter function where the opcode and disassembly
+     string would be the same.
+</p><p>
+     On x86, the <code>Virtual_Breakpoint_Flag_Linear</code> flag causes the
+     breakpoint to use linear rather than virtual addresses. Calling with
+     unsupported flags is illegal.
+</p><p>
+     </p><div class="note">
+<b>Note:</b>
+This interface is preliminary and may change without prior notice.
+     </div><a name="virtual_breakpoint_flags_t"></a>
+<pre class="jdocu_small">typedef enum {
+        Virtual_Breakpoint_Flag_Linear = 1
+} virtual_breakpoint_flags_t;</pre><p>
+
+</p><p>
+     </p><pre class="jdocu_small">SIM_INTERFACE(virtual_instruction_breakpoint) {
+        virtual_instr_bp_handle_t *NOTNULL (*add)(
+                conf_object_t *NOTNULL obj,
+                generic_address_t first, generic_address_t last,
+                bool (*filter)(cbdata_call_t filter_data,
+                               conf_object_t *NOTNULL cpu, bytes_t opcode),
+                cbdata_register_t filter_data,
+                void (*NOTNULL callback)(
+                        cbdata_call_t callback_data, conf_object_t *NOTNULL cpu,
+                        generic_address_t address, unsigned size),
+                cbdata_register_t callback_data, uint32 flags);
+        void (*remove)(conf_object_t *NOTNULL obj,
+                       virtual_instr_bp_handle_t *NOTNULL bp_handle);
+};
+#define VIRTUAL_INSTRUCTION_BREAKPOINT_INTERFACE \
+        "virtual_instruction_breakpoint"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_virtual_data_breakpoint.html">virtual_data_breakpoint</a>
+<a href="__rm_interface_x86_monitor.html">x86_monitor</a>
+</div>

@@ -1,0 +1,111 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>apic_bus</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_a20.html">a20</a>
+<a href="__rm_interface_apic_cpu.html">apic_cpu</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_apic_bus">apic_bus</a></h1>
+<p>
+
+<a name="apic_bus"></a><a name="apic_bus_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is implemented by all apic buses, and used by the IO-APICs to
+   send a message over the bus. 
+<p>
+   Messages with delivery mode <code>Apic_Delivery_Mode_Ext_INT</code> needs to be
+   acknowledged. They are acknowledged at the object pointed to by the apic's
+   "pic" attribute via the <code>interrupt_cpu</code> interface.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(apic_bus) {
+        apic_bus_status_t (*interrupt)(conf_object_t *obj,
+                                       apic_destination_mode_t dest_mode,
+                                       apic_delivery_mode_t delivery_mode,
+                                       int level_assert,
+                                       apic_trigger_mode_t trigger_mode,
+                                       uint8 vector,
+                                       uint8 destination);
+};
+
+#define APIC_BUS_INTERFACE "apic_bus"
+</pre><p>
+</p><p>
+
+    
+</p><pre class="jdocu_small">typedef enum {
+        Apic_Destination_Mode_Physical = 0,
+        Apic_Destination_Mode_Logical = 1
+} apic_destination_mode_t;</pre><p>
+
+    
+</p><pre class="jdocu_small">typedef enum {
+        Apic_Delivery_Mode_Fixed = 0,
+        Apic_Delivery_Mode_Lowest_Priority = 1,
+        Apic_Delivery_Mode_SMI = 2,
+        Apic_Delivery_Mode_Remote_Read = 3,
+        Apic_Delivery_Mode_NMI = 4,
+        Apic_Delivery_Mode_INIT = 5,
+        Apic_Delivery_Mode_Start_Up = 6,
+        Apic_Delivery_Mode_Ext_INT = 7
+} apic_delivery_mode_t;</pre><p>
+
+    
+</p><pre class="jdocu_small">typedef enum {
+        Apic_Trigger_Mode_Edge = 0,
+        Apic_Trigger_Mode_Level = 1
+} apic_trigger_mode_t;</pre><p>
+
+    
+</p><pre class="jdocu_small">typedef enum {
+        Apic_Bus_Accepted = 0,
+        Apic_Bus_Retry = 1,
+        Apic_Bus_No_Target = 2,
+        Apic_Bus_Invalid = 3
+} apic_bus_status_t;</pre><p>
+
+</p><p>
+   See the architecture software developer's manual for more information about
+   the parameters. For IPIs, the sender is responsible for filtering out
+   reserved vectors (vectors 0 through 15) and flagging the appropriate error
+   on the sending side. For I/O-APIC initiated interrupts, reserved vectors can
+   be sent and will flag errors in the receiving APICs.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_a20.html">a20</a>
+<a href="__rm_interface_apic_cpu.html">apic_cpu</a>
+</div>

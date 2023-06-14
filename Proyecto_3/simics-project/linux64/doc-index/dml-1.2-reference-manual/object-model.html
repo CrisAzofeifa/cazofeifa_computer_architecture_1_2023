@@ -1,0 +1,641 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2 The Object Model</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="language.html">3 DML 1.2</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.2 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="the-object-model">2 <a href="#the-object-model">The Object Model</a></h1>
+<p>DML is structured around an <em>object model</em>, where each
+DML program describes a single <em>device class</em> (being a
+subclass of the built-in generic device class), which can contain a
+number of <em>member objects</em>. Each member object can in
+its turn have a number of members of its own, and so on in a nested
+fashion.</p>
+<p>Every object (including the device itself) can also have
+<em>methods</em>, which implement the functionality of the
+object, and <em>parameters</em>, which are constant-valued
+members that exist only during compilation.</p>
+<p>Each object is an instance of a <em>class</em>, often simply called the
+"object type"; the built-in object types are described in Section <a class="reference" href="#object-types">2.2</a>. There is no way of adding user-defined classes
+in DML; however, each object is in general locally modified by
+adding (or overriding) members, methods and parameters - this can be
+viewed as creating a local one-shot subclass for each instance.</p>
+<p>Many parts of the DML object model are automatically mapped onto the
+Simics <em>configuration object</em> model; most
+importantly, the device class itself, its attributes and interface
+methods. (See <em>Simics Model Builder User's Guide</em> for details.)</p>
+<h2 id="device-structure">2.1 <a href="#device-structure">Device Structure</a></h2>
+<p>A device is made up of a number of member objects and methods, where any object
+may contain further objects and methods of its own. Although some object types,
+such as <code>events</code>, are generic and can appear almost anywhere, many object types
+only make sense in a particular context and are not allowed elsewhere.</p>
+<ul>
+<li>
+<p>Objects of type <code>bank</code> or <code>port</code> may only appear in a <code>device</code>.</p>
+</li>
+<li>
+<p>Objects of type <code>implement</code> may only appear in a <code>device</code>, <code>port</code>, or <code>bank</code>.</p>
+</li>
+<li>
+<p>Objects of type <code>connect</code> may only appear in a <code>device</code>, <code>port</code>, or <code>bank</code>.</p>
+</li>
+<li>
+<p>Objects of type <code>attribute</code> may only appear in a <code>device</code>, <code>port</code>, <code>bank</code>, or
+<code>implement</code>.</p>
+</li>
+<li>
+<p>Objects of type <code>interface</code> may only appear in a <code>connect</code>.</p>
+</li>
+<li>
+<p>Objects of type <code>register</code> may only appear in a <code>bank</code>.</p>
+</li>
+<li>
+<p>Objects of type <code>field</code> may only appear in a <code>register</code>.</p>
+</li>
+</ul>
+<p>In addition, the generic container object <code>group</code> may be inserted
+as parent of any object type except <code>bank</code>, <code>interface</code>, and <code>implement</code>.</p>
+<h2 id="object-types">2.2 <a href="#object-types">Object Types</a></h2>
+<p>The following is an overview of the available <em>object
+types</em> (the built-in classes):</p>
+<dl><dt id="dt:device">
+<p>device</p>
+</dt><dd>
+<p>Each DML program defines a subclass of the <code>device</code>
+class, which can be instantiated as a configuration object in
+Simics.</p>
+</dd><dt id="dt:attribute">
+<p>attribute</p>
+</dt><dd>
+<p>An arbitrary Simics configuration-object attribute of the
+<code>device</code>. Many attributes are created automatically from
+the declaration of device members such as registers and connects, but it
+is possible to manually add other attributes as well. This can be used
+to provide synthetic information about the device for inspection, or as
+a simple programming interface. Attributes are typically saved
+automatically when a Simics checkpoint is created.</p>
+</dd><dt id="dt:bank">
+<p>bank</p>
+</dt><dd>
+<p>A register bank. Banks make sets of registers accessible by
+placing them in an <em>address space</em>. Register banks
+can be individually mapped into Simics memory spaces. The
+<code>bank</code> class is a subclass of <tt>group</tt>.</p>
+</dd><dt id="dt:register">
+<p>register</p>
+</dt><dd>
+<p>A <code>register</code> holds an integer value, and is generally
+used to model a hardware register. The width of a register is a nonzero
+number of bytes (a register may not be wider than 8 bytes). Registers
+may only occur within a <code>bank</code> (directly or indirectly).
+Registers divide the address space of a bank into discrete elements with
+non-overlapping addresses. Registers are used for communication via
+memory-mapped I/O, and also for storing device state in natural way.
+Sometimes it is useful to have registers that belong to a bank but are
+not mapped into its address space.</p>
+</dd><dt id="dt:field">
+<p>field</p>
+</dt><dd>
+<p>A <code>register</code> can be further divided into
+<em>fields</em> on the bit level. Each such field can be
+accessed separately, both for reading and for writing. The fields of a
+register may not overlap.</p>
+</dd><dt id="dt:group">
+<p>group</p>
+</dt><dd>
+<p>Groups are generic container objects, and are mainly used to define
+logical groups of registers. See also <code>bank</code>.</p>
+</dd><dt id="dt:connect">
+<p>connect</p>
+</dt><dd>
+<p>A <code>connect</code> object holds a reference to a Simics
+configuration object. (Typically, the connected object is expected to
+implement some particular Simics-interface.) An attribute with the same
+name is added to the <code>device</code>; thus, a
+<code>connect</code> is similar to a simple <code>attribute</code>
+object. Usually, initialization is done from outside the device, e.g., in
+a Simics configuration file.</p>
+</dd><dt id="dt:interface">
+<p>interface</p>
+</dt><dd>
+<p>An <code>interface</code> object may only occur within a
+<code>connect</code>. It is used to declare a Simics-interface assumed
+to be implemented by the connected object. In many cases, the name of
+the interface is sufficient, and the body of the object can be left
+empty.</p>
+</dd><dt id="dt:implement">
+<p>implement</p>
+</dt><dd>
+<p>An <code>implement</code> object is used to define a
+Simics-interface that the <code>device</code> implements. The methods
+defined within the <code>implement</code> must correspond to the
+functions of the interface.</p>
+</dd><dt id="dt:port">
+<p>port</p>
+</dt><dd>
+<p>A <code>port</code> object defines a named interface port that
+can contain <code>implement</code> objects. Each port defines a
+separate name space for interface implementations, which means that a
+device may implement the same interface several times on different
+ports.</p>
+<p>Note that <code>bank</code> objects also implicitly defines a
+port.</p>
+</dd><dt id="dt:event">
+<p>event</p>
+</dt><dd>
+<p>An <code>event</code> object is an encapsulation of a Simics event
+that can be posted on a time or step queue. Almost all objects can have
+event members, except events themselves, and objects of type
+<code>field</code> and <code>implement</code>.</p>
+</dd></dl>
+<h2 id="parameters">2.3 <a href="#parameters">Parameters</a></h2>
+<p>Parameters are <em>compile-time, constant-valued</em> object members.
+They exist only during translation from DML to C; no storage is
+allocated for parameters, and they cannot be updated - only overridden.</p>
+<p>No type declarations are necessary for parameters; all DML compile-time
+computations are dynamically type-checked. The possible types of values
+of a parameter are listed below.</p>
+<p>Parameters are used to describe static properties of the objects, such
+as names, sizes, and offsets. There are a number of standard parameters
+that are always defined for every object, and for each object type there
+is a set of additional pre-defined parameters. Furthermore, the
+programmer can add any number of new parameters, or override the
+pre-defined ones.</p>
+<h3 id="parameter-types">2.3.1 <a href="#parameter-types">Parameter Types</a></h3>
+<p>A parameter can be assigned a value of one of the following types:</p>
+<dl><dt id="dt:integer">
+<p>integer</p>
+</dt><dd>
+<p>An arbitrarily-sized integer value.</p>
+</dd><dt id="dt:float">
+<p>float</p>
+</dt><dd>
+<p>A floating-point value.</p>
+</dd><dt id="dt:string">
+<p>string</p>
+</dt><dd>
+<p>A sequence of characters. String literals are written within double quotes.
+Strings can be split over several lines using the <code>+</code> operator; see Section
+<a class="reference" href="language.html#string-concatenation-expressions">3.14.10</a>.</p>
+</dd><dt id="dt:bool">
+<p>bool</p>
+</dt><dd>
+<p>One of the values <tt>true</tt> and
+<tt>false</tt>. These can only be used in tests and boolean
+expressions; they are not integer values.</p>
+</dd><dt id="dt:list">
+<p>list</p>
+</dt><dd>
+<p>A list of arbitrary values. Lists are written as <code>[x1, ..., xN]</code>.</p>
+</dd><dt id="dt:reference">
+<p>reference</p>
+</dt><dd>
+<p>A reference to a DML object or method.</p>
+</dd><dt id="dt:undefined">
+<p>undefined</p>
+</dt><dd>
+<p>The value <code>undefined</code> is a unique value which can only be
+used in the compile-time test <tt>defined <i>x</i></tt>. The result of
+the test is <code>false</code> if <em><code>x</code></em> has the value
+<code>undefined</code>, and <code>true</code> otherwise. The <code>undefined</code>
+value is used mainly as a default for parameters that are intended to be
+overridden.</p>
+</dd></dl>
+<h2 id="methods">2.4 <a href="#methods">Methods</a></h2>
+<p>Methods are object members providing implementation of the functionality
+of the object. Although similar to C functions, DML methods can have
+both a number of input parameters and zero, one or more output
+parameters. DML methods also support a basic exception handling
+mechanism using <code>throw</code> and <code>try</code>.</p>
+<h2 id="devices">2.5 <a href="#devices">Devices</a></h2>
+<p>A <em>device</em> defined by a DML program corresponds
+directly to a Simics <em>configuration object</em>, i.e., something
+that can be included in a Simics configuration. Typically, the device
+object will make its functionality available by implementing one or more
+Simics API <em>interfaces</em> (sets of methods).</p>
+<p>A configuration object can also contain <em>state</em> (data), and can
+have any number of <em>attributes</em>, which are a specialized form
+of interfaces with a pair of <code>get</code>/<code>set</code> methods
+used for inspecting and manipulating some part of the state. (See
+<em>Simics Model Builder User's Guide</em> for further details about
+configuration objects, interfaces and attributes.)</p>
+<h3 id="attributes">2.5.1 <a href="#attributes">Attributes</a></h3>
+<p>The Simics configuration object attributes that are automatically added
+to the device object for objects such as connects and registers are
+often sufficient, but is also possible to define arbitrary additional
+attributes of the device, represented by <code>attribute</code>
+objects.</p>
+<h2 id="register-banks">2.6 <a href="#register-banks">Register Banks</a></h2>
+<p>A <em>register bank</em> (or simply
+<em>bank</em>) is an abstraction that is used to group
+<em>registers</em> in DML, and can also be used as
+an <em>interface port</em>, typically for memory mapped
+communication via the <em>io_memory</em> interface.</p>
+<p>For a register bank to be mapped into a Simics memory space, it must
+have a name, or the <tt>function</tt> parameter must be set to a nonnegative
+integer that is unique within the device.</p>
+<p>A bank normally contains a number of <tt>register</tt>
+objects, but that is not a requirement. It is possible to define an
+alternative implementation of the <code>access</code> method of a particular
+bank, that does not depend on registers.</p>
+<p>Banks also implement the <code>int_register</code> interface,
+allowing for indexed access to registers.  See the definition of the
+<tt>regnum</tt> parameter in registers.</p>
+<p>It is possible to define bank arrays to model a row of
+similar but <em>externally</em> differently mapped banks. Elements (i.e.,
+<em>bank</em>s) in bank arrays are typically mapped into Simics memory spaces
+by their (<em>port</em>) names and indices.</p>
+<h3 id="groups">2.6.1 <a href="#groups">Groups</a></h3>
+<p>A <em>group</em> is a part of a bank that contains a number
+of registers and other groups. It is primarily used to replicate sets
+of registers within one bank. If a bank has a sequence of blocks, each
+containing the same registers, it can be written as a group
+array. This allows for two-dimensional register layouts, as in the
+following example where there are 8×6 instances of register
+<code>r3</code>.</p>
+<pre><code>bank regs {
+    parameter register_size = 4;
+    group blocks[i in 0..7] {
+        register r1 @ $i * 32 + 0;
+        register r2 @ $i * 32 + 4;
+        register r3[j in 0..5] @ $i * 32 + 8 + $j * 4;
+    }
+}
+</code></pre>
+<p>Another typical use of <code>group</code> is in combination with a
+template for the group that contains common registers and
+more that are shared between several groups, as in the following
+example.</p>
+<pre><code>template weird {
+    parameter group_offset;
+    register a size 4 @ $group_offset;
+    register b size 4 @ $group_offset + 4 {
+        method read -&gt; (value) {
+            // When register $b is read, return $a
+            value = $a;
+        }
+    }
+}
+
+bank regs {
+    group block_a is (weird) { parameter group_offset = 128; }
+    group block_b is (weird) { parameter group_offset = 1024; }
+}
+</code></pre>
+<h2 id="registers">2.7 <a href="#registers">Registers</a></h2>
+<p>A <em>register</em> is an object contains an integer value.
+The value can be either unsigned (the default) or signed. Normally, a
+register corresponds to a segment of consecutive locations in the
+address space of the bank; however, it is also possible (and often
+useful) to have registers that are not mapped to any address within
+the bank.  In some cases, registers are mapped to individual register
+numbers rather than to address ranges.  All registers must be part of
+a register bank.</p>
+<p>Every register has a fixed <em>size</em> (or <em>width</em>), which is
+an integral, nonzero number of 8-bit bytes. A single register cannot
+be wider than 8 bytes. The size of the register is given by the
+<tt>size</tt> parameter,
+which can be specified either by a normal parameter assignment, as in</p>
+<pre><code>register r1 {
+  parameter size = 4;
+  ...
+}
+</code></pre>
+<p>or, more commonly, using the following short-hand syntax:</p>
+<pre><code>register r1 size 4 {
+  ...
+}
+</code></pre>
+<p>which has the same meaning. The default size is provided by the
+<tt>register_size</tt>
+parameter of the containing register bank, if that is defined.</p>
+<p>Unless the register defines fields (see below), the value of the
+register can be accessed directly by referencing the object, as in</p>
+<pre><code>log info: "the value of register r1 is %d", $r1;
+</code></pre>
+<p>or</p>
+<pre><code>$r1 += 1;
+</code></pre>
+<p>Storage for the register value is created by default in the generated C
+code. If this is not needed (e.g., if write accesses to the register are
+ignored and read accesses always return a constant value such as 0), it
+can be disabled in order to save memory by setting the
+<tt>allocate</tt>
+parameter to <code>false</code>. Non-allocated registers cannot be accessed
+by value.</p>
+<h3 id="mapping-addresses-to-registers">2.7.1 <a href="#mapping-addresses-to-registers">Mapping Addresses To Registers</a></h3>
+<p>For a register to be mapped into the internal address space of the
+containing bank, its starting address within the bank must be given by
+setting the
+<tt>offset</tt>
+parameter. The address range occupied by the register is then from
+<code>offset</code> to <code>offset</code> + <code>size</code> - 1. The offset
+can be specified by a normal parameter assignment, as in</p>
+<pre><code>register r1 {
+  parameter offset = 0x0100;
+  ...
+}
+</code></pre>
+<p>or using the following short-hand syntax:</p>
+<pre><code>register r1 @ 0x0100 {
+  ...
+}
+</code></pre>
+<p>similar to the <code>size</code> parameter above. Usually, a normal
+read/write register does not need any additional specifications apart
+from the size and offset, and can simply be written like this:</p>
+<pre><code>register r1 size 4 @ 0x0100;
+</code></pre>
+<p>or, if the bank contains several registers of the same size:</p>
+<pre><code>bank b1 {
+  parameter register_size = 4;
+  register r1 @ 0x0100;
+  register r2 @ 0x0104;
+  ...
+}
+</code></pre>
+<p>The translation from the bank address space to the actual value of the
+register is controlled by the <tt>byte_order</tt> parameter. When it is set to
+<code>"little-endian"</code> (the default), the lowest address, i.e., that
+defined by <code>offset</code>, corresponds to the least significant byte in
+the register, and when set to <code>"big-endian"</code>, the lowest address
+corresponds to the most significant byte in the register.  The third
+allowed value of this parameter is <code>undefined</code>, which ensures
+that neither assumption is ever made.</p>
+<h3 id="mapping-indexes-to-registers">2.7.2 <a href="#mapping-indexes-to-registers">Mapping Indexes To Registers</a></h3>
+<p>If the <tt>regnum</tt>
+register parameter is set to a non-negative integer, that register is
+assigned that number as its <em>index number</em>.  Two registers in
+the same bank can never have the same index number.  This number is
+used by the containing register bank when implementing the
+<code>int_register</code> interface that can be used by other
+objects to access registers by name or by number.</p>
+<p>Note that register accesses through the <code>int_register</code> interface
+are not supposed to cause side effects. The implementation calls the
+<code>get</code> method of the register for read accesses and the
+<code>set</code> method for write accesses.
+The <code>before_set</code> and the <code>after_set</code> methods are not
+automatically called in the <code>int_register</code> interface.</p>
+<h3 id="not-mapping-addresses-to-registers">2.7.3 <a href="#not-mapping-addresses-to-registers">Not Mapping Addresses To Registers</a></h3>
+<p>An important thing to note is that registers do not have to be mapped
+at all, neither at an address offset nor with an index number.  This
+is often useful for internal registers that are not directly
+accessible from software.  By using an unmapped register,
+you can get the advantages of using register, such as automatic
+checkpointing and register fields.  This internal register can then be
+used from the implementations of other registers, or other parts of
+the model.</p>
+<p>To make a register unmapped, specify the offset as <code>undefined</code>.
+There is a standard template called <code>unmapped</code> that does
+this, so the following two registers declarations are equivalent:</p>
+<pre><code>register r @ undefined;
+register r is (unmapped);
+</code></pre>
+<h3 id="register-attributes">2.7.4 <a href="#register-attributes">Register Attributes</a></h3>
+<p>For every register, an attribute of integer type is automatically added
+to the Simics configuration class generated from the device model. The
+name of the attribute corresponds to the hierarchy in the DML model;
+e.g., a register named <code>r1</code> in a bank named <code>bank0</code> will
+get a corresponding attribute named <code>bank0_r1</code>.</p>
+<p>The register value is automatically saved when Simics creates a
+checkpoint, unless the
+<tt>configuration</tt>
+parameter indicates otherwise.</p>
+<h3 id="fields">2.7.5 <a href="#fields">Fields</a></h3>
+<p>Real hardware registers often have a number of <em>fields</em> with
+separate meaning. For example, the lowest three bits of the register
+could be a status code, the next six bits could be a set of flags, and
+the rest of the bits could be reserved.</p>
+<p>To make this easy to express, a <code>register</code> object can
+contain a number of <code>field</code> objects. Each field is defined
+to correspond to a bit range of the containing register. (Technically, a
+register that does not contain any explicitly defined fields
+automatically gets a single, anonymous field, which covers the whole
+register.)</p>
+<p>Only the values of the fields are stored in the generated C code; the
+value of the register as a whole is composed from the field values when
+needed (for example, when creating a Simics checkpoint). Storage for
+individual fields can be controlled by the
+<tt>allocate</tt>
+parameter, which by default is inherited from the
+<code>register</code> object.</p>
+<p>For example, the register described above could be modeled as follows,
+using the default little-endian bit numbering.</p>
+<pre><code>bank b2 {
+  register r0 size 4 @ 0x0000 {
+    field status   [2:0];
+    field flags    [8:3];
+    field reserved [15:9] {
+      parameter allocate = false;
+    } ;
+  }
+  ...
+}
+</code></pre>
+<p>Note that the most significant bit number is always the first number (to
+the left of the colon) in the range, regardless of whether little-endian
+or big-endian bit numbering is used. (The bit numbering convention used
+in a source file can be selected by a <tt>bitorder</tt>
+declaration.)</p>
+<p>The value of the field can be accessed by referencing the
+object, as for a register, e.g.:</p>
+<pre><code>log info: "the value of the status field is %d", $r0.status;
+</code></pre>
+<p>Note however that non-allocated fields cannot be accessed this way,
+since they do not have a stored value.</p>
+<h2 id="attributes-2">2.8 <a href="#attributes-2">Attributes</a></h2>
+<p>An <code>attribute</code> object in DML represents a Simics configuration object attribute
+of the device. An attribute is basically a name with an associated pair of <code>get</code>
+and <code>set</code> functions; see Section <a class="reference" href="libraries.html#attribute-methods">4.2.2</a>. The type
+of the value read and written through the get/set functions is controlled by the
+<code>type</code> parameter; see Section <a class="reference" href="libraries.html#attribute-parameters">4.1.4</a>. More
+information about configuration object attributes can be found in <em>Simics Model
+Builder User's Guide</em>.</p>
+<p>Attributes can be used to provide synthetic information about the device
+for inspection, or as a simple programming interface. By default,
+attributes are saved automatically when a Simics checkpoint is created;
+this is controlled by the <code>configuration</code> parameter.</p>
+<p>Note that an attribute is not required to save the written value; this
+is entirely dependent on the intended semantics of the attribute. For
+example, a very simple attribute could do nothing in the <code>set</code>
+function, and always return zero from the <code>get</code> function.</p>
+<p>By defining the <code>allocate_type</code> parameter, the <code>get</code> and
+<code>set</code> functions and the <code>type</code> parameter can be created
+automatically, for simple attribute types that store the written value.</p>
+<p>For attributes defined using <code>allocate_type</code>, the value of the
+attribute can be accessed within DML by referencing the object directly,
+e.g.:</p>
+<pre><code>log info: "the value of attribute a is %d", $dev.a;
+</code></pre>
+<h2 id="connects">2.9 <a href="#connects">Connects</a></h2>
+<p>A <code>connect</code> object is a container for a reference to an
+arbitrary Simics configuration object. An attribute with the same name
+as the connect is added to the Simics configuration class generated
+from the device model. This attribute can be assigned a value of type
+"Simics object".</p>
+<p>A <code>connect</code> declaration is very similar to a simple
+<code>attribute</code> declaration, but specialized to handle
+connections to other objects.</p>
+<p>Typically, the connected object is expected to implement one or more
+particular Simics interfaces, such as <code>simple_interrupt</code>
+(see <em>Simics Model Builder User's Guide</em> for details). This is
+described using <code>interface</code> declarations inside the
+<code>connect</code>.</p>
+<p>Initialization of the connect (i.e., setting the object reference) is done from
+outside the device, usually in a Simics configuration file. Just like other
+attributes, the parameter <tt>configuration</tt> controls whether the value must
+be initialized when the object is created, and whether it is automatically saved
+when a checkpoint is created; see Section
+<a class="reference" href="libraries.html#connect-parameters">4.1.9</a>.</p>
+<p>The actual object pointer, which is of type
+<tt>conf_object_t*</tt> is stored in a <code>data</code>
+member called <code>obj</code>.  This means that to access the current
+object pointer in a connect called <em>otherdev</em>, you need to
+write <code>$otherdev.obj</code>.</p>
+<p>If the <code>configuration</code> parameter is not <code>required</code>,
+the object pointer may have a null value, so any code that tries to
+use it must check if it is set first.</p>
+<p>This is an example of how a connect can be declared and used:</p>
+<pre><code>connect plugin {
+    parameter configuration = "optional";
+}
+
+method mymethod {
+    if ($plugin.obj)
+        log info: "The plugin is connected";
+    else
+        log info: "The plugin is not connected";
+}
+</code></pre>
+<h3 id="interfaces">2.9.1 <a href="#interfaces">Interfaces</a></h3>
+<p>In order to use the Simics interfaces that a connected object
+implements, they must be declared within the <code>connect</code>.
+This is done through <code>interface</code> objects. These name the
+expected interfaces and may also specify additional properties.</p>
+<p>An important property of an interface object is whether or not a connected
+object is <em>required</em> to implement the interface. This can be controlled through
+the interface parameter <code>required</code>, which is <code>true</code> by default; see Section
+<a class="reference" href="libraries.html#interface-parameters">4.1.10</a>. Attempting to connect an object that
+does not implement the required interfaces will cause a runtime error.</p>
+<p>By default, the C type of the Simics interface corresponding to a
+particular interface object is assumed to be the name of the object
+itself with the string <code>"_interface_t"</code> appended. (The C type is
+typically a <code>typedef</code>:ed name for a struct containing function
+pointers). This can be changed by specifying an explicit <code>c_type</code>
+parameter in the interface object.</p>
+<p>The following is an example of a connect with two interfaces, one of
+which is not required:</p>
+<pre><code>connect plugin {
+  interface serial_device;
+  interface rs232_device { parameter required = false; }
+}
+</code></pre>
+<p>Calling interface functions is done in the same way as any C function
+is called, but the first argument which is the target object
+pointer is omitted.</p>
+<p>The <code>serial_device</code> used above has a function with the
+following definition:</p>
+<pre><code>int (*write)(conf_object_t *obj, int value);
+</code></pre>
+<p>This interface function is called like this in DML:</p>
+<pre><code>method call_write(int value) {
+    local int n = $plugin.serial_device.write(value);
+    // code to check the return value omitted
+}
+</code></pre>
+<h2 id="implements">2.10 <a href="#implements">Implements</a></h2>
+<p>When a device needs to export Simics interfaces (such as the
+<code>io_memory</code> interface defined in the standard library file
+<code>io-memory.dml</code>), this is specified by an
+<code>implement</code> object, containing the methods that implement
+the interface. The name of the object is also used as the name of the
+Simics interface registered for the generated device, and the names and
+signatures of the methods must correspond to the C functions of the
+Simics interface. (A device object pointer is automatically added as the
+first parameter of the generated C functions.)</p>
+<p>By default, the C type of the Simics interface is assumed to be the name
+of the object itself with the string <code>"_interface_t"</code> appended.
+(The C type is typically a <code>typedef</code>:ed name for a struct
+containing function pointers.) This can be changed by specifying an
+explicit <code>c_type</code> parameter in the interface object.</p>
+<p>For example, to create an alternative implementation of
+<code>io_memory</code>, we can write:</p>
+<pre><code>implement io_memory {
+  method map(addr_space_t sp, map_info_t info)
+         -&gt; (int status)
+  {
+    ...
+  }
+  method operation (generic_transaction_t *op, map_info_t info)
+         -&gt; (exception_type_t exc)
+  {
+    ...
+  }
+}
+</code></pre>
+<p>The code generated by <code>dmlc</code> for this example assumes that the
+<code>io_memory_interface_t</code> is a C struct type with fields
+<code>map</code> and <code>operation</code> that can hold function pointers of
+the corresponding types. (The <code>io_memory_interface_t</code> type is
+defined in the standard library file <code>simics-api.dml</code>, which is
+automatically included by the <code>dmlc</code> compiler.)</p>
+<h2 id="events">2.11 <a href="#events">Events</a></h2>
+<p>An <em>event</em> object is an encapsulation of a Simics event that can
+be posted on a processor time or step queue. The location of event
+objects in the object hierarchy of the device is not important, so an
+event object can generally be placed wherever it is most convenient.</p>
+<p>An event has a built-in <code>post</code> method, which inserts the event in
+the default queue associated with the device. When the event is
+triggered, the <code>event</code> method of the event is called. The
+built-in default <code>event</code> method simply logs that the event has
+occurred, which can be useful for testing purposes.</p>
+<p>A posted event can have data associated with it. This data is given to
+the <code>post</code> method and is provided to the <code>event</code>
+callback method. The event definition also provided methods for
+checkpointing this data for each posted event. If the event uses any
+data, it needs to define a <code>get_event_info</code> method,
+a <code>set_event_info</code> method and a <code>destroy</code> method.</p>
+<h2 id="ports">2.12 <a href="#ports">Ports</a></h2>
+<p>An interface port is a structural element that groups implementations
+of one or more interfaces. When one configuration object connects to
+another, it can connect to one of the target object's ports, using the
+interfaces in the port. This way, the device model can expose
+different interfaces to different objects.</p>
+<p>Sometimes a port is as simple as a single pin, implementing
+the <code>signal</code> interface, and sometimes it can be more complex,
+implementing high-level communication interfaces.</p>
+<p>It is also possible to define port arrays that are indexed
+with an integer parameter, to model a row of similar connectors.</p>
+
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="language.html">3 DML 1.2</a>
+</div>

@@ -1,0 +1,86 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>mips_eic</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_mips_coprocessor.html">mips_coprocessor</a>
+<a href="__rm_interface_mips_exception_query.html">mips_exception_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_mips_eic">mips_eic</a></h1>
+<p>
+
+<a name="mips_eic"></a><a name="mips_eic_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>mips_eic</code> must be
+   implemented by devices that acts as MIPS External Interrupt
+   Controllers. After the external IRQ signal in the CPU has been raised, the
+   CPU will query the registered External Interrupt Controller for information
+   about the current interrupt request. When the CPU starts the interrupt
+   servicing it calls the <b><i>handled</i></b> function.
+<p>
+   The <b><i>cpu_pending_irqs</i></b> function sends current cause register which
+   stores the pending irqs for software irq, timer irq, fdci irq and pci
+   irq. The external irq controller should take this information to do irq
+   arbitration.
+</p><p>
+   <b><i>requested_ipl</i></b> should used to return the
+   requested interrupt priority level.
+</p><p>
+   There are two options for vector offset calculation. Option 1, EIC device
+   returns a vector number. This vector number will be used together with
+   intctl.vs to calculate the offset. Option 2, EIC returns the offset
+   directly. When using option 1, the <b><i>requested_vect_num</i></b> function
+   should be used to return the vector number. When using option 2, the
+   <b><i>requested_offset</i></b> should be used to return the offset of the
+   requested interrupt.
+</p><p>
+   The <b><i>reg_set</i></b> should return the shadow register set number.
+   </p><pre class="jdocu_small">SIM_INTERFACE(mips_eic) {
+        void (*cpu_pending_irqs)(conf_object_t *NOTNULL obj, uint32 cause);
+        uint32 (*requested_ipl)(conf_object_t *NOTNULL obj);
+        uint32 (*requested_offset)(conf_object_t *NOTNULL obj);
+        uint32 (*requested_vect_num)(conf_object_t *NOTNULL obj);
+        uint32 (*reg_set)(conf_object_t *NOTNULL obj);
+        void (*handled)(conf_object_t *NOTNULL obj);
+};
+
+#define MIPS_EIC_INTERFACE "mips_eic"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_mips_coprocessor.html">mips_coprocessor</a>
+<a href="__rm_interface_mips_exception_query.html">mips_exception_query</a>
+</div>

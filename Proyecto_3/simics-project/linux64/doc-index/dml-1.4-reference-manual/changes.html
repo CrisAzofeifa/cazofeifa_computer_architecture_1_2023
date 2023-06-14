@@ -1,0 +1,242 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>B Changes from DML 1.2 to DML 1.4</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="messages.html">A Messages</a>
+<a href="port-dml.html">B.4 Porting DML 1.2 to DML 1.4</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="changes-from-dml-1-2-to-dml-1-4">B <a href="#changes-from-dml-1-2-to-dml-1-4">Changes from DML 1.2 to DML 1.4</a></h1>
+<p>DML 1.4 is in general very similar to DML 1.2 in syntax and semantics.
+However, some key differences do exist which we will highlight here.</p>
+<h2 id="toy-dml-1-2-device">B.1 <a href="#toy-dml-1-2-device">Toy DML 1.2 device</a></h2>
+<pre><code>dml 1.2;
+
+device example;
+
+method foo(a) -&gt; (int b, bool c) nothrow {
+    b = a;
+    c = false;
+    if (a == 0) {
+        c = true;
+    }
+}
+
+method bar(int a) {
+    if (a == 0) {
+        throw;
+    }
+}
+
+// Bank
+bank b {
+    register r[20] size 4 @ 0x0000 + $i * 4 is read {
+        method after_read(memop) {
+            local int b;
+            inline $foo(2) -&gt; (b, $c);
+        }
+
+        field f [7:0];
+
+        data bool c;
+    }
+}
+
+template t1 {
+    parameter p default 1;
+}
+
+template t2 {
+    parameter p = 2;
+}
+
+attribute a is (t1, t2) {
+    parameter allocate_type = "int32";
+
+    method after_set() {
+        call $bar($this);
+        $this = $p;
+    }
+}
+</code></pre>
+<h2 id="the-corresponding-dml-1-4-device">B.2 <a href="#the-corresponding-dml-1-4-device">The corresponding DML 1.4 device</a></h2>
+<pre><code>dml 1.4;
+
+device example;
+
+inline method foo(inline a) -&gt; (int, bool) /* b, c */ {
+    local int b;
+    local bool c;
+    b = a;
+    c = false;
+    #if (a == 0) {
+       c = true;
+    }
+    return (b, c);
+}
+
+method bar(int a) throws {
+    if (a == 0) {
+        throw;
+    }
+}
+
+// Bank
+bank b {
+    register r[i &lt; 20] size 4 @ 0x0000 + i * 4 is read_register {
+        method read_register(uint64 enabled_bytes, void *aux) -&gt; (uint64) {
+            local uint64 value = default(enabled_bytes, aux);
+            local int b;
+            (b, c) = foo(2);
+            return value;
+        }
+
+        field f @ [7:0];
+
+        session bool c;
+    }
+}
+
+template t1 {
+    param p default 1;
+}
+
+template t2 is t1 {
+    param p = 2;
+}
+
+attribute a is (int64_attr, t1, t2) {
+
+    method set(attr_value_t value) throws {
+        default(value);
+        this.val = p;
+    }
+}
+</code></pre>
+<h2 id="key-differences">B.3 <a href="#key-differences">Key Differences</a></h2>
+<pre><code>dml 1.4;
+</code></pre>
+<p>In very DML 1.4 file, this must be the first declaration.</p>
+<pre><code>inline method foo(inline a) ...
+</code></pre>
+<p>The syntax for <a href="language.html#inline-methods">inlining a method</a>
+call has changed. It is now strictly an attribute of the method being
+<em>called</em>, declaring itself to be inline and which arguments are inline.</p>
+<pre><code>... -&gt; (int, bool) /* b, c */
+</code></pre>
+<p>Return values are no longer named in
+<a href="language.html#methods-detailed">method declarations</a>, rather only their types
+need to be declared. This also means they are not
+inherently available as variables in the method body scope.</p>
+<pre><code>local int b;
+local bool c;
+</code></pre>
+<p>Previously, these variables were declared as return values. They are now
+declared as <a href="language.html#local-statements">locals</a> instead.</p>
+<pre><code>#if (a == 0) {
+</code></pre>
+<p>The <a href="language.html#if-else-statements"><code>#if</code></a> syntax is useful to do
+compile-time evaluation of constants, in DML 1.2 this would be done with
+regular <code>if</code>.</p>
+<pre><code>return (b, c);
+</code></pre>
+<p>In DML 1.4 you must explicitly return the return values.</p>
+<pre><code>method bar(int a) throws
+</code></pre>
+<p>A method that might throw must be annotated with the
+<a href="language.html#input-parameters-and-return-values"><code>throws</code></a> keyword.</p>
+<pre><code>register r[i &lt; 20] ...
+</code></pre>
+<p>The syntax for <a href="language.html#object-declarations">object arrays</a>
+has changed. The index name can no longer be implicit, and the
+range syntax is now <code>[index &lt; size]</code>.</p>
+<pre><code>.., @ 0x0000 + i * 4 ...
+</code></pre>
+<p>The <code>$</code> prefix on variables has been removed. See
+<a href="changes-manual.html#dollar_changes">Backward Incompatible changes</a> for the
+variable scope implications of this.</p>
+<pre><code>... is read_register {
+   method read_register(uint64 enabled_bytes, void *aux) -&gt; (uint64) {
+            local uint64 value = default(enabled_bytes, aux);
+            ...
+   }
+</code></pre>
+<p>The API for the <a href="dml-builtins.html">builtin library</a> has changed. In this case
+the <code>after_read</code> method has been replaced, and instead the <code>read_register</code>
+method must be overridden in order to call its <code>default</code> implementation and then
+implement the after read logic.</p>
+<pre><code>field f  @ [7:0];
+</code></pre>
+<p>The syntax for <a href="language.html#field-declarations">field declarations</a> has
+changed, you must now specify an <code>@</code> before the bit range of the field.</p>
+<pre><code>session bool c;
+</code></pre>
+<p>Data declarations have been replaced with
+<a href="language.html#session-variables">session</a> declarations.</p>
+<pre><code>template t1 {
+    param p default 1;
+}
+
+template t2 is t1 {
+    param p = 2;
+}
+
+attribute a is (int64_attr, t1, t2) {
+</code></pre>
+<p>The parameter override behaviour has been made stricter. In the case where
+multiple declarations of a parameter conflict DML will not pick a particular
+declaration if it is the only non-default one, rather it will check the
+<a href="language.html#templates">template hierarchy</a> to determine which declarations
+override which.</p>
+<pre><code>method set(attr_value_t value) throws {
+        default(value);
+</code></pre>
+<p>Similar to above for registers, the <code>after_set</code> method of attributes is no
+more. Instead the set method must be overridden and <code>default</code> called.</p>
+<pre><code>this.val = p;
+</code></pre>
+<p>Registers, fields, and attributes are no longer proper values in DML 1.4,
+their session variable <code>.val</code> must be accessed, or a <code>get</code>, or <code>set</code> method
+be called.</p>
+
+<ul class="subsections">
+<li>
+<a href="port-dml.html">B.4 Porting DML 1.2 to DML 1.4</a>
+</li>
+<li>
+<a href="changes-auto.html">B.5 Language differences handled by the port-dml script</a>
+</li>
+<li>
+<a href="changes-manual.html">B.6 Backward incompatible changes, not automatically converted</a>
+</li>
+</ul>
+<div class="chain">
+<a href="messages.html">A Messages</a>
+<a href="port-dml.html">B.4 Porting DML 1.2 to DML 1.4</a>
+</div>

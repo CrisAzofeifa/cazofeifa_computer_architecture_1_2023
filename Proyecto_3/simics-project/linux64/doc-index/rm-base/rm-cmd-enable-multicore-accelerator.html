@@ -1,0 +1,73 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>enable-multicore-accelerator</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-enable-mtprof.html">enable-mtprof</a>
+<a href="rm-cmd-enable-multimachine-accelerator.html">enable-multimachine-accelerator – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="enable-multicore-accelerator"></a>
+<a name="enable-mca"></a>
+<h1 id="enable-multicore-accelerator"><a href="#enable-multicore-accelerator">enable-multicore-accelerator</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>enable-multicore-accelerator</b> [<i>cell</i>] [<i>protocol</i>] [<i>max-time-span</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Activate the "multicore" threading mode. In this mode, multiple threads are used to simulate processors and clocks concurrently within a cell, provided that the models support this execution mode.
+<p>
+The command is a shorthand for <code>set-threading-mode multicore</code>.
+</p><p>
+If <i>cell</i> is given, then "multicore" threading mode is set for that particular cell, otherwise it will be used for all cells in the configuration.
+</p><p>
+The <i>protocol</i> argument chooses between different memory protection schemes and can be one of: <tt>msi</tt>, <tt>ww</tt>, or <tt>wwp</tt>. The msi protocol means that there can be multiple simultaneous readers for each memory region (currently the MMU page size of the target architecture) but only one writer. The ww protocol allows multiple simultaneous writers to the same memory region. This requires that the host has an equal or stricter memory consistency model then the simulated target architecture. In particular, target write operations must be as atomic on the host as on the target. Both these protocol requests exclusive read/write permissions for atomic operations. The wwp protocol uses host atomic operations to implement target atomic operations if possible. Currently this is not 100% accurate but will only fail for very obscure cases not normally found in parallel workloads.
+</p><p>
+The <i>max-time-span</i> argument specifies the maximum virtual time span (in seconds) that is allowed between clocks in an multicore accelerator enabled cell. This corresponds to the min latency that can be set between cells in sync domains.
+</p><p>
+NOTE: The multicore accelerator mode is not deterministic. This means that running the same workload multiple times will most likely behave differently due to different interleaving of memory accesses. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-set-threading-mode.html">set-threading-mode</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-enable-mtprof.html">enable-mtprof</a>
+<a href="rm-cmd-enable-multimachine-accelerator.html">enable-multimachine-accelerator – deprecated</a>
+</div>

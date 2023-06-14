@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7 Limitations</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="execution-of-systemc-models-in-the-simics-simulator.html">6 Execution of SystemC Models in the Simics Simulator</a>
+<a href="building-required-libraries.html">8 Building Required Libraries</a>
+</div>
+<div class="path">
+<a href="index.html">SystemC* Library</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="limitations">7 Limitations</a></h1>
+<p>
+
+</p><ul>
+  <li>The kernel must be statically linked with the model in order to satisfy
+  the isolation properties expected by all Simics modules</li>
+  <li>Awareness for sockets only supports a BUSWIDTH of 32 and 64</li>
+  <li>Awareness for processes does not track spawned processes at run-time</li>
+  <li>The memory profiling feature does not support threads instantiated using
+    SC_CTHREAD. Allocations made by threads instantiated using SC_THREAD are
+    supported</li>
+  <li>The memory profiling results include allocations made by the SystemC
+    kernel</li>
+  <li>SystemC adapters from the same (Simics) module cannot be instantiated in
+  multiple cells. This limitation comes from the SystemC kernel itself, having
+  a global/shared sc_simcontext pointer. Simics supports multiple instances of
+  the kernel, by allocating a new context for each instance and updating the
+  global context at the enter/exit of each instance. To run the same SystemC
+  model in multiple cells, the model must be wrapped in separate modules.</li>
+  <li>Similar with the previous limitation, SystemC adapters from the same
+  (Simics) module does not work in multicore accelerator mode. </li>
+  <li>Static SystemC objects are only supported for the first instance of each
+    <b>Adapter</b> created in Simics</li>
+  <li>The <b>simics2tlm::Transaction</b> gasket does not support
+    checkpointing of asynchronous transactions</li>
+  <li>The TLM transaction injected to a multi passthrough initiator socket is
+  only sent to the first bound target socket.</li>
+</ul>
+
+<div class="chain">
+<a href="execution-of-systemc-models-in-the-simics-simulator.html">6 Execution of SystemC Models in the Simics Simulator</a>
+<a href="building-required-libraries.html">8 Building Required Libraries</a>
+</div>

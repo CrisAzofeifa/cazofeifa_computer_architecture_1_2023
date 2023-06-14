@@ -1,0 +1,342 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Quickstart</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="index.html">PCIe Modeling Library</a>
+<a href="high-level-design.html">High level design</a>
+</div>
+<div class="path">
+<a href="index.html">PCIe Modeling Library</a>
+&nbsp;/&nbsp;</div>
+<h1 id="quickstart"><a href="#quickstart">Quickstart</a></h1>
+<h2 id="endpoint"><a href="#endpoint">Endpoint</a></h2>
+<p>To create a PCIe endpoint:</p>
+<ul>
+<li>Import <code>"pcie/common.dml"</code></li>
+<li>Add the template <code>pcie_endpoint</code> to the top level of your device code.</li>
+<li>Set <code>init_val</code> for the registers <code>device_id</code> and <code>vendor_id</code> in the
+<code>pcie_config</code> bank.</li>
+<li>If your endpoint defines optional capabilities: set the <code>init_val</code> of
+the <code>capabilities_ptr</code> register and add capability templates for the
+capabilities present.</li>
+<li>Create one or several banks that implement the application logic
+present in your endpoint. These will be mapped by the Base Address
+Register(s) created in the next step.</li>
+<li>Add Base Address registers present in your endpoint, using e.g. the
+<code>memory_base_address</code> template, setting the <strong>map_obj</strong> parameter to
+the application logic banks you created in the previous step.</li>
+</ul>
+<figure id="simple-endpoint-example">
+<figcaption>Figure 1. Simple Endpoint</figcaption>
+<pre><code class="language-dml">dml 1.4;
+device endpoint;
+import "pcie/common.dml";
+
+is pcie_endpoint;
+
+bank pcie_config {
+    register vendor_id { param init_val = 0x8086; }
+    register device_id { param init_val = 0x4042; }
+    register bar0 size 8 @ 0x10 is memory_base_address {
+        // size 8 makes this a 64-bit BAR
+        param map_obj = app0.obj;
+    }
+    register bar2 size 4 @ 0x18 is memory_base_address {
+        param map_obj = app2.obj;
+    }
+    register capabilities_ptr {
+        // points to the base address of the first capability
+        param init_val = 0x40;
+    }
+
+    group ssid is ssid_capability {
+        param base = 0x40;
+        param next_ptr = 0x60;
+        register ssvid { param init_val = 0x8086; }
+    }
+
+    group msi is msi_capability {
+        param base = 0x60;
+        param next_ptr = 0x0;
+        param is_64bit_capable = true;
+        param is_pvm_capable = true;
+        param is_emd_capable = true;
+        param num_vectors = 2;
+    }
+}
+
+bank app0 {
+    // defines application logic tied to BAR0
+    register intr size 1 @ 0x0 is write {
+        method write(uint64 value) {
+            pcie_config.msi.raise(0);  // raise MSI vector 0 on write
+        }
+    }
+}
+
+bank app2 {
+    // application logic tied to BAR2 goes here
+}
+</code></pre>
+</figure>
+<h2 id="multi-function-endpoint"><a href="#multi-function-endpoint">Multi-Function Endpoint</a></h2>
+<p>To create a Multi-Function PCIe endpoint:</p>
+<ul>
+<li>Import <code>"pcie/common.dml"</code></li>
+<li>Add the template <code>pcie_multifunction_endpoint</code> to the top level of your device code.</li>
+<li>Define one bank for each function in your endpoint, using the template <code>type_0_bank</code></li>
+<li>For each bank, apply the appropriate steps from section <a class="reference" href="#endpoint">Endpoint</a></li>
+</ul>
+<figure id="simple-mf-endpoint-example">
+<figcaption>Figure 2. Simple Multi-Function Endpoint</figcaption>
+<pre><code class="language-dml">dml 1.4;
+device endpoint;
+import "pcie/common.dml";
+
+is pcie_multifunction_endpoint;
+
+bank f0 is type_0_bank {
+    param function = 0;
+
+    register vendor_id { param init_val = 0x8086; }
+    register device_id { param init_val = 0x4042; }
+    register bar0 size 8 @ 0x10 is memory_base_address {
+        param map_obj = app0.obj;
+    }
+    register capabilities_ptr { param init_val = 0x40; }
+
+    group ssid is ssid_capability {
+        param base = 0x40;
+        param next_ptr = 0x60;
+        register ssvid { param init_val = 0x8086; }
+    }
+
+    group msi is msi_capability {
+        param base = 0x60;
+        param next_ptr = 0x0;
+        param is_64bit_capable = true;
+        param is_pvm_capable = true;
+        param is_emd_capable = true;
+        param num_vectors = 2;
+    }
+}
+bank f1 is type_0_bank {
+    param function = 1;
+
+    register vendor_id { param init_val = 0x8086; }
+    register device_id { param init_val = 0x4043; }
+
+    register bar0 size 4 @ 0x10 is memory_base_address {
+        param map_obj = app2.obj;
+    }
+}
+
+bank app0 {
+    // defines application logic tied to f0.BAR0
+}
+
+bank app2 {
+    // application logic tied to f1.BAR0 goes here
+}
+</code></pre>
+</figure>
+<h2 id="switch"><a href="#switch">Switch</a></h2>
+<ul>
+<li>Import <code>"pcie/common.dml"</code></li>
+<li>Create subdevices for your upstream and downstream ports, adding the template
+<code>pcie_root_port</code> to all of them.</li>
+<li>Connect the downstream ports to the upstream port</li>
+<li>Set <code>init_val</code> for the registers <code>device_id</code> and <code>vendor_id</code> in the
+<code>pcie_config</code> bank of each subdevice.</li>
+<li>If your ports have additional capabilities: set <code>init_val</code> of the
+<code>capabilities_ptr</code> register and add capability templates for the
+capabilities present.</li>
+<li>If your switch implements application logic:
+<ul>
+<li>Add e.g. banks that implement the registers that control this application
+logic.</li>
+<li>Add Base Address registers, using e.g. the <code>memory_base_address</code>
+template, setting the <strong>map_obj</strong> parameter to the application
+logic banks you've created.</li>
+</ul>
+</li>
+</ul>
+<p>Here is a simple Switch example with one upstream port and four
+downstream ports. The upstream port has MSI-X capability and built-in
+application logic tied to BAR0:</p>
+<figure id="simple-switch-example">
+<figcaption>Figure 3. Simple Switch</figcaption>
+<pre><code>dml 1.4;
+device pcie_switch;
+import "pcie/common.dml";
+
+subdevice usp "Upstream Port" {
+    is pcie_root_port;
+    bank pcie_config {
+        register vendor_id { param init_val = 0x8086; }
+        register device_id { param init_val = 0x4042; }
+    }
+    register bar0 size 4 @ 0x10 is memory_base_address {
+        param map_obj = app0.obj;
+    }
+
+    register capabilities_ptr { param init_val = 0x40; }
+
+    group msix is msix_capability {
+        param base = 0x40;
+        param next_ptr = 0x0;
+        param num_vectors = 32;
+        param table_offset_bir = 0x1000;
+        param pba_offset_bir = 0x5000;
+        param data_bank = msix_data;
+    }
+}
+
+subdevice dsp[i &lt; 3] "Downstream Port" {
+    is pcie_root_port;
+    is post_init;
+    method post_init() {
+        // connect this port to the internal bus of the upstream port
+        // the second argument is the DeviceID, i.e. bus/device/function
+        // where the device-number is bits 7:3
+        pcie_device.connected(usp.downstream_port.obj, 1 &lt;&lt; 3);
+    }
+    bank pcie_config {
+        register vendor_id { param init_val = 0x8086; }
+        register device_id { param init_val = 0x4043; }
+    }
+}
+
+bank app0 {
+    // application logic tied to BAR0 in the upstream port goes here
+}
+
+bank msix_data is msix_table;  // storage for MSI-X table and pba
+
+</code></pre>
+</figure>
+<h2 id="root-complex"><a href="#root-complex">Root Complex</a></h2>
+<ul>
+<li>Import <code>"pcie/common.dml"</code></li>
+<li>Apply the <code>pcie_bridge</code> template to the top level of your device code.</li>
+<li>Create subdevices for your downstream ports, applying the template
+<code>pcie_root_port</code> to all of them.</li>
+<li>Connect the downstream ports to the <code>downstream_port</code> object created
+by the <code>pcie_bridge</code> template.</li>
+<li>Set <code>init_val</code> for the registers <code>device_id</code> and <code>vendor_id</code> in the
+<code>pcie_config</code> bank of each downstream port.</li>
+<li>If your ports have additional capabilities: set <code>init_val</code> of the
+<code>capabilities_ptr</code> register and add capability templates for the
+capabilities present.</li>
+<li>If your Root Complex has integrated endpoints (RCiEPs) you can
+implement these as subdevices in the RC, or as external devices. In
+any case, they need to be connected to the <code>downstream_port</code> of the
+RC.</li>
+</ul>
+<p>Here is an example root complex with one root port and two integrated
+endpoints, one implemented directly in the code and one that is created
+as a subobject, using another class:</p>
+<figure id="simple-rc-example">
+<figcaption>Figure 4. Simple Root Complex</figcaption>
+<pre><code class="language-dml">dml 1.4;
+device root_complex;
+import "pcie/common.dml";
+
+is pcie_bridge;
+
+subdevice rp "PCIe Root Port" {
+    is pcie_root_port;
+    is post_init;
+    method post_init() {
+        // connect this port to the internal bus of the RC
+        // the second argument is the DeviceID, i.e. bus/device/function
+        // where the device-number is bits 7:3
+        pcie_device.connected(dev.downstream_port.obj, 0);
+    }
+    bank pcie_config {
+        register vendor_id { param init_val = 0x8086; }
+        register device_id { param init_val = 0x4043; }
+        register class_code { param init_val = 0x20000; }
+    }
+}
+
+subdevice iep_A "Integrated Endpoint A" {
+    is pcie_endpoint;
+    is hreset;
+    is post_init;
+    method post_init() {
+        // connect this integrated endpoint to the internal bus of the RC
+        // the second argument is the DeviceID, i.e. bus/device/function
+        // where the device-number is bits 7:3
+        pcie_device.connected(dev.downstream_port.obj, 1 &lt;&lt; 3);
+    }
+    bank pcie_config {
+        register vendor_id { param init_val = 0x8086; }
+        register device_id { param init_val = 0x4044; }
+
+        register bar0 size 4 @ 0x10 is memory_base_address {
+            param map_obj = app0.obj;
+        }
+
+        register capabilities_ptr { param init_val = 0x40; }
+
+        group msix is msix_capability {
+            param base = 0x40;
+            param next_ptr = 0x0;
+            param num_vectors = 32;
+            param table_offset_bir = 0x1000;
+            param pba_offset_bir = 0x5000;
+            param data_bank = msix_data;
+        }
+    }
+
+    bank app0 {
+        // application logic tied to BAR0 in the integrated endpoint goes here
+    }
+
+    bank msix_data is msix_table;  // storage for MSI-X table and pba
+}
+
+connect iep_B "Integrated Endpoint B"{
+    is post_init;
+    is init_as_subobj;
+    param classname = "some_class";
+    interface pcie_device;
+    method post_init() {
+        // connect this integrated endpoint to the internal bus of the RC
+        // the second argument is the DeviceID, i.e. bus/device/function
+        // where the device-number is bits 7:3
+        pcie_device.connected(dev.downstream_port.obj, 2 &lt;&lt; 3);
+    }
+}
+</code></pre>
+</figure>
+
+<div class="chain">
+<a href="index.html">PCIe Modeling Library</a>
+<a href="high-level-design.html">High level design</a>
+</div>

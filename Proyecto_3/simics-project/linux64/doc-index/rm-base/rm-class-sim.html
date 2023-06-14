@@ -1,0 +1,582 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>sim</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-signal_to_interrupt.html">signal_to_interrupt</a>
+<a href="rm-class-simics-uefi.html">simics-uefi</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="sim"><a href="#sim">sim</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The <tt>sim</tt> class represents Simics's global simulator state, such as state not tied to a specific processor, device etc.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, callback_describe, module_iface_wrapping
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-sim.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-sim.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:cell_list">
+<i>cell_list</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[o*]</code>
+<br>The list of scheduled cells</dd>
+<dt id="dt:automatic_cell_partition">
+<i>automatic_cell_partition</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>When TRUE, standard Simics components will automatically create cells as appropriate during the instantiation of models. When set to FALSE, all objects instantiated afterwards will be assigned to a default cell, providing a timing behavior compatible with previous Simics versions (3.2 and before).</dd>
+<dt id="dt:version">
+<i>version</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Version (build-id) of Simics that a configuration file was created with.</dd>
+<dt id="dt:handle_outside_memory">
+<i>handle_outside_memory</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>When a physical address is accessed which is neither memory (RAM) nor a memory-mapped device, Simics will default to stop on a special breakpoint and report this, on the assumption that it is erroneous behavior. If this attribute is set to TRUE, then Simics will override the default behavior and instead handle the operation in the manner prescribed by the target architecture. For example, this might trigger a data access exception. This attribute is deprecated, use the <tt>outside_memory_whitelist</tt> attribute of the cpu instances instead.</dd>
+<dt id="dt:always_reissue_after_stall">
+<i>always_reissue_after_stall</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>When TRUE, Simics will always re-run an instruction that has been stalled. Usually Simics will only restart the instruction in a few special cases. This option is useful for debugging, but will affect performance. The re-run of instructions at stall is transparent to users.</dd>
+<dt id="dt:simics_path">
+<i>simics_path</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>The value of the Simics search path. See the commands <code>add-directory</code> and <code>lookup-file</code> for additional information. The current directory is always searched before any entry in the Simics search path.</dd>
+<dt id="dt:cpu_mode">
+<i>cpu_mode</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>The current CPU mode used when loading processor modules. As of simics 6 only normal is allowed. See also the prefs-&gt;cpu_mode attribute.</dd>
+<dt id="dt:gui_mode">
+<i>gui_mode</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>The current GUI mode. One of "gui", "mixed" and "no-gui". See also the prefs-&gt;gui_mode attribute. This attribute may differ from the preference value if one of the -gui, -gui-only and -no-win flags was specified at startup.</dd>
+<dt id="dt:license_file">
+<i>license_file</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s|n</code>
+<br>The currently used FlexNET license-file. See also the prefs-&gt;license_file attribute. This attribute may differ from the preference value if an alternative license file was specified at startup.</dd>
+<dt id="dt:hide_console_windows">
+<i>hide_console_windows</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>A flag indicating whether Simics should hide windows for consoles. Default FALSE.</dd>
+<dt id="dt:fail_on_warnings">
+<i>fail_on_warnings</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, Simics will immediately terminate with a nonzero exit code in the following cases: log messages of 'error' type, deprecation warnings when sim-&gt;deprecation_level=2, and certain internal errors and warnings. The default is FALSE. This flag is set by using the <tt>-werror</tt> command-line option.</dd>
+<dt id="dt:event_queue_max">
+<i>event_queue_max</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Maximum number of events allowed in one event queue. A large number of event in a queue is typically an indication of a problem in a simulation model. Reaching the maximum as set with this attribute causes the simulator to stop, allowing the user to inspect the content of the queues.</dd>
+<dt id="dt:host_name">
+<i>host_name</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>Fully qualified host name</dd>
+<dt id="dt:host_arch">
+<i>host_arch</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>Host architecture. <i>x86_64</i>.</dd>
+<dt id="dt:host_os">
+<i>host_os</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>Host operating system. <i>linux</i> or <i>windows</i>.</dd>
+<dt id="dt:host_type">
+<i>host_type</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>Host type. <i>win64</i> or <i>linux64</i>.</dd>
+<dt id="dt:host_bits">
+<i>host_bits</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>Host bits. <i>64</i>.</dd>
+<dt id="dt:hap_list">
+<i>hap_list</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[s,s,[s+]|n,s|n,s|n,i]*]</code>
+<br>((<i>name</i>, <i>params</i>, <i>param_desc</i>, <i>index</i>, <i>description</i>, <i>handlers</i>), ...). Get list of all haps. <i>handlers</i> is the number of installed callbacks.</dd>
+<dt id="dt:checkpoint_path">
+<i>checkpoint_path</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>File search path for previous checkpoints, used by the <tt>files</tt> attribute in the <tt>image</tt> class.</dd>
+<dt id="dt:simics_base">
+<i>simics_base</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>Full path to the Simics base installation directory.</dd>
+<dt id="dt:simics_home">
+<i>simics_home</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>Full path to the Simics host directory.</dd>
+<dt id="dt:project">
+<i>project</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|n</code>
+<br>Full path to the current project directory. Returns NIL if no project directory is used. This attribute should not be written.</dd>
+<dt id="dt:workspace">
+<i>workspace</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|n</code>
+<br>This attribute is deprecated. Alias for the project attribute.</dd>
+<dt id="dt:host_phys_mem">
+<i>host_phys_mem</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>The amount of physical memory of the host in bytes.</dd>
+<dt id="dt:host_virt_mem">
+<i>host_virt_mem</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>The size of the virtual address space that Simics can use, in bytes.</dd>
+<dt id="dt:host_num_cpus">
+<i>host_num_cpus</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>The number of processors on the host.</dd>
+<dt id="dt:locale_encoding">
+<i>locale_encoding</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>The character encoding used by the current locale.</dd>
+<dt id="dt:filename_encoding">
+<i>filename_encoding</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s</code>
+<br>The character encoding used by host filenames.</dd>
+<dt id="dt:deprecation_level">
+<i>deprecation_level</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>A level of 0 turns off all deprecation warnings. On level 1 (default) Simics will warn when features that have been deprecated in the current major release or further back are used. On level 2, Simics will warn when newly deprecated features, or features that will become deprecated, are used.</dd>
+<dt id="dt:deprecation_stack_trace">
+<i>deprecation_stack_trace</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Set to true to make Simics print a stack trace each time a deprecated feature is used.</dd>
+<dt id="dt:session_comments">
+<i>session_comments</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[fs[[si]*]s]*]</code>
+<br>List of time-stamped user comments for a session.</dd>
+<dt id="dt:session_comments_obj">
+<i>session_comments_obj</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[fo[[oi]*]s]*]</code>
+<br>List of time-stamped user comments for a session. Similar to session_comments that is saved in session files, but with object references instead of names.</dd>
+<dt id="dt:allow_core_dumps">
+<i>allow_core_dumps</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If set to false (default), Simics will catch fatal signals and try to report an error. If set to true, Simics will not handle such signals, but crash and possibly generate a core file on Linux.</dd>
+<dt id="dt:real_network_warnings">
+<i>real_network_warnings</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE (default), Simics will print warnings when the target system becomes accessible from the local network of the host.</dd>
+<dt id="dt:force_ipv4">
+<i>force_ipv4</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, network services such as telnet and VNC in the target consoles will use IPv4 only. Default is FALSE.</dd>
+<dt id="dt:module_cache_enable">
+<i>module_cache_enable</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>TRUE if Simics is caching information about modules.</dd>
+<dt id="dt:version_compat">
+<i>version_compat</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>The build-id of the oldest Simics that this version can load binary modules from.</dd>
+<dt id="dt:module_searchpath">
+<i>module_searchpath</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[s*]</code>
+<br>The list of directories that are scanned for Simics modules</dd>
+<dt id="dt:default_log_level">
+<i>default_log_level</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The log level used for newly created objects.</dd>
+<dt id="dt:max_worker_threads">
+<i>max_worker_threads</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i|n</code>
+<br>Maximum number of worker threads. NIL (the default value) means that Simics will automatically calculate a value based on the host configuration. There must be at least one worker thread in the system.</dd>
+<dt id="dt:use_jit_threads">
+<i>use_jit_threads</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Determines if the JIT engine should use worker threads to help with binary translation.</dd>
+<dt id="dt:page_sharing">
+<i>page_sharing</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Controls page sharing mechanism, useful when simulating multiple similar machines. If this feature is enabled, pages with identical contents will be shared across the system just keeping one copy instead of multiple, resulting in host memory reduction. A page is detected as identical the first time it is accessed or executed.</dd>
+<dt id="dt:page_sharing_savings">
+<i>page_sharing_savings</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>How much memory (in bytes) that currently have been saved due to the page sharing mechanism</dd>
+<dt id="dt:page_sharing_page_size">
+<i>page_sharing_page_size</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>How large (in bytes) each page are that are shared. This is a compile time constant, typically 4K or 8K.</dd>
+<dt id="dt:do_global_page_sharing">
+<i>do_global_page_sharing</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>When read, Simics will go through all active pages in the system and replace identical pages with a one read-only copy-on-write page. The amount of freed memory due to this operation is returned.</dd>
+<dt id="dt:breakpoints">
+<i>breakpoints</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiiiiiisssso[i*]]*]</code>
+<br>((<i>id</i>, <i>type</i>, <i>access</i>, <i>hits</i>, <i>activate_at</i>, <i>active</i>, <i>flags</i>, <i>prefix</i>, <i>substr</i>, <i>strpattern</i>, <i>strmask</i>, <i>object</i>, <i>handle</i>*)*) List of memory breakpoints currently set. <i>id</i> is the breakpoint id as returned by SIM_breakpoint. <i>type</i> is 0 for physical, 1 for virtual, 2 for linear (x86), and 3 for I/O space (x86). <i>access</i> is the access type, three bits that can be combined - read (bit 0), write (bit 1), or execute (bit 2). <i>hits</i> is how many times the breakpoint has been hit (including hits when the breakpoint is disabled). <i>activate_at</i> tells how many times the breakpoints must be hit to be activated. <i>flags</i> is the matching flags (see the breakpoint_flag_t type). Simics can break on instructions with a certain prefix or sub-string. <i>prefix</i> and <i>substr</i> are the strings to use. <i>strpattern</i> and <i>strmask</i> tells if the breakpoints should break on instructions with a specified bit-pattern. First the mask will be applied to the instruction and then the result will be compared with the pattern. For instance if <i>pattern</i> is "0x0100" and <i>mask</i> is "0x0101" the breakpoint will only be triggered for instructions whose first byte has the lowest bit set and the second not. <i>prefix</i>, <i>substr</i> and <i>pattern</i>/<i>mask</i> works only for execution breakpoints and if more than one is set all must be satisfied to trigger the breakpoint. The <i>object</i> together with the list of <i>handle</i>s identify the breakpoint in the handling object. This attribute can only be used to modify existing breakpoints, not to create new or to delete breakpoints.</dd>
+<dt id="dt:batch_mode">
+<i>batch_mode</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, Simics will exit when all scripts specified on the command line have been executed (successfully or not); if FALSE, Simics will return to prompt when the scripts are finished. Default is FALSE. The <tt>-batch-mode</tt> command line argument set this to TRUE.</dd>
+<dt id="dt:echo">
+<i>echo</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, Simics will print out all the commands it executes on the console; if FALSE, Simics will stay quiet. Default is FALSE. The <tt>-echo</tt> command line argument set this to TRUE.</dd>
+<dt id="dt:max_error_messages">
+<i>max_error_messages</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If the number of error messages printed on the console exceeds this value, Simics will exit automatically. This is useful to stop runaway scripts and it is set to 100000 automatically when running in batch-mode. Default is 2^64-1.</dd>
+<dt id="dt:time_quantum">
+<i>time_quantum</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>Default length of the time quantum in seconds, or <tt>Invalid</tt> if not set, or if it is unset. Setting this attribute unsets the <tt>cpu_switch_time</tt> attribute. Symmetrically, this attribute is unset if the <tt>cpu_switch_time</tt> is set.</dd>
+<dt id="dt:cpu_switch_time">
+<i>cpu_switch_time</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Default length of the time quantum in cycles of the first processor in the cell, or <tt>Invalid</tt> if not set, or if it is unset. Setting this attribute unsets the <tt>time_quantum</tt> attribute. Symmetrically, this attribute is unset if the <tt>time_quantum</tt> is set.</dd>
+<dt id="dt:data_stc_enabled">
+<i>data_stc_enabled</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, the internal 'Data Simulator Translation Cache' (DSTC) is enabled. If FALSE, it is disabled. Default is enabled. The DSTC improves Simics performance by caching logical to real translation of commonly used memory addresses. The command line arguments <tt>-dstc</tt> and <tt>-stc</tt> set this to TRUE. The command line arguments <tt>-no-dstc</tt> and <tt>-no-stc</tt> set this to FALSE.</dd>
+<dt id="dt:instruction_stc_enabled">
+<i>instruction_stc_enabled</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, the internal 'Instruction Simulator Translation Cache' (ISTC) is enabled. If FALSE, it is disabled. Default is enabled. The ISTC improves Simics performance by caching logical to real translation of commonly used jumps. The command line arguments <tt>-istc</tt> and <tt>-stc</tt> set this to TRUE. The command line arguments <tt>-no-istc</tt> and <tt>-no-stc</tt> set this to FALSE.</dd>
+<dt id="dt:timing_model_inquiries">
+<i>timing_model_inquiries</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If set to TRUE, then timing models will receive inquiries in addition to real memory operations. Default is FALSE.</dd>
+<dt id="dt:disregard_align">
+<i>disregard_align</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If set to TRUE, ignore alignment settings for simple memory space maps (maps that do not cause byte-swapping) that target another memory space. This attribute may be removed in future releases. Default is FALSE.</dd>
+<dt id="dt:cpu_tick">
+<i>cpu_tick</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i|n*]</code>
+<br>Host ticks per simulated processor. Index i in the list corresponds to the processor with number i. Set to an integer to start counting. Set to nil to disable counting. Processors beyond the length of the list will have counting disabled.</dd>
+<dt id="dt:missed_cpu_ticks">
+<i>missed_cpu_ticks</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>CPU ticks that did not have a executing processor.</dd>
+<dt id="dt:cell_ticks">
+<i>cell_ticks</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[o|ni]*]</code>
+<br>Host ticks per simulated cell. ((cell_object|Nil), ticks)* The Nil entry identifies ticks recorded outside cells.</dd>
+<dt id="dt:cell_tick_enable">
+<i>cell_tick_enable</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Enables the cell tick counting, measuring which cells that execute most. The result of the measurement is found in the cell_ticks attribute. Switching from FALSE to TRUE will remove any old results.</dd>
+<dt id="dt:current_frontend_object">
+<i>current_frontend_object</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Currently selected object in the command line environment.</dd>
+<dt id="dt:env">
+<i>env</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>Unknown</code>
+<br>get/set CLI variable in the current scope</dd>
+<dt id="dt:host_ipv4">
+<i>host_ipv4</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s|n</code>
+<br>The ipv4 address of the host.</dd>
+<dt id="dt:host_ipv6">
+<i>host_ipv6</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s|n</code>
+<br>The ipv6 address of the host.</dd>
+<dt id="dt:package_list">
+<i>package_list</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>s|n</code>
+<br>Package list file used in this session (if any).</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-class-signal_to_interrupt.html">signal_to_interrupt</a>
+<a href="rm-class-simics-uefi.html">simics-uefi</a>
+</div>

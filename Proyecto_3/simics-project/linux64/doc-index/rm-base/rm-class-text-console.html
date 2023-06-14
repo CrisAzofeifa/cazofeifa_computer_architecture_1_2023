@@ -1,0 +1,551 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>text-console</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-test_usb_device.html">test_usb_device</a>
+<a href="rm-class-text-frontend-winsome.html">text-frontend-winsome</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="text-console"><a href="#text-console">text-console</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The <tt>text-console</tt> class provides a text user interface to a simulated machine. The console is typically connected to a simulated serial device. On Windows hosts, a text selection in the console is automatically copied to the clipboard. Text from the clipboard can be inserted in the console by pressing the middle mouse button. On Linux hosts, the console is implemented using an <tt>xterm</tt>.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, serial_device, extended_serial, keyboard_console, recorded
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-text-console.break.html">break</a>
+ – set a string to break on</li>
+<li>
+<a href="rm-cmd-text-console.capture-start.html">capture-start</a>
+ – capture output to file</li>
+<li>
+<a href="rm-cmd-text-console.capture-stop.html">capture-stop</a>
+ – stop output capture to file</li>
+<li>
+<a href="rm-cmd-text-console.close.html">close</a>
+ – close console window</li>
+<li>
+<a href="rm-cmd-text-console.enable-quiet.html">disable-quiet</a>
+ – enable output redirection</li>
+<li>
+<a href="rm-cmd-text-console.enable-read-only.html">disable-read-only</a>
+ – disable read-only mode</li>
+<li>
+<a href="rm-cmd-text-console.enable-quiet.html">enable-quiet</a>
+ – disable output redirection</li>
+<li>
+<a href="rm-cmd-text-console.enable-read-only.html">enable-read-only</a>
+ – enable read-only mode</li>
+<li>
+<a href="rm-cmd-text-console.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-text-console.input.html">input</a>
+ – send string to a console</li>
+<li>
+<a href="rm-cmd-text-console.input-file.html">input-file</a>
+ – input a file into a console</li>
+<li>
+<a href="rm-cmd-text-console.kbd-abort.html">kbd-abort</a>
+ – send a keyboard abort signal</li>
+<li>
+<a href="rm-cmd-text-console.list-break-strings.html">list-break-strings</a>
+ – list all active string breakpoints</li>
+<li>
+<a href="rm-cmd-text-console.open.html">open</a>
+ – open console window</li>
+<li>
+<a href="rm-cmd-text-console.playback-start.html">playback-start</a>
+ – start traffic generator</li>
+<li>
+<a href="rm-cmd-text-console.playback-stop.html">playback-stop</a>
+ – stop traffic generation</li>
+<li>
+<a href="rm-cmd-text-console.record-start.html">record-start</a>
+ – start recording of output on the console</li>
+<li>
+<a href="rm-cmd-text-console.record-stop.html">record-stop</a>
+ – stop recording of output on the console</li>
+<li>
+<a href="rm-cmd-text-console.status.html">status</a>
+ – print status of the object</li>
+<li>
+<a href="rm-cmd-text-console.unbreak.html">unbreak</a>
+ – stop breaking on string</li>
+<li>
+<a href="rm-cmd-text-console.unbreak-id.html">unbreak-id</a>
+ – remove a breakpoint</li>
+<li>
+<a href="rm-cmd-text-console.wait-for-string.html">wait-for-string</a>
+ – wait for a string in a script branch</li>
+<li>
+<a href="rm-cmd-text-console.wait-then-write.html">wait-then-write</a>
+ – wait for a string, then write an input string</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:title">
+<i>title</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>The window title.</dd>
+<dt id="dt:link">
+<i>link</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Deprecated. Do not use.</dd>
+<dt id="dt:device">
+<i>device</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n|[os]</code>
+<br>The device connected to the console, must implement one of the 'serial_device' or 'keyboard' interfaces.</dd>
+<dt id="dt:recorder">
+<i>recorder</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Recorder device for recording and playback of mouse and keyboard input.</dd>
+<dt id="dt:history">
+<i>history</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>d</code>
+<br>Text history of previously printed text to the window.</dd>
+<dt id="dt:history_length">
+<i>history_length</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Maximum history size in bytes.</dd>
+<dt id="dt:output_timeout">
+<i>output_timeout</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Maximum number of seconds the xterm-console allows an xterm to start on. Default is 10 seconds.</dd>
+<dt id="dt:no_window">
+<i>no_window</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If this flag is TRUE, no window will be opened. If it is FALSE, the output is redirected according to the <tt>output_file</tt> and <tt>quiet</tt> attributes.</dd>
+<dt id="dt:output_file">
+<i>output_file</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>If the <tt>no_window</tt> attribute is TRUE, output will be directed to this file.</dd>
+<dt id="dt:quiet">
+<i>quiet</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If the <tt>no_window</tt> attribute is set, this attribute controls whether or not the console output is redirected to Simics console. If set to TRUE, output is not redirected. If set to FALSE, output is redirected unless the <tt>output_file</tt> is set. If the <tt>no_window</tt> attribute is FALSE, then this attribute has no effect.</dd>
+<dt id="dt:read_only">
+<i>read_only</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Don't accept any input from the window. (For batch execution).</dd>
+<dt id="dt:bg_color">
+<i>bg_color</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Default background color. Standard X11 color names or the "#rrggbb" syntax may be used.</dd>
+<dt id="dt:fg_color">
+<i>fg_color</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Default foreground color. Standard X11 color names or the "#rrggbb" syntax may be used.</dd>
+<dt id="dt:scrollback">
+<i>scrollback</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of lines of output saved on screen.</dd>
+<dt id="dt:scrollbar">
+<i>scrollbar</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Non-zero if the window should have a scrollbar.</dd>
+<dt id="dt:width">
+<i>width</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Default number of columns.</dd>
+<dt id="dt:height">
+<i>height</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Default number of rows.</dd>
+<dt id="dt:x11_font">
+<i>x11_font</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Default font used for X11/Linux hosts. This is a regular X11 font specification string, for example "lucidasanstypewriter-18". Run the Linux <tt>xlsfonts</tt> command for more fonts.</dd>
+<dt id="dt:x11_fontbold">
+<i>x11_fontbold</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Default bold-font used for X11/Linux hosts. See documentation for the <tt>x11_font</tt> attribute.</dd>
+<dt id="dt:win32_font">
+<i>win32_font</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Default font used for Windows hosts, on the format: "fontname:weight:pointsize". Default is "Lucida Console:Regular:10".</dd>
+<dt id="dt:input_delayed">
+<i>input_delayed</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[sf]</code>
+<br>(string, seconds) This attribute appends characters to the input queue, after the specified simulated time have elapsed.</dd>
+<dt id="dt:input">
+<i>input</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s|[db]</code>
+<br>Keyboard input queue. This attribute appends characters to input queue.</dd>
+<dt id="dt:input_buf">
+<i>input_buf</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|d</code>
+<br>Keyboard input buffer.</dd>
+<dt id="dt:write_delayed">
+<i>write_delayed</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Flow control. Set if an attempt to send a char was blocked.</dd>
+<dt id="dt:break_string">
+<i>break_string</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s</code>
+<br>An output string causing Simics to trigger a Xterm_Break_String hap when the string is printed.</dd>
+<dt id="dt:break_string_once">
+<i>break_string_once</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s</code>
+<br>An output string causing Simics to trigger a Xterm_Break_String hap when the string is printed. The breakpoint is removed after the first occurrence.</dd>
+<dt id="dt:string_breakpoint_list">
+<i>string_breakpoint_list</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[isi]*]</code>
+<br>List of all string breakpoints currently active. Each string breakpoint is a tuple of (id, string, trigger_once)</dd>
+<dt id="dt:unbreak_string">
+<i>unbreak_string</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s</code>
+<br>Stop breaking on a specified string. Note that if a string is added several times, it also has to be removed the same number of times. I.e. if a hap callback is tied to a string and does not want to be called again, it should both remove the string and unregister the hap callback, since another hap callback may want to break on the same string again.</dd>
+<dt id="dt:unbreak_id">
+<i>unbreak_id</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>Remove breakpoint based on breakpoint id.</dd>
+<dt id="dt:break_string_id">
+<i>break_string_id</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>Unknown</code>
+<br>Return an id for a string that is set to break on. The id can be used as index for the Xterm_Break_String hap.</dd>
+<dt id="dt:abort">
+<i>abort</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Send a keyboard abort signal to the connected device.</dd>
+<dt id="dt:char_1c_is_abort">
+<i>char_1c_is_abort</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Generate a keyboard abort signal when &lt;ctrl&gt;-/ is pressed.</dd>
+<dt id="dt:backspace_is_delete">
+<i>backspace_is_delete</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Set if the backspace key (0x08) should send the delete (0x7f) ASCII code. Default is FALSE.</dd>
+<dt id="dt:application">
+<i>application</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Module xterm-console only: application that is started in the target process. Default is "xterm".</dd>
+<dt id="dt:environment">
+<i>environment</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>Module xterm-console only: list of strings that are added to the environment of the target process before the binary is executed.</dd>
+<dt id="dt:application_args">
+<i>application_args</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>Module xterm-console only: list of arguments to pass to the target process</dd>
+<dt id="dt:use_xterm_args">
+<i>use_xterm_args</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Module xterm-console only: if set to non-zero, the started application is assumed to accept xterm-style arguments. If this attribute is zero, attributes which map to xterm-arguments (such as "width" and "height") will have no effect. The default value of this attribute is zero if "application" is set to something other than "xterm", and non-zero otherwise.</dd>
+<dt id="dt:kbd_event_queue">
+<i>kbd_event_queue</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ii]*]</code>
+<br>Keyboard event queue. Used when connected to a keyboard controller device, and not a serial device.</dd>
+<dt id="dt:console_trace">
+<i>console_trace</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If set to non-zero, console output will be sent to stdout in a format that is easy to parse.</dd>
+<dt id="dt:trace_file">
+<i>trace_file</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Name of file where to send the console trace, if enabled. If an empty string is given standard output is used. No trace is written to file unless console_trace is also enabled.</dd>
+<dt id="dt:recording">
+<i>recording</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>When enabled, all characters written to the console will be recorded. The record can be read from the attribute <i>recorded-string</i>.</dd>
+<dt id="dt:recorded_string">
+<i>recorded_string</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>The characters that have been recorded when the attribute <i>recording</i> is <i>true</i>. Note that the recorded string will NOT be cleared when <i>recording</i> is reset.</dd>
+<dt id="dt:raise_window">
+<i>raise_window</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>By writing any value to this attribute, the text console window moved in front of other windows on the display.</dd>
+<dt id="dt:minimize_window">
+<i>minimize_window</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>b</code>
+<br>By writing TRUE to this attribute, the graphics console window is minimized. A write of FALSE restores it again.</dd>
+<dt id="dt:input_terminal_type">
+<i>input_terminal_type</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>What terminal type to emulate for keyboard inputs. Possible values are:<br>
+ <tt>"standard"</tt>: standard VT100/XTerm (default). <br>
+ <tt>"microsoft"</tt>: Microsoft's proprietary "VT100+" (only available on Windows hosts).</dd>
+<dt id="dt:vt_demo">
+<i>vt_demo</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Add a microcheckpont at each CR.</dd>
+<dt id="dt:vt_width">
+<i>vt_width</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Width of emulated vt102 console.</dd>
+<dt id="dt:vt_height">
+<i>vt_height</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Height of emulated vt102 console.</dd>
+<dt id="dt:vt_state">
+<i>vt_state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i|s*]</code>
+<br>VT100 state information.</dd>
+<dt id="dt:vt_redraw">
+<i>vt_redraw</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>Force a redraw of the VT console.</dd>
+<dt id="dt:vt_contents">
+<i>vt_contents</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[d|s*]</code>
+<br>Visible contents of the emulated vt102 console. The string format is deprecated and only used for checkpoint compatibility.</dd>
+<dt id="dt:vt102_emulation">
+<i>vt102_emulation</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Specifies if the console should the emulate vt102 protocol or not. Default is true. By disabling vt102 emulation, the user may be allowed to change the window size interactively, with the side-effect that simulation may not be deterministic from one run to another. This could also cause problems when reversing with Simics.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.xterm-console.html">xterm-console</a>
+</section>
+<div class="chain">
+<a href="rm-class-test_usb_device.html">test_usb_device</a>
+<a href="rm-class-text-frontend-winsome.html">text-frontend-winsome</a>
+</div>

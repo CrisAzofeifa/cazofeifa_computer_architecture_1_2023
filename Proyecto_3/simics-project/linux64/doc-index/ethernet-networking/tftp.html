@@ -1,0 +1,81 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.4.4 TFTP</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="dns.html">3.4.3 DNS</a>
+<a href="service-node-nfsd.html">3.4.5 NFS</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="simicsnet.html">3 Network Simulation</a>
+&nbsp;/&nbsp;
+<a href="ip-services.html">3.4 IP Services</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="TFTP">3.4.4 TFTP</a></h1>
+<p>
+<a name="TFTP"></a>
+
+</p><p>
+The service node also supports the <i>Trivial File Transfer Protocol</i> (TFTP,
+see <em>RFC 1350</em>) which allows to transfer files between the host
+system (running the simulation) and a simulated (target) client. TFTP is often
+used during network booting, together with the BOOTP facilities, to load OS
+kernels and images, and it can also be used interactively with
+the <code>tftp</code> command found on many systems.
+</p><p>
+Files to be transferred from the host system to the simulated client should be
+placed in a directory in the Simics path. This is the standard path used by
+image objects: <b>list-directories</b> will print its current value, while
+<b>add-directory</b> will add a directory to the path list. The
+current working directory is also automatically included.
+</p><p>
+Files transferred from the simulated client to the host will end up in the
+current working directory. When running Simics in graphical mode, this will be
+the project directory; from the command line or without a project, it will
+be the directory Simics was started from.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+TFTP is based on UDP, and each packet is acknowledged individually before
+the transfer is allowed to continue. Depending on the latency of the link, the
+transfer of large files can be slow. In that case, ensuring that the link uses
+a lower latency will increase performance.</div>A short example, assuming the target machine is running Linux with TFTP
+installed, has already booted, and has a working service node properly
+connected. We bring up the target's network interface:
+<p>
+</p><pre class="jdocu_small">joe@computer: ~#<b> ifconfig eth0 10.10.0.10 up</b>
+</pre><p>
+</p><p>
+And we transfer the file <code>myfile.txt</code> from the host machine:
+</p><pre class="jdocu_small">joe@computer: ~#<b> tftp -l myfile.txt -r myfile.txt -g 10.10.0.1</b>
+</pre><p>
+</p>
+<div class="chain">
+<a href="dns.html">3.4.3 DNS</a>
+<a href="service-node-nfsd.html">3.4.5 NFS</a>
+</div>

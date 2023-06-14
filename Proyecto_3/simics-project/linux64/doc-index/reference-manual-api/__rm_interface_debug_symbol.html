@@ -1,0 +1,584 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>debug_symbol</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_debug_step.html">debug_step</a>
+<a href="__rm_interface_debug_symbol_file.html">debug_symbol_file</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_debug_symbol">debug_symbol</a></h1>
+<p>
+
+<a name="debug_symbol"></a><a name="debug_symbol_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="debug_symbol_interface_t2"></a>
+<p>
+   This interface contains functions for retrieving various symbol information
+   for a debug context, <i>ctx_id</i>. There are also a few functions for
+   updating symbol information.
+</p><p>
+   Prior to using functions in this interface, symbol file(s) containing symbol
+   information should have been added using the <code>debug_setup</code>
+   interface, for a context-query that matches the context ID provided to the
+   function here. Symbol files can also be added in other ways such as from a
+   tracker or from Eclipse.
+</p><p>
+   Some functions, that do read values or stack, can also be used directly with
+   symbol files opened with the <code>debug_symbol_file</code> interface.
+</p><p>
+   All functions in this interface take a context ID <i>ctx_id</i> as
+   argument. This is the ID passed as an argument to
+   <code>debug_notification</code> callbacks or returned from some
+   <code>debug_query</code> interface functions.
+</p><p>
+   
+</p><p>
+   For all functions that return an <code>attr_value_t</code>, that return value
+   will consists of a list with two elements. The first element is an error code
+   of <code>debugger_error_t</code> type (see <code>debug_query</code>
+   interface documentation for definition). The second element depends on the
+   first. If the first element is <code>Debugger_No_Error</code>, meaning that
+   the function went well, then the second element will contain the expected
+   return value that is specified per function below. If the first element is
+   another error code, then the second element will be a string describing the
+   error that occurred.
+</p><p>
+   
+</p><p>
+   All addresses used in this interface are virtual addresses.
+</p><p>
+   For functions that take <i>frame</i> as argument, providing
+   <i>frame</i> = -1 means no frame. This can be used when finding symbols
+   for functions or global variables. When using other <i>frame</i> than -1
+   the context has to be active, otherwise no frame will exists and a
+   <code>Debugger_Context_Is_Not_Active</code> error will be returned. If the
+   specified frame cannot be found, then error code
+   <code>Debugger_Frame_Outside_Of_Known_Stack</code> will be returned.
+</p><p>
+   Functions that handle stack can only be used with an active context,
+   otherwise error code <code>Debugger_Context_Is_Not_Active</code> or
+   <code>Debugger_Context_Does_Not_Have_State</code> will be returned depending
+   on if the context has state or not.
+</p><p>
+   <a name="address_sourcedebug_symbol-interface-method"></a>
+   <b><i>address_source</i></b> will provide callbacks, <i>cb</i>, with source
+   information for the range specified by <i>address</i> and
+   <i>size</i>. The range must not wrap around the 64-bit limit. Source
+   information will be provided as code areas, which is the source information
+   for a range of continuous addresses matching the same file and line. User
+   data can be passed to the callback using the <i>data</i> argument and
+   will be passed as the first argument in the callback. Each code area
+   matching the range will get a callback with information about the code area
+   in the <i>code_area</i> argument, which is a dictionary with the
+   following elements:
+</p><p>
+   </p><ul>
+
+   <li><i>filename</i> <code>(string)</code> - File name of the source file
+   where the specified <i>address</i> is found.</li>
+
+   <li><i>start-line</i>, <i>end-line</i> <code>(int64)</code> -
+   Starting and ending lines in the source file for the <i>address</i>.
+   <i>end-line</i> is inclusive so if the <i>address</i> just matches
+   one source line <i>start-line</i> and <i>end-line</i> will be the
+   same.</li>
+
+   <li><i>start-column</i>, <i>end-column</i> <code>(int64)</code> -
+   Starting and ending columns on the line for <i>address</i>. If column
+   information is not available in debug information the value will be 0.
+   <i>end-column</i> is inclusive so the column is included for
+   <i>address</i>.</li>
+
+   <li><i>start-address</i>, <i>end-address</i> <code>(uint64)</code> -
+   Starting and ending addresses that correspond to the returned line and
+   column information. <i>end-address</i> is inclusive so this matches the
+   last byte of the last instruction of this code area. If the code area is
+   empty then, then <i>end-address</i> will not be present. This can happen
+   when asking for a line prior to the first executable line.</li>
+
+   </ul>
+<p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Source_Not_Found</em> - There are no matching code
+   areas.</li>
+
+   <li><em>Debugger_Incorrect_Size</em> - Incorrect <i>size</i>
+   provided. The size cannot be zero and it cannot make the end address exceed
+   64 bits.</li>
+
+   <li><em>Debugger_Lookup_Failure</em> Address lookup failure. Can occur if
+   the address is not in the debug information or the lookup failed for some
+   other reason. The error message explains more what went wrong.</li>
+
+   </ul>
+<p>
+   <a name="source_addressdebug_symbol-interface-method"></a>
+   <b><i>source_address</i></b> will provide callbacks, with source information
+   for the line specified by <i>filename</i>, <i>line</i> and
+   <i>column</i>. The <i>column</i> argument will only be useful for
+   binaries with column information in the debug information.
+</p><p>
+   One call to this function will provide as many callbacks as there are code
+   areas matching that source information. The <i>code_area</i> provided to
+   the callback is a dictionary with the same format as for the callback from
+   <b><i>address_source</i></b>.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_File_Not_Found</em> - There is no matching source file,
+   <i>filename</i>, in the debug information.</li>
+
+   <li><em>Debugger_Source_Not_Found</em> - The <i>line</i> or
+   <i>column</i> is not found in the debug information.</li>
+
+   <li><em>Debug_Lookup_Failure</em> - Some problem with the lookup other than
+   that file, line or column was not found. Error described in error
+   message.</li>
+
+   </ul>
+<p>
+   For binaries <em>without</em> column information, a line is executable if
+   the <i>start-line</i> in the callback matches the asked <i>line</i>.
+</p><p>
+   For binaries <em>with</em> column information one can say that the line is
+   executable if any code area can be found with <i>start-line</i> matching
+   the asked line. When asking for a <i>line</i> and <i>column</i> and
+   the <i>start-line</i> matches a previous line, but the
+   <i>end-line</i> matches the asked line, then one should ask for the
+   <i>column</i> just after <i>end-column</i> to see if the
+   <i>start-line</i> of that code area matches the asked line and if it
+   does then the asked line is considered executable.
+</p><p>
+   <a name="stack_depthdebug_symbol-interface-method"></a>
+   <b><i>stack_depth</i></b> returns the current stack depth.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Failed_To_Get_Stack_Frame</em> - Failed to get stack
+   frames.</li>
+
+   </ul>
+<p>
+   <a name="stack_framesdebug_symbol-interface-method"></a>
+   <b><i>stack_frames</i></b> returns a list of dictionaries with information
+   about each frame. The executing frame is at position zero in the list. The
+   elements of the stack frame dictionary are:
+</p><p>
+   </p><ul>
+
+   <li><i>address</i> <code>(uint64)</code> - For the executing frame this
+   is the address of the program counter, for all other frames this is the
+   address that the function will return to.</li>
+
+   <li><i>source-file</i> <code>(string)</code> - The source file for the
+   frame. Can be nil if no matching file is found.</li>
+
+   <li><i>source-line</i> <code>(uint64)</code> - The source line in the
+   file for the frame. Will be nil if <i>source-file</i> is nil.</li>
+
+   <li><i>function-name</i> <code>(string)</code> - The function that is
+   executing in the frame. Can be nil if no function is found.</li>
+
+   </ul>
+<p>
+   Errors specific to this function: </p><ul>
+
+   <li><code>Debugger_Failed_To_Get_Stack_Frame</code> - If there are problems
+   getting stack depth or getting frame info.</li>
+
+   <li><code>Debugger_Failed_To_Read</code> - If a register cannot be read for
+   some frame.</li>
+
+   <li><code>Debugger_Failed_To_Get_PC</code> - If the program counter
+   definition cannot be found for the context.</li>
+
+   </ul>
+<p>
+   <a name="local_variablesdebug_symbol-interface-method"></a>
+   <b><i>local_variables</i></b> returns a list of names for local variables in
+   the specified <i>frame</i>.
+</p><p>
+   <a name="local_argumentsdebug_symbol-interface-method"></a>
+   <b><i>local_arguments</i></b> returns a list of names of arguments to the
+   function in the specified <i>frame</i>.
+</p><p>
+   Both <b><i>local_variables</i></b> and <b><i>local_arguments</i></b> can return an
+   empty list if no local variables or arguments are found. If something goes
+   wrong while looking up variables or arguments they will return a
+   <code>Debugger_Lookup_Failure</code> with more information in the error
+   string.
+</p><p>
+   <a name="expression_valuedebug_symbol-interface-method"></a>
+   <b><i>expression_value</i></b> returns the value of an expression,
+   <i>expr</i>, in the specified <i>frame</i>. See note about
+   <i>address_scope</i> further down. The returned value will be of integer
+   type if the expression is of integer type, including if it is an
+   address. Floating-point types will be returned as such. If the expression is
+   a structure, union, class or an array a list containing the elements of that
+   type will be returned.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Failed_To_Evaluate_Expression</em> - The expression could
+   not be evaluated, more information in the error message.</li>
+
+   </ul>
+<p>
+   <a name="expression_typedebug_symbol-interface-method"></a>
+   <b><i>expression_type</i></b> returns the type of an expression,
+   <i>expr</i>, in the specified <i>frame</i>. See note about
+   <i>address_scope</i> further down. For most types the return value will
+   be a string containing the type, for example <code>'int'</code>,
+   <code>'double'</code>, <code>'char'</code> or <code>'my_own_type_t</code>.
+</p><p>
+   For pointers the return value will be a list with <i>'*'</i> as the
+   first argument followed by the type of the pointer, for example <code>['*',
+   'void']</code> or <code>['*', ['*', 'char']]</code>.
+</p><p>
+   For qualifiers ('const', 'volatile' or 'restrict') these will be added as an
+   element to the list, such as <code>['const', 'char']</code> or <code>['volatile',
+   ['*', 'int']]</code>.
+</p><p>
+   Functions are returned with a <i>'()'</i> string as the first element of
+   a list, followed by the return type, followed by a list of arguments to the
+   function. Example: <code>['*', ['()', 'int', ['int', ['*', ['*',
+   'char']]]]]</code> for a function of type <code>int (*)(int, char **)</code>.
+</p><p>
+   A <code>struct</code> or <code>union</code> will return a string
+   <code>'struct'</code>, followed by the struct name, if available, then
+   followed by a list of lists containing the struct member type and name
+   <code>['struct', 'my_struct', [['int', 'i'], ['float', 'f']]]</code> as
+   example. If the struct has been assigned a type with <b><i>typedef</i></b> then
+   the output will be <code>'typedef'</code> followed by the name of the
+   assigned type, then the list of members. An example: <code>['typedef',
+   'mytype_t', [['int', 'age'], [['*', 'char'], 'name']]]</code>. For unions the
+   string <code>'struct'</code> will be replace with the string
+   <code>'union'</code>.
+</p><p>
+   A <code>bit field</code> will return a list containing a string
+   <code>'bitfield'</code> followed by the basic type of the bit field,
+   followed by the size of the bit field. An example: <code>['bitfield', 'int',
+   5]</code> for a variable declared as <code>int var:5</code>.
+</p><p>
+   For array types <b><i>expression_type</i></b> will return a list, <code>['[]',
+   array size, array type]</code>, where the array type is of the same format as
+   other types for this function. An example: <code>['[]', 10, 'char']</code> for a
+   variable declared as <code>char x[10]</code>;
+</p><p>
+   Enumerations will be displayed as a list: <code>['enum', enum name,
+   members]</code>. The <i>enum name</i> is the declared name for the
+   enumeration, if no such name exists this list field will be left out. The
+   <i>members</i> field will contain a list of [name, value] lists for all
+   the members of the enumeration. An example: <code>['enum, 'my_enum',
+   [['My_Val_0', 0], [My_Val_1, 1]]]</code>.
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+There are some limitations for symbols from PE files that can depend
+   on the version of <code>dbghelp.dll</code>.
+   <ul>
+   <li>Type defined types might get shown as the
+   base type instead of the <code>'typedef'</code> type.</li>
+
+   <li>Variables with a <code>const</code> qualifier might be shown without
+   that qualifier.</li>
+
+   <li>Members of anonymous structures within a base structure are shown as
+   being part of the base structure.</li>
+   </ul></div>Errors specific to this function: <ul>
+
+   <li><em>Debugger_Failed_To_Evaluate_Expression</em> - Could not evaluate the
+   expression, more information in the error message.</li>
+
+   </ul>
+<p>
+   <a name="type_infodebug_symbol-interface-method"></a> <b><i>type_info</i></b>
+   returns information about what base type a type that has been added with
+   <b><i>typedef</i></b> has. See note about <i>address_scope</i> further
+   down. The returned value will be a list on the same format as for
+   <b><i>expression_value</i></b>.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Incorrect_Type</em> - If the <i>type</i> asked for is
+   not a valid type.</li>
+
+   <li><em>Debugger_Lookup_Failure</em> - Finding the symbol failed or the type
+   of symbol cannot be retrieved. More information in the error string.</li>
+
+   </ul>
+<p>
+   <a name="type_to_stringdebug_symbol-interface-method"></a>
+   <b><i>type_to_string</i></b> converts the return value from
+   <b><i>expression_type</i></b> or <b><i>type_info</i></b> to a readable string and
+   returns that.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Incorrect_Type</em> - The format of <i>type</i> is
+   incorrect.</li>
+
+   </ul>
+<p>
+   <a name="symbol_addressdebug_symbol-interface-method"></a>
+   <b><i>symbol_address</i></b> takes a <i>frame</i> and a <i>symbol</i>
+   as arguments and returns a list of addresses that matches that symbol name.
+   If a single symbol address is wanted near a provided instruction pointer
+   then the <b><i>expression_value</i></b> function can be used with the
+   expression set as <code>&amp;&lt;symbol&gt;</code>.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Lookup_Failure</em> - The address for the symbol cannot be
+   found. This can be because the symbol was not found or if evaluation
+   failed. More information will be found in the error message.</li>
+
+   </ul>
+<p>
+   <a name="address_stringdebug_symbol-interface-method"></a>
+   <b><i>address_string</i></b> returns the string at the specified
+   <i>address</i>. The <i>maxlen</i> is used to specify the maximum
+   length of a string to read from memory. If the string at <i>address</i>
+   exceeds the given length the truncated string will be returned, and a
+   terminating null character will be added if needed. A <i>maxlen</i>
+   value of zero means no maximum string length.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Failed_To_Read</em> - Failed to read memory at
+   <i>address</i>.</li>
+
+   </ul>
+<p>
+   <a name="lvalue_writedebug_symbol-interface-method"></a>
+   <b><i>lvalue_write</i></b> writes a <i>value</i> to a <i>symbol</i> in
+   the specified <i>frame</i>. The <i>value</i> can be of
+   <code>integer</code> types or <code>floating-point</code> type if the type
+   of the lvalue is of <code>floating-point</code> type. The returned value
+   when the write goes well is nil.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Incorrect_Type</em> - The type of <i>value</i> is
+   incorrect.</li>
+
+   <li><em>Debugger_Failed_To_Evaluate_Expression</em> - The provided
+   <i>symbol</i> could not be found or evaluated as an expression.</li>
+
+   <li><em>Debugger_Failed_To_Write</em> - Failed to write to
+   <i>symbol</i>.</li>
+
+   </ul>
+<p>
+   <a name="address_writedebug_symbol-interface-method"></a>
+   <b><i>address_write</i></b> writes an <code>attr_value_t</code> of
+   <code>data</code> type, <i>value</i>, to the specified
+   <i>address</i>. Returned value is nil when the write goes well.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Incorrect_Type</em> - The type of <i>value</i> is
+   incorrect.</li>
+
+   <li><em>Debugger_Failed_To_Write</em> - The memory at <i>address</i>
+   cannot be written to.</li>
+
+   </ul>
+<p>
+   <a name="address_readdebug_symbol-interface-method"></a>
+   <b><i>address_read</i></b> reads <i>size</i> number of bytes from the
+   specified <i>address</i>. The read data is returned as an
+   <code>attr_value_t</code> of <code>data</code> type.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Failed_To_Read</em> - The <i>address</i> cannot be
+   read.</li>
+
+   </ul>
+<p>
+   <a name="struct_membersdebug_symbol-interface-method"></a>
+   <b><i>struct_members</i></b> returns a list of all members of a struct,
+   <i>struct_name</i>. See note about <i>address_scope</i> further
+   down. Each element of the returned list will be on the format <code>[name,
+   offset, size]</code>. The <i>size</i> and <i>offset</i> elements are
+   usually integers representing the offset into the struct and the size of the
+   variable. If the struct member is a bit field then <i>size</i> will be a
+   list on the format <code>[base size, bits]</code>, where <i>base size</i> is
+   the number of bytes for the declared base type and <i>bits</i> is the
+   number of bits the declared for the bit field. For bit fields
+   <i>offset</i> will be a list on the format <code>[byte offset, bit
+   offset]</code>, where <i>byte offset</i> is the offset of in bytes into
+   the structure and <i>bit offset</i> is the offset in bits from the byte
+   offset to where the bit field starts. If some member, size or offset cannot
+   be retrieved then that element will be set as nil. This can for example
+   occur if a struct member is an anonymous struct or union.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Incorrect_Type</em> - The provided symbol,
+   <i>struct_name</i>, is not a structure.</li>
+
+   <li><em>Debugger_Lookup_Failure</em> - Failed to find the symbol or its
+   type.</li>
+
+   </ul>
+<p>
+   <a name="struct_fielddebug_symbol-interface-method"></a>
+   <b><i>struct_field</i></b> returns a list of [offset, size] for a
+   <i>field</i> of a given structure, <i>struct_name</i>. The
+   <i>offset</i> and <i>size</i> are usually integers, but if the
+   <i>field</i> is a bit field then the returned <i>size</i> and
+   <i>offset</i> will be on the same format as for
+   <b><i>struct_members</i></b>. See note about <i>address_scope</i> below.
+</p><p>
+   This function can return the same error codes, for the same reasons, as
+   the <b><i>struct_members</i></b> function.
+</p><p>
+   The <i>address_scope</i> argument that is provided for several functions
+   can be used to specify where to find the symbol if there are several matches
+   for the provided symbol name or expression. This argument is used to provide
+   an address that tells the function in which scope to search for the symbol.
+   This is only taken in account when no frame (-1) is given as frame. This
+   address can be an address that belongs to a loaded symbol file to prioritize
+   finding symbols from that symbol file.
+</p><p>
+   <a name="list_functionsdebug_symbol-interface-method"></a>
+   <a name="list_global_variablesdebug_symbol-interface-method"></a>
+   <b><i>list_functions</i></b> and <b><i>list_global_variables</i></b> lists all
+   function or global variable symbols that are known for the given
+   context. The symbols shown are the ones that have been added with the
+   <b><i>add_symbol_file</i></b> function of the <code>debug_setup</code>
+   interface. The returned format is a list of dictionaries with the dictionary
+   elements on the format:
+</p><p>
+   </p><ul>
+
+   <li><i>symbol</i> <code>(string)</code> - The name of the symbol.</li>
+
+   <li><i>address</i> <code>(uint64)</code> - The address in memory of the
+   symbol.</li>
+
+   <li><i>size</i> <code>(uint64)</code> - The size of the symbol in
+   memory.</li>
+
+   </ul>
+<p>
+   <a name="list_source_filesdebug_symbol-interface-method"></a>
+   <b><i>list_source_files</i></b> lists all source files provided by the debug
+   information of the symbol files for the given context.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(debug_symbol) {
+        attr_value_t (*address_source)(conf_object_t *NOTNULL obj,
+                                       const char *NOTNULL ctx_id,
+                                       uint64 address, uint64 size,
+                                       void (*cb)(cbdata_call_t data,
+                                                  attr_value_t code_area),
+                                       cbdata_register_t data);
+        attr_value_t (*source_address)(conf_object_t *NOTNULL obj,
+                                       const char *NOTNULL ctx_id,
+                                       const char *NOTNULL filename,
+                                       uint32 line, uint32 column,
+                                       void (*cb)(cbdata_call_t data,
+                                                  attr_value_t code_area),
+                                       cbdata_register_t data);
+        attr_value_t (*address_symbol)(conf_object_t *NOTNULL obj,
+                                       const char *NOTNULL ctx_id,
+                                       uint64 address);
+        attr_value_t (*stack_depth)(conf_object_t *NOTNULL obj,
+                                    const char *NOTNULL ctx_id);
+        attr_value_t (*stack_frames)(conf_object_t *NOTNULL obj,
+                                     const char *NOTNULL ctx_id, int min,
+                                     int max);
+        attr_value_t (*local_variables)(conf_object_t *NOTNULL obj,
+                                        const char *NOTNULL ctx_id, int frame);
+        attr_value_t (*local_arguments)(conf_object_t *NOTNULL obj,
+                                        const char *NOTNULL ctx_id, int frame);
+        attr_value_t (*expression_value)(conf_object_t *NOTNULL obj,
+                                         const char *NOTNULL ctx_id,
+                                         int32 frame, uint64 address_scope,
+                                         const char *NOTNULL expr);
+        attr_value_t (*expression_type)(conf_object_t *NOTNULL obj,
+                                        const char *NOTNULL ctx_id,
+                                        int32 frame, uint64 address_scope,
+                                        const char *NOTNULL expr);
+        attr_value_t (*type_info)(conf_object_t *NOTNULL obj,
+                                  const char *NOTNULL ctx_id,
+                                  uint64 address_scope,
+                                  const char *NOTNULL type);
+        attr_value_t (*type_to_string)(conf_object_t *NOTNULL obj,
+                                       attr_value_t type);
+        attr_value_t (*symbol_address)(conf_object_t *NOTNULL obj,
+                                       const char *NOTNULL ctx_id, int32 frame,
+                                       const char *NOTNULL symbol);
+        attr_value_t (*address_string)(conf_object_t *NOTNULL obj,
+                                       const char *NOTNULL ctx_id,
+                                       uint64 address, int maxlen);
+        attr_value_t (*lvalue_write)(conf_object_t *NOTNULL obj,
+                                     const char *NOTNULL ctx_id, int32 frame,
+                                     const char *NOTNULL symbol,
+                                     attr_value_t value);
+        attr_value_t (*address_write)(conf_object_t *NOTNULL obj,
+                                      const char *NOTNULL ctx_id,
+                                      uint64 address, attr_value_t value);
+        attr_value_t (*address_read)(conf_object_t *NOTNULL obj,
+                                     const char *NOTNULL ctx_id, uint64 address,
+                                     unsigned size);
+        attr_value_t (*struct_members)(conf_object_t *NOTNULL obj,
+                                       const char *NOTNULL ctx_id,
+                                       uint64 address_scope,
+                                       const char *NOTNULL struct_name);
+        attr_value_t (*struct_field)(conf_object_t *NOTNULL obj,
+                                     const char *NOTNULL ctx_id,
+                                     uint64 address_scope,
+                                     const char *NOTNULL struct_name,
+                                     const char *NOTNULL field);
+        attr_value_t (*list_functions)(conf_object_t *NOTNULL obj,
+                                       const char *NOTNULL ctx_id);
+        attr_value_t (*list_global_variables)(conf_object_t *NOTNULL obj,
+                                              const char *NOTNULL ctx_id);
+        attr_value_t (*list_source_files)(conf_object_t *NOTNULL obj,
+                                          const char *NOTNULL ctx_id);
+};
+#define DEBUG_SYMBOL_INTERFACE "debug_symbol"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_debug_step.html">debug_step</a>
+<a href="__rm_interface_debug_symbol_file.html">debug_symbol_file</a>
+</div>

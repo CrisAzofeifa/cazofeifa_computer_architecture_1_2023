@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.4.2 DHCP and BOOTP</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="ip-based-routing.html">3.4.1 IP Based Routing</a>
+<a href="dns.html">3.4.3 DNS</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="simicsnet.html">3 Network Simulation</a>
+&nbsp;/&nbsp;
+<a href="ip-services.html">3.4 IP Services</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="DHCP-and-BOOTP">3.4.2 DHCP and BOOTP</a></h1>
+<p>
+<a name="BOOTP"></a>
+<a name="DHCP"></a>
+
+</p><p>
+A service node can act as a
+<i>Dynamic Host Configuration Protocol</i> (DHCP) or <i>Bootstrap Protocol</i>
+(BOOTP) server, responding to requests from clients that can read their network
+configuration from such a server.  The DHCP protocol is an extension of the
+BOOTP protocol, and for many uses the feature set is more or less the same.
+The Simics implementation uses the same configuration for both services.
+</p><p>
+The service node has a table that maps <a name="MAC-address"></a>MAC addresses to
+<a name="IPaddress"></a>IP addresses and domain name. This is used to answer DHCP
+or BOOTP requests.The <b>&lt;service_node_comp&gt;.add-host</b>
+<a name="DHCPadd-host"></a> command can add entries to this table:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>sn0.add-host 10.10.0.1 node1 mac="10:10:10:10:10:01"</b>
+Adding host info for IP 10.10.0.1: node1.network.sim<img alt="Line break" src="nextline.png">
+MAC:10:10:10:10:10:01
+</pre><p>
+</p><p>
+The <b>&lt;service_node_comp&gt;.list-host-info</b> command prints the current
+contents of the table:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>sn0.list-host-info</b>
+IP         name.domain          MAC              
+-------------------------------------------------
+10.10.0.0  simics0.network.sim  20:20:20:20:20:00
+10.10.0.1  node1.network.sim    10:10:10:10:10:01
+</pre><p>
+</p><p>
+<a name="DHCPdhcp-add-pool"></a> The <b>&lt;service_node_comp&gt;.dhcp-add-pool</b>
+command adds dynamic DHCP leases, from which new clients will be automatically
+assigned an address on request. When an entry from the pool is given out, the
+new mapping is stored in the internal host info table, including a generated
+name that can be found through DNS queries. If a DHCP client's MAC address
+matches an entry in the table, it is assigned the corresponding IP address. If
+there is no matching MAC address, the dynamic address pools will be searched
+for an available IP address.
+</p><p>
+The DHCP implementation in <b>service-node</b> is simple, and might not
+work with all DHCP clients.
+</p><p>
+</p>
+<div class="chain">
+<a href="ip-based-routing.html">3.4.1 IP Based Routing</a>
+<a href="dns.html">3.4.3 DNS</a>
+</div>

@@ -1,0 +1,87 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.7 Limitations</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="explanation-of-source-coverage.html">4.6 Explanation of source coverage</a>
+<a href="caches.html">5 Cache Simulation</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="code-coverage.html">4 Code Coverage</a>
+&nbsp;/&nbsp;</div>
+<h1 id="limitations">4.7 <a href="#limitations">Limitations</a></h1>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:disassembly">Disassembly</span><br>
+Disassembly is done per executable section, starting at the first address of each function and taking instruction by instruction until the next function or end of section. If function information is not available then disassembly will be done from the beginning of the section to the end of the section instead. The latter behavior can be forced by using the <code>-whole-section</code> flag with the <em>disassemble</em> command. Data in the executable section may corrupt the disassembly, especially for variable length instruction platforms, as this data is also treated as instructions and disassembled. Disassembly will be performed on data from the original executable file, so any code that is modified in memory (compressed code as an example) will not be reflected in the report. Code that is not part of any executable section, will not be included in the report. </p>
+</li>
+<li>
+<p><span class="term" id="dt:sections">Sections</span><br>
+When disassembling an executable section, it is assumed that the executable section has the same architecture for the entire mapping, this is taken from the binary. Code that mixes different processor modes, 16, 32 and 64 bit for example, may therefore end up with incorrect disassembly. </p>
+</li>
+<li>
+<p><span class="term" id="dt:pdb-format">PDB format</span><br>
+PDB symbol information is only supported on Microsoft* Windows*.</p>
+</li>
+<li>
+<p><span class="term" id="dt:quality">Quality</span><br>
+This code coverage implementation is purely based on available debug information and does not require modifications to the binary. This means that the executable source lines and executed source lines information depends highly on the quality of debug information. Usually this improves by decreasing optimization level. Due to inlining of functions and various optimizations the source coverage may be hard to interpret. </p>
+</li>
+<li>
+<p><span class="term" id="dt:architectures">Architectures</span><br>
+For disassembly, only classes that implement the <code>class_disassembly</code> interface plus x86 and ARM families are supported. Other architectures where the processor model supports instrumentation, source only coverage can be output.</p>
+<p>When disassembling without the <code>class_disassembly</code> interface, some instructions that were added in recent architectures might not be disassembled correctly in the disassembly report. </p>
+</li>
+<li>
+<p><span class="term" id="dt:reverse-execution">Reverse Execution</span><br>
+The code coverage implementation does not support reverse execution. </p>
+</li>
+<li>
+<p><span class="term" id="dt:vmp">VMP</span><br>
+VMP will not be engaged while code coverage is collecting data. </p>
+</li>
+<li>
+<p><span class="term" id="dt:branch-coverage">Branch coverage</span><br>
+Currently only x86 and ARM families support branch coverage. </p>
+</li>
+<li>
+<p><span class="term" id="dt:arm-branch-coverage">ARM branch coverage</span><br>
+For branch coverage on ARM only <code>B&lt;cond&gt;</code>, <code>CBZ</code>, <code>CBNZ</code>, <code>TBZ</code> and <code>TBNZ</code> instructions are handled. Any other conditional instructions, including <code>BL</code>, <code>BX</code> and similar are not included in branch coverage. Neither are Thumb instructions made conditional by an IT-block handled by branch coverage. </p>
+</li>
+<li>
+<p><span class="term" id="dt:x86-16-bit-real-mode">x86 16-bit real mode</span><br>
+Instructions in 16-bit real mode will be disassembled as 32-bit instructions. This is because the ELF header or sections do not have any information about 16-bit mode. This can result in that both disassembly and source coverage for 16-bit real mode code gets incorrect. </p>
+</li>
+</ul>
+</div>
+
+<div class="chain">
+<a href="explanation-of-source-coverage.html">4.6 Explanation of source coverage</a>
+<a href="caches.html">5 Cache Simulation</a>
+</div>

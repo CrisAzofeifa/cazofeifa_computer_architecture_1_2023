@@ -1,0 +1,49 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.14 CPU Mode Tracker</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="linux-tracker.html">2.13 Linux Tracker</a>
+<a href="partition-tracker.html">2.15 Partition tracker</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="cpu-mode-tracker">2.14 <a href="#cpu-mode-tracker">CPU Mode Tracker</a></h1>
+<p>The CPU mode tracker, in module <code>cpumode-software-tracker</code>, tracks processor state for the processors of a system. It will keep track of which mode each processor is active in. This tracker can for example be useful to track when an operating system is active in kernel mode and when it is running a user program for an operating system for which there is no dedicated tracker available.</p>
+<p>In order to use the CPU mode tracker use the <code>insert-tracker</code> command with the <code>cpumode_software_tracker_comp</code> class as <em>tracker</em>, see section <a class="reference" href="os-awareness-configuration.html">2.8</a> for more information about tracker configuration.</p>
+<h2 id="node-tree">2.14.1 <a href="#node-tree">Node Tree</a></h2>
+<p>Figure <a class="reference" href="#cpumode-tracker-tree">5</a> shows an example of the CPU mode node tree representation. One of the right-most nodes will be active on each processor depending on the mode that the processor is currently running in. In other words, one of the nodes 4, 5 or 6 will be active for <code>cpu0</code> and one of the nodes 7, 8 or 9 will be active for <code>cpu1</code>.</p>
+<figure id="cpumode-tracker-tree">
+<p><img alt="" src="cpumode-tracker-tree.png"></p><figcaption>Figure 5. Node tree of a CPU mode tracker</figcaption><p></p>
+</figure>
+
+<div class="chain">
+<a href="linux-tracker.html">2.13 Linux Tracker</a>
+<a href="partition-tracker.html">2.15 Partition tracker</a>
+</div>

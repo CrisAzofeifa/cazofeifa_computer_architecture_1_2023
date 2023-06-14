@@ -1,0 +1,112 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>terminal_frontend</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-telnet_frontend.html">telnet_frontend</a>
+<a href="rm-class-test_cdrom_media_wrapper.html">test_cdrom_media_wrapper</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="terminal_frontend"><a href="#terminal_frontend">terminal_frontend</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+(Internal) The <tt>terminal_frontend</tt> class provides access to a Simics command line using a generic VT100/ANSI interface. Input and output to the user is handled by a separate object, specified by the <tt>frontend</tt> attribute, that must implement the <tt>terminal_client</tt> interface and communicate with the <tt>terminal_frontend</tt> object using the <tt>terminal_server</tt> interface. 
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, terminal_server, cmd_line_frontend
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:frontend">
+<i>frontend</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Object responsible for presenting terminal output to the user and reading input. This object must implement the <tt>terminal_client</tt> interface.</dd>
+<dt id="dt:session_id">
+<i>session_id</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The identifier of the session in the object specified by the <tt>frontend</tt> attribute. Needed since such objects may have multiple concurrent sessions active.</dd>
+<dt id="dt:interactive">
+<i>interactive</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Set to TRUE (default) if the command line is interactive.</dd>
+<dt id="dt:primary">
+<i>primary</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Set to TRUE (default) if the command line is a primary one. In a primary command line the quit command will terminate the Simics process, something not allowed in secondary command-lines such as the telnet-frontend.</dd>
+<dt id="dt:colorize">
+<i>colorize</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Set to TRUE if the output should contain color and other formatting escape sequences. The <tt>colorize_default</tt> attribute is used as the initial value.</dd>
+</dl>
+<h3 id="class-attributes">
+<a href="#class-attributes">Class Attributes</a>
+</h3>
+<dl>
+<dt id="dt:colorize_default">
+<i>colorize_default</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Default value for the <tt>colorize</tt> attribute when new objects are created.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-class-telnet_frontend.html">telnet_frontend</a>
+<a href="rm-class-test_cdrom_media_wrapper.html">test_cdrom_media_wrapper</a>
+</div>

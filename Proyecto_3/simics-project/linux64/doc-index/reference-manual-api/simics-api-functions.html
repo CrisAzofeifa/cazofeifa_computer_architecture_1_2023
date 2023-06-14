@@ -1,0 +1,181 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>9.2 Simics API Functions</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="interfaces.html">9.1 Interfaces</a>
+<a href="python-api.html">10 Python API</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="processor-api.html">9 Processor API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Simics-API-Functions">9.2 Simics API Functions</a></h1>
+<p>
+
+</p><p>
+This section lists Simics API functions that a processor model may
+need to use beyond what is described in other parts of this document.
+Simics API <b><i>SIM_register_clock</i></b> is described in
+<em>API Reference Manual</em>.
+</p><p>
+
+
+<a name="VT_check_async_events"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_check_async_events"></a><b>VT_check_async_events</b> — check for asynchronous events</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">bool
+VT_check_async_events(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Check if any async events are pending and if so, make the current
+   executing object exit in order for them to be handled. Return nonzero
+   if there are pending events.
+<p>
+   The Simics platform will check for asynchronous events between invocations
+   of the <b><i>run</i></b> method in the <code>execute</code>. If significant
+   time passes between such invocations, which will typically be the case
+   unless there are multiple simulated CPUs that are switched between, then the
+   implementor of <code>execute</code> needs to either call this method or
+   exit pre-maturely from <b><i>run</i></b> to allow asynchronous events to be
+   handled. If neither is performed, then interactive performance will suffer
+   as user input would be waiting significant time before being processed.
+</p><p>
+   If only the async event state is requested, the faster
+   <b><i>VT_async_events_pending</i></b> should be used instead.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+
+
+<a name="VT_new_code_block"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_new_code_block"></a><b>VT_new_code_block</b> — inform platform of new code block</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_new_code_block(void *start, size_t len);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function informs the Simics platform that there is a <i>len</i>
+   bytes block at <i>start</i> that can be executed from. The call should
+   be made before the passed code area is executed from. This information is
+   used by Simics to communicate with systems like Pin or Valgrind that do not
+   automatically detect run-time generated code. If modifications are done to a
+   block, then a new call to this function is needed to inform the platform of
+   that.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+
+
+<a name="VT_set_object_clock"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_set_object_clock"></a><b>VT_set_object_clock</b> — set clock association for object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_set_object_clock(conf_object_t *NOTNULL obj, conf_object_t *clock);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The simulation infrastructure keeps track of clock associations for every
+   object. For most objects, this is initialized through the queue attribute.
+<p>
+   An object that is itself a clock needs to call this function to initialize
+   the clock coupling to itself. The call to initialize the coupling should be
+   made from the <b><i>init</i></b> method registered for the class in its 
+   <code>class_info_t</code> (or <b><i>init_object</i></b> if registered using
+   <code>class_data_t</code>).</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+
+
+
+<a name="VT_clock_frequency_about_to_change"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_clock_frequency_about_to_change"></a><b>VT_clock_frequency_about_to_change</b> — inform before clock frequency change</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_clock_frequency_about_to_change(conf_object_t *obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+To be called by a clock prior to a clock frequency change, with
+   events and cycles reflecting the frequency before the change.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+
+
+<a name="VT_clock_frequency_change"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_clock_frequency_change"></a><b>VT_clock_frequency_change</b> — inform after clock frequency change</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_clock_frequency_change(conf_object_t *obj, uint64 cycles_per_second);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+To be called by a clock when the clock frequency has changed, with
+   events and cycles reflecting the frequency after the change.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+
+
+<a name="VT_stop_event_processing"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_VT_stop_event_processing"></a><b>VT_stop_event_processing</b> — stop event processing</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+VT_stop_event_processing(conf_object_t *clock);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This method is to be called by a clock when it has received a stop request
+   through the execute interface and the clock is about to return from the run
+   method in the execute interface.
+<p>
+   In the future, the simulation framework may keep track of this thus
+   relieving the clock from the duty of having to call this method.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="interfaces.html">9.1 Interfaces</a>
+<a href="python-api.html">10 Python API</a>
+</div>

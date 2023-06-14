@@ -1,0 +1,145 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2 Simics® RISC-V* Simple Overview</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="simulated-machines.html">3 Simulated Machines</a>
+</div>
+<div class="path">
+<a href="index.html">RISC-V* Simple Board Target Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Simicsreg-RISC-V-Simple-Overview">2 Simics® RISC-V* Simple Overview</a></h1>
+<p>
+  
+</p><p>
+  The RISC-V* Simple virtual platform is a RISC-V-based system that
+  contains one or more processor cores along with the basic peripheral
+  devices needed to boot a Linux kernel. The system is not intended as
+  a virtual platform  corresponding to a real RISC-V-based board, but
+  rather to allow software development and test on a generic
+  configurable platform similar to other virtual-only models used in
+  the RISC-V ecosystem.
+</p><p>
+  The virtual platform contains RISC-V processor cores (defaulting to RV64GCB),  
+  RISC-V interrupt controllers (CLINT and PLIC), a serial port (UART, NS16550),
+  virtio block devices to hold filesystems, a virtio Ethernet device, 
+  and a virtio entropy device (hardware random number generator).
+</p><p>
+  All models in the system can be inspected using the
+  <b>.info</b> and <b>.status</b> commands on the objects.
+</p><p>
+  <b>Memory map:</b>
+  <table>
+
+	<tbody><tr>
+	  <td class="jdocu_noborder"><b>Base</b></td>
+      <td class="jdocu_noborder"><b>Size</b></td>
+	  <td class="jdocu_noborder"><b>Default object name</b></td>
+	  <td class="jdocu_noborder"><b>Description</b></td>
+	</tr>
+
+	<tr>
+	  <td class="jdocu_noborder">0x1000</td>
+	  <td class="jdocu_noborder">0x40000</td>
+	  <td class="jdocu_noborder">board.boot</td>
+	  <td class="jdocu_noborder">Boot loader memory area</td>
+	</tr>
+
+	<tr>
+	  <td class="jdocu_noborder">0x2000000</td>
+	  <td class="jdocu_noborder">0xc000</td>
+	  <td class="jdocu_noborder">board.clint</td>
+	  <td class="jdocu_noborder">CLINT</td>
+	</tr>
+
+	<tr>
+	  <td class="jdocu_noborder">0xc000000</td>
+	  <td class="jdocu_noborder">0x4000000</td>
+	  <td class="jdocu_noborder">board.plic</td>
+	  <td class="jdocu_noborder">PLIC</td>
+    </tr>
+
+	<tr>
+	  <td class="jdocu_noborder">0x10000000</td>
+	  <td class="jdocu_noborder">0x11</td>
+	  <td class="jdocu_noborder">board.uart</td>
+	  <td class="jdocu_noborder">Serial port (UART)</td>
+	</tr>
+
+	<tr>
+	  <td class="jdocu_noborder">0x10010000</td>
+	  <td class="jdocu_noborder">0x10000</td>
+	  <td class="jdocu_noborder">board.virtio_net</td>
+	  <td class="jdocu_noborder">Virtio net device</td>
+	</tr>
+
+	<tr>
+	  <td class="jdocu_noborder">0x10020000</td>
+	  <td class="jdocu_noborder">0x10000</td>
+	  <td class="jdocu_noborder">board.disk0</td>
+	  <td class="jdocu_noborder">Virtio disk 0</td>
+    </tr>
+
+	<tr>
+	  <td class="jdocu_noborder">0x10030000</td>
+	  <td class="jdocu_noborder">0x10000</td>
+	  <td class="jdocu_noborder">board.disk1</td>
+	  <td class="jdocu_noborder">Virtio disk 1</td>
+    </tr>
+
+	<tr>
+	  <td class="jdocu_noborder">0x10040000</td>
+	  <td class="jdocu_noborder">0x10000</td>
+	  <td class="jdocu_noborder">board.disk2</td>
+	  <td class="jdocu_noborder">Virtio disk 2</td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_noborder">0x10080000</td>
+	  <td class="jdocu_noborder">0x10000</td>
+	  <td class="jdocu_noborder">board.virtio_entropy</td>
+	  <td class="jdocu_noborder">Virtio entropy device</td>
+    </tr>
+
+	<tr>
+	  <td class="jdocu_noborder">0x80000000</td>
+	  <td class="jdocu_noborder">0x80000000</td>
+	  <td class="jdocu_noborder">board.ram</td>
+	  <td class="jdocu_noborder">RAM (size is configurable)</td>
+    </tr>
+
+  </tbody></table>
+</p><p>
+  The command <b>memory-map</b> shows the memory layout of the system.
+</p><p>
+  Some devices are modeled with limited functionality.
+  See chapter <a class="reference" href="limitations.html">6</a> for more information about these limitations.
+</p>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="simulated-machines.html">3 Simulated Machines</a>
+</div>

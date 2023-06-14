@@ -1,0 +1,183 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7 DML Tips and Tricks</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="building-well-behaved-models.html">6 Building Well-Behaved Models</a>
+<a href="development-checklist.html">8 Simics Model Development Checklist</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="DML-Tips-and-Tricks">7 DML Tips and Tricks</a></h1>
+<p>
+
+</p><p>
+This chapter contains some tips and tricks which are useful when
+developing with DML. It also warns about some common errors which are
+easy to do, but which can be hard to track down if you are not aware
+of them.
+</p><p>
+</p><dl><dt id="dt:register-instead-of-attributes"><b>Register instead of attributes</b></dt><dd>It can sometimes be convenient to
+use registers instead of attributes. Each register is represented as a Simics
+attribute and an unmapped register works the same way as an integer
+attribute. For example, a register can be divided into fields which is not
+possible for an attribute. A register is unmapped if its offset
+is <code>undefined</code>, this can be done by using the
+template <i>unmapped</i> for the register.  Note also that the default
+reset behavior differ between attributes and registers: A register will by
+default be restored to its <code>hard_reset_value</code> upon a hard reset, while
+an integer attribute won't.</dd><dt id="dt:misspelled-identifiers"><b>Misspelled identifiers</b></dt><dd>Misspelling an identifier in DML
+can be very frustrating. The DML compiler removes all unused code when
+generating C code. A misspelled identifier can be considered as unused
+code by the DML compiler. Assume you want to override the default read
+method but you misspell read. Your new read method will be removed as
+it is considered as unused code. Be careful when overriding methods
+and parameters.
+<pre class="jdocu_small">register a @ undefined {
+    method read() -&gt; (value) {
+        value = 0x10101;
+    }
+}
+</pre><p></p></dd><dt id="dt:alias-registers"><b>Alias registers</b></dt><dd>An alias register is a register which
+contains another register's value. Below is an example how this can be
+handled using an <code>alias</code> template:
+
+<pre class="jdocu_small">bank regs {
+    register X size 4 @ 0x00 is (read_write) "the X register";
+    register Y size 4 @ 0x04 is (alias) { parameter alias_reg = $X; }
+}
+
+template alias {
+    parameter alias_reg;
+    parameter allocate = false;
+    parameter configuration = "none";
+    parameter desc = "alias of " + $alias_reg.name;
+
+    method read_access(generic_transaction_t *mop, msb1, lsb) -&gt; (value) {
+        log "info", 4: "Redirecting read access to %s", $alias_reg.qname;
+        inline $alias_reg.read_access(mop, msb1, lsb) -&gt; (value);
+    }
+
+    method write_access(generic_transaction_t *mop, msb1, lsb, value) {
+        log "info", 4: "Redirecting write access to %s", $alias_reg.qname;
+        inline $alias_reg.write_access(mop, msb1, lsb, value);
+    }
+}
+</pre><p>
+</p><p>
+ This causes the Y register to become
+an alias register to X.  The Y register does not hold any state of its
+own; instead it redirects any accesses to the X register.</p></dd><dt id="dt:field-set-order"><b>Field set order</b></dt><dd>Fields in register are accessed least
+significant field first. Here is an example of a little endian device:
+
+<pre class="jdocu_small">bank regs {
+    method triggered() {
+        log "info": "pow!!!";
+    }
+    register r size 4 @ 0x0000 {
+        field Trigger [0] {
+            method write(value) {
+                log "info": "Writing Trigger";
+                if ($Enabled)
+                    call $triggered();
+            }
+        }
+        field Enabled [1] {
+            method write(value) {
+                $this = value;
+                log "info": "Writing Enabled";
+            }
+        }
+    }
+}
+</pre><p>
+</p><p>
+
+Writing to the register <code>r</code> will result in this output:
+</p><pre class="jdocu_small">    simics&gt;  <b>phys_mem.write 0x0 3 -l</b>
+    [tst info] Writing Trigger
+    [tst info] Writing Enabled
+</pre><p>
+</p><p>
+The <code>Trigger</code> field is accessed first and then the
+<code>Enabled</code> field, writing <code>1</code> to both. The intention was
+to trigger the <code>pow!!!</code> output, but <code>Enabled</code> is set
+after <code>Trigger</code> and is therefore still <code>0</code>. In this
+situation it is better to use the <code>after-write</code> method:
+
+</p><pre class="jdocu_small">bank regs {
+    method triggered() {
+        log "info": "pow!!!";
+    }
+    register r size 4 @ 0x0000 {
+        field Trigger [0] {
+            method write(value) {
+                $this = value;
+                log "info": "Writing Trigger";
+            }
+        }
+        field Enabled [1] {
+            method write(value) {
+                $this = value;
+                log "info": "Writing Enabled";
+            }
+        }
+        method after_write(mop) {
+            if ($Enabled &amp;&amp; $Trigger) {
+                $Trigger = 0;
+                call $triggered();
+            }
+        }
+    }
+}
+</pre><p>
+</p><p>
+
+Now it behaves as expected:
+</p><pre class="jdocu_small">simics&gt;  <b>phys_mem.write 0x0 3 -l</b>
+[tst info] Writing Trigger
+[tst info] Writing Enabled
+[tst info] pow!!!
+</pre><p>
+</p></dd><dt id="dt:reading-register-with-fields"><b>Reading register with fields</b></dt><dd>It is not possible to access a
+register with fields directly. Use <code>get/set</code> methods
+instead. Example:
+<pre class="jdocu_small">register r @ 0x0 {
+    field A [0];
+    field B [1];
+}
+<i>[…]</i>
+$copy1 = $r;              // Results in a compilation error!
+call $r.get() -&gt; ($copy2) // This works!
+</pre><p>
+</p></dd></dl><p></p>
+<div class="chain">
+<a href="building-well-behaved-models.html">6 Building Well-Behaved Models</a>
+<a href="development-checklist.html">8 Simics Model Development Checklist</a>
+</div>

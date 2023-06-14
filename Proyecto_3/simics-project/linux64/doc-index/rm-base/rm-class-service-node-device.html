@@ -1,0 +1,162 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>service-node-device</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-service-node.html">service-node</a>
+<a href="rm-class-set-memory.html">set-memory</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="service-node-device"><a href="#service-node-device">service-node-device</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Ethernet device for the service-node class.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, ethernet_common, recorded
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-service-node-device.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-service-node-device.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:link">
+<i>link</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The network link that this service node Ethernet device is attached to.</dd>
+<dt id="dt:link_state">
+<i>link_state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The network link that this service node Ethernet device is attached to (for checkpointing).</dd>
+<dt id="dt:mac_address">
+<i>mac_address</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|[iiiiii]</code>
+<br>The MAC address used by this service node Ethernet device.</dd>
+<dt id="dt:arp_table">
+<i>arp_table</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[[ss]*]</code>
+<br>Compatibility attribute for old checkpoints.</dd>
+<dt id="dt:neighbors">
+<i>neighbors</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>D</code>
+<br>The neighbor table used by this Ethernet interface.</dd>
+<dt id="dt:service_node">
+<i>service_node</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>The service node that the Ethernet device is attached to.</dd>
+<dt id="dt:ip_addresses">
+<i>ip_addresses</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>The configured IP addresses for this network interface. They are on the form <tt>"<i>addr</i>/<i>prefixlen</i>"</tt> and allows both IPv4 and IPv6 addresses. This list does not include automatically assigned IP number, such as link-local IPv6 addresses.</dd>
+<dt id="dt:mtu">
+<i>mtu</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>MTU, maximum transfer unit, is the largest Ethernet payload (without Ethernet header and CRC) that will be sent out on the network without fragmentation. Default 1500.</dd>
+<dt id="dt:tx_bandwidth">
+<i>tx_bandwidth</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The transmit bandwidth of the network interface in bits per second. The network interface will limit the rate at which it sends packets to remain below this bandwidth. Default limit is 1Gbit/s.</dd>
+<dt id="dt:partial_packets_v4">
+<i>partial_packets_v4</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ddf[[dib]*]]*]</code>
+<br>((<i>id</i>, <i>ip_hdr</i>, <i>timestamp</i>, (<i>data</i>, <i>offset</i>, <i>more_flag</i>)*)*)<br>
+<br>
+IPv4 partial packets.</dd>
+<dt id="dt:partial_packets_v6">
+<i>partial_packets_v6</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ssif[[diib]*]]*]</code>
+<br>((<i>source_ip</i>, <i>dest_ip</i>, <i>identification</i>, <i>timestamp</i>, (<i>ip_frame</i>, <i>start</i>, <i>end</i>, <i>more_flag</i>)*)*)<br>
+<br>
+IPv6 partial packets.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.service-node.html">service-node</a>
+</section>
+<div class="chain">
+<a href="rm-class-service-node.html">service-node</a>
+<a href="rm-class-set-memory.html">set-memory</a>
+</div>

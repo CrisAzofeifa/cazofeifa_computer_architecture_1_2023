@@ -1,0 +1,118 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.2 Simics command line interface</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="running-simics-cli.html">2.1 Running Simics</a>
+<a href="using-simics-scripts.html">2.3 Using Simics scripts</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="simics-command-line-interface">2.2 <a href="#simics-command-line-interface">Simics command line interface</a></h1>
+<p>This section focuses on some practical information related to the use of Simics command line interface (CLI). Particularly, the following information is presented:</p>
+<ul>
+<li>how to use command line completion, also known as tab completion </li>
+<li>how to use Simics <code>help</code> command </li>
+<li>where to find more information about Simics command line interface </li>
+</ul>
+<p>We assume that a user knows how to start Simics and how to get access to Simics CLI.</p>
+<p>This section doesn’t cover all commands available through Simics CLI. But, just to give an idea how powerful Simics CLI is, here are some actions which can be done via Simics CLI:</p>
+<ul>
+<li>creation of target machines </li>
+<li>starting and stopping simulation and, thus, target machines </li>
+<li>inspection of the state of target machines </li>
+<li>setting breakpoints and tracepoints </li>
+<li>saving and rolling back to checkpoints </li>
+</ul>
+<h2 id="simics-command-line-completion">2.2.1 <a href="#simics-command-line-completion">Simics command line completion</a></h2>
+<p>This section describes command line completion provided by Simics command line interface (CLI).</p>
+<p>To simplify the use of Simics CLI, Simics CLI implements command line completion, also known as tab completion. Simics command line can complete commands, arguments, file names, and some other entities. Let’s see how command line completion works for the <code>run-command-file</code> Simics command:</p>
+<ol>
+<li>start Simics and get access to Simics CLI </li>
+<li>type <strong>run-comm</strong> text on Simics CLI </li>
+<li>press the tab key (&lt;TAB&gt;) </li>
+</ol>
+<p>Simics command line completion functionality will complete the command name producing the following:</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file _</strong>
+</code></pre>
+<p>where <strong>_</strong> denotes the position of a text cursor.</p>
+<p>To get further with command line completion, press the tab key twice. Simics command line completion system will print the list of parameters and flags which can be passed to the <code>run-command-file</code> command:</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file &lt;TAB&gt;&lt;TAB&gt;</strong>
+-local  -main-branch  file =
+</code></pre>
+<p>Please note that we had to press the tab key twice. It is because the command completion system could not unambiguously complete the command after the tab key was pressed once. After the tab key is pressed again, the command completion system shows all possible completions.</p>
+<p>Let’s proceed with our example and enter into the command line letter “f” followed by pressing the tab key: </p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file f&lt;TAB&gt;</strong>
+</code></pre>
+<p>After the tab key was pressed, the result may look like this:</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file file = _</strong>
+</code></pre>
+<p>We would like to run Simics command file <code>targets/qsp-x86/firststeps.simics</code>. Simics command line completion can help with this. Please enter additionally “t” into the command line: </p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file file = t_</strong>
+</code></pre>
+<p>Now press tab. The command line completion system will produce something like this:</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file file = targets\_</strong>
+</code></pre>
+<p>It may be a good time to play with command line completion by pressing the tab key and entering single letters until you have the full command entered: </p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file file = targets\qsp-x86\firststeps.simics</strong>
+</code></pre>
+<p>On Linux, the command line completion system will use “/” as a directory separator. There, the result will look like this: </p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file file = targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<p>Pressing the enter key now will run the command creating a new target machine.</p>
+<h2 id="simics-help-command">2.2.2 <a href="#simics-help-command">Simics help command</a></h2>
+<p>Simics documentation can be accessed via the <code>help</code> Simics CLI command. The <code>help</code> command provides access to the documentation for:</p>
+<ul>
+<li>commands </li>
+<li>scripts </li>
+<li>objects </li>
+<li>classes </li>
+<li>modules </li>
+<li>attributes </li>
+<li>Simics API functions </li>
+</ul>
+<p>To try the command, enter the following command to see the documentation for the run-command-file command: </p>
+<pre><code class="language-simics">simics&gt; <strong>help run-command-file</strong>
+</code></pre>
+<p>To get the documentation for any Simics command just run the <code>help</code> command specifying the command you are interested in: </p>
+<pre><code class="language-simics">simics&gt; <strong>help &lt;command-of-interest&gt;</strong>
+</code></pre>
+<p>More information about Simics <code>help</code> command can be obtained by reading the documentation for the help command itself: </p>
+<pre><code class="language-simics">simics&gt; <strong>help help</strong>
+</code></pre>
+<p>The <code>help-search</code> command allows to search the documentation for a particular string. Here is a sample usage of the <code>help-search</code> command: </p>
+<pre><code class="language-simics">simics&gt; <strong>help-search python</strong>
+</code></pre>
+<h2 id="further-details-about-simics-command-line-interface">2.2.3 <a href="#further-details-about-simics-command-line-interface">Further details about Simics command line interface</a></h2>
+<p>More information about Simics command line interface can be found in <em>Simics User’s Guide</em>, section “The Command Line Interface”.</p>
+
+<div class="chain">
+<a href="running-simics-cli.html">2.1 Running Simics</a>
+<a href="using-simics-scripts.html">2.3 Using Simics scripts</a>
+</div>

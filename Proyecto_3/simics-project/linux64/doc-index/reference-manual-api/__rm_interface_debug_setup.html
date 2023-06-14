@@ -1,0 +1,367 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>debug_setup</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_debug_query.html">debug_query</a>
+<a href="__rm_interface_debug_step.html">debug_step</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_debug_setup">debug_setup</a></h1>
+<p>
+
+<a name="debug_setup"></a><a name="debug_setup_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="debug_setup_interface_t2"></a>
+<p>
+   Functions in the <code>debug_setup</code> interfaces are used to provide
+   the debugger with symbol files and paths. There are also functions for
+   listing what symbol files and paths have been added.
+</p><p>
+   
+</p><p>
+   For all functions that return an <code>attr_value_t</code>, that return value
+   will consists of a list with two elements. The first element is an error code
+   of <code>debugger_error_t</code> type (see <code>debug_query</code>
+   interface documentation for definition). The second element depends on the
+   first. If the first element is <code>Debugger_No_Error</code>, meaning that
+   the function went well, then the second element will contain the expected
+   return value that is specified per function below. If the first element is
+   another error code, then the second element will be a string describing the
+   error that occurred.
+</p><p>
+   
+</p><p>
+   Upon success, all functions for adding symbols will return an <code>id</code>
+   that can be used with <b><i>remove_symbol_file</i></b>.
+</p><p>
+   <a name="add_symbol_filedebug_setup-interface-method"></a>
+   <b><i>add_symbol_file</i></b> adds a symbol file, <i>symbol_file</i>, used
+   for debugging contexts that match the context-query <i>query</i>. The
+   <i>address</i> argument specifies the address that the file should be
+   mapped to. If <i>absolute_address</i> is set then the given
+   <i>address</i> will be the absolute address of the first relocatable
+   segment and other segments will be added with their given offsets to that
+   segment.
+</p><p>
+   Errors specific to this function:
+</p><p>
+   </p><ul>
+
+   <li><em>Debugger_Failed_To_Open_File</em> - File cannot be opened.</li>
+
+   <li><em>Debugger_Unrecognized_File_Format</em> - The file format is not
+   recognized.</li>
+
+   <li><em>Debugger_Segment_Info_Missing</em> - If an ELF file is being added,
+   but no valid segments can be found.</li>
+
+   </ul>
+<p>
+   <a name="add_symbol_segmentdebug_setup-interface-method"></a>
+   <b><i>add_symbol_segment</i></b> adds symbols from the specified
+   <i>segment</i> of an ELF symbol file. Other arguments are the same as
+   for <b><i>add_symbol_file</i></b>. The address of the segment is specified with
+   the <i>address</i> argument. If <i>absolute_address</i> is set this
+   <i>address</i> will be an absolute address otherwise it will be an
+   offset to the address found in the symbol file for that segment.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Segment_Not_Found</em> - Segment not found when adding a
+   segment.</li>
+
+   <li><em>Debugger_Segment_Info_Missing</em> - Segment information is missing
+   or incomplete.</li>
+
+   <li><em>Debugger_Not_Relocatable</em> - The segment is not relocatable.</li>
+
+   <li><em>Debugger_Unsupported_For_File_Format</em> - File format is not
+   ELF.</li>
+
+   </ul>
+<p>
+   <a name="add_symbol_sectiondebug_setup-interface-method"></a>
+   <b><i>add_symbol_section</i></b> adds symbols from the specified
+   <i>section</i> of an ELF symbol file. Other arguments are the same as
+   for <b><i>add_symbol_file</i></b>. The address of the section is specified with
+   the <i>address</i> argument. If <i>absolute_address</i> is set this
+   <i>address</i> will be an absolute address otherwise it will be an
+   offset to the address found in the symbol file for that section.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Section_Not_Found</em> - Section not found when adding a
+   section.</li>
+
+   <li><em>Debugger_Section_Info_Missing</em> - Section information is missing
+   or incomplete.</li>
+
+   <li><em>Debugger_Not_Relocatable</em> - The section is not relocatable.</li>
+
+   <li><em>Debugger_Unsupported_For_File_Format</em> - File format is not
+   ELF.</li>
+
+   </ul>
+<p>
+   </p><div class="note">
+<b>Note:</b>
+Adding the same symbol file, section or segment more than once might
+   result in unexpected behavior and is not supported.</div><a name="remove_symbol_filedebug_setup-interface-method"></a>
+   <b><i>remove_symbol_file</i></b> removes the debugger's knowledge of symbols
+   that was added with any of the functions for adding symbols. The
+   <i>id</i> argument is the id returned from the add function.
+<p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Unknown_Id</em> - The <i>id</i> is unknown.</li>
+
+   </ul>
+<p>
+   <a name="clear_symbol_filesdebug_setup-interface-method"></a>
+   <b><i>clear_symbol_files</i></b> removes the debugger's knowledge about all
+   symbol files added by <i>add_symbol_file</i>.
+</p><p>
+   <a name="symbol_filesdebug_setup-interface-method"></a> <b><i>symbol_files</i></b>
+   lists all added symbol files. A dictionary, with <code>id</code> as key will be
+   returned. An id is always bound to one query and one symbol file, but it can
+   contain several memory maps. The listed <i>id</i> is the argument passed
+   to <b><i>remove_symbol_file</i></b>. The dictionary values have the following
+   format:
+</p><p>
+   </p><ul>
+
+   <li><i>query</i> <code>(string)</code> - The context query the symbol is
+   valid for.</li>
+
+   <li><i>relocation</i> <code>(uint64)</code> - The relocation address
+   provided when the symbol file was added.</li>
+
+   <li><i>symbol-file</i> <code>(string)</code> - The file containing the
+   symbol information.</li>
+
+   <li><i>memory-maps</i> <code>([&lt;dict&gt;, ...])</code> - A list of
+   memory maps that are added togheter as the same <code>id</code>, see format
+   below:</li>
+
+   </ul>
+<p>
+   The dictionary describing a memory map has the following format:
+   </p><ul>
+
+   <li><i>address</i> <code>(uint64)</code> - The address of the section in
+   memory.</li>
+
+   <li><i>size</i> <code>(uint64)</code> - The section size in memory.</li>
+
+   <li><i>flags</i> <code>(uint64)</code> - Format specific flags describing
+   the section.</li>
+
+   <li><i>section</i> <code>(string)</code> - The name of the section.</li>
+
+   <li><i>file-offset</i> <code>(uint64)</code> - Offset in symbol file for
+   the section.</li>
+
+   <li><i>file-size</i> <code>(uint64)</code> - Size of the section in the
+   symbol file.</li>
+
+   </ul>
+<p>
+   <a name="symbol_files_for_ctxdebug_setup-interface-method"></a>
+   <b><i>symbol_files_for_ctx</i></b> is the same as <b><i>symbol_files</i></b>
+   except that it only returns symbol files that are valid for the given
+   context id, <i>ctx_id</i>.
+</p><p>
+   <a name="list_all_mappingsdebug_setup-interface-method"></a>
+   <b><i>list_all_mappings</i></b> lists all symbol mappings for a certain context
+   <i>ctx_id</i>. This will be all mappings from symbol files added by
+   users plus any symbol mappings added elsewhere, from trackers for example.
+   The returned value is a dictionary on the following format:
+</p><p>
+   </p><ul>
+
+   <li><i>filename</i> <code>(string)</code> - The file backing the memory
+   map.</li>
+
+   <li><i>query</i> <code>(string)</code> - The query the map is valid
+   for.</li>
+
+   <li><i>address</i> <code>(uint64)</code> - The map's address in context
+   memory.</li>
+
+   <li><i>size</i> <code>(uint64)</code> - The size of the map in
+   memory.</li>
+
+   <li><i>flags</i> <code>(uint64)</code> - Read, write, and execute flags,
+   bit 0 is set if readable, bit 1 if writeable and bit 2 if executable. If this
+   value is 0 this is the same as if all flags are set.</li>
+
+   <li><i>section-name</i> <code>(string)</code> - The section name, or
+   NIL.</li>
+
+   <li><i>file-offset</i> <code>(int64)</code> - Offset into the backing
+   file.</li>
+
+   <li><i>file-size</i> <code>(uint64)</code> - Size of the map in the
+   backing file.</li>
+
+   <li><i>relocation</i> <code>(uint64)</code> - The offset from the address
+   in the symbol file to where the mappings is actually loaded in memory. This
+   is not always present in the dictionary.</li>
+
+   </ul>
+<p>
+   Some other internal entries could possibly also be present in the
+   dictionary.
+</p><p>
+
+   <a name="add_path_map_entrydebug_setup-interface-method"></a>
+   <b><i>add_path_map_entry</i></b> adds a path math entry that maps a source
+   file from the <i>source</i> in the symbol file to the actual
+   destination, <i>dest</i>, where it is located on disk. The
+   <i>query</i> argument specifies for which context-queries the mapping
+   should apply. The returned id can be used with
+   <b><i>remove_path_map_entry</i></b> to remove the added path map. The source
+   path may not be empty or be just "." or "./".
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Invalid_Path</em> - The source path is not valid.</li>
+
+   </ul>
+<p>
+   <a name="remove_path_map_entrydebug_setup-interface-method"></a>
+   <b><i>remove_path_map_entry</i></b> removes an entry that was added with
+   <b><i>add_path_map_entry</i></b>. The <i>id</i> is the value returned from
+   the add function.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Unknown_Id</em> - The provided <i>id</i> is
+   unknown.</li>
+
+   </ul>
+<p>
+   <a name="clear_path_map_entriesdebug_setup-interface-method"></a>
+   <b><i>clear_path_map_entries</i></b> removes all knowledge about all path map
+   entries added with <b><i>add_path_map_entry</i></b>.
+</p><p>
+   <a name="path_map_entriesdebug_setup-interface-method"></a>
+   <b><i>path_map_entries</i></b> lists all path map entries that have been added
+   with <b><i>add_path_map_entry</i></b>, that matches the given context id. If
+   the context id is nil, then all path maps will be listed. The format of the
+   entries in the returned list are dictionaries, with an <code>id</code> of type
+   debug_setup_id_t as key:
+</p><p>
+   </p><ul>
+
+   <li><i>query</i> <code>(string)</code> - The context query the path map
+   is valid for.</li>
+
+   <li><i>source</i> <code>(string)</code> - The source to translate
+   from.</li>
+
+   <li><i>destination</i> <code>(string)</code> - The destination to
+   translate to.</li>
+
+   </ul>
+<p>
+   <a name="path_map_entries_for_ctxdebug_setup-interface-method"></a>
+   <b><i>path_map_entries_for_ctx</i></b> is the same as
+   <b><i>path_map_entries</i></b> except that it only lists path maps that are
+   valid for the given context id, <i>ctx_id</i>.
+</p><p>
+
+   <a name="apply_path_mapdebug_setup-interface-method"></a>
+   <b><i>apply_path_map</i></b> applies any added path map to a file path,
+   <i>filename</i>, for a given context with ID <i>ctx_id</i>. The path
+   with the path map applied will be returned. The path map will only apply if
+   the destination file exists and if the path given in <i>filename</i>
+   does not, otherwise the provided file will be returned. The returned path
+   will always contain forward slashes as path separator, regardless of what
+   the host system uses, or if any path map was applied or not.
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+For functions that take <i>query</i> as argument, having this set
+   to nil will work the same way as for <code>"*"</code>. A bad context query will
+   result in a <code>Debugger_Incorrect_Context_Query</code> error.</div><pre class="jdocu_small">
+typedef int64 debug_setup_id_t;
+
+SIM_INTERFACE(debug_setup) {
+        attr_value_t (*add_symbol_file)(conf_object_t *NOTNULL obj,
+                                        const char *query,
+                                        const char *NOTNULL symbol_file,
+                                        uint64 address, bool absolute_address);
+        attr_value_t (*add_symbol_segment)(conf_object_t *NOTNULL obj,
+                                           const char *query,
+                                           const char *NOTNULL symbol_file,
+                                           unsigned segment, uint64 address,
+                                           bool absolute_address);
+        attr_value_t (*add_symbol_section)(conf_object_t *NOTNULL obj,
+                                           const char *query,
+                                           const char *NOTNULL symbol_file,
+                                           const char *NOTNULL section,
+                                           uint64 address,
+                                           bool absolute_address);
+        attr_value_t (*remove_symbol_file)(conf_object_t *NOTNULL obj,
+                                           debug_setup_id_t id);
+        void (*clear_symbol_files)(conf_object_t *NOTNULL obj);
+        attr_value_t (*symbol_files)(conf_object_t *NOTNULL obj);
+        attr_value_t (*symbol_files_for_ctx)(conf_object_t *NOTNULL obj,
+                                             const char *NOTNULL ctx_id);
+        attr_value_t (*list_all_mappings)(conf_object_t *NOTNULL obj,
+                                          const char *NOTNULL ctx_id);
+        attr_value_t (*add_path_map_entry)(conf_object_t *NOTNULL obj,
+                                           const char *query,
+                                           const char *NOTNULL source,
+                                           const char *NOTNULL dest);
+        attr_value_t (*remove_path_map_entry)(conf_object_t *NOTNULL obj,
+                                              debug_setup_id_t id);
+        void (*clear_path_map_entries)(conf_object_t *NOTNULL obj);
+        attr_value_t (*path_map_entries)(conf_object_t *NOTNULL obj);
+        attr_value_t (*path_map_entries_for_ctx)(conf_object_t *NOTNULL obj,
+                                                 const char *NOTNULL ctx_id);
+        attr_value_t (*apply_path_map)(conf_object_t *NOTNULL obj,
+                                       const char *NOTNULL ctx_id,
+                                       const char *NOTNULL filename);
+};
+#define DEBUG_SETUP_INTERFACE "debug_setup"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_debug_query.html">debug_query</a>
+<a href="__rm_interface_debug_step.html">debug_step</a>
+</div>

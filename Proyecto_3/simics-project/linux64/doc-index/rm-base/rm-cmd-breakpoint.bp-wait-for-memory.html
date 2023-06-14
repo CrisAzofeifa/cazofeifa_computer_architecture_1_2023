@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;breakpoint&gt;.bp-wait-for-memory</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-breakpoint.bp-trace-memory.html">&lt;breakpoint&gt;.bp-trace-memory</a>
+<a href="rm-cmd-breakpoint.break.html">&lt;breakpoint&gt;.break – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="breakpoint.bp-wait-for-memory"></a>
+<h1 id="breakpoint.bp-wait-for-memory"><a href="#breakpoint.bp-wait-for-memory">&lt;breakpoint&gt;.bp-wait-for-memory</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;breakpoint&gt;.bp-wait-for-memory</b> <i>address</i> [<i>length</i>] [-r] [-w] [-x] [<i>"prefix"</i>] [<i>"substr"</i>] [<i>"pattern"</i>] [<i>"mask"</i>] [-reverse] [-always] [<i>timeout</i>] [<i>timeout-rt</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Postpones execution of a script branch the specified break condition is true.
+<p>
+The break condition is specified as (read, write, or execute) on <i>address</i> for and object implementing the breakpoint interface. This is typically a memory space object such as physical memory. Accesses intersecting the given range will trigger the break. By default the break will only trigger for instruction execution, but any subset of read, write, and execute accesses can be set to trigger using combinations of <tt>-r</tt>, <tt>-w</tt>, and <tt>-x</tt>.
+</p><p>
+<i>length</i> is the interval length in bytes (default is 1).
+</p><p>
+For convenience the break condition is on memory connected to the current frontend processor (see <code>pselect</code>). Default is to break on virtual address accesses (in the current context). By prefixing the address with <tt>p:</tt> it is possible to break on physical accesses as well.
+</p><p>
+Use <i>prefix</i> to define the break condition on instructions with this prefix. For example, a prefix "add" will wait for an instruction that begins with "add". The text to compare the prefix with for an instruction is the one which the instruction is disassembled to. The comparison is case insensitive.
+</p><p>
+Use <i>substr</i> to wait for instructions with a certain syntax substring. For example, specifying a substring "r31" will wait for an instruction containing the substring "r31". The match is case insensitive.
+</p><p>
+Use <i>pattern</i> to wait for an instruction with a certain bit-pattern. First the <i>mask</i> will be applied to the instruction and then the result will be compared with the <i>pattern</i>. For example, a pattern "0x0100" and mask "0x0101" will wait for an instruction whose first byte has the lowest bit set and the second not.
+</p><p>
+Note that pattern and mask are supplied as strings with string byte order (low address first).
+</p><p>
+The command returns the initiator object of the memory transaction that resulted in the breakpoint.
+</p><p>
+If <i>timeout</i> is a positive number, the command will run for at most that many seconds of virtual time.
+</p><p>
+If <i>timeout-rt</i> is a positive number, the command will run for at most that many seconds of real time.
+</p><p>
+A time-out will be signaled by throwing a CLI exception, which can be captured using try/except in order to take specific action, or to let it pass unhandled.
+</p><p>
+The command will by default only wait for events that occur when the simulation is running forward. To wait for events in the reverse direction use the <tt>-reverse</tt> flag. Similarly, the <tt>-always</tt> flag tells the command to wait for events in both simulation directions. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.bp-manager.html">bp-manager</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-breakpoint.bp-trace-memory.html">&lt;breakpoint&gt;.bp-trace-memory</a>
+<a href="rm-cmd-breakpoint.break.html">&lt;breakpoint&gt;.break – deprecated</a>
+</div>

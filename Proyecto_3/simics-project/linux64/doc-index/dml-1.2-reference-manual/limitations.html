@@ -1,0 +1,61 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>A Known Limitations</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="standard-templates.html">5 Standard Templates</a>
+<a href="messages.html">B Messages</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.2 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="known-limitations">A <a href="#known-limitations">Known Limitations</a></h1>
+<p>The following are known limitations of the <code>dmlc</code> compiler at
+the time of this writing:</p>
+<dl><dt id="dt:conflicting-c-names">
+<p>Conflicting C names</p>
+</dt><dd>
+<p>Because of the way that C identifiers are generated from DML,
+there is a possibility that the C compiler will complain about
+conflicting identifiers.  The reason is that when generating
+C functions from DML methods, the fully qualified is used, with
+double underscores substituted for the separating periods. This means that
+the following two declarations will create a conflict:</p>
+<pre><code>bank foo {
+    method export bar { ... }
+}
+method export foo__bar { ... }
+</code></pre>
+<p>The qualified names the methods are <code>foo.bar</code> and
+<code>foo__bar</code>, respectively, and these both get mangled to the
+same C identifier <code>foo__bar</code>.</p>
+<p>To avoid this problem, never use double underscores in names in DML.</p>
+</dd></dl>
+
+<div class="chain">
+<a href="standard-templates.html">5 Standard Templates</a>
+<a href="messages.html">B Messages</a>
+</div>

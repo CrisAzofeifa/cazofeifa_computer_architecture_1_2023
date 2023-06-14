@@ -1,0 +1,107 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>port-forward-incoming-server</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-pipe_manager.html">pipe_manager</a>
+<a href="rm-class-port-forward-outgoing-server.html">port-forward-outgoing-server</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="port-forward-incoming-server"><a href="#port-forward-incoming-server">port-forward-incoming-server</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Port forwarding TCP service. Handles connections initiated external to Simics wanting access to the simulated environment.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, tcp_service, udp_service, port_forward
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:tcp">
+<i>tcp</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>TCP layer. Must implement the tcp interface.</dd>
+<dt id="dt:udp">
+<i>udp</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>UDP layer. Must implement the udp interface.</dd>
+<dt id="dt:connections">
+<i>connections</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ssisi]*]</code>
+<br>((protocol, in_addr, in_port, forward_ip, forward_port)*). Sets up port forwarding listening to port in_host on ip in_addr of the host machine and forwarding to port forward_port on ip forward_ip within the simulated environment. Protocol must be either tcp or udp. BUG: If the in_addr is set to "::", the behavior is currently host-specific.</dd>
+<dt id="dt:add_connection">
+<i>add_connection</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[ssisi]</code>
+<br>(protocol, in_addr, in_port, forward_ip, forward_port). Add a port forwarding listening port in_host on ip in_addr of the host machine and forwarding to port forward_port on ip forward_ip within the simulated environment. Protocol must be either tcp or udp.</dd>
+<dt id="dt:temporary_connections">
+<i>temporary_connections</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[sisi]*]</code>
+<br>((protocol, in_port, forward_ip, forward_port)*). The format of this attribute is identical to the connections attribute. This attribute contains temporary port mappings that are set up by the NAPT protocol handler.</dd>
+<dt id="dt:algs">
+<i>algs</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[o*]</code>
+<br>Application Level Gateway (ALG) objects providing protocol specific support for port forwarding. The first object returning non-null in a call to its connection method will be the one that handles that particular connection.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.service-node.html">service-node</a>
+</section>
+<div class="chain">
+<a href="rm-class-pipe_manager.html">pipe_manager</a>
+<a href="rm-class-port-forward-outgoing-server.html">port-forward-outgoing-server</a>
+</div>

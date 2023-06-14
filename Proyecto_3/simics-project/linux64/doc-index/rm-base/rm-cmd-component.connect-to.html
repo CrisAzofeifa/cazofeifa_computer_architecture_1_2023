@@ -1,0 +1,71 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;component&gt;.connect-to</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-component.connect.html">&lt;component&gt;.connect – deprecated</a>
+<a href="rm-cmd-component.delete.html">&lt;component&gt;.delete</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="component.connect-to"></a>
+<h1 id="component.connect-to"><a href="#component.connect-to">&lt;component&gt;.connect-to</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;component&gt;.connect-to</b> <i>dst</i> [<i>"type"</i>] [<i>"direction"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Connect the component into an existing component hierarchy, represented by <i>dst</i>. The command will search the hierarchy for connectors that match the connectors of the source component. Since the main use of the command is to extend hierarchies, connectors with the <em>up</em> direction in the source component will be matched first.
+<p>
+If there are connectors of different types that match, the <i>type</i> argument can select the one to use. Similarly it is possible to force the command to only consider connectors in one direction by specifying <i>direction</i>, that can be one of <tt>up</tt> and <tt>down</tt>.
+</p><p>
+The <code>connect-to</code> command is useful when the exact location of a connection in the system does not matter. The following is an example of inserting a PCI-based Ethernet device into a simulated machine whose top-level component is called <tt>board</tt>:<br>
+ </p><pre>$eth = (create-pci-i82543gc-comp mac_address = "10:20:30:40:50:60")
+$eth.connect-to board
+instantiate-components
+</pre> 
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-connect.html">connect</a>, 
+<a href="rm-cmd-component.get-available-connector.html">&lt;component&gt;.get-available-connector</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-component.connect.html">&lt;component&gt;.connect – deprecated</a>
+<a href="rm-cmd-component.delete.html">&lt;component&gt;.delete</a>
+</div>

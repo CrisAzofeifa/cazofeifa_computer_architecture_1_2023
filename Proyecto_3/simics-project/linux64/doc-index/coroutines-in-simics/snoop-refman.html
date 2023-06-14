@@ -1,0 +1,412 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Snoop module reference</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="sloop-refman.html">Sloop module reference</a>
+</div>
+<div class="path">
+<a href="index.html">Python Coroutines in Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 id="snoop-module-reference"><a href="#snoop-module-reference">Snoop module reference</a></h1>
+<p>This section contains reference documentation for the
+<code>snoop</code> Python module.</p>
+<h2 id="snooper"><a href="#snooper"><strong>Snooper</strong></a></h2>
+<pre><code>class Snooper(abc.ABC, typing.Generic[T])
+</code></pre>
+<p>Abstract class for snoops. A snoop observes a class of simulation
+events and yields values when they happen.</p>
+<h3 id="snooper-add_callback"><a href="#snooper-add_callback">Snooper.<strong>add_callback</strong></a></h3>
+<pre><code>@abc.abstractmethod
+def add_callback(self, yield_value: Callable[[T], None],
+                 yield_exception: Callable[[Exception], None]) -&gt; None
+</code></pre>
+<p>Make sure that functions <code>yield_value</code> and <code>yield_exc</code> are
+called when the snooper yields a value or an exception,
+respectively.  Return <code>Handle</code> object for disposal. Neither
+<code>yield_value</code> nor <code>yield_exc</code> may be called after this handle
+has been cancelled.</p>
+<p>The <code>add_callback</code> method typically uses some simulation
+primitive to register a low-level callback on relevant
+simulation events.  The registered callback is typically <em>not</em>
+the <code>yield_value</code> argument, but a wrapper function with
+whatever signature the simulation primitive requires. This
+wrapper studies its arguments and calls <code>fun</code> zero or one
+time, and then returns. If an exception can happen when
+studying arguments, the function body may that and call
+<code>yield_exc</code> with the exception object as argument.
+This way it will be passed to typically useful when the
+snooper's constructor arguments cannot be validated until the
+callback happens.</p>
+<p>If one callback from the simulation primitive may trigger
+multiple calls to <code>yield_value</code> or <code>yield_exc</code>, then the
+callback must make sure to check between calls that the handle
+has not been cancelled.</p>
+<p>Neither <code>yield_value</code> nor <code>yield_exc</code> are required to be
+thread safe, so <code>add_callback</code> must ensure that neither is
+invoked concurrently from different threads. However, both
+functions may be reentrantly called if they trigger
+simulation side-effects.</p>
+<h3 id="snooper-exec_context"><a href="#snooper-exec_context">Snooper.<strong>exec_context</strong></a></h3>
+<pre><code>@abc.abstractmethod
+def exec_context(self) -&gt; ExecContext
+</code></pre>
+<p>Specifies in what execution contexts the callback
+registered with <code>add_callback()</code> can be called. The execution
+context also covers entering/exiting the callback's associated
+exception bridge. The return value is one of
+<code>CellContext(obj)</code>, <code>GlobalContext()</code> and <code>ThreadedContext()</code>.
+The execution context applies only to callbacks themselves;
+callback registration and cancellation may only be called in
+Global Context.</p>
+<h2 id="handle"><a href="#handle"><strong>Handle</strong></a></h2>
+<pre><code>class Handle(abc.ABC)
+</code></pre>
+<p>Handle returned by Future.Callback.add_callback</p>
+<h3 id="handle-cancel"><a href="#handle-cancel">Handle.<strong>cancel</strong></a></h3>
+<pre><code>@abc.abstractmethod
+def cancel(self) -&gt; None
+</code></pre>
+<p>Stop receiving callbacks. Idempotent.</p>
+<h2 id="execcontext"><a href="#execcontext"><strong>ExecContext</strong></a></h2>
+<pre><code>@dataclass
+class ExecContext(abc.ABC)
+</code></pre>
+<p>Base class for execution context specifiers.
+Should not be subclassed by users, mainly exposed for typing annotations</p>
+<h2 id="globalcontext"><a href="#globalcontext"><strong>GlobalContext</strong></a></h2>
+<pre><code>class GlobalContext(ExecContext)
+</code></pre>
+<p>Callback can only be called in Global Context.</p>
+<h2 id="cellcontext"><a href="#cellcontext"><strong>CellContext</strong></a></h2>
+<pre><code>@dataclass
+class CellContext(ExecContext)
+</code></pre>
+<p>Callback can be called in Cell Context within the cell given by
+the <code>cell</code> member, or in Global Context. If <code>cell</code> is <code>None</code>,
+can be called from Cell Context in any cell or from Global
+Context.</p>
+<h3 id="cellcontext-__init__"><a href="#cellcontext-__init__">CellContext.<strong>__init__</strong></a></h3>
+<pre><code>def __init__(self, obj: Optional[simics.conf_object_t])
+</code></pre>
+<p>The <code>obj</code> argument can be any object or <code>None</code>; if it is an
+object then the <code>cell</code> attribute is set to the object's
+associated cell, or <code>None</code> if the object is not associated to
+a cell.</p>
+<h2 id="threadedcontext"><a href="#threadedcontext"><strong>ThreadedContext</strong></a></h2>
+<pre><code>class ThreadedContext(ExecContext)
+</code></pre>
+<p>Callback can be called in any context, Threaded, Global or Cell.</p>
+<h2 id="object_handle"><a href="#object_handle"><strong>object_handle</strong></a></h2>
+<pre><code>def object_handle(obj, cancel)
+</code></pre>
+<p>Return a <code>Handle</code> object that calls <code>cancel()</code> when cancelled,
+and which self-cancels when <code>obj</code> is deleted.</p>
+<h2 id="error"><a href="#error"><strong>Error</strong></a></h2>
+<pre><code>class Error(Exception)
+</code></pre>
+<p>Base class for errors emitted by the snoop library</p>
+<h2 id="invalidobjerror"><a href="#invalidobjerror"><strong>InvalidObjError</strong></a></h2>
+<pre><code>class InvalidObjError(Error)
+</code></pre>
+<p>Raised by snooper constructors if an object passed as argument to the
+constructor does not fulfil the requirements of this snooper</p>
+<h2 id="add_callback_simple"><a href="#add_callback_simple"><strong>add_callback_simple</strong></a></h2>
+<pre><code>def add_callback_simple(
+        snooper: Snooper[T], yield_value: Callable[[T], None],
+        yield_exc: Optional[Callable[[Exception], None]]=None, *,
+        once: bool=False)
+</code></pre>
+<p>Wrapper around <code>Snooper.add_callback</code>:</p>
+<ul>
+<li>
+<p>The <code>yield_exc</code> argument is optional; leaving it out makes
+sense in the common case where the snooper is known to never yield
+exceptions. If an exception happens without explicit
+<code>yield_exc</code>, then a critical error is signalled.</p>
+</li>
+<li>
+<p>If the <code>once</code> flag is <code>True</code>, then the callback will be
+automatically cancelled after the first <code>yield_value</code> call.</p>
+</li>
+</ul>
+<h2 id="catch_exceptions"><a href="#catch_exceptions"><strong>catch_exceptions</strong></a></h2>
+<pre><code>def catch_exceptions(exc_handler: Callable[[Exception], None]) -&gt; Callable[
+        [Callable[..., T]], Callable[..., T]]
+</code></pre>
+<p>Decorator to capture exceptions raised by a function by calling the
+function <code>exc_handler</code>. Typically useful for low-level callbacks created
+by implementations of Snooper.add_callback, if the callback can
+raise an exception. In this case, the following makes sure the exception
+is propagated:</p>
+<p>@catch_exceptions(yield_exception)
+def callback(...):
+...</p>
+<h2 id="standard-snooper-classes"><a href="#standard-snooper-classes">Standard snooper classes</a></h2>
+<h3 id="hap"><a href="#hap"><strong>Hap</strong></a></h3>
+<pre><code>class Hap(Snooper)
+</code></pre>
+<p>Yield a value when a hap occurs on a given object. The value
+is a tuple of the hap arguments, excluding the object.</p>
+<h4 id="hap-__init__"><a href="#hap-__init__">Hap.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, obj: simics.conf_object_t, name: str,
+             exec_context: ExecContext=None)
+</code></pre>
+<p>The <code>obj</code> argument denotes the object on which we listen to a hap.
+<code>name</code> denotes the name of the hap.
+The <code>exec_context</code> argument declares the
+execution context of the notifier. The default <code>CellContext(obj)</code>
+is correct for most notifier types, but some haps only happen
+in Global Context; passing <code>GlobalContext()</code> for such notifiers may
+have advantages.</p>
+<h3 id="log"><a href="#log"><strong>Log</strong></a></h3>
+<pre><code>class Log(Hap)
+</code></pre>
+<p>Yield a value when a message is logged.
+The value has two members: the log type <code>kind</code>, and the message <code>message</code>,
+both strings.</p>
+<h4 id="log-__init__"><a href="#log-__init__">Log.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, obj)
+</code></pre>
+<p><code>obj</code> is the object from which we listen to all logged messages.</p>
+<h3 id="notifier"><a href="#notifier"><strong>Notifier</strong></a></h3>
+<pre><code>class Notifier(Snooper[None])
+</code></pre>
+<p>Yield the value <code>None</code> when a notifier is notified on an object.</p>
+<h4 id="notifier-__init__"><a href="#notifier-__init__">Notifier.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, obj: simics.conf_object_t,
+             notifier_type: typing.Union[int, str],
+             exec_context: ExecContext=None)
+</code></pre>
+<p><code>notifier_type</code> specifies the notifier type, as either a string
+or an integer. The <code>exec_context</code> argument declares the
+execution context of the notifier. The default <code>CellContext(obj)</code>
+is correct for most notifier types, but some notifiers only happen
+in Global Context; passing <code>GlobalContext()</code> for such notifiers may
+have advantages.</p>
+<h3 id="deviceattribute"><a href="#deviceattribute"><strong>DeviceAttribute</strong></a></h3>
+<pre><code>class DeviceAttribute(Poll[int])
+</code></pre>
+<p>Yield the value of an attribute in a DML device when it changes</p>
+<h4 id="deviceattribute-__init__"><a href="#deviceattribute-__init__">DeviceAttribute.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, obj: simics.conf_object_t, attr: str)
+</code></pre>
+<p>Listen to changes to the <code>attr</code> attribute in <code>obj</code>. The <code>obj</code>
+object must belong to a DML device; it may either be the device object
+itself, or one of its ports, banks or subdevices.</p>
+<h3 id="registervalue"><a href="#registervalue"><strong>RegisterValue</strong></a></h3>
+<pre><code>class RegisterValue(Poll[int])
+</code></pre>
+<p>Yield the value of a register or field of a C++ or DML bank when
+it changes. Depends on the <code>bank-register-value-change</code> or
+<code>state-change</code> notifier, together with register metadata from the
+<code>register_view</code> interface.</p>
+<h4 id="registervalue-__init__"><a href="#registervalue-__init__">RegisterValue.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, reg: dev_util.BankRegister, equal: Optional[int]=None)
+</code></pre>
+<p>Listen to changes to the register defined by <code>reg</code>, as
+returned by the <code>dev_util.bank_regs</code> function.</p>
+<p>If <code>equal</code> is set, then instead of yielding register values,
+yield <code>True</code> when the register changes to the given value, and
+<code>False</code> when it changes from the given value to something
+else.</p>
+<h3 id="seconds"><a href="#seconds"><strong>Seconds</strong></a></h3>
+<pre><code>@dataclass
+class Seconds(Time)
+</code></pre>
+<p>Yield <code>None</code> when the given number of simulated seconds have
+passed.  Seconds form a vector space over numbers: <code>Second</code>
+objects can be added or subtracted, and multiplied or divided by
+numbers.</p>
+<h4 id="seconds-__init__"><a href="#seconds-__init__">Seconds.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, clk: simics.conf_object_t, seconds: float=1)
+</code></pre>
+<p><code>None</code> is yielded once every <code>seconds</code> cycles on the clock <code>clk</code>.</p>
+<h3 id="cycles"><a href="#cycles"><strong>Cycles</strong></a></h3>
+<pre><code>@dataclass
+class Cycles(Time)
+</code></pre>
+<p>Yield <code>None</code> when the given number of simulated cycles have
+passed.  Cycles form an abelian group: <code>Cycles</code> objects on the
+same clock can be added or subtracted from each other, and
+multiplied by integers.</p>
+<h4 id="cycles-__init__"><a href="#cycles-__init__">Cycles.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, clk: simics.conf_object_t, cycles: int)
+</code></pre>
+<p><code>None</code> is yielded once every <code>cycles</code> cycles on the clock <code>clk</code>.</p>
+<h3 id="steps"><a href="#steps"><strong>Steps</strong></a></h3>
+<pre><code>@dataclass
+class Steps(Time)
+</code></pre>
+<p>Yield <code>None</code> when the given number of simulated steps have
+passed.  Steps form an abelian group: <code>Steps</code> objects on the
+same clock can be added or subtracted from each other, and
+multiplied by integers.</p>
+<h4 id="steps-__init__"><a href="#steps-__init__">Steps.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, cpu: simics.conf_object_t, steps: int)
+</code></pre>
+<p><code>None</code> is yielded once every <code>steps</code> steps on the CPU <code>cpu</code>,
+which must implement the <code>step</code> interface.</p>
+<h3 id="consolestring"><a href="#consolestring"><strong>ConsoleString</strong></a></h3>
+<pre><code>@dataclass
+class ConsoleString(Snooper[None])
+</code></pre>
+<p>Yield <code>None</code> when a matching string appears on a console.</p>
+<h3 id="memoryread"><a href="#memoryread"><strong>MemoryRead</strong></a></h3>
+<pre><code>class MemoryRead(_MemoryAccess)
+</code></pre>
+<p>Yield a value when memory is read from a given location.  The
+value describes the matching transaction and has three members:
+<code>initiator: Optional(conf_object_t)</code>, <code>address: int</code> and <code>size: int</code>.</p>
+<h4 id="memoryread-__init__"><a href="#memoryread-__init__">MemoryRead.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, obj: simics.conf_object_t, address: int, length: int)
+</code></pre>
+<p>Capture all read transactions on memory-space <code>obj</code>, that overlap
+with the interval defined by <code>address</code> and <code>length</code>.</p>
+<h3 id="memorywrite"><a href="#memorywrite"><strong>MemoryWrite</strong></a></h3>
+<pre><code>class MemoryWrite(_MemoryAccess)
+</code></pre>
+<p>Yield a value when memory is written from a given location. The
+value describes the matching transaction and has three members:
+<code>initiator: Optional(conf_object_t)</code>, <code>address: int</code> and <code>value: bytes</code>.</p>
+<h4 id="memorywrite-__init__"><a href="#memorywrite-__init__">MemoryWrite.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, obj: simics.conf_object_t, address: int, length: int)
+</code></pre>
+<p>Capture all write transactions on memory-space <code>obj</code>, that overlap
+with the interval defined by <code>address</code> and <code>length</code>.</p>
+<h3 id="memoryexecute"><a href="#memoryexecute"><strong>MemoryExecute</strong></a></h3>
+<pre><code>class MemoryExecute(_MemoryAccess)
+</code></pre>
+<p>Yield a value when an instruction is fetched from a given
+location. The value describes the matching transaction and has
+three members: <code>initiator: Optional(conf_object_t)</code>, <code>address: int</code> and <code>size: int</code>.</p>
+<h4 id="memoryexecute-__init__"><a href="#memoryexecute-__init__">MemoryExecute.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, obj: simics.conf_object_t, address: int, length: int)
+</code></pre>
+<p>Capture all instruction fetch transactions on memory-space
+<code>obj</code>, that overlap with the interval defined by <code>address</code>
+and <code>length</code>.</p>
+<h3 id="filter"><a href="#filter"><strong>Filter</strong></a></h3>
+<pre><code>class Filter(Snooper[T])
+</code></pre>
+<p>Wraps a snooper and selectively yields the values yielded by the
+wrapped snooper.</p>
+<h4 id="filter-__init__"><a href="#filter-__init__">Filter.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, predicate: Callable[[T], bool], snooper: Snooper[T])
+</code></pre>
+<p>Whenever the wrapped snooper yields, the function
+<code>predicate</code> is called on the result, and the value is yielded only if
+the predicate returns <code>True</code>.</p>
+<h3 id="poll"><a href="#poll"><strong>Poll</strong></a></h3>
+<pre><code>@dataclass
+class Poll(Snooper[T])
+</code></pre>
+<p>Yield the value returned by a function <code>get_value</code>, called
+whenever a snooper <code>when</code> yields a value, but only when
+this value differs from the last returned value. The initial value
+is read on <code>add_callback</code>. Exceptions from <code>get_state</code> and
+<code>poll_interval</code> are propagated.</p>
+<p>This snooper has two use cases, one good and one bad: The good use
+case is when an object fires a custom notifier, say
+<code>'my-notifier'</code>, whenever a particular attribute, say <code>attr</code> changes,
+and one wants to subscribe to that state. This can be expressed as
+<code>Poll(lambda: obj.attr, Notifier(obj, 'my-notifier'))</code>.</p>
+<p>The bad use case is to pass a <code>Seconds</code> snooper in the <code>when</code>
+argument to periodically poll for state changes.  This can work as
+a fallback for snooping an attribute that does not provide an explicit
+callback mechanism, but using it has a number of drawbacks:</p>
+<ul>
+<li>
+<p>With a too long interval, it will take some time from the state
+change until a value is yielded. The state might also change
+twice between <code>get_value</code> calls, causing a complete omission of
+a yield; this may cause intermittent hard-to-debug bugs
+if simulation is not deterministic.</p>
+</li>
+<li>
+<p>With a too short interval, the polling may harm simulation
+speed.</p>
+</li>
+</ul>
+<p>For these reasons, <code>Seconds</code>-based polling should only be used as
+a temporary measure until the object has been extended with a
+custom notifier type.</p>
+<h4 id="poll-__init__"><a href="#poll-__init__">Poll.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, get_value: Callable[[], T], when: Snooper)
+</code></pre>
+<p><code>get_value</code> is a function with no arguments, that returns
+the current value of the polled state. <code>when</code> is a snooper
+that controls when <code>get_value</code> is called.</p>
+<h3 id="compoundsnooper"><a href="#compoundsnooper"><strong>CompoundSnooper</strong></a></h3>
+<pre><code>class CompoundSnooper(Snooper)
+</code></pre>
+<p>Abstract class for a snooper composed of multiple snoopers.
+Implements <code>exec_context()</code> and validates that
+constituent snoopers cannot issue callbacks concurrently.</p>
+<p>The <code>add_callback</code> method is kept abstract.</p>
+<p>The <code>snoopers</code> member is set to the constructor argument, a list of
+snoopers.</p>
+<h3 id="latest"><a href="#latest"><strong>Latest</strong></a></h3>
+<pre><code>class Latest(CompoundSnooper)
+</code></pre>
+<p>Given a set of snoopers, keeps track of the latest produced value
+from each one. Whenever one of the snoopers produces a value, this snooper
+produces a tuple of the latest value from the respective snoopers.</p>
+<h4 id="latest-__init__"><a href="#latest-__init__">Latest.<strong>__init__</strong></a></h4>
+<pre><code>def __init__(self, snoopers, init=None)
+</code></pre>
+<p><code>snoopers</code> is the list of snoopers to monitor.</p>
+<p>The produced tuple will contain <code>None</code> for snoopers that have not
+yet produced a value. This can be overridden by passing the <code>init</code>
+argument; this should be set to a list with one
+alternative initial value for each snooper in the list.</p>
+<h3 id="any"><a href="#any"><strong>Any</strong></a></h3>
+<pre><code>class Any(CompoundSnooper)
+</code></pre>
+<p>Deliver a callback when any of the given callbacks are
+delivered.  The delivered value is a pair, (triggered Snooper
+object, value from subordinate snooper). Exceptions are propagated
+unchanged. The constructor is inherited from <code>CompoundSnooper</code>.</p>
+<h3 id="anyobject"><a href="#anyobject"><strong>AnyObject</strong></a></h3>
+<pre><code>class AnyObject(Any, Snooper[tuple[simics.conf_object_t, T]])
+</code></pre>
+<p>Applies a snooper recursively to a set of objects. The set of
+objects is either specified as a list in the <code>objs</code> argument, or
+as a full subtree using the <code>root</code> argument.  <code>make_snooper</code> is a
+function that produces a <code>Snooper</code> from an object, e.g. <code>lambda obj: Notifier(obj, 'my-notifier')</code>. If <code>root</code> is provided, then the
+<code>make_snooper</code> function may raise <code>InvalidObjError</code> to signal that an
+object should be excluded; this is done automatically for standard
+snooper constructors. If <code>objs</code> is provided, all objects must be
+valid and any <code>InvalidObjError</code> exception is propagated</p>
+<p>The value passed to the callback is a pair: the first element is the
+object passed to <code>make_snooper</code>, the second element is the value produced
+by the snooper returned by <code>make_snooper</code>.</p>
+
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="sloop-refman.html">Sloop module reference</a>
+</div>

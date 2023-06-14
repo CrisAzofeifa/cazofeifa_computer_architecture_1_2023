@@ -1,0 +1,90 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>processor_endian</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_processor_cli.html">processor_cli</a>
+<a href="__rm_interface_processor_gui.html">processor_gui</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_processor_endian">processor_endian</a></h1>
+<p>
+
+<a name="processor_endian"></a><a name="processor_endian_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is used for retrieving endianness and amends to the
+   <code>processor_info_v2</code> interface.
+<p>
+   Many modern processors support mixed endian as well as separate data
+   and instruction endianness. This interface reports endianness separately
+   for data and instructions dynamically, not just the default as for the
+   <code>processor_info_v2</code>. Previously endianness has been static,
+   with only one endianness. With newer ARM processors this may cause issues
+   for some Big Endian use cases since Little Endian is assumed throughout.
+   Primarily due to the fact that they can have separate data and instruction
+   endianness. Modifying the existing <code>processor_info_v2</code> easily
+   gets complicated due to dependencies, so a new interface
+   <code>processor_endian</code> was created.
+</p><p>
+   The <code>processor_endian_interface_t</code> interface can be
+   implemented by processors models and returns the current endianness
+   of the system.
+</p><p>
+   The function <b><i>get_instruction_endian</i></b> returns the active instruction
+   endianness of the processor.
+</p><p>
+   The function <b><i>get_data_endian</i></b> returns endianness of data.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(processor_endian) {
+        cpu_endian_t (*get_instruction_endian)(conf_object_t *obj);
+        cpu_endian_t (*get_data_endian)(conf_object_t *obj);
+};
+
+#define PROCESSOR_ENDIAN_INTERFACE "processor_endian"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>get_instruction_endian</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_data_endian</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   </tbody></table>
+<p>
+   
+</p></dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_processor_cli.html">processor_cli</a>
+<a href="__rm_interface_processor_gui.html">processor_gui</a>
+</div>

@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_cstate_notification</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_cstate.html">x86_cstate</a>
+<a href="__rm_interface_x86_ept.html">x86_ept</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_cstate_notification">x86_cstate_notification</a></h1>
+<p>
+
+<a name="x86_cstate_notification"></a><a name="x86_cstate_notification_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Objects registered in the CPU's <i>cstate_listeners</i> attribute will
+   be called via the <b><i>notification</i></b> method whenever the CPU's cstate
+   changes. Only changes caused by instruction execution or calls to the
+   <b><i>x86_cstate.set_cstate</i></b> function will trigger a notification, not
+   attribute accesses. See the <code>x86_cstate</code> interface for how
+   the C-state is encoded in the parameters.
+<p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(x86_cstate_notification) {
+        void (*notification)(conf_object_t *listener, conf_object_t *cpu,
+                             uint32 state, uint32 sub_state);
+};
+
+#define X86_CSTATE_NOTIFICATION_INTERFACE "x86_cstate_notification"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_cstate.html">x86_cstate</a>
+<a href="__rm_interface_x86_ept.html">x86_ept</a>
+</div>

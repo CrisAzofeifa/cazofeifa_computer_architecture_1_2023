@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>log-level</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-log-group.html">log-group</a>
+<a href="rm-cmd-log-setup.html">log-setup</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="log-level"></a>
+<a name="conf_object.log-level"></a>
+<h1 id="log-level"><a href="#log-level">log-level</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>log-level</b> [<i>object</i>] [<i>level</i>] [<i>"class"</i>] [-all] [-r] <br><b>&lt;conf_object&gt;.log-level</b> [<i>level</i>] [-r] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ This command is used to get or set the log <i>level</i> of all objects in the current namespace, of an <i>object</i> in the current namespace, or globally if <tt>-all</tt> is set. When <i>object</i> is specified the command will also recursively update log groups for descendants of <i>object</i> whose name matches <i>object</i>.bank[.*], <i>object</i>.port[.*] or <i>object</i>.impl[.*] pattern. If <i>object</i> is a component then the log level will be set for all objects belonging to the component. The flag <tt>-r</tt> can be used to operate on all the descendants of the object <i>object</i>.
+<p>
+If the <i>class</i> argument is specified, the operation with be done only on objects of that class.
+</p><p>
+Objects in Simics can generate log messages on different <i>log levels</i>. These messages will be shown in the Simics command line window if the log level for the object has been set high enough.
+</p><p>
+The default level is 1, and this is the lowest level that objects can report messages on. Setting it to 0 will inhibit output of all messages except error messages.
+</p><p>
+Messages are also added to an access log that can be viewed by the <code>log</code> command in Simics.
+</p><p>
+There are four log levels defined: <br>
+ 1 - important messages printed by default <br>
+ 2 - "high-level" informative messages <br>
+ 3 - standard debug messages <br>
+ 4 - detailed information, such as register accesses
+</p><p>
+The namespace version of this command, <code>log-level</code>, sets the log level on all objects of the specified component. The <tt>-r</tt> flag recursively updates all sub-components and their objects.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-log.html">log</a>, 
+<a href="rm-cmd-log-group.html">&lt;conf_object&gt;.log-group</a>, 
+<a href="rm-cmd-log-size.html">log-size</a>, 
+<a href="rm-cmd-log-type.html">log-type</a>, 
+<a href="rm-cmd-change-namespace.html">change-namespace</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-log-group.html">log-group</a>
+<a href="rm-cmd-log-setup.html">log-setup</a>
+</div>

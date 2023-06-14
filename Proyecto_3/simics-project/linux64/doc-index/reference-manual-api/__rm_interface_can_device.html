@@ -1,0 +1,116 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>can_device</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_bridge.html">bridge</a>
+<a href="__rm_interface_can_link.html">can_link</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_can_device">can_device</a></h1>
+<p>
+
+<a name="can_device"></a><a name="can_device_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">
+SIM_INTERFACE(can_device) {
+        void (*receive)(conf_object_t *obj, can_frame_t *frame);
+};
+#define CAN_DEVICE_INTERFACE "can_device"
+</pre><p>
+</p><p>
+
+   The <code>can_device</code> interface is implemented by CAN controllers.
+   The <b><i>receive</i></b> function is called by can-endpoint to pass CAN frame
+   from other can-endpoint to the connected CAN controller.
+</p><p>
+   The CAN frame is expressed by the <i>frame</i> parameter, which is a
+   pointer of <code>can_frame_t</code>. The following is the details of 
+   <code>can_frame_t</code>:
+</p><p>
+   
+   </p><ul> 
+    <li><code>Standard Format</code>:<br>
+    Arbitration Field(11bit_ID+RTR)+Control Field(IDE+r0+DLC)
+    </li>
+    <li><code>Extended Format</code>:<br>
+    Arbitration Field(11bit_sID+SRR+IDE+18bit_eID+RTR)+Control Field(r1+r0+DLC)
+    </li>
+   </ul>
+   Above are the Arbitration Field and Control Field of the physical Standard
+   frame and Extended frame. But the <code>can_frame_t</code> only focus on the
+   logical meanings of such fields and tries to adapt different CAN controllers:
+   <ul>
+     <li><code>identifier</code>: For Standard frame, 11bit_ID should be put in
+     <code>identifier[10:0]</code>;for Extended frame, 11bit_sID should be put in 
+     <code>identifier[28:18]</code> and 18bit_eID should be put in
+     <code>identifier[17:0]</code>.</li>
+
+     <li><code>extended</code>: There isn't IDE in can_frame_t, instead,
+     <code>extended</code> is used to indicate if the frame is Extended frame or
+     Standard frame.</li>
+
+     <li><code>rtr</code>: There isn't SRR in can_frame_t for Extended frame,
+     instead, <code>rtr</code> is used to indicate if the frame is a remote frame or
+     not. Here we don't care whether the frame is Extended frame or Standard
+     frame.</li>
+     
+     <li><code>data_length</code>: The <code>data_length</code> contains the arithmetic
+     value of the DLC.</li>
+     
+     <li><code>data[CAN_DATA_MAX_NUM]</code>: This is the data field of Date frame.
+     </li>
+     
+     <li><code>crc</code>: This is the crc field of a CAN frame.</li>
+   </ul>
+   
+<pre class="jdocu_small">typedef struct {
+        /* arbitration field */
+        uint32 identifier;
+        bool extended;
+        bool rtr;
+        /* control field */
+        uint8 data_length;
+        /* data field */
+        uint8 data[CAN_DATA_MAX_NUM];
+        /* crc field */
+        uint16 crc;
+} can_frame_t;</pre><p>
+
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_bridge.html">bridge</a>
+<a href="__rm_interface_can_link.html">can_link</a>
+</div>

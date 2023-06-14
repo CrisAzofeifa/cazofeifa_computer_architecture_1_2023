@@ -1,0 +1,130 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.6.2 From an Ethernet Probe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="from-a-network-dump.html">3.6.1 From a Network Dump</a>
+<a href="real-network.html">4 Connecting to a Real Network</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="simicsnet.html">3 Network Simulation</a>
+&nbsp;/&nbsp;
+<a href="injecting-and-modifying-network-traffic.html">3.6 Injecting and Modifying Network Traffic</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="From-an-Ethernet-Probe">3.6.2 From an Ethernet Probe</a></h1>
+<p>
+
+</p><p>
+The section <em>Observing Network Traffic</em> explained how to use an
+Ethernet probe to listen to the incoming and outgoing traffic of a device
+connected on an Ethernet link. A probe can also be used to modify this traffic
+by dropping and changing existing packets, or injecting new ones.
+</p><p>
+
+   </p><pre class="jdocu_small">typedef enum {
+        Eth_Probe_Port_A = 0,
+        Eth_Probe_Port_B = 1
+} eth_probe_side_t;
+</pre><p>
+</p><p>
+   
+
+   </p><pre class="jdocu_small">typedef void (*ethernet_probe_snoop_t)(lang_void *user_data,
+                                       conf_object_t *probe,
+                                       eth_probe_side_t to_side,
+                                       const frags_t *frame,
+                                       eth_frame_crc_status_t crc_status);
+</pre><p>
+</p><p>
+   
+
+   </p><pre class="jdocu_small">SIM_INTERFACE(ethernet_probe) {
+        void (*attach_snooper)(conf_object_t *NOTNULL probe,
+                               ethernet_probe_snoop_t snoop_fun,
+                               lang_void *user_data);
+        void (*attach_probe)(conf_object_t *NOTNULL probe,
+                             ethernet_probe_snoop_t snoop_fun,
+                             lang_void *user_data);
+        void (*detach)(conf_object_t *NOTNULL probe);
+        void (*send_frame)(conf_object_t *NOTNULL probe,
+                           eth_probe_side_t to_side,
+                           const frags_t *frame,
+                           eth_frame_crc_status_t crc_status);
+};
+
+#define ETHERNET_PROBE_INTERFACE "ethernet_probe"
+</pre><p>
+</p><p>
+   
+</p><p>
+A complete description of this interface is provided in the <em>Simics
+Reference Manual</em>. What we are interested in now is to register
+a <em>probe</em> callback that will be allowed to modify the traffic:
+</p><p>
+
+
+
+
+</p><p>
+
+
+
+
+
+
+
+</p><p>
+</p><pre class="jdocu_small"># a callback that drops all outgoing packets
+simics&gt; <b>@def callback(user_data, probe, to_side, packet, crc_status):</b>
+            <b>if to_side == Eth_Probe_Port_A:</b>
+                <b>print('dropping incoming packet')</b>
+            <b>else:</b>
+                <b>print('forwarding outgoing packet')</b>
+                <b>probe.iface.ethernet_probe.send_frame(to_side, packet, crc_status)</b>
+
+........
+simics&gt; <b>@conf.probe0.iface.ethernet_probe.attach_probe(callback, None)</b>
+simics&gt; <b>c</b> 
+forwarding outgoing packet
+forwarding outgoing packet
+[...]
+</pre><p>
+</p><p>
+When a callback is registered as a <em>probe</em>, it takes responsibility for
+forwarding packets it receives. It is also allowed to drop them, modify them,
+modify their CRC status or inject new packets. For example, it could duplicate
+outgoing packets, inject errors, etc. Note that if your callback modifies the
+simulation in this manner, you may need to create an object representing the
+changes' state engine to make sure the simulation can be checkpointed and stays
+deterministic.
+</p><p>
+</p>
+<div class="chain">
+<a href="from-a-network-dump.html">3.6.1 From a Network Dump</a>
+<a href="real-network.html">4 Connecting to a Real Network</a>
+</div>

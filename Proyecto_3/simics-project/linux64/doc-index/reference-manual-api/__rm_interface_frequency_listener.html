@@ -1,0 +1,79 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>frequency_listener</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_frequency.html">frequency</a>
+<a href="__rm_interface_generic_message_device.html">generic_message_device</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_frequency_listener">frequency_listener</a></h1>
+<p>
+
+<a name="frequency_listener"></a><a name="frequency_listener_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>frequency_listener</code> interface is used for
+   modeling frequency changes.
+<p>
+   The frequency change initiator should call <b><i>set()</i></b> to set the
+   new frequency. The <b><i>set()</i></b> function may be called multiple times
+   with the same frequency value. The frequency is specified by the
+   <code>numerator</code> and <code>denominator</code> arguments in units of Hz.
+</p><p>
+   The <b><i>set()</i></b> function should also be used to set the initial
+   value for a target.
+</p><p>
+   An object that implements the <code>frequency_listener</code>
+   interface typically has an attribute that refers to an object and
+   port that implements the <code>simple_dispatcher</code>
+   interface, from where the frequency originates.
+</p><p>
+   The initiator of a frequency change should implement the
+   <code>simple_dispatcher</code> interface, and it should only call
+   the <b><i>set()</i></b> function on objects that have registered with
+   this interface.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(frequency_listener) {
+        void (*set)(conf_object_t *NOTNULL obj, uint64 numerator,
+                    uint64 denominator);
+};
+
+#define FREQUENCY_LISTENER_INTERFACE "frequency_listener"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_frequency.html">frequency</a>
+<a href="__rm_interface_generic_message_device.html">generic_message_device</a>
+</div>

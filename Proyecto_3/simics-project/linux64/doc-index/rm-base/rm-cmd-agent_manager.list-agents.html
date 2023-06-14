@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;agent_manager&gt;.list-agents</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-agent_manager.info.html">&lt;agent_manager&gt;.info</a>
+<a href="rm-cmd-agent_manager.status.html">&lt;agent_manager&gt;.status</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="agent_manager.list-agents"></a>
+<h1 id="agent_manager.list-agents"><a href="#agent_manager.list-agents">&lt;agent_manager&gt;.list-agents</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;agent_manager&gt;.list-agents</b> [<i>"pattern"</i> [<i>"info"</i>]] [<i>-verbose</i>]<br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ List all known Simics Agents that are alive and can be immediately connected to.
+<p>
+The <i>pattern</i> argument (a regular expression) will filter the list based on the <i>info</i> argument, which defaults to "name". Use the <i>info</i> argument to specify another info type, or a string of several comma-separated types. Info types depend on the target systems, as well as the Simics Agents, but will at least include: agent, capabilities, hostname, machine, name, release, system.
+</p><p>
+A Simics Agent is declared dead and removed from the list, if it fails to make contact within a timeout period after the end of the agent poll interval. This timeout is defined per Simics Agent and can be controlled via the <tt>stale_timeout</tt> attribute on any of the connected agent handles. When an agent is declared dead, its handles will become stale and their commands will be canceled. New commands cannot be given to a stale handle.
+</p><p>
+With the <tt>-verbose</tt> flag, some additional information is included.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.matic.html">matic</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-agent_manager.connect-to-agent.html">&lt;agent_manager&gt;.connect-to-agent</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-agent_manager.info.html">&lt;agent_manager&gt;.info</a>
+<a href="rm-cmd-agent_manager.status.html">&lt;agent_manager&gt;.status</a>
+</div>

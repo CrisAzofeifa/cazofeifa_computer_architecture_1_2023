@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_cpuid</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_cache_flush.html">x86_cache_flush</a>
+<a href="__rm_interface_x86_cpuid_query.html">x86_cpuid_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_cpuid">x86_cpuid</a></h1>
+<p>
+
+<a name="x86_cpuid"></a><a name="x86_cpuid_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(x86_cpuid) {
+	cpuid_ret_t (*cpuid)(conf_object_t *obj, conf_object_t *cpu,
+                             uint32 in_eax, uint32 in_ebx, uint32 in_ecx,
+                             uint32 in_edx);
+};
+#define X86_CPUID_INTERFACE "x86_cpuid"
+</pre><p>
+</p><p>
+
+   The CPUID interface makes it possible to customize responses to CPUID
+   requests. The <b><i>cpuid</i></b> method should set taken to nonzero if it
+   managed to handle the request, zero otherwise. When taken is non-zero,
+   then the returned values in out_a, out_b, out_c, and out_d will be
+   written to the first four general purpose registers.
+   Assigning external handlers to the leaf range reserved for MAGIC instruction
+   implementation has no effect, because the MAGIC implementation always takes
+   priority.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_cache_flush.html">x86_cache_flush</a>
+<a href="__rm_interface_x86_cpuid_query.html">x86_cpuid_query</a>
+</div>

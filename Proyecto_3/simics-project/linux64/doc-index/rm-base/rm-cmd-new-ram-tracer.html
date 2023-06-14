@@ -1,0 +1,70 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-ram-tracer</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-new-rachel.html">new-rachel</a>
+<a href="rm-cmd-new-real-network-bridge.html">new-real-network-bridge</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="new-ram-tracer"></a>
+<h1 id="new-ram-tracer"><a href="#new-ram-tracer">new-ram-tracer</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>new-ram-tracer</b> [<i>"name"</i>] [<i>file</i>] ([ <i>ram-objects</i> ... ] | list of <i>ram-objects</i>) [<i>parent</i>] [-connect-all] [<i>"group"</i>] [-read] [-write] [-execute] [-inquiry] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Creates a new ram_tracer object which can be connected to ram/rom objects. The tracer will print all accesses to the ram/rom objects that occurs in the system.
+<p>
+For each access the following trace format will used: <tt>[dest object] &lt;- initiator object I type offset size data</tt> where dest object is the destination ram/rom object, initiator object is the object that sends the transaction, I is displayed if the transaction is an inquiry access, type will be Execute, Read, or Write. Size is the size of the transaction in bytes and data is the raw content in bytes.
+</p><p>
+The <i>file</i> argument specifies a file to write the trace to, without any file, the trace will be printed to standard out. <br>
+<br>
+The optional <i>name</i> argument can be used to set a name of the created object. If no name is given, a default name <i>rt</i> followed by a sequence number is generated (<i>rt0</i>, <i>rt1</i>,...).<br>
+<br>
+ The optional <i>ram-objects</i> argument, supports connecting one or several ram-objects directly. With the optional <i>parent</i> argument a hierarchical object can be specified and all ram-objects below this object matching the provider requirements will be connected to the tool. The <tt>-connect-all</tt> flag can be given to add a connection to all supported ram-objects in the configuration.<br>
+<br>
+The optional argument <i>group</i> let a user specify a named instrumentation group to use for the connection. (See <code>add-instrumentation-group</code> for details on named groups.)<br>
+<br>
+The <tt>-read</tt>, <tt>-write</tt>, <tt>-execute</tt> flags can be set to only trace specific accesses. The <tt>-inquiry</tt> flag can be used to trace inquiry accesses as well. Every access is traced by default but with inquiry switched off.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.ram-tracer.html">ram-tracer</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-new-rachel.html">new-rachel</a>
+<a href="rm-cmd-new-real-network-bridge.html">new-real-network-bridge</a>
+</div>

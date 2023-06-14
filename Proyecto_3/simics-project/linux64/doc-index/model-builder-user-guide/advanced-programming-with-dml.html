@@ -1,0 +1,573 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>9 Advanced Programming with DML</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="development-checklist.html">8 Simics Model Development Checklist</a>
+<a href="example-models.html">10 Example Models</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Advanced-Programming-with-DML">9 Advanced Programming with DML</a></h1>
+<p>
+
+</p><p>
+The purpose of this chapter is to describe some advanced DML topics
+which may be needed when writing larger and more complex device
+models. It assumes that you already know the basics of DML programming.
+</p><p>
+</p><h2 class="jdocu"><a name="Using-the-Simics-API">9.1 Using the Simics API</a></h2>
+<p>
+
+</p><p>
+The Simics API is a set of C functions and data types. These can be
+used by DML code directly by calling the functions as in C.
+No <code>call</code> or <code>inline</code> is used to call API functions.
+</p><p>
+The <em><a name="device-API">device API</a></em> is automatically available in DML,
+other parts of the Simics is available by importing API definition
+files. See section <em>The Simics API</em> in
+<em>API Reference Manual</em> for more information.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Embedding-C-Code">9.2 Embedding C Code</a></h2>
+<p>
+
+</p><p>
+Since data types and method bodies in DML are written in an extended
+subset of C, you can easily call C functions from DML by using normal
+function call syntax. So <code>f(x)</code> is a call to the
+function <code>f</code> with the argument <code>x</code>, and <code>call</code>
+or <code>inline</code> is not used.
+</p><p>
+To be able to use types and symbols from C code that is linked with
+the DML-generated code, the DML code needs to know about them. This is
+done by using <em><a name="extern">extern</a></em> declarations. Just like in C,
+a function (or variable) can be declared as extern, meaning that it is
+defined in a different compilation unit.
+</p><p>
+</p><pre class="jdocu_small">extern int fib(int x);
+</pre><p>
+</p><p>
+When importing a C typedef into DML, an <em><a name="externtypedef">extern
+typedef</a></em> is used.
+</p><p>
+</p><pre class="jdocu_small">extern typedef struct {
+    int x;
+} mystruct;
+</pre><p>
+</p><p>
+This tells the DML compiler that the generated C code can use a struct
+typedef that has a field called <code>x</code> which is an <code>int</code>.
+Note that the DML does not know anything about the actual in-memory
+data layout of this struct, and there may even be other fields in the
+struct in the real type (as defined in C). This means that it is
+possible to define opaque struct typedefs like this:
+</p><p>
+</p><pre class="jdocu_small">extern typedef struct { } opaque_data;
+extern void f(opaque_data *data);
+</pre><p>
+</p><p>
+<a name="enum"></a> Enumerated types in C and the constants defined by
+them can be imported in DML in a similar fashion with
+the <em><a name="extern2">extern</a></em> keyword. For example, suppose a C
+header file includes the following definition:
+</p><p>
+</p><pre class="jdocu_small">typedef enum process_type {
+     SMALL = 1,
+     MEDIUM,
+     BIG
+} process_type_t;
+</pre><p>
+</p><p>
+To import this definition into DML, each of the names has to be
+introduced by a separate <em><a name="extern3">extern</a></em> declaration at the
+top level. One way of achieving this is: 
+</p><p>
+</p><pre class="jdocu_small">extern typedef int process_type_t;
+extern const process_type_t SMALL;
+extern const process_type_t MEDIUM;
+extern const process_type_t BIG;
+</pre><p>
+</p><p>
+To be able to use the external types and symbols, it is not enough to
+import their definitions into DML. It is also necessary to add C code
+that includes these definitions to the files that the DML compiler
+generates. This is done by using <code><a name="header">header</a></code> and
+<code><a name="footer">footer</a></code> in the DML code. Both take blocks of C code
+that is included verbatim in the generated output. The difference is
+that the header code goes at the top of the output and the footer goes
+to the bottom. The most typical use is to have an <code>#include</code>
+statement of a C header file inside a <code>header</code> block and the
+implementation in a separate C file. If a local support function needs
+to be implemented in C, the best way is usually to add a prototype in
+the header and the function implementation in the footer.
+</p><p>
+Below is an example of a DML model that uses embedded C code. It is
+based on the simple memory mapped device described in section
+<a class="reference" href="device-modeling-overview.html">4</a>:
+</p><p>
+
+</p><pre class="jdocu_small">dml 1.2;
+device simple_embedded;
+parameter documentation = "Embedding C code example for"
+    + " Model Builder User's Guide";
+parameter desc = "example of C code";
+
+extern int fib(int x);
+
+bank regs {
+    register r0 size 4 @0x0000 {
+        parameter allocate = false;
+        parameter configuration = "none";
+        method write(val) {
+            log "info": "Fibonacci(%d) = %d.", val, fib(val);
+        }
+
+        method read() -&gt; (value) {
+            // Must be implemented to compile            
+        }
+       
+    }
+}
+
+header %{
+int fib(int x);
+%}
+
+footer %{
+int fib(int x) {
+    if (x &lt; 2) return 1;
+    else return fib(x-1) + fib(x-2);
+}
+%}
+</pre><p>
+</p><p>
+
+</p><p>
+Writing to the (pseudo-) register <code>r0</code> has the effect of printing
+a log message with the computed Fibonacci number:
+</p><pre class="jdocu_small">simics&gt;  <b>phys_mem.write 0x1000 6 -l</b>
+[dev1 info] Fibonacci(6) = 13.
+</pre><p>
+</p><p>
+Notable points are:
+</p><ul>
+  <li>The C identifier <code>fib</code> is declared in DML using a top-level
+      <code>extern</code> declaration.</li>
+
+  <li>The section <code>footer %{ </code><i>…</i><code> %}</code> is appended verbatim to the
+      C program generated by the DML compiler (<code>dmlc</code>). Its
+      contents are not examined in any way by <code>dmlc</code>.</li>
+
+  <li>Similarly, the <code>header %{ </code><i>…</i><code> %}</code> section is included
+      verbatim at the beginning of the program generated by
+      <code>dmlc</code>.</li>
+
+  <li>It is normally better to place C functions in separately compiled
+      files, if possible, and link with the generated DML code. (To do
+      this, you need to modify the Makefile for the module.)</li>
+
+  <li>The function declaration must be included in the header section
+      as well as being declared <code>extern</code> in DML. They are
+      usually identical, but not always, and thus the C
+      declaration is not automatically generated by <code>dmlc</code>; this
+      could change in future DML revisions.</li>
+
+  <li>Header and footer sections could become deprecated or removed in
+      future versions of DML.</li>
+</ul>
+<p>
+The Device part of the Simics API (a set of C functions and data types) is
+always available in DML. Other parts of the Simics API can also be included
+as described in section <em>The Simics API</em> in
+<em>API Reference Manual</em> documentation.
+</p><p>
+For example, this is how the method <b><i>set_read_value()</i></b> is
+implemented in the standard library. It updates a
+<code>generic_transaction_t</code> structure (a "memory operation") at the
+end of a
+read access to a memory bank has finished, depending on the endianness of
+the bank:
+</p><pre class="jdocu_small">method set_read_value(generic_transaction_t *memop, uint64 value) default {
+    if (!defined $byte_order)
+        error "undefined byte order";
+    else if ($byte_order == "little-endian")
+        SIM_set_mem_op_value_le(memop, value);
+    else if ($byte_order == "big-endian")
+        SIM_set_mem_op_value_be(memop, value);
+    else
+        error "bad value for parameter 'byte_order'";
+}
+</pre><p>
+</p><p>
+The sample code
+in <code></code><em>[simics]</em><code>/src/devices/sample-device-mixed</code> has
+more examples.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Calling-Back-From-C">9.3 Calling Back From C</a></h2>
+<p>
+
+</p><p>
+Sometimes it is also necessary to call DML code from external code.
+The best way to do this is by defining a Simics interface to the DML
+device and then using that from the C code. The sample code
+in <code></code><em>[simics]</em><code>/src/devices/sample-device-mixed</code> shows
+how it can be done:
+</p><p>
+
+</p><pre class="jdocu_small">typedef struct {
+        void (*one)(conf_object_t *obj);
+        void (*two)(conf_object_t *obj, uint32 count);
+} myinterface_interface_t;
+
+implement myinterface {
+    method one() {
+        log "info": "ONE";
+    }
+    method two(uint32 count) {
+        log "info": "TWO %u", count;
+    }
+}
+</pre><p>
+</p><p>
+
+</p><p>
+The above defines a model-specific interface and implements it. The
+interface definition is a struct of function pointers, just like all
+Simics interfaces. The interface struct type will be part of the
+generated C code, which means that it can be used by other C code
+generated by DMLC. For code included in a <code>footer</code> block, it
+is automatically known.
+</p><p>
+The C code that wants to call the interface needs to
+use <b><i>SIM_c_get_interface</i></b> to get the function pointers to
+use.
+</p><p>
+
+</p><pre class="jdocu_small">void call_out_to_c(conf_object_t *obj) {
+        const myinterface_interface_t *iface =
+                SIM_c_get_interface(obj, "myinterface");
+        ASSERT(iface);
+        iface-&gt;one(obj);
+        iface-&gt;two(obj, 4711);
+}
+</pre><p>
+</p><p>
+
+</p><p>
+It is not necessary to do this every time, the return value
+from <b><i>SIM_c_get_interface</i></b> can, and should, be cached.
+</p><p>
+
+</p><h2 class="jdocu"><a name="dml-and-c++">9.4 Integrating with C++</a></h2>
+<p>
+
+</p><p>
+The DML compiler generates C code, and this means that it integrates
+well with anything that C integrates well with. This includes C++
+functions and types declared with <code>extern "C"</code>. It is not
+possible to call ordinary C++ functions or methods directly, but it is
+simple to create C wrappers in the C++ code and make sure they are
+declared with <code>extern "C"</code>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="dividing-device">9.5 Dividing a Device into Classes</a></h2>
+<p>
+
+</p><p>
+Large devices often consist of several logical units. The best way to
+know if the device should be divided in logical units is to look at
+the device specification. Logical units are often mapped to specific
+physical memory address regions, or their registers are grouped
+together. We call these register groups <i>banks</i>.
+</p><p>
+An example of a device with many logical units is a system
+controller. A system controller can include a memory controller, a
+watchdog, an interrupt controller, an Ethernet controller, etc. This
+makes it a good candidate to cut in pieces. On the other hand, devices
+with few registers should be left in one piece, as several classes
+makes it a bit harder to instantiate a working device in the
+simulator.
+</p><p>
+The first major decision when modeling a large device in DML is how to
+divide the device in easily manageable parts. There are basically two
+ways to model a large device with several logical units in
+Simics. This is discussed in section <a class="reference" href="#divide-one-class">9.5.1</a>
+and <a class="reference" href="#divide-multiple-classes">9.5.2</a>.
+</p><p>
+</p><h3 class="jdocu"><a name="divide-one-class">9.5.1 One Class Only</a></h3>
+<p>
+
+</p><p>
+The first way to model a device comprising several logical units is to
+include all functionality in a single class.
+</p><p>
+The major advantage of not splitting up a device is to simplify the
+internal communication between the logical units. All logical units
+can directly access other units. If they were divided into separate
+classes, specific interfaces would need to be created for the units to
+communicate.
+</p><p>
+For example, a system controller often contains an interrupt unit
+which forwards all interrupts to the CPU. Each logical unit must be
+able to access internal registers or functions in the interrupt unit
+to generate its interrupts. A device divided in several logical units
+will require an interrupt interface between the interrupt controller and
+all other logical units.
+</p><p>
+Another advantage of not splitting up a device is to simplify the
+system setup. All internal communication for a divided device must be
+set up in scripts or components. Logical units must have connections
+to other logical units to know which unit to communicate with. The
+setup for external connections can also increase when dividing a
+device. Several classes may need connections to the same objects, such
+as memory spaces. A device built in one class needs only one
+connection.
+</p><p>
+To put it simply: fewer classes make for fewer connections, which
+simplifies the setup phase.
+</p><p>
+It is recommended to create one bank for each logical unit. Each bank
+should be defined in its own DML file. Here is an example how to
+divide a device in several files without splitting the device in
+classes.
+</p><p>
+<b>Makefile</b>
+
+ </p><pre class="jdocu_small">MODULE_CLASSES := system_controller
+
+SRC_FILES := system_controller.dml
+
+SIMICS_API := latest
+THREAD_SAFE = yes
+
+include $(MODULE_MAKEFILE)
+</pre><p>
+</p><p>
+ 
+</p><p>
+<b>system_controller.dml</b>
+
+</p><pre class="jdocu_small">// System Controller
+dml 1.2;
+
+device system_controller;
+parameter desc = "system controller";
+parameter documentation = "The "+$name+" device implements a system controller";
+
+import "sdram_controller.dml";
+import "interrupt_controller.dml";
+</pre><p>
+</p><p>
+
+</p><p>
+<b>sdram_controller.dml</b>
+
+</p><pre class="jdocu_small">// SDRAM controller logical unit
+dml 1.2;
+
+loggroup lg_sdram;
+
+bank sdram_controller {
+    parameter log_group = lg_sdram;
+    <i>[…]</i>
+
+    register <i>[…]</i>
+}
+</pre><p>
+</p><p>
+
+</p><p>
+<b>interrupt_controller.dml</b>
+
+</p><pre class="jdocu_small">dml 1.2;
+
+loggroup lg_interrupt;
+
+import "utility.dml";
+
+bank interrupt_controller {
+    parameter log_group = lg_interrupt;
+    <i>[…]</i>
+
+    register a size 4 @ 0x0 "The a register" {
+        method read() -&gt; (value) {
+            log info, 2, lg_interrupt: "reading register a";
+            value = 4711;
+        }
+    }
+    register b size 4 @ 0x4 is (read_only) "The b register";
+}
+</pre><p>
+</p><p>
+
+</p><p>
+Note that the example code uses explicit log-groups for each logical
+unit. It helps when debugging the device.
+</p><p>
+It is possible to set up the logging to handle log-messages from a
+specific log-group only, suppressing log-messages from other groups
+that otherwise would have made debugging harder. This is not a problem
+for devices divided in several classes. Each class is a separate
+log-object with its own log-level and log-group.
+</p><p>
+
+</p><h3 class="jdocu"><a name="divide-multiple-classes">9.5.2 One Class for Each Logical Unit</a></h3>
+<p>
+
+</p><p>
+The second way to model a device with several logical units is to
+create one class for each logical unit.
+</p><p>
+The major advantage of this approach is the option to combine several
+classes to form new devices. A device family can consist of several
+devices that are almost identical, but where several logical units
+have been replaced; one device can include a Fast Ethernet controller,
+another a Gigabit Ethernet controller. Hardware vendors often have one
+IP-block for each logical unit and they combine the blocks to create a
+updated device. The same thing can be done with Simics classes. A
+device split in classes only requires a script file to create a new
+device. Otherwise you have to create a new Simics module for the new
+device, but you can reuse the code for an already existing device by
+letting the two devices share the code. Section <a class="reference" href="#device-sharing-dml-code">9.6</a> explains how to share DML code.
+</p><p>
+<b>Makefile</b>
+
+ </p><pre class="jdocu_small">MODULE_CLASSES := system_controller_sdram system_controller_interrupt
+
+SRC_FILES := sdram_controller.dml interrupt_controller.dml
+
+SIMICS_API := latest
+THREAD_SAFE = yes
+
+include $(MODULE_MAKEFILE)
+</pre><p>
+</p><p>
+ 
+</p><p>
+<b>sdram_controller.dml</b>
+
+</p><pre class="jdocu_small">// SDRAM controller logical unit
+dml 1.2;
+device system_controller_sdram;
+
+
+loggroup lg_sdram;
+
+bank sdram_controller {
+    parameter log_group = lg_sdram;
+    <i>[…]</i>
+
+    register <i>[…]</i>
+}
+</pre><p>
+</p><p>
+
+</p><p>
+<b>interrupt_controller.dml</b>
+
+</p><pre class="jdocu_small">// Interrupt controller logical unit
+dml 1.2;
+device system_controller_interrupt;
+
+import "utility.dml";
+
+loggroup lg_common;
+
+bank interrupt_controller {
+    <i>[…]</i>
+
+    register a size 4 @ 0x0 "The a register" {
+        method read() -&gt; (value) {
+            log info, 2, lg_common: "reading register a";
+            value = 4711;
+        }
+    }
+    register b size 4 @ 0x4 is (read_only) "The b register";
+}
+</pre><p>
+</p><p>
+
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="device-sharing-dml-code">9.6 Device Sharing DML Code</a></h2>
+<p>
+
+</p><p>
+It is possible to share DML code between devices in Simics. Simics also include
+generic DML code to create various type of devices. For example, PCI devices in
+Simics are easy to write in DML using the standard PCI device code. Several PCI
+devices share the same PCI code. The common PCI code defines a couple of
+templates that can be combined and configured according to the model needs. PCI
+devices in DML is described in the Technology Guide "PCIe Modeling Library"
+</p><p>
+There are several ways to write your own shared code. Make sure the
+shared code use the default statement on functions and parameters to
+allow the implementing devices to override them. The most common ways
+of writing shared code are listed below, including short code examples
+referring to the example code later in this section.
+</p><p>
+</p><dl><dt id="dt:redefine-object"><b><i>redefine object</i></b></dt><dd>Two or more devices can share the
+same code but define objects differently. Common objects in DML are
+<i>banks</i>, <i>registers</i>, <i>fields</i>, <i>connects</i>,
+<i>implements</i>, <i>attributes</i>, <i>groups</i>, and
+<i>events</i>.
+<p>
+The bank defines <i>registers</i>, but the registers can differ
+between devices sharing the same code. Device specific registers are
+defined in the devices and the common registers in the shared code.
+</p><p>
+The register definition can be different between devices. The register
+is declared in the shared code but defined in the device code.
+</p></dd><dt id="dt:parameter"><b><i>parameter</i></b></dt><dd>Setting a parameter to default makes it
+possible to override it. A default parameter in the shared code can
+for instance define a register start offset. The devices importing the
+shared code file can override the parameter to change the
+offset. Setting a parameter to <code>default undefined</code> forces the
+device to define the parameter the compiler will otherwise complain
+when building the device. Note that you can only override a parameter
+once.</dd><dt id="dt:shared-templates-used-by-device-specific-objects"><b><i>shared templates used by device specific objects</i></b></dt><dd>Defining a template in the shared code makes it possible for the
+template to be used across several objects in the specific
+devices. The DML library contains a lot of common templates, but you
+can also define your own.</dd><dt id="dt:shared-code-using-device-specific-templates"><b><i>shared code using device specific templates</i></b></dt><dd>Using undefined templates in the shared
+code makes it possible for each implementation to define its own
+variant. Different devices can define the template in different ways
+using the same shared code.</dd><dt id="dt:method"><b><i>method</i></b></dt><dd>Shared code can define default methods that
+can be overridden by devices. It is then up to the device to override
+methods when it is necessary to implement new functionality. Note that
+you can only override a function once.</dd></dl><p>
+</p>
+<div class="chain">
+<a href="development-checklist.html">8 Simics Model Development Checklist</a>
+<a href="example-models.html">10 Example Models</a>
+</div>

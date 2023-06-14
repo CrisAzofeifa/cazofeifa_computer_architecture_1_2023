@@ -1,0 +1,114 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>linear_image</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_keyboard_console.html">keyboard_console</a>
+<a href="__rm_interface_magic_pipe_reader.html">magic_pipe_reader</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_linear_image">linear_image</a></h1>
+<p>
+
+<a name="linear_image"></a><a name="linear_image_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><div class="note">
+<b>Note:</b>
+This interface is an experimental feature. It is excluded from
+       the standard support program, and is subject to change or removal
+       without notice.
+     </div>The <code>linear_image</code> interface permits direct access to the
+     data in <b>image</b> objects by requesting a linear allocation
+     for the contents. Doing so is not recommended for very large images,
+     since there must be space for all data in memory as a contiguous
+     block.
+<p>
+     <b><i>get_base</i></b> returns the linear allocation block if one has
+     already been set. Otherwise, a block of the correct size is allocated,
+     set and returned. In the latter case, the block is owned by the image
+     object and should not be freed by the user. If <i>retsize</i>
+     is non-null, it is used to return the size of the image.
+</p><p>
+     <b><i>set_base</i></b> specifies an existing memory block to be used for
+     the image contents. The block must be at least the size of the image,
+     and should be aligned to a multiple of 4096 bytes. The caller is
+     responsible for the allocation of the block, which must remain
+     allocated for the remaining lifetime of the image object.
+</p><p>
+     <b><i>prepare_range</i></b> must be called, with the matching access type,
+     before any direct access to data in a linear block by user code.
+     It is then permitted to access bytes in the range
+     
+       [<i>offs</i>, <i>offs</i> + <i>size</i>)
+     . For <i>type</i> = <code>Sim_RW_Write</code>, the 
+     permission to modify data in that range only extends until any other
+     objects using the image have the opportunity to do so (typically, when
+     the modelling function returns control to the simulator).
+</p><p>
+     <b><i>set_base</i></b> and <b><i>get_base</i></b> cannot be called after
+     image data has been accessed (read or written) for the first time.
+</p><p>
+     </p><pre class="jdocu_small">SIM_INTERFACE(linear_image) {
+#if !defined(PYWRAP)
+        uint8 *(*get_base)(conf_object_t *obj, size_t *retsize);
+        void (*set_base)(conf_object_t *obj, uint8 *NOTNULL base);
+#endif /* not PYWRAP */
+        void (*prepare_range)(conf_object_t *NOTNULL obj,
+                              read_or_write_t type, size_t offs, size_t size);
+};
+#define LINEAR_IMAGE_INTERFACE "linear_image"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+       <tbody><tr>
+         <td class="jdocu_noborder"><b><i>set_base</i></b></td>
+         <td class="jdocu_noborder">Global Context</td>
+       </tr>
+
+       <tr>
+         <td class="jdocu_noborder"><b><i>get_base</i></b></td>
+         <td class="jdocu_noborder">Global Context</td>
+       </tr>
+
+       <tr>
+         <td class="jdocu_noborder"><b><i>prepare_range</i></b></td>
+         <td class="jdocu_noborder">Cell Context</td>
+       </tr>
+
+     </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_keyboard_console.html">keyboard_console</a>
+<a href="__rm_interface_magic_pipe_reader.html">magic_pipe_reader</a>
+</div>

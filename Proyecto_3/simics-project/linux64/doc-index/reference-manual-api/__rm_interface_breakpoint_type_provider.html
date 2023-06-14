@@ -1,0 +1,139 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>breakpoint_type_provider</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_breakpoint_type.html">breakpoint_type</a>
+<a href="__rm_interface_checkpoint.html">checkpoint</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_breakpoint_type_provider">breakpoint_type_provider</a></h1>
+<p>
+
+<a name="breakpoint_type_provider"></a><a name="breakpoint_type_provider_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>breakpoint_type_provider</code> interface should be implemented
+   by objects that wish to act as breakpoint type providers towards the
+   breakpoint manager. An object that is passed to the breakpoint manager via
+   the <b><i>register_type</i></b> method in the <code>breakpoint_type</code>
+   interface must implement <code>breakpoint_type_provider</code>.
+<p>
+   This interface is currently a tech preview and can be changed at any time.
+</p><p>
+   The <b><i>register_bp</i></b> and <b><i>add_bp</i></b> methods receives the
+   command arguments, corresponding to what the breakpoint manager received in
+   the <b><i>register_type</i></b>. The <b><i>register_bp</i></b> method should set
+   up a breakpoint, register it with the breakpoint manager via the
+   <code>breakpoint_registration</code> interface, and return the breakpoint
+   manager ID for that breakpoint. The <b><i>add_bp</i></b> method should set up
+   an internal breakpoint, which is not registered with the breakpoint manager,
+   and return a provider-specific ID for this breakpoint. The breakpoint
+   manager will use this ID to remove the breakpoint via the
+   <b><i>remove_bp</i></b> method, and this ID should also be used when calling
+   the <b><i>trigger</i></b> method in the <code>breakpoint_type</code>
+   interface.
+</p><p>
+   The <b><i>register_bp</i></b> and <b><i>add_bp</i></b> methods should return 0 to
+   indicate an error in setting up the breakpoint.
+</p><p>
+   The <b><i>break_msg</i></b> method should return the message that should be
+   printed by the <b>bp.break</b> command after the breakpoint is set
+   up. It receives the breakpoint manager ID for the breakpoint.
+</p><p>
+   The <b><i>trace_msg</i></b> method should return the message that should be
+   printed when an (internal) trace breakpoint has hit. It receives the
+   provider specific ID for the breakpoint.
+</p><p>
+   The <b><i>wait_msg</i></b> method should return the message that is attached to
+   the script branch while waiting for a breakpoint to hit (displayed by
+   e.g. <b>list-script-branches</b>). It receives the provider specific ID
+   for the breakpoint.
+</p><p>
+   The optional method <b><i>break_data</i></b> can be implemented to make the
+   <b>wait-for</b> and <b>run-until</b> commands return something. It
+   receives the provider specific ID for the breakpoint.
+</p><p>
+   The method <b><i>values</i></b> must be implemented if the provider has
+   specified that CLI command expanders should be used, when registering the
+   breakpoint type. Otherwise the method is not called by the breakpoint
+   manager. It should return the possible values for the command argument
+   <i>arg</i>, which will be one of the argument names used when
+   registering the type. The parameter <i>prev_args</i> will be the list of
+   preceding argument values.
+</p><p>
+   The <b><i>deleted</i></b> method is typically optional. If implemented, it is
+   called by the <b><i>deleted</i></b> function of
+   the <code>breakpoint_registration</code> interface. Normally,
+   breakpoint manager
+   registered breakpoints are deleted using the function that was given
+   to the <b><i>register_breakpoint</i></b> method of the
+   <code>breakpoint_registration</code> interface, which is used by the
+   <b>bp.delete</b>, but if the breakpoint can be removed by other means,
+   then this method can be implemented.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(breakpoint_type_provider) {
+        /* Register breakpoint in manager.
+           Return breakpoint manager ID, or 0 on error. */
+        uint64 (*register_bp)(conf_object_t *NOTNULL obj, uint64 bp_id);
+        /* Add breakpoint and return provider specific ID, or 0 on error. */
+        uint64 (*add_bp)(conf_object_t *NOTNULL obj,
+                         int flags, attr_value_t data);
+        /* Remove breakpoint, given ID returned by add_bp. */
+        void (*remove_bp)(conf_object_t *NOTNULL obj, uint64 bp_id);
+        /* Return trace message, given ID returned by add_bp. */
+        const char *(*trace_msg)(conf_object_t *NOTNULL obj, uint64 bp_id);
+        /* Message returned by break command, given ID returned by add_bp. */
+        const char *(*break_msg)(conf_object_t *NOTNULL obj, uint64 bp_id);
+        /* Script branch wait message, given ID returned by add_bp. */
+        const char *(*wait_msg)(conf_object_t *NOTNULL obj, uint64 bp_id);
+        /* Optional return value from wait-for and run-until commands,
+           given ID returned by add_bp. */
+        attr_value_t (*break_data)(conf_object_t *NOTNULL obj, uint64 bp_id);
+        /* Return possible values for command argument.
+           Optional unless expanders used. */
+        attr_value_t (*values)(conf_object_t *NOTNULL obj,
+                               const char *arg, attr_value_t prev_args);
+        /* Optional trace output function. The default is to log on the
+           provider with level 1 and group 0. */
+        void (*trace)(conf_object_t *NOTNULL obj, const char *msg);
+};
+#define BREAKPOINT_TYPE_PROVIDER_INTERFACE "breakpoint_type_provider"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_breakpoint_type.html">breakpoint_type</a>
+<a href="__rm_interface_checkpoint.html">checkpoint</a>
+</div>

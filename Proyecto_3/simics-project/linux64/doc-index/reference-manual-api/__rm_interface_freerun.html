@@ -1,0 +1,105 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>freerun</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_execute_control.html">execute_control</a>
+<a href="__rm_interface_gfx_con.html">gfx_con</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_freerun">freerun</a></h1>
+<p>
+
+<a name="freerun"></a><a name="freerun_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>freerun</code> interface is provided by
+   the <b>freerun-extension</b> extension class. The extension
+   class augments CPU models with support for freerunning mode. The
+   <code>freerun</code> interface is used by CPU models to
+   interface with the extension class.
+<p>
+   The <b><i>enabled</i></b> member returns <code>true</code> if
+   freerunning mode is enabled and <code>false</code> otherwise.
+   The notifier <code>Sim_Notifier_Freerunning_Mode_Change</code> is
+   triggered for the object whenever freerunning mode is enabled or disabled.
+</p><p>
+   The <b><i>advance_clock</i></b> is used by the CPU model to
+   calculate how much its virtual time should be advanced in freerunning mode.
+   The <i>ps_limit</i> argument is the maximal number of pico-seconds
+   virtual time can be advanced. The next CPU event typically occurs
+   at this time. The <i>steps</i> argument should be set to the number
+   of elapsed instructions since the last call to <i>advance_clock</i>.
+   The <i>idle</i> parameter should be set to <code>true</code> if
+   the CPU is idle. The function returns the number of pico-seconds
+   the virtual time of the CPU should be advanced. The returned value
+   is proportional to the time spent simulating the model, but is also
+   subject to configurable freerunning restrictions which ensures that
+   the instruction rate is kept in an acceptable range.
+</p><p>
+   The <b><i>start_clock</i></b> function should be called when
+   the CPU model starts instruction simulation. It is used to measure
+   the amount of time used to simulate the model.
+</p><p>
+   The <b><i>stop_clock</i></b> function should be called when
+   the CPU model stops instruction simulation.
+</p><p>
+   The <b><i>current_itime</i></b> function returns a prediction of the amount
+   of time needed to simulate an instruction, in pico-seconds. The
+   estimate is based on historic data and will always be in an interval
+   which does not conflict with configured freerunning restrictions.
+   The value can be used to estimate how many instructions
+   can be executed until the next time event.
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+The <code>freerun</code> interface is experimental and may
+   change without notice.</div><pre class="jdocu_small">SIM_INTERFACE(freerun) {
+        bool (*enabled)(conf_object_t *NOTNULL obj);
+
+        int64 (*advance_clock)(conf_object_t *NOTNULL obj,
+                               int64 ps_limit, int64 steps, bool idle);
+        void (*start_clock)(conf_object_t *NOTNULL obj);
+        void (*stop_clock)(conf_object_t *NOTNULL obj);
+
+        uint64 (*current_itime)(conf_object_t *NOTNULL obj);
+};
+#define FREERUN_INTERFACE "freerun"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_execute_control.html">execute_control</a>
+<a href="__rm_interface_gfx_con.html">gfx_con</a>
+</div>

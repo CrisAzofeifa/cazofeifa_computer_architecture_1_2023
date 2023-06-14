@@ -1,0 +1,779 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3 Installing Simics</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="hardware-and-software-requirements.html">2 Hardware and Software Requirements</a>
+<a href="upgrading-simics.html">4 Upgrading Simics</a>
+</div>
+<div class="path">
+<a href="index.html">Installation Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="installation">3 Installing Simics</a></h1>
+<p>
+
+</p><p>
+This section describes the deprecated way to install Simics, for users
+who are not yet using the Intel Simics Package Manager.
+</p><p>
+</p><h2 class="jdocu"><a name="Linux">3.1 Linux</a></h2>
+<p>
+
+
+Simics is delivered in <em>packages</em>, each one containing different parts
+of the functionality. There is a base package and several add-on packages.
+The packages can be combined to create a
+customized installation. The most common packages are:
+</p><p>
+</p><ul>
+
+  <li>The <em>Simics Base</em> package contains <em>Simics</em>
+  — the Simics execution engine and the user interface, as well
+  as a library of standard models.
+  </li>
+
+  <li>The <em>Simics Express</em> package contains <em>Simics Express</em>
+  — a Simics execution engine and a library of standard models but with
+  limited user interface and just a sub-set of features. Some sections of this
+  guide do not apply to <em>Simics Express</em>.
+  </li>
+
+  <li>An add-on package for each virtual platform, usually containing
+  a CPU core and various devices. The virtual platform is the
+  simulation platform and the model of the physical target hardware
+  that is being simulated.
+  </li>
+
+  <li>The <em>Quick-Start Platform for x86</em> (QSP-x86) add-on package is
+  meant for training, application development, demos, etc.
+  </li>
+
+</ul>
+<p>
+
+
+</p><p>
+The installation process is described in the following
+chapters. This is a quick overview of the steps involved.
+</p><ol>
+
+<li>Download the base package and the add-on packages you will use.</li>
+
+<li>Install the packages, using the corresponding
+decryption key.</li>
+
+<li>Create a project, to store the files you are working on.</li>
+
+</ol>
+<p>
+Add-on packages are <em>not</em> installed on top of the main Simics
+installation. Instead each package stays in its own directory, and Simics is
+simply instructed to look for add-on packages in various places using the
+<code>addon-manager</code> program
+</p><p>
+When installing Simics in a shared environment, several options are provided
+for multi-user installations. Refer to chapter 
+<a class="reference" href="advanced-installation.html">5</a> for a complete description.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The packages are encrypted, and the decryption keys are
+provided to Wind River customers separately.</div>
+<h3 class="jdocu"><a name="unix-first-time">3.1.1 First Installation</a></h3>
+<p>
+
+</p><p>
+As a Simics customer, you should have received instructions that
+describes which packages you should download and where to find
+them. If this is not the case, contact your Simics provider to obtain this
+information.
+</p><p>
+</p><ol>
+
+<li>Start by downloading the packages you want to install. We will use
+package 1000 (<em>Simics Base</em> package) and package 2096
+(<em>QSP-x86</em> model library) as an example.
+<p>
+</p><pre class="jdocu_small">joe@computer$ <b>cd simics-download</b>
+joe@computer$ <b>ls</b>
+simics-pkg-1000-6.0.0-linux64.tar
+simics-pkg-2096-6.0.0-linux64.tar
+</pre><p>
+</p><p>
+The packages are <code>.tar</code> files that can be unpacked with the
+<code>tar</code> command. Unpacking the packages will create a
+<code>simics-6-install</code> directory with the relevant
+installation files:
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b>tar xf simics-pkg-1000-6.0.0-linux64.tar</b>
+joe@computer$ <b>tar xf simics-pkg-2096-6.0.0-linux64.tar</b>
+joe@computer$ <b>ls simics-6-install</b>
+aescrypt
+install_simics_common.pm
+install-simics.pl*
+package-1000-6.0.0-linux64.packageinfo.aes
+package-1000-6.0.0-linux64.tar.gz.aes
+package-2096-6.0.0-linux64.packageinfo.aes
+package-2096-6.0.0-linux64.tar.gz.aes
+installation-guide.pdf
+old/package-1000-6.0.0-linux64.packageinfo.aes
+old/package-1000-6.0.0-linux64.tar.gz.aes
+old/package-2096-6.0.0-linux64.packageinfo.aes
+old/package-2096-6.0.0-linux64.tar.gz.aes
+</pre><p>
+</p><p>
+The file <code>installation-guide.pdf</code> is a copy of this
+manual. The <code>tar.gz.aes</code> files contains the compressed and
+encrypted package contents to be installed. The installation script
+<code>install-simics.pl</code> is used in the next step of the
+installation.
+</p><p>
+</p></li>
+
+<li>Run the installation script:
+<p>
+</p><pre class="jdocu_small">joe@computer$ <b>cd simics-6-install</b>
+joe@computer$ <b>./install-simics.pl</b>
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The script must be run from the installation directory.</div></li>
+
+<li>The script will present a list of packages to install. Simply
+type the number listed in front of each package you wish to
+install. In the example we install all packages (<em>Simics Base</em> and
+<em>QSP-x86</em>):
+<p>
+</p><pre class="jdocu_small">install-simics can install the following packages:
+   Number  Name          Type    Version   Host         Package
+    1      Simics-Base   simics  6.0.0     linux64      package-1000
+    2      QSP-x86    	 addon   6.0.0     linux64      package-2096
+    3      All packages
+
+Please enter the numbers of the packages you want to install, as in "1 4 3"
+Package numbers, or Enter to [Abort]: <b>3</b></pre><p>
+</p></li>
+
+<li>You will be asked for a destination directory. The default is
+<code>/opt/simics/simics-6</code>. In the example session below,
+we will accept the default:
+<p>
+</p><pre class="jdocu_small">Enter a destination directory for installation, or Enter
+for [/opt/simics/simics-6/]: <b>&lt;ENTER&gt;</b>
+The directory '/opt/simics/simics-6/' does not exist.
+Do you want to create it? (y, n) [y]: <b>&lt;ENTER&gt;</b></pre><p>
+</p><p>
+</p></li>
+
+<li>The script will show you a summary of the installation options before
+proceeding. If you accept, the installation will be performed:
+<p>
+</p><pre class="jdocu_small">The following packages will be installed in /opt/simics/simics-6/:
+   Simics-Base 6.0.0 (package-1000-6.0.0-linux64.tar.gz.aes)
+   QSP-x86 6.0.0 (package-2096-6.0.0-linux64.tar.gz.aes)
+
+Do you wish to perform the installation? (y, n) [y]: <b>&lt;ENTER&gt;</b>
+-&gt; Decrypting package-1000-6.0.0-linux64.tar.gz.aes
+-&gt; Testing package-1000-6.0.0-linux64.tar.gz
+-&gt; Installing package-1000-6.0.0-linux64.tar.gz
+-&gt; Decrypting package-2096-6.0.0-linux64.tar.gz.aes
+-&gt; Testing package-2096-6.0.0-linux64.tar.gz
+-&gt; Installing package-2096-6.0.0-linux64.tar.gz
+</pre><p>
+</p><p>
+If everything was successful, you now have two directories in
+<code>/opt/simics/simics-6/</code>
+called <code>simics-6.0.0</code> and
+<code>simics-QSP-x86-6.0.0</code>.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The
+  <code>/opt/simics/simics-6/simics-6.0.0</code>
+  directory in the example above is the directory referred to by
+  the <code></code><em>[simics]</em><code></code> abbreviation in examples in the rest of the
+  Simics documentation.</div></li>
+
+
+
+<li>The installer will help you finish the configuration of the packages you
+installed. The default choice, to configure the <em>QSP-x86</em> add-on with the
+newly installed <em>Simics Base</em> package, is exactly what we want:
+<p>
+</p><pre class="jdocu_small">install-simics has installed the following add-on packages:
+   QSP-x86  6.0.0  /opt/simics/simics-6/simics-QSP-x86-6.0.0
+
+Do you wish to make these add-on packages available in
+Simics-Base 6.0.0? (y, n) [y]: <b>&lt;ENTER&gt;</b>
+-&gt; Making add-on packages available in Simics-Base 6.0.0</pre><p>
+</p><p>
+</p></li>
+
+<li>The installer will now summarize the installation and exit.
+<pre class="jdocu_small">Summary of installation process: 
+   All selected packages were installed successfully 
+
+You may now want to see the 'Getting Started' guide. </pre><p>
+</p><p>
+</p></li>
+
+</ol>
+<p>
+
+</p><h3 class="jdocu"><a name="obsolete-unix-first-time">3.1.2 Obsolete installation flow</a></h3>
+<p>
+
+</p><p>
+You may be redirected onto the "old" installation flow if you did not pass 
+the authentication phase. Note, that this option is temporal and will become 
+obsolete soon.
+</p><p>
+</p><ol>
+
+<li>
+When the installation continues, you will be asked for the keys necessary to
+decrypt the packages. Keys are cached automatically once they have been found
+to be correct, so you should need to perform this step only once:
+<p>
+</p><pre class="jdocu_small">-&gt; Looking for Simics packages in current directory...
+Enter a decryption key for package-1000-6.0.0-linux64.tar.gz.aes,
+or Enter to [Abort]: <b>0123456789ABCDEF0123456789ABCDEF</b>
+Enter a decryption key for package-2096-6.0.0-linux64.tar.gz.aes,
+or Enter to [Abort]: <b>0123456789ABCDEF0123456789ABCDEF</b></pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+These are not the actual keys.</div></li>
+
+<li>The script will present a list of packages to install. Simply
+type the number listed in front of each package you wish to
+install. In the example we install all packages (<em>Simics Base</em> and
+<em>QSP-x86</em>):
+<p>
+</p><pre class="jdocu_small">install-simics can install the following packages:
+   Number  Name          Type    Version   Host         Package
+    1      Simics-Base   simics  6.0.0     linux64      package-1000
+    2      QSP-x86    	 addon   6.0.0     linux64      package-2096
+    3      All packages
+
+Please enter the numbers of the packages you want to install, as in "1 4 3"
+Package numbers, or Enter to [Abort]: <b>3</b></pre><p>
+</p></li>
+
+<li>You will be asked for a destination directory. The default is
+<code>/opt/simics/simics-6</code>. In the example session below,
+we will accept the default:
+<p>
+</p><pre class="jdocu_small">Enter a destination directory for installation, or Enter
+for [/opt/simics/simics-6/]: <b>&lt;ENTER&gt;</b>
+The directory '/opt/simics/simics-6/' does not exist.
+Do you want to create it? (y, n) [y]: <b>&lt;ENTER&gt;</b></pre><p>
+</p><p>
+</p></li>
+
+<li>The script will show you a summary of the installation options before
+proceeding. If you accept, the installation will be performed:
+<p>
+</p><pre class="jdocu_small">The following packages will be installed in /opt/simics/simics-6/:
+   Simics-Base 6.0.0 (package-1000-6.0.0-linux64.tar.gz.aes)
+                with key 0123456789ABCDEF0123456789ABCDEF
+   QSP-x86 6.0.0 (package-2096-6.0.0-linux64.tar.gz.aes)
+                with key 0123456789ABCDEF0123456789ABCDEF
+
+Do you wish to perform the installation? (y, n) [y]: <b>&lt;ENTER&gt;</b>
+-&gt; Decrypting package-1000-6.0.0-linux64.tar.gz.aes
+-&gt; Testing package-1000-6.0.0-linux64.tar.gz
+-&gt; Installing package-1000-6.0.0-linux64.tar.gz
+-&gt; Installed source code for Simics-Base
+-&gt; Decrypting package-2096-6.0.0-linux64.tar.gz.aes
+-&gt; Testing package-2096-6.0.0-linux64.tar.gz
+-&gt; Installing package-2096-6.0.0-linux64.tar.gz
+-&gt; Installed source code for QSP-x86
+</pre><p>
+</p><p>
+If everything was successful, you now have two directories in
+<code>/opt/simics/simics-6/</code>
+called <code>simics-6.0.0</code> and
+<code>simics-QSP-x86-6.0.0</code>.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The
+  <code>/opt/simics/simics-6/simics-6.0.0</code>
+  directory in the example above is the directory referred to by
+  the <code></code><em>[simics]</em><code></code> abbreviation in examples in the rest of the
+  Simics documentation.</div></li>
+
+
+
+<li>The installer will help you finish the configuration of the packages you
+installed. The default choice, to configure the <em>QSP-x86</em> add-on with the
+newly installed <em>Simics Base</em> package, is exactly what we want:
+<p>
+</p><pre class="jdocu_small">install-simics has installed the following add-on packages:
+   QSP-x86  6.0.0  /opt/simics/simics-6/simics-QSP-x86-6.0.0
+
+Do you wish to make these add-on packages available in
+Simics-Base 6.0.0? (y, n) [y]: <b>&lt;ENTER&gt;</b>
+-&gt; Making add-on packages available in Simics-Base 6.0.0</pre><p>
+</p><p>
+</p></li>
+
+<li>The installer will now summarize the installation and exit.
+<pre class="jdocu_small">Summary of installation process: 
+   All selected packages were installed successfully 
+
+You may now want to see the 'Getting Started' guide. </pre><p>
+</p><p>
+</p></li>
+
+</ol>
+<p>
+
+</p><h3 class="jdocu"><a name="Start-Simics">3.1.3 Start Simics</a></h3>
+<p>
+
+</p><p>
+To get started, run the Simics GUI and set up a project.
+</p><p>
+If you are new to Simics, you will find more information if you open
+the <em>Getting Started</em> document and follow the tutorial. You
+will find it in the <code>doc/</code> directory of your Simics
+installation or in the Simics on-line help.
+</p><p>
+</p><h4 class="jdocu"><a name="Simics-Interface">3.1.3.1 Simics Interface</a></h4>
+<p>
+
+</p><p>
+</p><ul>
+<li>
+Run the Classic Simics GUI, with the following
+command:
+<pre class="jdocu_small">joe@computer$ <b>/opt/simics/simics-6/simics-6.0.0/bin/simics-gui</b>
+</pre><p>
+</p></li>
+
+</ul>
+
+<h4 class="jdocu"><a name="Projects">3.1.3.2 Projects</a></h4>
+<p>
+
+</p><p>
+The first time you run Simics you will be prompted for a project. For
+more details regarding projects, see the document <em>Getting
+Started</em>.
+</p><p>
+</p><ul>
+  <li>You will be asked to select an empty directory where Simics
+    can create a project. The project is used to create and edit scripts and
+    keep the files you are working on, without touching any files of
+    the installed packages.<br>
+Choose a project name and click <b>OK</b>.
+See figure <a class="reference" href="#SelectProject">1</a>
+<p>
+</p><div class="figure" id="SelectProject">
+
+<div style="text-align: center">
+<img alt="" src="SelectProject.png">
+<div class="caption">Figure 1. Select Project</div>
+</div>
+</div>
+
+<p>
+</p></li><li>Click <b>Yes</b> when asked to create a new project
+directory. </li>
+<p>
+</p><li>The installation is now finished and Simics will start.</li>
+<p>
+ </p><div class="note">
+<b>Note:</b>
+Once a project is created, start Simics from the project directory. </div>
+</ul>
+
+
+<h3 class="jdocu"><a name="Reinstall-Simics-Base">3.1.4 Reinstall Simics Base</a></h3>
+<p>
+
+If this is not the first time you install <em>Simics Base</em> you are provided
+with the option to copy the configuration of an earlier Simics
+installation.
+</p><p>
+</p><pre class="jdocu_small">install-simics can re-use the existing configuration
+of the following Simics installation:
+   Number  Name         Version  Path
+    1      Simics-Base  6.0.0    /opt/simics/simics-6/simics-6.0.0
+    2      None
+
+Please choose an option [default to 1]: <b>ENTER</b></pre><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="install-more">3.1.5 Installing More Packages</a></h3>
+<p>
+
+</p><p>
+You can install more packages at any time using the same steps as in
+chapter <a class="reference" href="#unix-first-time">3.1.1</a>.  It is easiest to install all
+packages in the same directory
+e.g. <code>/opt/simics/simics-6</code>.
+</p><p>
+The installer will propose a default configuration that should always
+work with the latest installed version of Simics. For customized
+configurations, please read the <i>Add-on
+Manager</i>, chapter <a class="reference" href="advanced-installation.html">5</a>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Uninstalling-Simics">3.1.6 Uninstalling Simics</a></h3>
+<p>
+
+</p><p>
+Uninstalling Simics is very simple, just remove the directories
+that were created for each package during the installation. Note the following:
+</p><p>
+</p><ul>
+
+<li>If you delete an add-on package that is still referenced in the add-on
+packages list of a Simics installation, the add-on package will simply be
+considered invalid and ignored. The <code>project-setup</code> program will
+however suggest that you update projects that were using that add-on
+package.</li>
+
+<li>If you delete a Simics installation, you will need to reconfigure the
+projects that depended on it by running the <code>project-setup</code>
+program from another Simics installation.</li>
+
+</ul>
+<p>
+
+</p><h3 class="jdocu"><a name="Installing-VMP">3.1.7 Installing VMP</a></h3>
+<p>
+
+</p><p>
+VMP uses direct execution to simulate x86 systems at near native
+speed. Kernel modules are needed to communicate directly with the host
+hardware, and installing those kernel modules requires a separate
+step.
+</p><p>
+
+
+</p><p>
+Installing and managing VMP kernel modules requires sudo
+privileges. Installing will compile the kernel module and therefore
+also requires an environment to build kernel modules. Which packages
+you need for building kernel modules depend on the distribution of
+Linux that you are using, but at least for certain Red Hat based
+distributions you would
+need <code>gcc-c++</code>, <code>kernel-headers</code>,
+and <code>kernel-devel</code>. Change directory to the Simics Base package
+and run:
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b>bin/vmp-kernel-install</b>
+</pre><p>
+</p><p>
+The script will compile and persistently install the kernel modules
+that are used by VMP. It will echo what needs to be done, which
+involves running scripts in the <code>vmxmon/scripts/</code>
+directory.
+</p><p>
+Disable VMP temporarily by running
+the <code>bin/vmp-kernel-unload</code> script, and enable VMP with
+the <code>bin/vmp-kernel-load</code> script. Permanently uninstall VMP
+from your host by running the <code>bin/vmp-kernel-uninstall</code>
+script.
+</p><p>
+If your installation is read-only, or you for some other reason want
+to have the built VMP artifacts outside of the installation, you can
+give a directory to the relevant VMP scripts, example:
+</p><p>
+</p><pre class="jdocu_small">joe@computer$ <b>bin/vmp-kernel-install /somewhere/directory</b>
+joe@computer$ <b>bin/vmp-kernel-load /somewhere/directory</b>
+</pre><p>
+</p><p>
+
+</p><p>
+See the <em>VMP</em> section in the <em>Simulation Performance</em>
+chapter of the <em>Simics User's Guide</em> for information about
+enabling and using VMP.
+</p><p>
+
+</p><p>
+
+</p><h2 class="jdocu"><a name="Windows">3.2 Windows</a></h2>
+<p>
+
+
+Simics is delivered in <em>packages</em>, each one containing different parts
+of the functionality. There is a base package and several add-on packages.
+The packages can be combined to create a
+customized installation. The most common packages are:
+</p><p>
+</p><ul>
+
+  <li>The <em>Simics Base</em> package contains <em>Simics</em>
+  — the Simics execution engine and the user interface, as well
+  as a library of standard models.
+  </li>
+
+  <li>The <em>Simics Express</em> package contains <em>Simics Express</em>
+  — a Simics execution engine and a library of standard models but with
+  limited user interface and just a sub-set of features. Some sections of this
+  guide do not apply to <em>Simics Express</em>.
+  </li>
+
+  <li>An add-on package for each virtual platform, usually containing
+  a CPU core and various devices. The virtual platform is the
+  simulation platform and the model of the physical target hardware
+  that is being simulated.
+  </li>
+
+  <li>The <em>Quick-Start Platform for x86</em> (QSP-x86) add-on package is
+  meant for training, application development, demos, etc.
+  </li>
+
+</ul>
+<p>
+
+</p><p>
+</p><ul><li>
+  If you plan to create new models in Simics, you will need the <em>MinGW
+  tools</em> to compile your models. See section <a class="reference" href="advanced-installation.html#win-3rdparty">5.3</a>.
+</li></ul>
+<p>
+
+</p><p>
+The installation process is described in the following
+chapters. This is a quick overview of the steps involved.
+</p><ol>
+
+<li>Download the base package and the add-on packages you will use.</li>
+
+<li>Install the packages, using the corresponding
+decryption key.</li>
+
+<li>Create a project, to store the files you are working on.</li>
+
+</ol>
+<p>
+Add-on packages are <em>not</em> installed on top of the main Simics
+installation. Instead each package stays in its own directory, and Simics is
+simply instructed to look for add-on packages in various places using the
+<code>addon-manager</code> program
+</p><p>
+When installing Simics in a shared environment, several options are provided
+for multi-user installations. Refer to chapter 
+<a class="reference" href="advanced-installation.html">5</a> for a complete description.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The packages are encrypted, and the decryption keys are
+provided to Wind River customers separately.</div>
+<h3 class="jdocu"><a name="windows-first-time">3.2.1 First Installation</a></h3>
+<p>
+
+</p><p>
+As a Simics customer, you should have received instructions that describes
+which packages you should download and where to find them. If this is not the
+case, contact your Simics provider to obtain this information.
+</p><p>
+</p><ol>
+
+<li>Start by downloading the packages you want to install. We will use
+package 1000 (<em>Simics Base</em> package) and package 2096
+(<em>QSP-x86</em> model library) as an example. These packages
+are <code>.exe</code> installers.</li>
+
+<li>Run the installer for package 1000. You will first need to provide a
+decryption key for the package.
+</li>
+
+<li>When the installer is decrypted successfully, click <b>Next</b> 
+to start the installation. 
+</li>
+
+  <li>Choose an installation directory. The default directory is
+    <code>C:\Program Files\Simics\Simics 6\</code>.</li>
+
+<li>Install <em>Simics Base</em>. Click <b>Install</b>.</li>
+
+<li>End the installation. Click <b>Finish</b>.</li>
+
+<li>Package 1000 is now installed. Continue by installing the 
+  add-on package 2096, <em>QSP-x86</em>. The installation
+  is similar to the <em>Simics Base</em> package:
+<p>
+</p><ul>
+  <li>Run the installer and enter the decryption key.</li>
+
+  <li>Choose an installation directory, or accept the suggested
+    installation path.</li>
+
+  <li>Select an installation of <em>Simics Base</em> with which this add-on
+    package will be registered.
+    Press <b>Next</b> to continue.
+<p>
+    </p><div class="note">
+<b>Note:</b>
+If you choose "skip this step", you can later associate this add-on
+    package with Simics by using the <i>Add-on Manager</i>, see chapter
+    <a class="reference" href="advanced-installation.html">5</a>.</div></li>
+
+<li>Click <b>Install</b> to begin the installation.
+</li>
+
+<li>Click <b>Finish</b> to exit the installation.
+</li>
+</ul>
+</li>
+</ol>
+
+<h3 class="jdocu"><a name="Start-Simics2">3.2.2 Start Simics</a></h3>
+<p>
+
+</p><p>
+To get started, run the <i>Simics Classic UI</i> and set up a project.
+</p><p>
+If you are new to Simics, you will find more information if you open
+the <em>Getting Started</em> document and follow the tutorial. You
+will find it under the Start Menu in your Simics installation or in
+the Simics on-line help.
+</p><p>
+
+
+</p><ul>
+<li>Start <i>Simics Classic UI</i> from the Start Menu.</li>
+
+  <li>You will be asked to select an empty directory where Simics
+    can create a project. The project is used to create and edit
+    scripts and keep the files you are working on, without touching
+    any files of the installed packages.<br> Choose a project name
+    and click <b>OK</b>.</li>
+
+<li>Click <b>Yes</b> when asked to create a new project
+directory. </li>
+
+<li>The installation is now finished and Simics will start.</li>
+</ul>
+<p>
+</p><div class="note">
+<b>Note:</b>
+The installer depends on the Windows program <b>msiexec.exe</b> which is
+  limited to running one installation at a time, and not several in parallel.
+</div>
+<h3 class="jdocu"><a name="Reinstall-Simics-Base2">3.2.3 Reinstall Simics Base</a></h3>
+<p>
+
+ If this is not the first time you install Simics Base you are
+   provided with the option to copy the configuration of an earlier
+   Simics installation.
+</p><h3 class="jdocu"><a name="install-more2">3.2.4 Installing More Packages</a></h3>
+<p>
+
+</p><p>
+You can install more packages at any time using the same steps as in
+chapter <a class="reference" href="#unix-first-time">3.1.1</a>.  It is easiest to install all
+packages in the same directory
+e.g. <code>/opt/simics/simics-6</code>.
+</p><p>
+The installer will propose a default configuration that should always
+work with the latest installed version of Simics. For customized
+configurations, please read the <i>Add-on
+Manager</i>, chapter <a class="reference" href="advanced-installation.html">5</a>.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Uninstalling-Simics2">3.2.5 Uninstalling Simics</a></h3>
+<p>
+
+</p><p>
+To uninstall Simics or its add-on packages, navigate to <b>Start
+Menu → Control Panel → Programs and Features</b>, select
+and right-click an entry and select <i>Uninstall</i>. Another option is to run
+the downloaded installation <code>.exe</code> file and eventually
+select <i>Remove</i>.
+</p><p>
+Note the following:
+</p><p>
+</p><ul>
+<li>If you delete an add-on package that is still referenced in the add-on
+packages list of a Simics installation, the add-on package will simply be
+considered invalid and ignored. The <code>project-setup</code> program will
+however suggest that you update projects that were using that add-on
+package.</li>
+
+<li>If you delete a Simics installation, you will need to reconfigure the
+projects that depended on it by running the <code>project-setup</code>
+program from another Simics installation.</li>
+
+</ul>
+<p>
+
+</p><h3 class="jdocu"><a name="Installing-VMP2">3.2.6 Installing VMP</a></h3>
+<p>
+
+</p><p>
+VMP uses direct execution to simulate x86 systems at near native
+speed. Kernel modules are needed to communicate directly with the host
+hardware, and installing those kernel modules requires a separate
+step.
+</p><p>
+
+
+</p><p>
+The kernel module can be loaded and unloaded by running
+the <code>bin\vmp-kernel-load.bat</code>
+respective <code>bin\vmp-kernel-unload.bat</code> scripts as
+administrator. To do that, open a command shell as administrator and run:
+</p><p>
+</p><pre class="jdocu_small"><b>bin\vmp-kernel-load.bat</b>
+</pre><p>
+</p><p>
+Another way to perform the same action would be to right-click on
+<code>vmp-kernel-load.bat</code> and select run as administrator.
+</p><p>
+The /AUTO and /DEMAND options select the start option for the VMP
+service. With /AUTO (default), the service will be available after
+restart whereas with /DEMAND (which used to be the behavior before
+these flags were added) will mean that the service is only available
+until shutdown or reboot and then has to be manually loaded again if
+needed.
+</p><p>
+If the script fails, see the Windows event log for more
+information. The most common reason is that Intel® VT-x technology or the NX
+feature is not enabled in the BIOS. The kernel module will also fail
+to load if Windows is running with the Hyper-V feature enabled.
+
+</p><p>
+See the <em>VMP</em> section in the <em>Simulation Performance</em>
+chapter of the <em>Simics User's Guide</em> for information about
+enabling and using VMP.
+</p><p>
+
+</p><p>
+
+</p>
+<div class="chain">
+<a href="hardware-and-software-requirements.html">2 Hardware and Software Requirements</a>
+<a href="upgrading-simics.html">4 Upgrading Simics</a>
+</div>

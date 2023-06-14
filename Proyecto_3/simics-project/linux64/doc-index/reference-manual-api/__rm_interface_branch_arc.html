@@ -1,0 +1,96 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>branch_arc</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_address_profiler.html">address_profiler</a>
+<a href="__rm_interface_break_strings_v2.html">break_strings_v2</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_branch_arc">branch_arc</a></h1>
+<p>
+
+<a name="branch_arc"></a><a name="branch_arc_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="branch_arc_iter_t"></a>
+   <a name="branch_arc_t"></a>
+   <a name="branch_arc_type_t"></a>
+   <a name="branch_recorder_direction_t"></a>
+<p>
+   Interface for getting branch arcs out profilers. The target is some kind of
+   profiler whose data can be meaningfully viewed as branch arcs (usually a
+   branch profiler).
+</p><p>
+   <b><i>iter</i></b> returns a branch arc iterator that will visit all branch
+   arcs in the range precisely once, in order of selected address (to or from,
+   selected with <i>dir</i>), other address and type. In Python, it
+   works just like any other iterator, and returns (from, to, counter, type)
+   tuples. Note that you may not continue to use the iterator after the
+   underlying profiler has been modified.
+</p><p>
+  <code>branch_arc_type_t</code> defines the branch types returned by a branch
+  arc iterator.
+</p><p>
+  </p><dl><dt id="dt:branch_arc_branch"><b><code>Branch_Arc_Branch</code></b></dt><dd>Normal branch operation</dd><dt id="dt:branch_arc_exception"><b><code>Branch_Arc_Exception</code></b></dt><dd>Branch because an exception 
+  was encountered</dd><dt id="dt:branch_arc_exception_return"><b><code>Branch_Arc_Exception_Return</code></b></dt><dd>Branch to finish an 
+  exception handler</dd></dl><p></p><pre class="jdocu_small">typedef enum {
+        Branch_Arc_Branch,
+        Branch_Arc_Exception,
+        Branch_Arc_Exception_Return,
+        Branch_Arc_Max
+} branch_arc_type_t;</pre><p>
+
+   
+</p><pre class="jdocu_small">typedef enum {
+        BR_Direction_From,
+        BR_Direction_To
+} branch_recorder_direction_t;</pre><p>
+
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(branch_arc) {
+        branch_arc_iter_t *(*iter)(conf_object_t *prof_obj,
+                                   generic_address_t start,
+                                   generic_address_t stop,
+                                   branch_recorder_direction_t dir);
+};
+
+#define BRANCH_ARC_INTERFACE "branch_arc"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_address_profiler.html">address_profiler</a>
+<a href="__rm_interface_break_strings_v2.html">break_strings_v2</a>
+</div>

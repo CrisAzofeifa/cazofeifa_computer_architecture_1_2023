@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>probe_index</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_probe_cache.html">probe_cache</a>
+<a href="__rm_interface_probe_sampler_cache.html">probe_sampler_cache</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_probe_index">probe_index</a></h1>
+<p>
+
+<a name="probe_index"></a><a name="probe_index_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Internal interface.
+<p>
+  This interface is similar to the <code>probe</code> interface, except that
+  the indexed version allows multiple probes to be defined with a single
+  interface. The same index corresponds to the same probe for <b><i>value</i></b>
+  and <b><i>properties</i></b> methods. The amount of probes that the interfaces
+  supports is returned through the <b><i>num_indices()</i></b> method, which should
+  be static.
+</p><p>
+  </p><pre class="jdocu_small">SIM_INTERFACE(probe_index) {
+        int (*num_indices)(conf_object_t *obj);
+        attr_value_t (*value)(conf_object_t *obj, int idx);
+        attr_value_t (*properties)(conf_object_t *obj, int idx);
+};
+#define PROBE_INDEX_INTERFACE "probe_index"
+</pre><p>
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_probe_cache.html">probe_cache</a>
+<a href="__rm_interface_probe_sampler_cache.html">probe_sampler_cache</a>
+</div>

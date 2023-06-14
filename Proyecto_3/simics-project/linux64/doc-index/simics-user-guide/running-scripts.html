@@ -1,0 +1,80 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>18.3 Running Scripts</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="results.html">18.2 Results</a>
+<a href="types.html">18.4 Types</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="appendix.html">V Appendix</a>
+&nbsp;/&nbsp;
+<a href="script-decls.html">18 Old Script Parameters</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Running-Scripts">18.3 Running Scripts</a></h1>
+<p>
+  
+</p><p>
+  Parameters are given on the command line when running Simics:
+</p><pre class="jdocu_small">  $ <b>./simics myscript.simics ram_size=64</b>
+</pre><p>
+  or as arguments to the <b>run-command-file</b> command:
+</p><pre class="jdocu_small">  simics&gt; <b>run-command-file myscript.simics ram_size = 64</b>
+</pre><p>
+  or by setting the CLI variables before invoking the script:
+</p><pre class="jdocu_small">  simics&gt; <b>$ram_size = 64</b>
+  simics&gt; <b>run-command-file myscript.simics</b>
+</pre><p>
+  </p><p>
+  The <code>-help</code> command-line option will show all parameters of
+  a script:
+</p><pre class="jdocu_small">  $ <b>./simics myscript.simics -help</b>
+</pre><p>
+</p><p>
+From the Simics command line, the arguments for a file can be listed by using
+the <b>help</b> command:
+</p><pre class="jdocu_small">  simics&gt; <b>help myscript.simics</b>
+  The original IBM PC XT from 1983, complete with
+  a full-height 10 MB fixed disk and a 5 1/4' floppy drive.
+
+  networking:
+    mac_addr  -  string or NIL
+
+  ...
+</pre><p>
+</p><p>
+It is also possible to use tab completion with the <b>run-command-file</b>
+command:
+</p><pre class="jdocu_small">  simics&gt; <b>run-command-file myscript.simics</b>&lt;tab&gt;
+  -local  -main-branch  ram_size =  cpu_freq =
+</pre><p>
+</p>
+<div class="chain">
+<a href="results.html">18.2 Results</a>
+<a href="types.html">18.4 Types</a>
+</div>

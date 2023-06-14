@@ -1,0 +1,67 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;textcon&gt;.input</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-textcon.info.html">&lt;textcon&gt;.info</a>
+<a href="rm-cmd-textcon.input-file.html">&lt;textcon&gt;.input-file</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="textcon.input"></a>
+<h1 id="textcon.input"><a href="#textcon.input">&lt;textcon&gt;.input</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;textcon&gt;.input</b> <i>"string"</i> [-e] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Send <i>string</i> to the text console.
+<p>
+The command supports common escape sequences such as "\n" for new line and "\t" for tab.
+</p><p>
+Octal or hexadecimal escape sequences can be used to send control characters to the console, for example "\003" or "\x03" for Ctrl-C.
+</p><p>
+If <tt>-e</tt> is specified, then the string is interpreted as an Emacs-style keystroke sequence. The following characters and modifiers are accepted: 'C' (Ctrl), 'A' (Alt), 'S (Shift)', 'Enter', 'Backspace', 'Del', 'Up', 'Down', 'Left', 'Right', 'Esc', 'Tab', 'Home', 'End', 'Ins', 'Spc', 'PgDn', 'PgUp', 'F1' to 'F12', keypad keys 'Kp_0' to 'Kp_9', 'Kp_Plus', 'Kp_Minus', 'Kp_Mul', 'Kp_Div', 'Kp_Dot', 'Kp_Enter' as well as regular alpha-numeric characters, i.e. [a-zA-Z0-9_?]. Key strokes are delimited by whitespace, and characters/modifiers are combined using the '-' character. For example, "C-a" will input Ctrl and 'a' pressed together, "C-a a" will do that followed by a single 'a' but "C-aa" is invalid. "C-A-Del" will produce the famous Ctrl-Alt-Del sequence. Modifiers cannot be sent individually, so e.g. "C" will send the character 'C', not Ctrl. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.textcon.html">textcon</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>bp.console_string.wait-then-write
+</section>
+<div class="chain">
+<a href="rm-cmd-textcon.info.html">&lt;textcon&gt;.info</a>
+<a href="rm-cmd-textcon.input-file.html">&lt;textcon&gt;.input-file</a>
+</div>

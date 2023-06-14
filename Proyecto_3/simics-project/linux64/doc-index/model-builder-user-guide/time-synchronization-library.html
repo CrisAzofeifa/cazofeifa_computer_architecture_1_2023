@@ -1,0 +1,261 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>45 Time Synchronization Library</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="external-world.html">44 Connecting to the External World</a>
+<a href="other-applications.html">46 Integrating with Other Applications</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="extension-builder.html">VII Extending Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Time-Synchronization-Library">45 Time Synchronization Library</a></h1>
+<p>
+
+  </p><h2 class="jdocu"><a name="Introduction">45.1 Introduction</a></h2>
+<p>
+
+</p><p>
+This chapter describes the <em>Time Synchronization Library</em>, a system
+for synchronising Simics with external programs and exchange information in a
+deterministic way. It consists of a library that can be linked into the
+external application exposing a simple programming interface and a standard
+configuration object on the Simics sidee.
+
+  </p><h2 class="jdocu"><a name="Overview">45.2 Overview</a></h2>
+<p>
+
+</p><p>
+A synchronised setup consists of a configuration on the Simics side
+and a follower process. Each follower needs four objects in Simics:
+</p><p>
+</p><ol>
+  <li>
+    A cell of its own.
+  </li>
+  <li>
+    A clock. Just use the standard Simics <b>clock</b> class.
+    The clock approximates the time of the follower for Simics.
+  </li>
+  <li>
+    A leader object (instance of the <b>leader</b> class).
+    This manages the connection to the follower and keeps it in sync with
+    the clock.
+  </li>
+  <li>
+    A follower agent object. This is a user-written object that
+    represents the follower in Simics—it can send and receive link
+    messages and use the Simics API. It talks to the follower via the
+    leader.
+  </li>
+</ol>
+<p>
+The clock, leader and agent all belong to the same cell, which is
+not used for any other simulation objects.
+</p><p>
+The follower is the user-provided external simulator. It links to
+libfollower, which contains a simple API to help it staying in sync
+with Simics and to communicate with the agent.
+</p><p>
+</p><div class="figure" id="overview-diagram">
+
+  <div style="text-align: center">
+    <img alt="" src="leader-overview.png">
+    <div class="caption">Figure 28. Follower system overview.</div>
+  </div>
+</div>
+
+<p>
+
+  </p><h2 class="jdocu"><a name="Time">45.3 Time</a></h2>
+<p>
+
+</p><p>
+All interfaces use the same time type, <code>follower_time_t</code>, for
+specifying points in simulated time. All such times are absolute, and
+local to the follower. A follower_time_t may be converted to and from
+picoseconds (as integers). It can also be converted to and from
+seconds (as a floating point value), although this is not without
+loss. In Python, a <code>follower_time_t</code> is represented as an
+integer, counting picoseconds.
+</p><p>
+The follower's time starts at zero each time it connects to Simics.
+
+  </p><h2 class="jdocu"><a name="The-follower">45.4 The follower</a></h2>
+<p>
+
+</p><p>
+The follower must keep track of its own simulation time. It must also
+listen for messages from Simics by calling
+<b><i>handle_simics_message()</i></b>, either periodically or when the
+descriptor used by libfollower (<b><i>simics_follower_descriptor()</i></b>) is
+readable, using <b><i>poll()</i></b> or <b><i>select()</i></b>.
+</p><p>
+In <b><i>handle_simics_message()</i></b>, any of the supplied functions
+may be called zero or more times:
+</p><p>
+</p><dl><dt id="dt:proceed_to"><b><b><i>proceed_to()</i></b></b></dt><dd>Gives the follower a point in time (a limit) it is not allowed to
+    go past. Implicitly, it allows simulation to go on until that
+    limit.
+  </dd><dt id="dt:report_at"><b><b><i>report_at()</i></b></b></dt><dd>Tells the follower to report to libfollower (<b><i>simics_follower_report()</i></b>)
+    when a specific point in time has been reached or passed.
+    The follower can report at that time or later, but the earlier the
+    report, the better for simulation performance. The time should
+    be later than any previous reports.
+  </dd><dt id="dt:accept_message"><b><b><i>accept_message()</i></b></b></dt><dd>Delivers a message (byte string) from the agent. The message
+    will be delivered at the indicated time. If multiple messages
+    arrive for delivery at the same time, they should be processed
+    in the order of their secondary sorting keys (skey), which is an
+    incrementing integer.
+  </dd><dt id="dt:accept_async_message"><b><b><i>accept_async_message()</i></b></b></dt><dd>Delivers an asynchronous (indeterministic) message from the agent.
+    This message only has a byte string as payload; it is intended
+    for communication that is not directly related to the simulation.
+  </dd><dt id="dt:bye"><b><b><i>bye()</i></b></b></dt><dd>Tells the follower that Simics has quit.
+  </dd></dl><p>The <i>param</i> argument to
+<b><i>handle_simics_message()</i></b> is passed on unchanged to the
+callbacks above.
+</p><p>
+When the follower reaches its current time limit, given by
+<b><i>proceed_to()</i></b>, it must go no further. Before waiting for new
+instructions from Simics, it should report its current time.
+</p><p>
+The leader must be configured before the follower can connect. The
+leader can be set to use a specific port number, or (the default)
+it can pick an available port which can be read out when the
+configuration is complete.
+</p><p>
+To send a deterministic message to the agent, the follower calls
+<b><i>simics_follower_send_message()</i></b> with its current time and the
+message data. This message will be passed to the agent's
+<b><i>.accept()</i></b> method.
+</p><p>
+To send an asynchronous (non-deterministic) message to the agent, the
+follower calls <b><i>simics_follower_send_async_message()</i></b>. This message
+will be passed to the agent's <b><i>.accept_async()</i></b> method.
+
+  </p><h2 class="jdocu"><a name="The-follower-agent">45.5 The follower agent</a></h2>
+<p>
+
+</p><p>
+The agent must implement the <code>follower_agent</code> interface. Its
+<b><i>.accept()</i></b> method is called with a message sent from the
+follower, and the agent can do whatever it wants with it. When that
+method is sent, the clock is on the same point in time that the follower
+was on when it sent the message.
+</p><p>
+Typically, the agent will be connected to links to other parts of
+the Simics configuration, and send link messages as instructed by
+the follower.
+</p><p>
+Any link endpoint connected to the follower <em>must</em> have its
+<i>indirect_delivery</i> attribute set to true. This causes all
+link messages from that endpoint to be sent immediately, instead of on time.
+Instead, in the method receiving a link message, the agent should retrieve the
+<i>delivery time</i> and a <i>secondary sorting key</i> from the endpoint
+by calling <b><i>.delivery_time()</i></b> and <b><i>.delivery_skey()</i></b> in
+the <code>link_endpoint</code> interface.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+It is an error to invoke the functions <b><i>.delivery_time()</i></b>
+  and <b><i>.delivery_skey()</i></b> in the <code>link_endpoint</code>
+  interface if there is no message in flight.
+</div>The leader implements the <code>leader_message</code> interface, and
+the agent will call the <b><i>.send()</i></b> method therein to send back
+information to the follower. It supplies the delivery time and skey it
+got from the endpoint when the agent received the message from the
+link.
+<p>
+For asynchronous (non-deterministic) communication with the follower, the
+agent implements the <b><i>.accept_async()</i></b> method and can send
+data using the <b><i>.send_async()</i></b> method implemented by the
+leader.
+</p><p>
+Asynchronous messages are delivered in order and as soon as
+possible, with no attempts to synchronise them with any simulated
+time. They should therefore only be used where this is acceptable,
+such as in configuration, set-up, interactive control, logging,
+debugging, and so on.
+</p><p>
+Contrary to <b><i>.accept()</i></b>, <b><i>.accept_async()</i></b> may be
+called to deliver a message from the follower even when Simics is
+standing still.
+</p><p>
+Any messages, deterministic or non-deterministic, sent with no follower
+connected are silently dropped.
+
+  </p><h2 class="jdocu"><a name="Saving-and-restoring-configurations">45.6 Saving and restoring configurations</a></h2>
+<p>
+
+</p><p>
+When a configuration is saved, no information about attached followers
+is included. The user is responsible for saving and restoring the
+state of the follower; such information could be managed by the agent,
+for example.
+</p><p>
+When a configuration is restored, the leader will attempt to use the
+same TCP port number, and if it is not available, this will result
+in an error.
+
+  </p><h2 class="jdocu"><a name="Code-example">45.7 Code example</a></h2>
+<p>
+
+</p><p>
+To run the provided code example, first start Simics and run the
+<code>follower-test-with-link.py</code> script. It will print the selected port
+to the console.
+</p><p>
+Next, start follower-example:
+</p><pre class="jdocu_small">$ bin/follower-example <i>HOSTNAME</i> <i>PORT</i>
+</pre><p>
+where <i>HOSTNAME</i> is the machine running Simics (probably
+localhost), and <i>PORT</i> is the selected port.
+</p><p>
+</p><pre class="jdocu_small">$ bin/follower-example localhost 12345
+</pre><p>
+</p><p>
+The follower will start running as soon as it connects, but no further
+than allowed by Simics. Type "c" in Simics to go on. The follower will
+run as fast as it is allowed and send a "hello" message to its agent
+once every second (see the source code for details).
+</p><p>
+The sample script <code>follower-test-with-link.py</code> works in the
+same way, but with a link-attached text console to receive the
+messages from the follower. Typing in this console will send characters
+back to the follower.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The client-side code example, follower-example, currently only works on Linux
+  for reasons of code clarity. The libfollower library itself can be used on
+  Windows without restrictions.</div>
+
+<div class="chain">
+<a href="external-world.html">44 Connecting to the External World</a>
+<a href="other-applications.html">46 Integrating with Other Applications</a>
+</div>

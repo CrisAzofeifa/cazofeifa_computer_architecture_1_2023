@@ -1,0 +1,99 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>virtual_data_breakpoint</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_vga_update.html">vga_update</a>
+<a href="__rm_interface_virtual_instruction_breakpoint.html">virtual_instruction_breakpoint</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_virtual_data_breakpoint">virtual_data_breakpoint</a></h1>
+<p>
+
+<a name="virtual_data_breakpoint"></a><a name="virtual_data_breakpoint_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Add and remove virtual-address (and, on x86, linear-address) read and
+     write breakpoints. On every read access that intersects a read
+     breakpoint's interval, the registered callback function is called with the
+     object that initiated the read, and the address and size of the read. (The
+     interval includes both endpoints; <i>first</i> must be less than
+     or equal to <i>last</i>.) Write breakpoints work exactly the same,
+     except that the callback is given the actual value being written, not just
+     its size.
+<p>
+     The callback is called before the read or write has taken place, but may
+     not intervene. If one or more breakpoint callbacks stop the simulation,
+     the current instruction is completed before the stop takes effect. If more
+     than one breakpoint is triggered by the same read or write, the
+     implementation may call their callbacks in any order.
+</p><p>
+     On x86, the <code>Virtual_Breakpoint_Flag_Linear</code> flag causes the
+     breakpoint to use linear rather than virtual addresses. (Adding a
+     breakpoint with unsupported flags is illegal.)
+</p><p>
+     </p><div class="note">
+<b>Note:</b>
+This interface is preliminary and may change without prior notice.
+     </div><a name="virtual_breakpoint_flags_t"></a>
+<pre class="jdocu_small">typedef enum {
+        Virtual_Breakpoint_Flag_Linear = 1
+} virtual_breakpoint_flags_t;</pre><p>
+
+</p><p>
+     </p><pre class="jdocu_small">SIM_INTERFACE(virtual_data_breakpoint) {
+        virtual_data_bp_handle_t *NOTNULL (*add_read)(
+                conf_object_t *NOTNULL obj,
+                generic_address_t first, generic_address_t last,
+                void (*NOTNULL callback)(
+                        cbdata_call_t data, conf_object_t *NOTNULL initiator,
+                        generic_address_t address, unsigned size),
+                cbdata_register_t data, uint32 flags);
+        virtual_data_bp_handle_t *NOTNULL (*add_write)(
+                conf_object_t *NOTNULL obj,
+                generic_address_t first, generic_address_t last,
+                void (*NOTNULL callback)(
+                        cbdata_call_t data, conf_object_t *NOTNULL initiator,
+                        generic_address_t address, bytes_t value),
+                cbdata_register_t data, uint32 flags);
+        void (*remove)(conf_object_t *NOTNULL obj,
+                       virtual_data_bp_handle_t *NOTNULL bp_handle);
+};
+#define VIRTUAL_DATA_BREAKPOINT_INTERFACE "virtual_data_breakpoint"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_vga_update.html">vga_update</a>
+<a href="__rm_interface_virtual_instruction_breakpoint.html">virtual_instruction_breakpoint</a>
+</div>

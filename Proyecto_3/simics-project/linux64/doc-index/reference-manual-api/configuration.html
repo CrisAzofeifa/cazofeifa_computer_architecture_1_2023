@@ -1,0 +1,896 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10.3 Configuration</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="command-line-interface.html">10.2 Command Line Interface</a>
+<a href="hypersim.html">10.4 Hypersim</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="python-api.html">10 Python API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Configuration">10.3 Configuration</a></h1>
+<p>
+
+    </p><h2 class="jdocu"><a class="not-numbered" name="pyobj-Python-Module">pyobj Python Module</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="pyobj.Attribute">pyobj.Attribute</a></h3>
+<p>
+  
+  <a name="Attribute"></a> <a name="pyobj-Python-moduleAttribute"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_pyobj.Attribute"></a><b>Attribute</b> — a Simics attribute</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b>pyobj.Attribute</b> class defines an attribute that will
+be registered for the containing <b>ConfObject</b> class. The
+attribute will be registered with Simics using the
+<b><i>SIM_register_attribute</i></b> function. See documentation for
+<b><i>SIM_register_attribute</i></b> for detailed information about
+attributes.
+<p>
+The arguments to <b><i>SIM_register_attribute</i></b> is taken from the
+class members. The <i>attrattr</i> member is an
+<code>attr_attr_t</code> type and its default value is
+<code>Sim_Attr_Optional</code>. The <i>attrtype</i> member is a string
+defining the type of the attribute, default value is <em>'a'</em>.
+</p><p>
+The class methods named <b><i>getter</i></b> and <b><i>setter</i></b> will be
+used as <b><i>get_attr</i></b> and <b><i>set_attr</i></b> functions when
+registering the attribute. The methods are optional. An attribute without a
+<b><i>getter</i></b> can not be read. An attribute without a <b><i>setter</i></b>
+can not be written.
+</p><p>
+The attribute description is the same as the Python class description.
+</p><p>
+The <b><i>_initialize</i></b> method can be defined if special initialization
+behavior is required. This can for instance be used to set the default
+value.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class wee(pyobj.Attribute):
+    """Documentation for the attribute goes here."""
+    attrattr = simics.Sim_Attr_Pseudo
+    attrtype = 'i'
+    def _initialize(self):
+        self.val = 4711
+    def getter(self):
+        self.val += 3
+        return self.val
+    def setter(self, val):
+        self.val = val</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_pyobj.SimpleAttribute">pyobj.SimpleAttribute</a>, <a class="jdocu" href="#__jdocu_seealso_pyobj.ClassAttribute"> pyobj.ClassAttribute</a>, <a class="jdocu" href="#__jdocu_seealso_pyobj.ConfObject"> pyobj.ConfObject</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="pyobj.ClassAttribute">pyobj.ClassAttribute</a></h3>
+<p><a name="ClassAttribute"></a> <a name="pyobj-Python-moduleClassAttribute"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_pyobj.ClassAttribute"></a><b>ClassAttribute</b> — a Simics class attribute</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b>pyobj.ClassAttribute</b> class defines an attribute that
+will be registered for the containing <b>ConfObject</b> class. The
+attribute will be registered with Simics using the
+<b><i>SIM_register_class_attribute</i></b> function. See documentation
+for <b><i>SIM_register_class_attribute</i></b> for detailed information
+about class attributes.
+<p>
+The value stored in the class should always be stored in the
+attribute named <code>val</code>. This is to avoid problems when a
+class that defines a <b>pyobj.Attribute</b> class is
+inherited by more than one class.
+</p><p>
+The <b>pyobj.ClassAttribute</b> class is very similar to the
+<b>pyobj.Attribute</b> class. See the documentation for the
+<b>pyobj.Attribute</b> class for how to use this class.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class wee(pyobj.ClassAttribute):
+    """Documentation for the attribute goes here."""
+    attrtype = 'i'
+    val = 4711
+    @classmethod
+    def getter(cls): return cls.val
+    @classmethod
+    def setter(cls, val): cls.val = val</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_pyobj.Attribute">pyobj.Attribute</a>, <a class="jdocu" href="#__jdocu_seealso_pyobj.ConfObject"> pyobj.ConfObject</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="pyobj.ConfObject">pyobj.ConfObject</a></h3>
+<p><a name="ConfObject"></a> <a name="pyobj-Python-moduleConfObject"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_pyobj.ConfObject"></a><b>ConfObject</b> — a Simics configuration object</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b>pyobj.ConfObject</b> class defines a new Simics class
+using the <b><i>SIM_register_class</i></b> function. You could call
+<b><i>SIM_register_class</i></b> and all the related functions for
+attribute and interface registration yourself, but
+<b>ConfObject</b> will make your code much more concise.
+<p>
+The name of the Simics class is identical to the Python
+class. The class description is the same as the Python class
+description.
+</p><p>
+The class implements the methods <b><i>_initialize</i></b>,
+<b><i>_finalize</i></b>, <b><i>_pre_delete</i></b>, <b><i>_info</i></b>, and
+<b><i>_status</i></b>. All of these methods can be overridden if
+required.
+</p><p>
+The <b><i>_initialize</i></b> method is called when an object of the
+class is instantiated. The <b><i>_finalize</i></b> method is called
+when the object is finalized. The <b><i>_pre_delete</i></b> method is
+called right before an object of the class is deleted.
+</p><p>
+The <b><i>_info</i></b> and <b><i>_status</i></b> methods provide data for
+the class's <b>info</b> and <b>status</b> commands; the
+format of their return value is documented with
+<b><i>cli.new_info_command</i></b> and
+<b><i>cli.new_status_command</i></b>.
+</p><p>
+If you need to get hold of the Simics <code>conf_object_t</code> object
+associated with a <b>ConfObject</b> instance—for
+example, in order to call a Simics API function—you can find
+it in the <i>obj</i> member.
+</p><p>
+The <b>pyobj.ConfObject</b> class can contain inner classes
+that define attributes, interfaces, etc. See
+<b>pyobj.Port</b>, <b>pyobj.Attribute</b>,
+<b>pyobj.ClassAttribute</b>, and
+<b>pyobj.Interface</b> for more documentation. An inner
+class has a reference to the class that contains it in its
+<i>_up</i> member.
+</p><p>
+By default, a Simics class is registered automatically whenever a
+subclass of <b>pyobj.ConfObject</b> is declared. Sometimes
+this is not desirable; e.g., the class may be a base class, or you
+may want to allow importing the containing Python file without
+side-effects. The automatic registration of a Simics class can
+then be suppressed by setting the member <code>_do_not_init</code> to
+<code>object()</code>. That will cause it to not be registered as a
+Simics class (but its subclasses will be, unless they too employ
+the same trick).
+</p><p>
+The class method <b><i>register</i></b> may be called once on each
+<b>pyobj.ConfObject</b> subclass, to register the Simics
+class. For a class that doesn't suppress automatic registration, the
+method currently does nothing.
+</p><p>
+In future Simics versions, a Simics class will no longer be
+registered automatically, and an explicit call to the
+<b><i>register</i></b> method will be required for that.
+</p><p>
+The <i>_class_kind</i> member tells Simics whether objects of 
+this class should be saved when a checkpoint is created. 
+The value is passed to <b><i>SIM_register_class</i></b>, as the 
+<i>kind</i> field of the <code>class_data_t</code> structure. 
+The default value is <code>Sim_Class_Kind_Vanilla</code>. 
+See the documentation of <b><i>SIM_register_class</i></b> for details.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class foo(pyobj.ConfObject):
+    """This is the long-winded documentation for this Simics class.
+    It can be as long as you want."""
+    _class_desc = 'One-line doc for the class'
+
+    def _initialize(self):
+        super()._initialize()
+        self.my_val = 4711
+
+    def _info(self):
+         return [("Python device info", [("my_val", self.my_val)])]
+
+    def _status(self):
+         return [("Python device status",
+                  [("woot", self.woot.val),
+                   ("signal", self.signal.val)])]
+
+    class woot(pyobj.SimpleAttribute(0, 'i|n')):
+        """A four-letter attribute"""
+
+    class lost(pyobj.Attribute):
+        """A pseudo attribute"""
+        attrattr = simics.Sim_Attr_Pseudo
+        def getter(self):
+            return self._up.my_val
+
+    class signal(pyobj.Interface):
+        def signal_raise(self): self.val = True
+        def signal_lower(self): self.val = False
+        def _initialize(self): self.val = False</pre><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="pyobj.Event">pyobj.Event</a></h3>
+<p><a name="Event"></a> <a name="pyobj-Python-moduleEvent"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_pyobj.Event"></a><b>Event</b> — a Simics event</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b>pyobj.Event</b> defines an event that will be registered
+for the containing <b>ConfObject</b> class. Internally,
+registration is done with <b><i>SIM_register_event</i></b>; see the
+documentation for that API function for detailed information.
+<p>
+Events are posted with the <b><i>post(clock, data,
+&lt;duration&gt;)</i></b> method. <i>clock</i> determines which
+clock the event is posted on, and <i>data</i> is the event
+data. The duration is the number of <i>seconds</i>,
+<i>cycles</i>, or <i>steps</i> until the event triggers,
+specified with the appropriate keyword argument:
+</p><p>
+</p><pre class="jdocu_small">ev.post(a_clock, some_data, seconds = 4.711)
+ev.post(a_clock, some_data, cycles = 4711)
+ev.post(a_clock, some_data, steps = 4711)
+</pre><p>
+</p><p>
+Events can be cancelled before they trigger with either
+<b><i>cancel_time(clock, match_fun)</i></b> or <b><i>cancel_step(clock,
+match_fun)</i></b> (depending on whether the event duration was
+specified in steps or not). The <i>match_fun</i> argument is
+optional: if given, it should be a function that accepts an event
+data parameter, and returns true for the events that should be
+cancelled; if not given, all events are cancelled.
+</p><p>
+A subclass may define the following methods:
+</p><p>
+</p><dl><dt id="dt:callback-data"><b><b><i>callback(data)</i></b></b></dt><dd>Called when the event
+triggers. Overriding this method is not optional.</dd><dt id="dt:destroy-data"><b><b><i>destroy(data)</i></b></b></dt><dd>Called when the event is
+removed from the queue without being called. The method is not
+allowed to use any event API calls; it is mainly intended for
+freeing event data.</dd><dt id="dt:get_value-data-and-set_value-val"><b><b><i>get_value(data)</i></b> and <b><i>set_value(val)</i></b></b></dt><dd>Converts the given event data to an <code>attr_value_t</code> value,
+and the other way around. If the event carries no data that needs
+checkpointing, you may omit these methods.</dd><dt id="dt:describe-data"><b><b><i>describe(data)</i></b></b></dt><dd>Called to generate a
+human-readable description of the event to be used in the
+print-event-queue command. If you do not supply this method, the
+event's name will be used.</dd></dl><p>Additionally, it may set the <i>flags</i> parameter to
+<code>Sim_EC_Notsaved</code>, if the event should not be checkpointed.
+In this case, neither <b><i>get_value</i></b> nor <b><i>set_value</i></b>
+should be defined.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class foo(pyobj.ConfObject):
+    class ev1(pyobj.Event):
+        def callback(self, data):
+            do_something(data)
+    class ev2(pyobj.Event):
+        def callback(self, data):
+            self.do_something_else(data)
+        def get_value(self, data):
+            return str(data)
+        def set_value(self, val):
+            return int(val)
+        def describe(self, data):
+            return 'ev2 with %s' % data
+    class ev3(pyobj.Event):
+        flags = simics.Sim_EC_Notsaved
+        def callback(self, data):
+            self._up.do_this_third_thing(data)</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-functions.html#__jdocu_seealso_SIM_register_event">SIM_register_event</a>, <a class="jdocu" href="#__jdocu_seealso_pyobj.ConfObject"> pyobj.ConfObject</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="pyobj.Interface">pyobj.Interface</a></h3>
+<p><a name="Interface"></a> <a name="pyobj-Python-moduleInterface"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_pyobj.Interface"></a><b>Interface</b> — a Simics interface</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b>pyobj.Interface</b> class implements a Simics
+interface for the containing <b>ConfObject</b> class. The
+interface is registered using the <b><i>SIM_register_interface</i></b>
+function. The interface name is taken from the class name.
+<p>
+The <b><i>_initialize</i></b> method can be overridden if special
+initialization behavior is required.
+</p><p>
+To implement port interfaces instead of regular interfaces, place
+one or more <b>pyobj.Interface</b> subclasses inside a
+<b>pyobj.Port</b> class.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class signal(pyobj.Interface):
+    def signal_raise(self): self.val = True
+    def signal_lower(self): self.val = False
+    def _initialize(self): self.val = False</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_pyobj.Port">pyobj.Port</a>, <a class="jdocu" href="#__jdocu_seealso_pyobj.ConfObject"> pyobj.ConfObject</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="pyobj.Port">pyobj.Port</a></h3>
+<p><a name="Port"></a> <a name="pyobj-Python-modulePort"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_pyobj.Port"></a><b>Port</b> — a Simics port</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+To have your <b>ConfObject</b>-based Simics object implement
+port interfaces, put a subclass of <b>pyobj.Port</b> as an inner
+class of your <b>ConfObject</b>, and put one or more
+<b>pyobj.Interface</b> subclasses inside it. The
+<b>pyobj.Interface</b> subclasses will work just as if they were at
+the top level, except that they will be registered with
+<b><i>SIM_register_port_interface</i></b> instead of
+<b><i>SIM_register_interface</i></b>.
+<p>
+The <b><i>_initialize</i></b> method can be overridden if special
+initialization behavior is required.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class wee(pyobj.Port):
+    class signal(pyobj.Interface):
+        def signal_raise(self): self.val = 2
+        def signal_lower(self): self.val = 1
+        def _initialize(self): self.val = 0</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_pyobj.Interface">pyobj.Interface</a>, <a class="jdocu" href="#__jdocu_seealso_pyobj.ConfObject"> pyobj.ConfObject</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="pyobj.PortObject">pyobj.PortObject</a></h3>
+<p><a name="PortObject"></a> <a name="pyobj-Python-modulePortObject"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_pyobj.PortObject"></a><b>PortObject</b> — a Simics port object</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b>pyobj.PortObject</b> class defines a port object class
+that will be registered as a port object for the containing
+<b>ConfObject</b> class.
+<p>
+The port object will be registered with the name "port.&lt;name&gt;",
+but this can be changed by defining <i>namespace</i> to something other
+than "port". One possibility is the empty string.
+</p><p>
+If <i>classname</i> is set, then the port object will be
+an instance of this external class rather than defining the class
+locally. The external class cannot be modified by adding e.g.
+an interface definition inside the <b>PortObject</b> definition.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class portname(pyobj.PortObject):
+    """Documentation for the port object goes here."""
+    class signal(pyobj.Interface):
+        def signal_raise(self): self.val = 2
+        def signal_lower(self): self.val = 1
+        def _initialize(self): self.val = 0</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_pyobj.ConfObject">pyobj.ConfObject</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="pyobj.SimpleAttribute">pyobj.SimpleAttribute()</a></h3>
+<p><a name="SimpleAttribute"></a> <a name="pyobj-Python-moduleSimpleAttribute"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_pyobj.SimpleAttribute"></a><b>SimpleAttribute</b> — a simple Simics attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">SimpleAttribute(init, type = 'a', attr = simics.Sim_Attr_Optional)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b><i>pyobj.SimpleAttribute</i></b> function returns a new subclass of
+<b>pyobj.Attribute</b>, with predefined getter and setter functions
+that simply store and retrieve the value without further side effects. The
+value is stored in the <code>val</code> member.
+<p>
+The <i>init</i> argument is the initial value, <i>type</i> is the
+attribute type string, <i>attr</i> is the attribute type. If
+<i>init</i> is callable, it will be called, and the return value is the
+initial value; otherwise, <i>init</i> itself is the initial value.
+</p><p>
+The attribute value is stored in the <i>val</i> member of the class.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+pyobj.Attribute class</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class wee(pyobj.SimpleAttribute(17, 'i')):
+    """Documentation for the attribute goes here."""</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_pyobj.Attribute">pyobj.Attribute</a>, <a class="jdocu" href="#__jdocu_seealso_pyobj.ConfObject"> pyobj.ConfObject</a></dd>
+</dl><p>
+    </p><h2 class="jdocu"><a class="not-numbered" name="comp-Python-Module">comp Python Module</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="comp.ConfigAttribute">comp.ConfigAttribute</a></h3>
+<p>
+  
+  <a name="ConfigAttribute"></a> <a name="comp-Python-moduleConfigAttribute"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.ConfigAttribute"></a><b>ConfigAttribute</b> — component configuration attribute</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b>ConfigAttribute</b> class inherits the
+<b>pyobj.Attribute</b> class. The
+<b>ConfigAttribute</b> class just adds the special property
+to the <b>pyobj.Attribute</b> class that it is a config
+attribute.
+<p>
+A config attribute defines how the component should be
+configured. Therefore, all config attributes are also arguments to the
+<b>new-</b> and <b>create-</b> commands that are used to
+instantiate the component.
+</p><p>
+Because of this, the config attribute must always be documented
+and the default value of the <i>attrattr</i> member is
+<code>Sim_Attr_Optional</code>.
+</p><p>
+The <b>ConfigAttribute</b> class contains the
+<i>valid</i> member, which is a list of valid values for the
+config attribute. The list gives the user a hint about valid
+values when creating a component. There is no check that the value
+written to the attribute is a value in the list of valid values.
+The list of valid value(s) does not need to contain the default
+initial value for the config attribute, but it usually does. The
+valid list should at least contain one valid value even if several
+values are valid.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class foo(ConfigAttribute):
+    """The foo attribute."""
+    valid = [667, 4711]
+    def _initialize(self): self.val = 4711
+    def getter(self): return self.val
+    def setter(self, val): self.val = val</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_pyobj.Attribute">pyobj.Attribute</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="comp.SimpleConfigAttribute">comp.SimpleConfigAttribute()</a></h3>
+<p><a name="SimpleConfigAttribute"></a> <a name="comp-Python-moduleSimpleConfigAttribute"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.SimpleConfigAttribute"></a><b>SimpleConfigAttribute</b> — simple component configuration attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">SimpleConfigAttribute(init, type, attr = simics.Sim_Attr_Optional, val = [])</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b><i>pyobj.SimpleConfigAttribute</i></b> method creates an
+attribute using the <b>comp.ConfigAttribute</b> class. The
+purpose of the method is to make it easier and faster to create a
+simple config attribute.
+<p>
+A config attribute defines how the component should be
+configured. Therefore, all config attributes are also arguments to the
+<b>new-</b> and <b>create-</b> commands that are used to
+instantiate the component.
+</p><p>
+The <i>init</i> argument is the initial value for the
+attribute. The type of the attribute is defined by the
+<i>type</i> string (currently objects 'o' and dictionaries 'D' 
+are not supported). The <i>attr</i> argument sets the
+attribute kind. The default value for <i>attr</i> is
+<code>Sim_Attr_Optional</code>.
+The valid value(s) for the
+<b>comp.ConfigAttribute</b> class is set by the
+<i>val</i> argument. See the documentation for
+<b><i>SIM_register_attribute</i></b> for more information about
+the arguments.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+comp.ConfigAttribute class</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class cpu_frequency(SimpleConfigAttribute(
+        None, 'i', simics.Sim_Attr_Required)):
+    """Processor frequency in MHz."""</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_pyobj.Attribute">pyobj.Attribute</a>, <a class="jdocu" href="#__jdocu_seealso_pyobj.ConfObject"> pyobj.ConfObject</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="comp.StandardComponent">comp.StandardComponent</a></h3>
+<p><a name="StandardComponent"></a> <a name="comp-Python-moduleStandardComponent"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent"></a><b>StandardComponent</b> — base class for components</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b>StandardComponent</b> class is the base class for
+components written in Python. It is a subclass of
+<b>pyobj.ConfObject</b>.
+<p>
+The class will automatically register the
+required component attributes. Any attribute may be overridden;
+however, overriding the internal attributes is not recommended.
+</p><p>
+The automatically registered attributes are:
+</p><dl><dt id="dt:basename"><b>basename</b></dt><dd>String to prepend to component name when creating
+ components when not specifying name.</dd><dt id="dt:component_icon"><b>component_icon</b></dt><dd>String with the name of the component
+ icon.</dd><dt id="dt:component_queue"><b>component_queue</b></dt><dd>The default queue object for this
+ component.</dd><dt id="dt:top_level"><b>top_level</b></dt><dd>Default set to <code>False</code>.</dd><dt id="dt:system_icon"><b>system_icon</b></dt><dd>The system icon.</dd><dt id="dt:machine_icon"><b>machine_icon</b></dt><dd>The machine icon.</dd><dt id="dt:cpu_list"><b>cpu_list</b></dt><dd>List of processors in the component tree.</dd><dt id="dt:process_tracker"><b>process_tracker</b></dt><dd>Deprecated</dd><dt id="dt:static_slots"><b>static_slots</b></dt><dd>Internal.</dd><dt id="dt:dynamic_slots"><b>dynamic_slots</b></dt><dd>Internal.</dd><dt id="dt:object_list"><b>object_list</b></dt><dd>Internal.</dd><dt id="dt:object_prefix"><b>object_prefix</b></dt><dd>Internal.</dd><dt id="dt:top_component"><b>top_component</b></dt><dd>Internal.</dd><dt id="dt:instantiated"><b>instantiated</b></dt><dd>Internal.</dd><dt id="dt:pending_cell_object_factories"><b>pending_cell_object_factories</b></dt><dd>Internal.</dd><dt id="dt:config_attributes"><b>config_attributes</b></dt><dd>Internal.</dd><dt id="dt:system_info"><b>system_info</b></dt><dd>Internal.</dd><dt id="dt:components"><b>components</b></dt><dd>Internal.</dd><dt id="dt:domain"><b>domain</b></dt><dd>Internal.</dd></dl><p>The class will automatically implement the <code>component</code>
+interface. The individual methods of this interface are user-overridable.
+</p><p>
+Components will automatically get <b>new-</b> and <b>create-</b>
+commands that can be used to create and instantiate the component. It is
+possible to override this by setting <em>_no_create_command</em> or
+<em>_no_new_command</em> to <em>object()</em> to avoid to automatically get
+<b>create-</b> or <b>new-</b> commands.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">class my_comp(StandardComponent):
+    """The my_comp component."""
+    _class_desc = "my_comp"
+
+    class bar(SimpleConfigAttribute(
+            None, 'i', simics.Sim_Attr_Required)):
+        """My favorite bar."""
+
+class my_comp(StandardComponent):
+    """The my_comp component."""
+    _class_desc = "my_comp"
+    _no_create_command = object()</pre><p></p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_pyobj.ConfObject">pyobj.ConfObject</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="comp.StandardComponent-Methods">comp.StandardComponent Methods</a></h3>
+<p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.add_component">comp.StandardComponent.add_component()</a></h4>
+<p><a name="add_component"></a> <a name="comp-Python-moduleStandardComponentadd_component"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.add_component"></a><b>add_component</b> — add sub component to component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_component(self, slot, cls, attr, name = '')</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Add a subcomponent or arrays of subcomponents to the
+component. The subcomponent(s) will be created immediately when
+the method is called.
+<p>
+The <i>slot</i> argument is the slot name concatenated with
+a nested array string, defining the number of subcomponents to
+create. Setting <i>slot</i> to <em>foo</em> will create one
+subcomponent in the slot <em>foo</em>, setting <i>slot</i>
+to <em>foo[3]</em> will create an array of three subcomponents
+in the slot <em>foo</em>, setting <i>slot</i> to
+<em>foo[3][2]</em> will create an array of three arrays of two
+arrays with subcomponents in the slot <em>foo</em>.
+</p><p>
+The <i>cls</i> is the component class, <i>attr</i> is
+arguments to the component, and <i>name</i> is an optional
+name.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+arrays of conf_object_t component object</dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.add_connector">comp.StandardComponent.add_connector()</a></h4>
+<p><a name="add_connector"></a> <a name="comp-Python-moduleStandardComponentadd_connector"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.add_connector"></a><b>add_connector</b> — add connector to component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_connector(self, slot, type, hotpluggable, required,
+              multi, direction)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Add a connector or nested array of connectors to the component. The
+connector(s) will be created immediately when the method is called.
+<p>
+The <i>slot</i> argument is the slot name concatenated with a
+nested array string, defining the number of connectors to create.
+Setting <i>slot</i> to <em>foo</em> will create one connector in
+the slot <em>foo</em>, setting <i>slot</i> to <em>foo[3]</em> will
+create an array of three connectors in the slot <em>foo</em>, setting
+<i>slot</i> to <em>foo[3][2]</em> will create an array of three
+arrays of two arrays with connectors in the slot <em>foo</em>.
+</p><p>
+The <i>type</i> is the type of connection as a string,
+<i>hotpluggable</i> is <code>True</code> or <code>False</code> depending on
+whether the connector is hot-pluggable, <i>required</i> is
+<code>True</code> if the connector must be connected before the component
+is instantiated, <i>multi</i> is <code>True</code> if the connector
+supports multiple connections, <i>direction</i> is a
+<code>connector_direction_t</code> which is <code>up</code>, <code>down</code>,
+or <code>any</code>.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+arrays of conf_object connector objects</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_comp.StandardComponent.get_slot">comp.StandardComponent.get_slot</a></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.add_pre_obj">comp.StandardComponent.add_pre_obj()</a></h4>
+<p><a name="add_pre_obj"></a> <a name="comp-Python-moduleStandardComponentadd_pre_obj"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.add_pre_obj"></a><b>add_pre_obj</b> — add pre_conf_obj to component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_pre_obj(self, slot, cls, name = '', **attr)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Add pre conf objects to the component. The pre conf objects will
+be converted to regular conf objects when the component is
+instantiated.
+<p>
+The <i>slot</i> argument is the slot name concatenated with
+a nested array string, defining the number of pre objects to
+create. Setting <i>slot</i> to <em>foo</em> will create one
+pre object in the slot <em>foo</em>, setting <i>slot</i> to
+<em>foo[3]</em> will create an array of three pre objects in
+the slot <em>foo</em>, setting <i>slot</i> to
+<em>foo[3][2]</em> will create an array of three arrays of two
+arrays with pre objects in the slot <em>foo</em>. The
+<i>cls</i> argument is the type of object class to
+create. The <i>name</i> argument is deprecated. The
+<i>attr</i> argument is optional attribute values for the
+object(s).</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+arrays of pre conf objects</dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.add_slot">comp.StandardComponent.add_slot()</a></h4>
+<p><a name="add_slot"></a> <a name="comp-Python-moduleStandardComponentadd_slot"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.add_slot"></a><b>add_slot</b> — add slot to component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_slot(self, slot, val)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Add a slot to the component. <i>slot</i> is the slot name and
+<i>val</i> is the value. The value must be a conf object,
+a pre conf object, or None, or nested lists of these types.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+new slot value, i.e. <i>val</i></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.connect">comp.StandardComponent.connect()</a></h4>
+<p><a name="connect"></a> <a name="comp-Python-moduleStandardComponentconnect"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.connect"></a><b>connect</b> — connect connectors</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">connect(self, cnt0, cnt1)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Connect two connectors <i>cnt0</i> and <i>cnt1</i>. The
+connectors must be connector objects. A <code>CompException</code>
+exception will be raised if the connection failed.</dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.copy_connector">comp.StandardComponent.copy_connector()</a></h4>
+<p><a name="copy_connector"></a> <a name="comp-Python-moduleStandardComponentcopy_connector"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.copy_connector"></a><b>copy_connector</b> — copy connector to component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">copy_connector(self, slot, src)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Copy connectors from another component. The <i>slot</i> argument
+is the new slot name for the connector in this component. The
+<i>src</i> argument is the name of the slot with connectors to
+copy. The <i>src</i> can be a relative slot name, see the
+<b><i>get_slot</i></b> method.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+arrays of conf_object connector objects</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_comp.StandardComponent.get_slot">comp.StandardComponent.get_slot</a></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.del_slot">comp.StandardComponent.del_slot()</a></h4>
+<p><a name="del_slot"></a> <a name="comp-Python-moduleStandardComponentdel_slot"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.del_slot"></a><b>del_slot</b> — delete slot in component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">del_slot(self, slot)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Delete slot in component. The <i>slot</i> argument is the
+slot name. The function returns the slot value if the slot
+exists. All connectors in the slot will be converted to pre conf
+objects and the original connectors will be deleted when
+returning the slot value. A <code>CompException</code> exception
+will be raised if the slot does not exist, the slot contains
+non connector conf objects, or the slot contains connectors that
+have been copied with the <b><i>copy_connector</i></b>
+method. Slots with sub components can not be deleted.</dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardComponent.get_slot">comp.StandardComponent.get_slot()</a></h4>
+<p><a name="get_slot"></a> <a name="comp-Python-moduleStandardComponentget_slot"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardComponent.get_slot"></a><b>get_slot</b> — get slot from component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">get_slot(self, slot)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Get a slot from the component. <i>slot</i> is the slot name.
+<i>slot</i> can be a slot in this component or a
+hierarchical slot; e.g., looking up <i>foo.bar</i> will
+return the slot <i>bar</i> from the component in slot
+<i>foo</i> from this component. If the lookup fails, a
+<code>CompException</code> exception will be raised.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+slot value</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="comp.StandardConnectorComponent">comp.StandardConnectorComponent</a></h3>
+<p>
+  
+  <a name="StandardConnectorComponent"></a> <a name="comp-Python-moduleStandardConnectorComponent"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardConnectorComponent"></a><b>StandardConnectorComponent</b> — convenience class for connector components</dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b>StandardConnectorComponent</b> is a convenience class for
+connector components. It is a subclass of
+<b>comp.StandardComponent</b> and implements the
+<code>component_connector</code> interface.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_comp.StandardComponent">comp.StandardComponent</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="comp.StandardConnectorComponent-Methods">comp.StandardConnectorComponent Methods</a></h3>
+<p></p><h4 class="jdocu"><a class="not-numbered" name="comp.StandardConnectorComponent.add_connector">comp.StandardConnectorComponent.add_connector()</a></h4>
+<p><a name="add_connector2"></a> <a name="comp-Python-moduleStandardConnectorComponentadd_connector"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_comp.StandardConnectorComponent.add_connector"></a><b>add_connector</b> — create a connector component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">add_connector(self, slot, cls)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Create a connector component.
+<p>
+The <i>slot</i> argument is the slot name for the connector.
+</p><p>
+The <i>cls</i> argument is an instance of a connector class.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+the conf_object connector component</dd>
+</dl><p>
+    </p><h2 class="jdocu"><a class="not-numbered" name="Checkpoints">Checkpoints</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="update_checkpoint.SIM_register_class_update">update_checkpoint.SIM_register_class_update()</a></h3>
+<p>
+  
+  <a name="SIM_register_class_update"></a> <a name="update_checkpoint-Python-moduleSIM_register_class_update"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_update_checkpoint.SIM_register_class_update"></a><b>SIM_register_class_update</b> — register a class update function</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">SIM_register_class_update(build_id, classname, function)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Register the class update function <i>function</i> for class
+<i>classname</i>, to be run when updating a checkpoint to build-id
+<i>build_id</i>.
+<p>
+The <i>function</i> acts on a single object of a given class. It
+will be called for all matching objects with the current object as
+argument. It doesn't need to return anything, however it can't create or
+destroy objects, only change the attributes of the object it got as
+parameter, except the object name.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="update_checkpoint.SIM_register_generic_update">update_checkpoint.SIM_register_generic_update()</a></h3>
+<p><a name="SIM_register_generic_update"></a> <a name="update_checkpoint-Python-moduleSIM_register_generic_update"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_update_checkpoint.SIM_register_generic_update"></a><b>SIM_register_generic_update</b> — register a generic update function</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">SIM_register_generic_update(build_id, function)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Register the generic update function <i>function</i> to be run
+when updating a checkpoint to build-id <i>build_id</i>. The
+<i>function</i> acts on one or several objects of various classes,
+and may rename, create or destroy objects. When the checkpoint reaches the
+required build-id, the <i>function</i> will be called once with the
+complete set of objects that constitute the checkpoint as a parameter. It
+is expected to return three lists of pre_conf_objects: (deleted objects,
+changed objects, added objects). Deleted objects must have been removed
+from the configuration, changed objects can have any attribute changed
+(including their class or their name). Added objects must have been added
+to the configuration.
+<p>
+When renaming an object, the <i>function</i> is expected to remove
+the object from the checkpoint set under its old name and to add it again
+under its new name. The object should be reported in the changed object
+list.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="update_checkpoint.SIM_register_post_update">update_checkpoint.SIM_register_post_update()</a></h3>
+<p><a name="SIM_register_post_update"></a> <a name="update_checkpoint-Python-moduleSIM_register_post_update"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_update_checkpoint.SIM_register_post_update"></a><b>SIM_register_post_update</b> — register a generic update function</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">SIM_register_post_update(function)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Register the generic update function <i>function</i> to be run
+when updating a checkpoint to build-id <i>build_id</i>. after all
+build-id based update functions have run, but before the checkpoint is
+loaded. The <i>function</i> should behave as functions added with
+<b><i>SIM_register_generic_update</i></b>.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="update_checkpoint.all_objects">update_checkpoint.all_objects()</a></h3>
+<p><a name="all_objects"></a> <a name="update_checkpoint-Python-moduleall_objects"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_update_checkpoint.all_objects"></a><b>all_objects</b> — return all objects of a given class</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">all_objects(set, classname)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should only be used while updating checkpoints, as
+described in <em>Model Builder User's Guide</em>, in the
+<em>Checkpoint Compatibility</em> chapter.
+<p>
+Return a list of all objects of class <i>classname</i> present in
+the checkpoint <i>set</i>.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="update_checkpoint.for_all_objects">update_checkpoint.for_all_objects()</a></h3>
+<p><a name="for_all_objects"></a> <a name="update_checkpoint-Python-modulefor_all_objects"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_update_checkpoint.for_all_objects"></a><b>for_all_objects</b> — apply a function on all objects of a given class</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">for_all_objects(set, classname, function)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should only be used while updating checkpoints, as
+described in <em>Model Builder User's Guide</em>, in the
+<em>Checkpoint Compatibility</em> chapter.
+<p>
+Apply the function <i>function</i> on all objects of class
+<i>classname</i> present in <i>set</i>.
+<i>function</i> is defined as:
+</p><p>
+</p><pre class="jdocu_small">function(config, object)</pre><p>
+</p><p>
+where <i>config</i> is the Python dictionary containing all
+objects, and object is an object of class <i>classname</i>.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="update_checkpoint.remove_attr">update_checkpoint.remove_attr()</a></h3>
+<p><a name="remove_attr"></a> <a name="update_checkpoint-Python-moduleremove_attr"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_update_checkpoint.remove_attr"></a><b>remove_attr</b> — remove an attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">remove_attr(obj, name)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should only be used while updating checkpoints, as
+described in <em>Model Builder User's Guide</em>, in the
+<em>Checkpoint Compatibility</em> chapter.
+<p>
+Remove the attribute <i>name</i> from the object
+<i>obj</i>.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="update_checkpoint.remove_class">update_checkpoint.remove_class()</a></h3>
+<p><a name="remove_class"></a> <a name="update_checkpoint-Python-moduleremove_class"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_update_checkpoint.remove_class"></a><b>remove_class</b> — remove all instances of a class</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">remove_class(set, classname)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should only be used while updating checkpoints, as
+described in <em>Model Builder User's Guide</em>, in the
+<em>Checkpoint Compatibility</em> chapter.
+<p>
+In the checkpoint <i>set</i>, remove all objects of class
+<i>classname</i>.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="update_checkpoint.remove_class_attr">update_checkpoint.remove_class_attr()</a></h3>
+<p><a name="remove_class_attr"></a> <a name="update_checkpoint-Python-moduleremove_class_attr"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_update_checkpoint.remove_class_attr"></a><b>remove_class_attr</b> — remove a class attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">remove_class_attr(set, classname, name)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should only be used while updating checkpoints, as
+described in <em>Model Builder User's Guide</em>, in the
+<em>Checkpoint Compatibility</em> chapter.
+<p>
+In the checkpoint <i>set</i>, remove the class attribute
+<i>name</i> from all objects of class <i>classname</i>.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="update_checkpoint.rename_attr">update_checkpoint.rename_attr()</a></h3>
+<p><a name="rename_attr"></a> <a name="update_checkpoint-Python-modulerename_attr"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_update_checkpoint.rename_attr"></a><b>rename_attr</b> — rename an attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">rename_attr(obj, new_attr, old_attr)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function should only be used while updating checkpoints, as
+described in <em>Model Builder User's Guide</em>, in the
+<em>Checkpoint Compatibility</em> chapter.
+<p>
+Rename the attribute <i>old_attr</i> to <i>new_attr</i> in
+the object <i>obj</i>.</p></dd>
+</dl><p>
+    </p><h2 class="jdocu"><a class="not-numbered" name="configuration.OBJ">configuration.OBJ</a></h2>
+<p>
+  
+  <a name="OBJ"></a> <a name="configuration-Python-moduleOBJ"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_configuration.OBJ"></a><b>OBJ</b> — class for referring to another object, existing or not</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">OBJ(name)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>OBJ</i></b> is only used together with the
+<b><i>SIM_set_configuration</i></b> API function. <b><i>OBJ</i></b> is
+used when a configuration attribute needs to refer to another
+object. The other object can either be present in an existing
+configuration, or it can be an object that will be created as a
+result of the same call to <b><i>SIM_set_configuration</i></b>. See
+<b><i>SIM_set_configuration</i></b> for an example.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_set_configuration</i></b></dd>
+</dl><p></p><h2 class="jdocu"><a class="not-numbered" name="simics.pre_conf_object">simics.pre_conf_object</a></h2>
+<p><a name="pre_conf_object"></a> <a name="simics-Python-modulepre_conf_object"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_simics.pre_conf_object"></a><b>pre_conf_object</b> — class for Simics configuration object to instantiate</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">pre_conf_object(object_name, class_name, build_id = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A class representing a future Simics configuration object named
+<i>object_name</i>, of class <i>class_name</i>. If
+<i>object_name</i> is <code>None</code>, a unique name will be
+generated.
+<p>
+The <i>build-id</i> of the object can be specified when using the
+<code>pre_conf_object</code> class during checkpoints update. Refer to
+<em>Model Builder User's Guide</em> for more information.
+</p><p>
+Future configuration attributes are set using normal Python class members:
+</p><pre class="jdocu_small">  a = pre_conf_object("test-object", "test-class")
+  a.value = 42</pre><p>
+</p><p>
+After using a <b>pre_conf_object</b> object to create a
+configuration object, the created object can be obtained by passing the
+<b>pre_conf_object</b>'s <code>name</code> member to
+<b><i>SIM_get_object()</i></b>.</p></dd>
+</dl><p>
+</p>
+<div class="chain">
+<a href="command-line-interface.html">10.2 Command Line Interface</a>
+<a href="hypersim.html">10.4 Hypersim</a>
+</div>

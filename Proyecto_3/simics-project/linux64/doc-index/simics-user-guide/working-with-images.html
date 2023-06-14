@@ -1,0 +1,406 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7.2 Working with Images</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="matic.html">7.1 File Transfers Using the Simics Agent</a>
+<a href="cd-roms-and-floppies.html">7.3 CD-ROMs and Floppies</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Working-with-Images">7.2 Working with Images</a></h1>
+<p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="image-formats">7.2.1 Image File Formats</a></h2>
+<p>
+
+</p><p>
+For Simics compatibility, a disk image needs to be either in the
+Simics-specific <code>craff</code> file format, or be a raw (linear)
+image.
+</p><p>
+The raw format is what you get when dumping a disk with a utility such
+as <code>dd</code>. Keeping the image in raw format is useful if you
+want to be able to loopback mount the image, or if you want to update
+the image in-place using the read/write option in Simics. For most
+other use-cases, compressing the image with the <code>craff</code>
+utility will be beneficial as the host disk requirements will often be
+dramatically smaller than for raw images. Image file access is usually not
+frequent enough during simulation to impact
+performance. The <code>craff</code> format is recommended as the best
+all-round image file format for Simics. See section <a class="reference" href="#The-craff-utility">7.2.8</a> for more information about the <code>craff</code>
+utility.
+</p><p>
+
+</p><h2 class="jdocu"><a name="image-modif-save">7.2.2 Saving Changes to an Image</a></h2>
+<p>
+
+</p><p>
+If you modify or create new files on a storage device within Simics,
+you should remember that by default images
+are <em>read-only</em>. This means that the alterations made when
+running Simics are <em>not</em> written to the image, and will last
+only for the current Simics session. As described in the
+<a class="reference" href="checkpointing.html#images">6.2.3</a> section, this behavior has many advantages. You
+may however want to save your changes to the image, in order to re-use
+them in future simulations.
+</p><p>
+The first thing you should do is to make sure that all the changes are actually
+written to the media you are using. In many cases, the simulated operating
+system caches operations to disks or floppies. A safe way to ensure that all
+changes are written back is to shutdown the simulated machine.
+</p><p>
+When all changes have been written to the media <em>in</em> the simulation, you
+can save the new contents of the image in different ways:
+</p><p>
+</p><ul>
+
+<li>Using the <b>save-persistent-state</b> command, all image changes for
+persistent storage media are saved to disk as a persistent state. <b>This is
+the recommended way of saving your image changes</b>.</li>
+
+<li>Using the <b>&lt;image&gt;.save-diff-file</b> command, you can manually
+save a diff file for the images you are interested in.</li>
+
+<li>Using the <b>&lt;image&gt;.save</b> command, you can create
+a new image file from the image. This image file is completely independent of
+all previous images and diff files. By default, the command creates an image
+file in the raw format. Image files in the raw format don't use compression
+and may occupy large space on the disk. By passing the <code>-save-craff</code> flag
+to the command one can create an image file in the compressed Simics-specific
+craff format.
+<p>
+</p><div class="note">
+<b>Note:</b>
+The <b>&lt;image&gt;.save</b> allows also to save a
+<em>partial</em> dump of an image, which may be useful to dump a specific part
+of a disk or a floppy.</div></li>
+
+</ul>
+<p>
+Once you have saved the images, you can do the following:
+</p><p>
+</p><ul>
+
+<li>If you used <b>save-persistent-state</b>, you can issue the
+<b>load-persistent-state</b> command just after starting the original
+configuration. This will add the new changes to the persistent storage media
+images and the machine will boot with the changes included. <b>This is the
+recommended way of using a saved persistent state</b>.
+<p>
+For example, let us suppose that you saved some new files on the disk of the
+<i>enterprise</i> machine (started with the
+<code>enterprise-common.simics</code> script). You saved the persistent state
+of the machine after stopping it to the persistent state file
+<code>new-files-added</code>. You can easily create a small script to start
+<i>enterprise</i> with the new files:
+</p><p>
+</p><pre class="jdocu_small"># enterprise-new-files.simics
+run-command-file enterprise-common.simics
+load-persistent-state new-files-added
+</pre><p>
+</p></li>
+
+<li>You can also load the original configuration and add the diff files
+manually to the images, using the <b>&lt;image&gt;.add-diff-file</b>
+command.</li>
+
+<li>If you are building your own configurations (either as scripts or as
+checkpoints), you can add the diff files to the <i>files</i> attribute of
+the corresponding <b>image</b> object. This corresponds to what the
+<b>&lt;image&gt;.add-diff-file</b> command does.</li>
+
+</ul>
+<p>
+If you save several persistent states or image diff files that are dependent on
+each other, it may become cumbersome to take care of all these dependencies and
+to remember which files are important. You can <em>merge</em> the states
+or image diff files to create a new independent state:
+</p><p>
+</p><ul>
+
+<li>If you are working with persistent states, you can use the
+<code>checkpoint-merge</code> utility to create a persistent state that is
+independent of all previous files, including the original images provided with
+Simics. <b>This is the recommended way of creating a new independent
+image</b>. You can load it with the <b>load-persistent-state</b>
+command.</li>
+
+<li>If you saved some image diff files manually, you can use the
+<code>craff</code> utility described below to merge the diff files
+yourself.</li>
+
+</ul>
+<p>
+
+</p><h2 class="jdocu"><a name="set-image-memory-limit">7.2.3 Reducing Memory Usage Due to Images</a></h2>
+<p>
+
+</p><p>
+Although images are divided into pages that are only loaded on request, Simics
+can run out of host memory if very big images are used, or if the footprint of
+the software running on the simulated system is bigger than the host memory. To
+prevent these kind of problems, Simics implements a global image memory
+limitation controlled by the <b>set-image-memory-limit</b> command.
+</p><p>
+When Simics is started a default memory-limit is automatically set
+based on the amount of physical memory available on the host. The
+default memory-limit does not consider if other applications and users
+are running on the same host, nor what kind of target system that is
+simulated in Simics. (For example each target processor will allocate
+additional non-image memory, so for systems with many processors the
+default limit could be too high).
+</p><p>
+When the memory limit is reached, Simics will start swapping out pages to disk
+very much like an operating system would do. The
+<b>set-image-memory-limit</b>
+command lets you specify the maximum amount of memory that can be used, and
+where swapping should occur.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+This memory limitation only applies to <em>images</em>. Although this is
+unlikely, Simics can run out of memory due to other data structures becoming
+too large (for example memory profiling information) even though a memory limit
+has been set.</div>
+<h2 class="jdocu"><a name="Using-ReadWrite-Images">7.2.4 Using Read/Write Images</a></h2>
+<p>
+
+</p><p>
+As mentioned in section <a class="reference" href="checkpointing.html#images">6.2.3</a>, images can also work as
+read-write media, although this is <b>not</b> recommended. It can be useful
+sometimes when planning to make large changes to an image (like installing an
+operating system on a disk).
+</p><p>
+To make an image read-write in your own configurations, simply set the second
+parameter (the "read-only" flag) of the <i>files</i> attribute in the
+image object to <code>"rw"</code>.
+</p><p>
+In a ready-to-run example like <i>enterprise</i>, you can change
+this attribute after the configuration is completed:
+</p><p>
+</p><pre class="jdocu_small"># read the 'files' attribute
+simics&gt; <b>@files = conf.disk0_image.files</b>
+simics&gt; <b>@files</b>
+[['enterprise3-rh73.craff', 'ro', 0, 20496236544L, 0]]
+# provide the complete path to the file
+simics&gt; <b>@files[-1][0] = "[project]/targets/enterprise/images/<img alt="Line break" src="nextline.png">
+enterprise3-rh73.craff"</b>
+# change the second element to make the file read-write
+simics&gt; <b>@files[-1][1] = "rw"</b>
+# check the result
+simics&gt; <b>@conf.disk0_image.files</b>
+[['[project]/targets/enterprise/images/enterprise3-rh73.craff',<img alt="Line break" src="nextline.png">
+ 'rw', 0, 20496236544L, 0]]
+</pre><p>
+</p><p>
+Note that by indexing <code>files</code> with the index <code>-1</code>, the last
+element of the array is accessed, which is always the one that should be set
+read-write, in case <code>files</code> is a list of several files.
+</p><p>
+Simics does not look for files in the Simics search path when the
+files are used in read-write mode. If you do not provide a complete
+path to a read-write file, a new file (in the uncompressed craff
+format) will be created in the current directory.
+</p><p>
+If the read/write file already exists, it must be a raw image or an
+uncompressed craff file. Simics does not support using compressed
+craff files in read/write mode.
+</p><p>
+<b>Use this feature with caution</b>. Make sure to take a copy of the original
+image before running Simics with the image in read-write mode. Remember to
+synchronize the storage device within the target OS before exiting Simics, for
+example by shutting down the simulated machine.
+</p><p>
+
+</p><h2 class="jdocu"><a name="mtools">7.2.5 Editing FAT Images Using Mtools</a></h2>
+<p>
+
+</p><p>
+This is a Linux specific chapter.
+If you have an image that contains a FAT file system, you can use Mtools
+(<a class="jdocu" href="http://mtools.linux.lu" rel="noopener noreferrer" target="_top">http://mtools.linux.lu</a>) to get read-write access to the image. You
+must have a raw binary dump of the image for Mtools to work. This can be
+obtained using the <code>craff</code> utility (see section <a class="reference" href="#The-craff-utility">7.2.8</a>).
+</p><p>
+A few wrapper scripts around Mtools are included in the Simics
+distribution in the scripts directory.
+</p><p>
+</p><dl><dt id="dt:create-fat-sh"><b>create-fat.sh</b></dt><dd>Creates an image with a formatted FAT file system.</dd><dt id="dt:ls-fat-sh"><b>ls-fat.sh</b></dt><dd>Lists files in an image.</dd><dt id="dt:copy-to-fat-sh"><b>copy-to-fat.sh</b></dt><dd>Copies one or more files or directories to an image.</dd><dt id="dt:copy-from-fat-sh"><b>copy-from-fat.sh</b></dt><dd>Copies a file or directory from an image.</dd></dl><p>If your image is partitioned (a complete disk for example), you may need to
+give Mtools special parameters like an <i>offset</i> or a
+<i>partition</i>. Please see the Mtools documentation for more information.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Loopback-device-access">7.2.6 Editing Images Using Loopback Mounting</a></h2>
+<p>
+
+<a name="disksloopback-mounting"></a><a name="loopback-mounting"></a>
+</p><p>
+This is a Linux specific chapter.
+If the host OS supports loopback devices, like, e.g., Linux, you
+can mount an image on your host machine and get direct read/write access to the
+files within the image. If you have root permissions this allows you to easily
+and quickly copy files.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Remember that the image must be a raw binary dump. Disk dumps supplied
+with Simics are normally in <code>craff</code> format but you can use the
+<code>craff</code> utility to unpack the disk image to a raw image.  The
+resulting images have the same size as the simulated disk, so you need to have
+sufficient free space on your host disk to contain the entire simulated disk
+image.</div><div class="note">
+<b>Note:</b>
+Do not try to loopback mount an image over NFS. This does not work
+reliably on all operating systems (Linux, for example). Instead, move the image
+to a local disk and mount it from there.</div><b>On Linux:</b>
+<p>
+</p><pre class="jdocu_small">mount &lt;disk_dump&gt; <i>mnt_pnt</i> -o loop=/dev/loop<i>n</i>,offset=<i>m</i>
+</pre><p>
+</p><p>
+Example:
+</p><p>
+</p><pre class="jdocu_small"># <b>mount /disk1/rh6.2-kde-ws /mnt/loop -o loop=/dev/loop0,offset=17063424</b>
+# <b>cd /mnt/loop</b>
+# <b>ls</b>
+bin   dev  home  lost+found  opt   root  tmp  var
+boot  etc  lib   mnt         proc  sbin  usr
+#
+</pre><p>
+</p><p>
+As shown in the example, the disk dump containing a Red Hat 6.2 KDE WS is
+mounted on the <code>/mnt/loop</code> directory. The file system mounted on
+<code>/</code> starts on the offset 17063424 on the disk. Linux autodetects the
+file system type when mounting (ext2 in this example). If you want to access
+another kind of file system, use the <i>-t <em>fs</em></i> option to the
+mount command. Once the file system is mounted, you can copy files in and out
+of the disk image.
+</p><p>
+The <code>offset</code> can be calculated by examining the partition table with
+<code>fdisk</code> (from within Simics). Use <code>mount</code> to find the
+partition you want to edit or examine (e.g., <code>/dev/hda2</code> is mounted
+on <code>/usr</code> which you want to modify). Next, run <code>fdisk</code> on
+the device handling this partition (such as <code>fdisk /dev/hda</code>). From
+within <code>fdisk</code>, change the display unit to sectors instead of
+cylinders with the <b>u</b> command and print the partition table with
+<b>p</b>. You will now see the start and end sectors of the partitions; you
+can get the offset by taking the start sector multiplied with the sector size
+(512).
+</p><p>
+When you have finished examining or modifying the disk, unmount it and touch
+the disk image. For example:
+</p><p>
+</p><pre class="jdocu_small">cd
+umount /mnt/loop
+touch /disk1/rh6.2-kde-ws
+</pre><p>
+</p><p>
+The modification date of the disk image does not change when you modify the
+disk via the loopback device. Thus, if you have run Simics on the disk image
+earlier, the OS might have cached disk pages from the now modified disk image
+in RAM.  This would cause a new Simics session to still use the old disk pages
+instead of the newly modified pages. Touching the image file should ensure that
+the OS rereads each page.
+</p><p>
+
+</p><h2 class="jdocu"><a name="add-multiple-partitions">7.2.7 Constructing a Disk from Multiple Files</a></h2>
+<p>
+
+<a name="disksbuilding-from-multiple-files"></a>
+<a name="disksMBR"></a>
+</p><p>
+In some cases, you may want to populate a simulated disk from multiple files
+covering different parts of the disk. For example, the partition table and boot
+sectors could be stored in a different disk image file than the main contents
+of the disk.  If that is the case, you cannot use the <b>&lt;image&gt;.add-diff-file</b> command: you must set manually the disk image
+<i>files</i> attribute to put each image file at its appropriate
+location.
+</p><p>
+Assume you are simulating a PC and want to build a disk from a main file called
+<code>hda1_partition.img</code> and a master boot record image file called
+<code>MBR.img</code>. The main partition will start at offset 32256 of the
+disk, and the MBR (Master Boot Record) covers the first 512 bytes of the disk
+(typically, you would get the contents of these image files from the real disk
+as detailed in section <a class="reference" href="copying-real-disks.html">7.8</a>).  The following
+command in Simics's start-up script will build the disk from these two files.
+</p><p>
+</p><pre class="jdocu_small">load-module std-comp
+create-ide-disk-comp disk2 size = 2559836160
+@image = get_component_object(conf.disk2, 'hd_image')
+@image.files = [["hda1_partition.img", "ro", 32256, 1032151040, 0],
+                ["MBR.img",            "ro",     0,        512, 0]]
+</pre><p>
+</p><p>
+Note that the two image files cover non-overlapping and non-contiguous
+sections of the disk.
+</p><p>
+
+</p><h2 class="jdocu"><a name="The-craff-utility">7.2.8 The Craff Utility</a></h2>
+<p>
+
+<a name="craff"></a>
+<a name="disksimages-in-craff-format"></a>
+</p><p>
+The images distributed with Simics, and in general most of the images created
+by Simics, are in the <code>craff</code> file format. The <code>craff</code>
+utility can convert files to and from the <code>craff</code> format, and also
+merge several <code>craff</code> files into a single file.
+</p><p>
+In your Simics distribution you will find <code>craff</code> in
+<b>Windows:</b><code>[simics]\bin</code>, <b>Linux:</b><code>[simics]/bin</code>.
+The examples below assume that <code>craff</code> is present in your shell path.
+</p><p>
+</p><dl><dt id="dt:convert-a-raw-dump-to-craff-format"><b>Convert a raw dump to <code>craff</code> format</b></dt><dd><pre class="jdocu_small">&gt; craff -o mydisk.craff mydisk.img</pre><p>
+</p></dd><dt id="dt:convert-a-single-craff-file-to-a-raw-file"><b>Convert a single <code>craff</code> file to a raw file</b></dt><dd><pre class="jdocu_small">&gt; craff --decompress -o mydisk.img mydisk.craff</pre><p>
+</p></dd><dt id="dt:merge-multiple-craff-files-into-a-single-craff-file"><b>Merge multiple craff files into a single <code>craff</code> file</b></dt><dd>If more than one input file is specified, they will be merged so that later
+files override earlier files on the command line.
+The input craff files in this example come from several checkpoints.
+<p>
+</p><pre class="jdocu_small">&gt; craff -o merged.craff chkpt1.craff chkpt2.craff chkpt3.craff</pre><p>
+</p></dd><dt id="dt:add-a-craff-file-to-a-raw-dump-producing-a-new-dump"><b>Add a <code>craff</code> file to a raw dump, producing a new dump</b></dt><dd><pre class="jdocu_small">&gt; craff --decompress -o new.img mydisk.img diff.craff</pre><p>
+</p><p>
+The input files can be any combination of raw and <code>craff</code> files.
+</p></dd><dt id="dt:make-a-file-of-the-differences-of-two-dumps"><b>Make a file of the differences of two dumps</b></dt><dd><pre class="jdocu_small">&gt; craff --diff -o diff.craff dump1.img dump2.img</pre><p>
+</p><p>
+The resulting file, <code>diff.craff</code>, will contain only what is needed
+to add to <code>dump1.img</code> in order to get <code>dump2.img</code>.
+This is useful to save space if little has been changed.
+</p></dd></dl><p>See also the <em>Simics Reference Manual</em> for a full description of the
+<code>craff</code> utility and its parameters.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="matic.html">7.1 File Transfers Using the Simics Agent</a>
+<a href="cd-roms-and-floppies.html">7.3 CD-ROMs and Floppies</a>
+</div>

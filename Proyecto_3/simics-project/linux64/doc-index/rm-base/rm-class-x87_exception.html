@@ -1,0 +1,118 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x87_exception</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-x86_normalized_histogram_connection.html">x86_normalized_histogram_connection</a>
+<a href="rm-class-xed_iform_histogram_connection.html">xed_iform_histogram_connection</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="x87_exception"><a href="#x87_exception">x87_exception</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+This device implements the external hardware needed for MS-DOS compatible handling of x87 exceptions. The circuit is normally part of the south bridge (for example the PIIX4). We have one input pin from the CPU, FERR#, which is asserted by the cpu when CR0.NE is clear + IGNNE# is low + a floating point exception condition is asserted. We have one output pin to the CPU, #IGNNE, which is raised by this device when FERR# is active and the port (normally F0h) is written. IGNNE is cleared when FERR is lowered. The output interrupt pin is raised when FERR, and is cleared by a write to the port. We provide the x87_ferr interface for the cpu to use, and the io-memory interface for the port. This device uses the x87_ignne interface to communicate the IGNNE status, and the simple-interrupt interface to connect to an interrupt controller.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal, io_memory
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-x87_exception.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-x87_exception.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:irq_dev">
+<i>irq_dev</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Target interrupt device (typically a PIC).</dd>
+<dt id="dt:irq_level">
+<i>irq_level</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt level (typically 13).</dd>
+<dt id="dt:ignne_target">
+<i>ignne_target</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Object to which the IGNNE line is connected (typically cpu0).</dd>
+<dt id="dt:irq_status">
+<i>irq_status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The status of the output interrupt line.</dd>
+<dt id="dt:ignne_status">
+<i>ignne_status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The status of the output ignne line.</dd>
+<dt id="dt:ferr_status">
+<i>ferr_status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The status of the input ferr line.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.x87_exception.html">x87_exception</a>
+</section>
+<div class="chain">
+<a href="rm-class-x86_normalized_histogram_connection.html">x86_normalized_histogram_connection</a>
+<a href="rm-class-xed_iform_histogram_connection.html">xed_iform_histogram_connection</a>
+</div>

@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;component&gt;.get-available-connector</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-component.disconnect.html">&lt;component&gt;.disconnect – deprecated</a>
+<a href="rm-cmd-component.get-component-object.html">&lt;component&gt;.get-component-object</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="component.get-available-connector"></a>
+<h1 id="component.get-available-connector"><a href="#component.get-available-connector">&lt;component&gt;.get-available-connector</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;component&gt;.get-available-connector</b> <i>"type"</i> [<i>"direction"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Return the name of a free connector of type <i>type</i> found within the component and its children. The direction of the connector to search for can be selected using <i>direction</i> ("up" or "down"). If no direction is specified, the command will first search for down connectors and then up connectors, returning the first match. Connectors supporting any direction will always match.
+<p>
+If no free connector is found, NIL is returned.
+</p><p>
+The following example connects a text console component to each serial connector in a system represented by the <tt>board</tt> top-level component:<br>
+ </p><pre>while (board.get-available-connector serial) {
+    connect (board.get-available-connector serial) (
+            (new-text-console-comp).get-available-connector serial)
+}
+</pre> 
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-connect.html">connect</a>, 
+<a href="rm-cmd-component.connect-to.html">&lt;component&gt;.connect-to</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-component.disconnect.html">&lt;component&gt;.disconnect – deprecated</a>
+<a href="rm-cmd-component.get-component-object.html">&lt;component&gt;.get-component-object</a>
+</div>

@@ -1,0 +1,94 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-probe-monitor</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-new-phy-comp.html">new-phy-comp</a>
+<a href="rm-cmd-new-probe-streamer.html">new-probe-streamer</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="new-probe-monitor"></a>
+<h1 id="new-probe-monitor"><a href="#new-probe-monitor">new-probe-monitor</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>new-probe-monitor</b> [<i>"name"</i>] [<i>sampling-mode</i>] [<i>interval</i>] [<i>clock</i>] [<i>"notifier-type"</i>] [<i>notifier-obj</i>] [<i>timestamp-file</i>] [-summary] [-window] [-print-no-samples] [<i>output-file</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The probe-monitor is a tool for sampling probes during execution and inspecting the collected data manually. All data is kept in a history and can be exported to CSV or plotted via Simics-client.
+<p>
+<b>Argument description:</b>
+</p><p>
+Create a new probe-monitor object with a <i>name</i>. If name is not given a unique name will be created for it automatically. The probe-monitor samples probes in the system either at a regular interval or when a notification is raised.
+</p><p>
+The <i>sampling-mode</i> argument specifies the mode used to perform sampling. Default is "realtime-sync" when the interval is in realtime (wallclock), but also synchronized so all processor have executed at least one quantum since last sample.
+</p><p>
+With the "realtime" sampling mode, sampling is based on the wallclock time only, without any synchronization. Some probes might yield strange results, when some processors have not executed at all since the last sample.
+</p><p>
+Mode can also be "virtual", where the virtual time is used to perform sampling. The time is based on the virtual time of the first processor found in the system, unless <i>clock</i> is set to override the default one with another clock or processor.
+</p><p>
+In "realtime-sync", "realtime" and "virtual" modes the interval is set in seconds by the <i>interval</i> argument.
+</p><p>
+Another available mode is "notifier" where sampling is performed each time a notification is raised. <i>notifier-type</i> specifies the notifier type and <i>notifier-obj</i> the object where the notifier is installed.
+</p><p>
+The <i>timestamp-file</i> specifies a file to be used recording specific timepoints when the sampling should take place. Together with realtime-sync the file will be created and filled with the cycle count from the <i>clock</i> argument, when the samples are taken.
+</p><p>
+With the time-stamp sampler, this file will instead be used as an input file, and the sampling will take place on the cycles specified in the file.
+</p><p>
+Probes to sample are added by the <tt>&lt;probe-monitor&gt;.add-probe</tt> command.
+</p><p>
+Output handling. By default, each sample measured by the probe-monitor, will print a table row on standard output. (A table row can consist of multiple lines being printed, including repeated headers).
+</p><p>
+The <i>output-file</i> argument specifies if the run-time table rows should be printed to a file, including any summary output.
+</p><p>
+The <tt>-window</tt> switch will cause the run-time samples to be printed in a separate console instead of the standard output.
+</p><p>
+The <tt>-print-no-samples</tt> switch specifies that no samples are printed to standard output, or a window, during execution. Any file output, with the <i>output-file</i> argument will still occur.
+</p><p>
+If <tt>-summary</tt> is given a summary of all sampled probes will be printed every time the simulation is stopped.
+</p><p>
+The sample data history is also stored in memory, so the data can be viewed at any time through the <tt>&lt;probe-monitor&gt;.print-table</tt> command. When sampling at a high frequency, it is recommended to not produce any sample output while running, reducing the overhead of the probe-monitor.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.probe-monitor.html">probe-monitor</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-new-probe-streamer.html">new-probe-streamer</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-new-phy-comp.html">new-phy-comp</a>
+<a href="rm-cmd-new-probe-streamer.html">new-probe-streamer</a>
+</div>

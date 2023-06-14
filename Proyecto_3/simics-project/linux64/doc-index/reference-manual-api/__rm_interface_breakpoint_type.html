@@ -1,0 +1,137 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>breakpoint_type</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_breakpoint_manager.html">breakpoint_manager</a>
+<a href="__rm_interface_breakpoint_type_provider.html">breakpoint_type_provider</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_breakpoint_type">breakpoint_type</a></h1>
+<p>
+
+<a name="breakpoint_type"></a><a name="breakpoint_type_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>breakpoint_type</code> interface is implemented by the
+   breakpoint manager and facilitates registering breakpoint types.
+<p>
+   This interface is currently a tech preview and can be changed at any time.
+</p><p>
+   The <b><i>register_type</i></b> method registers a breakpoint type and creates
+   CLI commands for this type. The <i>name</i> parameter should be the
+   unique name for the type, which is also used in the names of any commands
+   registered on interfaces or class. The <i>provider</i> parameter should
+   be the provider object, which must implement the
+   <code>breakpoint_type_provider</code> interface.
+</p><p>
+   The registered commands are <b>break</b>, <b>run-until</b>,
+   <b>wait-for</b>, <b>trace</b> and <b>untrace</b>, which are
+   registered on the provider class. If <i>cls</i> or <i>iface</i> are
+   non-NULL, commands are also registered on that class or interface. These
+   commands are <b>bp-break-{name}</b>, <b>bp-run-until-{name}</b>,
+   <b>bp-wait-for-{name}</b>, <b>bp-trace-{name}</b> and
+   <b>bp-untrace-{name}</b>, where {name} is the <i>name</i> parameter.
+</p><p>
+   The <i>cls</i> and <i>iface</i> parameters cannot both be non-NULL.
+</p><p>
+   The <i>args</i> parameter is a list that defines the CLI command
+   arguments. It should be a list of lists where each inner list contains the
+   name of the cli.Arg_type subclass, such as <code>str_t</code>, <code>flag_t</code>
+   etc, and then all parameters to its constructor (including values for
+   parameters that have default values).
+</p><p>
+   The <i>docs</i> parameter should be an 8-element list with short and
+   long command documentation texts for the four commands <b>break</b>,
+   <b>run-until</b>, <b>wait-for</b> and <b>trace</b>.
+</p><p>
+   The <i>object_required</i> parameter indicates if the commands
+   registered on the provider class (as opposed to the commands on the class or
+   interface) should require an object (or if the command can use a default
+   object). Note that there will only be an object parameter if <i>cls</i>
+   or <i>iface</i> are non-NULL.
+</p><p>
+   The <i>temporary_default</i> parameter indicates if the breakpoints of
+   this type should be temporary by default. This also results in the generated
+   break command not having a -once flag.
+</p><p>
+   Setting <i>recursive</i> to true will append a '-recursive' flag to both
+   global and object commands, and for the global command, the 'object'
+   argument will have no specified class or iface.
+</p><p>
+   The <b><i>trigger</i></b> method must be called by the provider every time a
+   breakpoint triggers, both breakpoints added with <b><i>register_bp</i></b>
+   method and those added with <b><i>add_bp</i></b> method of the
+   <code>breakpoint_type_provider</code> interface.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(breakpoint_type) {
+        /* Returns false if type is already registered. */
+        bool (*register_type)(conf_object_t *NOTNULL mgr,
+                              const char *NOTNULL name,
+                              conf_object_t *NOTNULL provider,
+                              /* CLI command arguments as a list */
+                              attr_value_t args,
+                              /* Class and/or iface for command */
+                              const char *cls,
+                              const char *iface,
+                              /* 8-element list with short and long
+                                 command help texts */
+                              attr_value_t docs,
+                              /* Is an object required
+                                 (or can it default to something) */
+                              bool object_required,
+                              /* Should breakpoints be temporary by default? */
+                              bool temporary_default,
+                              /* Set to true to allow all objects in 'object' argument */
+                              bool recursive);
+        /* Notify manager that breakpoint has triggered, given ID returned by
+           add_bp. Returns true if simulation was stopped or otherwise the
+           breakpoint action happened. Optionally provide trigger object and
+           message, used if the simulation is stopped. */
+        bool (*trigger)(conf_object_t *NOTNULL mgr,
+                        conf_object_t *NOTNULL provider, uint64 bp_id,
+                        conf_object_t *trigger, const char *msg);
+        /* Return provider ID from breakpoint manager ID. */
+        uint64 (*get_break_id)(conf_object_t *NOTNULL mgr, uint64 bm_id);
+        uint64 (*get_manager_id)(conf_object_t *NOTNULL mgr,
+                                 conf_object_t *NOTNULL provider, uint64 bp_id);
+};
+#define BREAKPOINT_TYPE_INTERFACE "breakpoint_type"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_breakpoint_manager.html">breakpoint_manager</a>
+<a href="__rm_interface_breakpoint_type_provider.html">breakpoint_type_provider</a>
+</div>

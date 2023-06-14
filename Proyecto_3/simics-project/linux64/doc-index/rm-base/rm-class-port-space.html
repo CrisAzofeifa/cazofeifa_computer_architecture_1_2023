@@ -1,0 +1,124 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>port-space</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-port-forward-outgoing-server.html">port-forward-outgoing-server</a>
+<a href="rm-class-preferences.html">preferences</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="port-space"><a href="#port-space">port-space</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Class providing a 16-bit+3 port address space. In response to an address being asserted on the bus, an actual EISA or ISA device signals how large a transfer it can handle through the I/O chip select 16 line (ISA), and the EX16 and EX32 lines (EISA). This allows for example a 2-byte access at address A to have different meaning than two 1-byte accesses at address A and A+1. In the port-space class, the maximal width for each address should be specified in the map attribute. Mapping 2 bytes at address A also automatically maps 1 byte at address A+1. In the same way, mapping 4 bytes at A also maps 1 byte at A+1, 2 bytes at A+2, and 1 byte at A+3.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, port_space, map_demap
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-port-space.add-map.html">add-map</a>
+ – map device in a port-space</li>
+<li>
+<a href="rm-cmd-port-space.del-map.html">del-map</a>
+ – remove device map from a port-space</li>
+<li>
+<a href="rm-cmd-port-space.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-port-space.map.html">map</a>
+ – print port map</li>
+<li>
+<a href="rm-cmd-port-space.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="commands-for-interface-port_space">
+<a href="#commands-for-interface-port_space">Commands for interface port_space</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-get.html">get</a>
+ – get value from physical address without side-effects</li>
+<li>
+<a href="rm-cmd-port_space.get-string.html">get-string</a>
+ – read a string from memory</li>
+<li>
+<a href="rm-cmd-get.html">read</a>
+ – read value from physical address</li>
+<li>
+<a href="rm-cmd-memory_space.get-string.html">read-string</a>
+ – read a string from memory</li>
+<li>
+<a href="rm-cmd-set.html">set</a>
+ – set physical address to specified value without side-effects</li>
+<li>
+<a href="rm-cmd-port_space.set-string.html">set-string</a>
+ – write a string to memory</li>
+<li>
+<a href="rm-cmd-set.html">write</a>
+ – set physical address to specified value</li>
+<li>
+<a href="rm-cmd-memory_space.set-string.html">write-string</a>
+ – write a string to memory</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:map">
+<i>map</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[io|[os|n]iii]*]</code>
+<br>((<i>base</i>, <i>object</i>, <i>function</i>, <i>offset</i>, <i>length</i>)*). Maps zero or more object to the port space. <i>object</i>, which must implement the <tt>io-memory</tt> interface, is mapped from <i>base</i> to <i>base</i> + <i>length</i> - 1 (inclusive). Both <i>function</i> and <i>offset</i> is handed on to the mapped <i>object</i> through the <tt>io-memory</tt> interface. A mapped region larger than 4 bytes will be internally split into multiple 4-byte mappings. Mappings larger than 4 bytes must be a multiple of 4 bytes long, and must start at a 4-byte aligned address.</dd>
+<dt id="dt:default_target">
+<i>default_target</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[oiio|n]|n</code>
+<br>(<i>object</i>, <i>function</i>, <i>offset</i>, <i>target</i>). An access not targeting any object in the map attribute will be forwarded to the default target. <i>target</i> should be non-nil if and only if <i>object</i> is a translation object.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-class-port-forward-outgoing-server.html">port-forward-outgoing-server</a>
+<a href="rm-class-preferences.html">preferences</a>
+</div>

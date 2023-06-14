@@ -1,0 +1,171 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>cpu_memory_query</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_cpu_instrumentation_subscribe.html">cpu_instrumentation_subscribe</a>
+<a href="__rm_interface_cycle.html">cycle</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_cpu_memory_query">cpu_memory_query</a></h1>
+<p>
+
+<a name="cpu_memory_query"></a><a name="cpu_memory_query_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>cpu_memory_query</code> interface is used by
+   callbacks of the <code>cpu_memory_cb_t</code> type and requires a
+   valid <code>memory_handle_t</code> handle. The handle is only valid during
+   the call of the callback. It is used to request information about the memory
+   operation being issued by the processor <i>cpu</i>.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(cpu_memory_query) {
+        logical_address_t (*logical_address)(
+                conf_object_t *cpu, memory_handle_t *handle);
+        physical_address_t (*physical_address)(
+                conf_object_t *cpu, memory_handle_t *handle);
+#ifndef PYWRAP
+        void (*set_host_ptr)(
+                conf_object_t *cpu, memory_handle_t *handle,
+                void *p);
+#endif
+        cpu_bytes_t (*get_bytes)(conf_object_t *cpu,
+                                 memory_handle_t *handle);
+
+        void (*set_bytes)(
+                conf_object_t *cpu, memory_handle_t *handle,
+                cpu_bytes_t bytes);
+
+        bool (*atomic)(
+                conf_object_t *obj, memory_handle_t *handle);
+        ini_type_t (*arch)(
+                conf_object_t *obj, memory_handle_t *handle);
+        page_crossing_info_t (*get_page_crossing_info)(
+                conf_object_t *obj, memory_handle_t *handle);
+        buffer_t (*get_surrounding_bytes)(
+                conf_object_t *cpu, memory_handle_t *handle,
+                unsigned granularity_log2);
+        
+};
+
+#define CPU_MEMORY_QUERY_INTERFACE "cpu_memory_query"        
+</pre><p>
+</p><p>
+
+   The <b><i>logical_address</i></b> and <b><i>physical_address</i></b> methods are
+   used to get the different addresses of the memory operation.
+</p><p>
+   Below, callbacks registered by the <b><i>register_read_before_cb</i></b> or the
+   <b><i>register_write_before_cb</i></b> in the
+   <code>cpu_instrumentation_subscribe</code> interface or in the
+   <code>cpu_cached_instruction</code> interface are referred to as being
+   in <i>before</i> context. Callbacks registered by the
+   <b><i>register_read_after_cb</i></b> or the <b><i>register_write_after_cb</i></b>
+   in the <code>cpu_instrumentation_subscribe</code> interface or in the
+   <code>cpu_cached_instruction</code> interface are referred to as being
+   in <i>after</i> context.
+</p><p>
+   The <b><i>set_host_ptr</i></b> method can be used to redirect where data should
+   be read from or written to depending on if it is a read or a write
+   operation.  The method is only useful for callbacks registered in
+   <i>before</i> context. The data pointer <i>p</i> needs to be valid
+   during the execution of the instruction and must point to enough space to
+   carry out the operation. This method is not available in Python.
+</p><p>
+   The <b><i>get_bytes</i></b> method is used to retrieve the bytes that is going
+   to be read/written if called in a <i>before</i> context and is used to read
+   out value that was read/written in <i>after</i> context. The value is
+   returned as <code>cpu_bytes_t</code>:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef struct cpu_bytes {
+        size_t size;
+#ifndef PYWRAP
+        const uint8 *data;
+#endif
+} cpu_bytes_t;</pre><p>
+
+</p><p>
+   The member <code>data</code> contains the data pointer, and the member
+   <code>size</code> contains tha size of the data. It is illegal to access beyond
+   the limit. For such access, see the <b><i>get_surrounding_bytes</i></b> below.
+</p><p>
+   The read value in <i>before</i> context may not be
+   available (a device access for example) and in this case the data member
+   will be NULL.
+</p><p>
+   The <b><i>set_bytes</i></b> method is used to override the bytes to be read or
+   written. The method is only valid in the <i>before</i> context. This method
+   can be used instead of the <b><i>set_host_ptr</i></b> to change the value of
+   the operation. The value is passed as <code>cpu_bytes_t</code> and the
+   supplied data in the data member need not to be valid after the callback
+   returns since the data is copied. The length of the data cannot be changes
+   and must be the same as returned by the <b><i>get_bytes</i></b> method.
+        </p><p>
+   The <b><i>atomic</i></b> method returned true if the operation is considered
+   atomic, false otherwise.
+</p><p>
+   The <b><i>arch</i></b> method returns the <code>ini_type_t</code> of the memory
+   operation.
+</p><p>
+   Accesses that cross a page boundary are split into two subsequent accesses,
+   one for the first page and one for the second page. The
+   <b><i>get_page_crossing_info</i></b> method can be used to distinguish the
+   different cases from each other. The returned value from the method is of
+   type <code>page_crossing_info_t</code> and can be one of:
+   <code>Sim_Page_Crossing_None</code> (no crossing access),
+   <code>Sim_Page_Crossing_First</code> (first part of a crossing access), or
+   <code>Sim_Page_Crossing_Second</code> (second part of a crossing access).
+</p><p>
+   The <b><i>get_surrounding_bytes</i></b> method provides quick access to the
+   data surrounding the access. The <i>granularity_log2</i> specifies the
+   size and alignment of the buffer being returned. For example using 6 for
+   <i>granularity_log2</i>, will fetch 64 aligned bytes around the
+   address of the access. Typically, the largest supported granularity_log2
+   size is 12, meaning a 4 KiB page. The returned value is of type buffer_t and
+   is only valid in the <code>cpu_memory_cb_t</code> callback. The
+   data can be accessed by using the <code>buffer_t.data</code> member in the
+   returned value. Data can only be read up to the size of the buffer, which is
+   stored in the <code>buffer_t.len</code> member. Valid memory is only returned if
+   the access terminates in simulator cached memory.  If not, the 
+   <code>buffer_t.len</code> will be is 0, <code>buffer_t.data</code> cannot be used.
+</p><p>
+   Additional information can be read out with an architectural specific
+   query interface, see <code>x86_memory_query</code> interface for details.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Threaded Context for all methods, but must be called from a callback
+   receiving a handle of type <code>memory_handle_t</code>.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_cpu_instrumentation_subscribe.html">cpu_instrumentation_subscribe</a>
+<a href="__rm_interface_cycle.html">cycle</a>
+</div>

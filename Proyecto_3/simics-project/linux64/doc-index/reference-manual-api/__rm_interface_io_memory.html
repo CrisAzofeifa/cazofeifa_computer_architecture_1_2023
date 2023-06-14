@@ -1,0 +1,100 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>io_memory</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_interrupt_cpu.html">interrupt_cpu</a>
+<a href="__rm_interface_map_demap.html">map_demap</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_io_memory">io_memory</a></h1>
+<p>
+
+<a name="io_memory"></a><a name="io_memory_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="map_func_t"></a>
+   <a name="operation_func_t"></a>
+<p>
+   This interface is implemented by devices that can be mapped into address
+   spaces (including port spaces). The <b><i>operation()</i></b> is called when
+   the object is accessed through an address space.
+</p><p>
+   The <i>obj</i> argument is a pointer to the mapped object and
+   <i>map_info</i> contains information about how and where
+   the device is mapped into memory. The <i>mem_op</i> argument
+   to <b><i>operation()</i></b> contains information about the access.
+</p><p>
+   The offset into the device mapping for the access is typically
+   calculated in the following way:
+</p><p>
+   <span class="jdocu_small">
+   <code>offset = SIM_get_mem_op_physical_address(mem_op)
+   - map_info.base + map_info.start</code>
+   </span>
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+The <b><i>map()</i></b> function is deprecated and should not be
+   used. The function may be called when the object is mapped into an address
+   space, but it is not guaranteed that this happens. The function can be left
+   unimplemented (NULL).</div>The <code>exception_type_t</code> type, returned by the
+   <b><i>operation()</i></b> function may be used to signal errors to
+   Simics, but should in most cases be <code>Sim_PE_No_Exception</code>.
+   If the device does not support inquiry accesses, it should return
+   <code>Sim_PE_Inquiry_Unhandled</code> if <code>mem_op-&gt;inquiry</code> is 1.
+<p>
+   <a name="addr_space_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Sim_Addr_Space_Conf,
+        Sim_Addr_Space_IO,
+        Sim_Addr_Space_Memory
+} addr_space_t;</pre><p>
+
+   </p><pre class="jdocu_small">SIM_INTERFACE(io_memory) {
+        int (*DEPRECATED_FUNC(map))(conf_object_t *NOTNULL obj,
+                                    addr_space_t memory_or_io,
+                                    map_info_t map_info);
+        exception_type_t (*operation)(conf_object_t *NOTNULL obj,
+                generic_transaction_t *NOTNULL mem_op,
+                map_info_t map_info);
+};
+
+#define IO_MEMORY_INTERFACE "io_memory"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_interrupt_cpu.html">interrupt_cpu</a>
+<a href="__rm_interface_map_demap.html">map_demap</a>
+</div>

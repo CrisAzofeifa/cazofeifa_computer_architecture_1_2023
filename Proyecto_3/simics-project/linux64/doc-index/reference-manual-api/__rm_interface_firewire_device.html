@@ -1,0 +1,127 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>firewire_device</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_firewire_bus.html">firewire_bus</a>
+<a href="__rm_interface_fmn_station_control.html">fmn_station_control</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_firewire_device">firewire_device</a></h1>
+<p>
+
+<a name="firewire_device"></a><a name="firewire_device_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(firewire_device) {
+        firewire_ack_code_t (*transfer)(conf_object_t *NOTNULL dev,
+                                        dbuffer_t *packet, int crc_calculated);
+
+        void (*reset)(conf_object_t *NOTNULL dev, uint16 id,
+                      uint8 root_id,
+                      uint32_array_t self_ids);
+        uint32 (*get_self_id_template)(
+                conf_object_t *NOTNULL dev);
+
+        int (*get_rhb)(conf_object_t *NOTNULL dev);
+        uint8 (*get_port_count)(conf_object_t *NOTNULL dev);
+        uint16 (*get_port_mask)(conf_object_t *NOTNULL dev);
+};
+#define FIREWIRE_DEVICE_INTERFACE "firewire_device"
+</pre><p>
+</p><p>
+
+   This interface must be implemented by all firewire devices.
+</p><p>
+   <b><i>transfer</i></b> is called when the device receives a packet.
+   If the crc_calculated argument
+   is non-zero the packet's crc fields are filled in.The return code is one
+   of:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef enum {
+        /* Values defined in the FireWire specification */
+        Firewire_Ack_Complete = 1,
+        Firewire_Ack_Pending = 2,
+        Firewire_Ack_Busy_X = 4,
+        Firewire_Ack_Busy_A = 5,
+        Firewire_Ack_Busy_B = 6,
+        Firewire_Ack_Tardy = 0xb,
+        Firewire_Ack_Conflict_Error = 0xc,
+        Firewire_Ack_Data_Error = 0xd,
+        Firewire_Ack_Type_Error = 0xe,
+        Firewire_Ack_Address_Error = 0xf,
+        
+        /* Values not defined in FireWire but used in Simics */
+        Firewire_Ack_No_Destination = 0x10, /* no destination found */
+        Firewire_Ack_No_Ack = 0x11 /* no ack signal sent for packet */
+} firewire_ack_code_t;</pre><p>
+
+</p><p>
+   <b><i>reset</i></b> is called when the bus is reset. <i>id</i> is
+   the new ID of the device (top 10 bits represent the bus number, and the low
+   6 bits the node ID). <i>root_id</i> is the node ID for the root
+   node. <i>self_ids</i> is the list of Self-ID packets
+   during the Self-ID phase of the reset.
+</p><p>
+   
+     An array of unsigned 32-bit integers.
+   
+</p><pre class="jdocu_small">typedef struct {
+        size_t len;
+        uint32 *data;
+} uint32_array_t;</pre><p>
+
+</p><p>
+   <b><i>get_self_id_template</i></b> is an accessor function called by the bus
+   or other self-ID provider to provide the static parts of the Self-ID for
+   this device. The ID and port parts will be overwritten by the Self-ID
+   provider.
+</p><p>
+   <b><i>get_rhb</i></b> gets the current status of the root hold off bit in the
+   device.
+</p><p>
+   <b><i>get_port_count</i></b> returns the number of ports the device has. The
+   largest allowed value is 16 and the lowest 1. This should remain constant
+   during the lifetime of the device and always return a valid value.
+</p><p>
+   <b><i>get_port_mask</i></b> returns a bitmask. Each bit is one if that port is
+   enabled and zero if it is disabled. The least significant bit describes port
+   0 and the most significant bit port 15. The bits for ports which do not
+   exist on the device should be set to zero.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_firewire_bus.html">firewire_bus</a>
+<a href="__rm_interface_fmn_station_control.html">fmn_station_control</a>
+</div>

@@ -1,0 +1,139 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>direct_memory_update</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_direct_memory_tags.html">direct_memory_tags</a>
+<a href="__rm_interface_disk_component.html">disk_component</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_direct_memory_update">direct_memory_update</a></h1>
+<p>
+
+<a name="direct_memory_update"></a><a name="direct_memory_update_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>direct_memory_update</code> interface must be implemented by
+   memory-user objects that use the <code>direct_memory</code> interface.
+<p>
+   The <code>direct_memory_update</code> interface replaces the
+   <code>memory_page_update</code> interface from Simics 4.8.
+</p><p>
+   Accesses to memory are controlled by a handle that the memory-user object
+   requests by calling the <b><i>get_handle</i></b> method of the
+   <code>direct_memory</code> interface. The object implementing the
+   <code>direct_memory</code> interface through which the handle was
+   established is passed to the functions in
+   <code>direct_memory_update</code> as <i>target</i>.
+</p><p>
+   If the <b><i>release</i></b> method is called, the corresponding
+   <i>handle</i> and all the permissions and inhibit protections are
+   recalled. The memory-user object must stop using the handle and
+   associated data pointers and then call the acknowledge method
+   <b><i>ack</i></b> in the <code>direct_memory</code> interface from
+   which the handle was granted.
+</p><p>
+   A call to the <b><i>update_permission</i></b> method revokes earlier requested
+   rights for a handle. The <i>lost_access</i> argument recalls rights to
+   use the handle for the given access bits. This means that the handle needs
+   to be re-fetched (by a call to the <b><i>lookup</i></b> method of the
+   <code>direct_memory_lookup</code> interface followed by a call to the
+   <b><i>get_handle</i></b> method of the <code>direct_memory</code> interface)
+   before the handle can be used again for the particular access. This typically
+   happens if a new breakpoint is inserted or a remap of the memory system is
+   done. In case of a remap it is possible that the same handle will never be
+   returned again which means that any user data associated with the handle
+   should be reclaimed. 
+</p><p>
+   The <i>lost_permission</i> and the <i>lost_inhibit</i> arguments
+   describe which permission rights and inhibit protection that are
+   revoked. However, in contrast to the <i>lost_access</i>, the
+   <i>handle</i> is still valid and can be used to re-request permission
+   rights and inhibit protection.
+</p><p>
+   A call to the <b><i>conflicting_access</i></b> method informs a memory-user
+   object that a conflicting memory operation will be performed. Hence, if the
+   memory-user object have some protected representation of memory (such as
+   decoded instructions in an internal cache), that representation of memory
+   has to be flushed (or written back to memory in case of dirty data). Note
+   however that the memory-user object does not lose any permission rights or
+   any inhibit protection. 
+</p><p>
+   There is no mechanism for locking simulated memory in host memory.
+</p><p>
+   All methods in this interface receive a <code>direct_memory_ack_id_t</code>
+   value as an argument. The <b><i>ack</i></b> method of the
+   <code>direct_memory</code> interface must be called with this
+   <i>id</i> as an argument when the corresponding operation has been
+   carried out. The <b><i>ack</i></b> method may be called after the
+   <code>direct_memory_update</code> interface function has returned, which
+   allows for queueing of update requests. This may be valuable if multiple
+   simulator threads are used.
+</p><p>
+   An exception to the allowed queueing of update requests is for update
+   requests that are received while calling <b><i>request</i></b> in the
+   <code>direct_memory</code> interface. Such requests must be handled
+   immediately with <b><i>ack</i></b> being called before the return of the
+   <code>direct_memory_update</code> interface function. This requirement
+   avoids a dead-lock that would otherwise happen if <b><i>request</i></b> would
+   wait for <b><i>ack</i></b> before returning, but <b><i>ack</i></b> is
+   queued to be handled at some time after <b><i>request</i></b> has returned.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(direct_memory_update) {
+        void (*release)(conf_object_t *NOTNULL obj,
+                        conf_object_t *NOTNULL target,
+                        direct_memory_handle_t handle,
+                        direct_memory_ack_id_t id);
+        void (*update_permission)(conf_object_t *NOTNULL obj,
+                                  conf_object_t *NOTNULL target,
+                                  direct_memory_handle_t handle,
+                                  access_t lost_access,
+                                  access_t lost_permission,
+                                  access_t lost_inhibit,
+                                  direct_memory_ack_id_t id);
+        void (*conflicting_access)(conf_object_t *NOTNULL obj,
+                                   conf_object_t *NOTNULL target,
+                                   direct_memory_handle_t handle,
+                                   access_t conflicting_permission,
+                                   direct_memory_ack_id_t id);
+};
+
+#define DIRECT_MEMORY_UPDATE_INTERFACE "direct_memory_update"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_direct_memory_tags.html">direct_memory_tags</a>
+<a href="__rm_interface_disk_component.html">disk_component</a>
+</div>

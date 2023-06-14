@@ -1,0 +1,81 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_exception</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_ept.html">x86_ept</a>
+<a href="__rm_interface_x86_exception_query.html">x86_exception_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_exception">x86_exception</a></h1>
+<p>
+
+<a name="x86_exception"></a><a name="x86_exception_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The methods in this interface is used to raise exceptions
+   from the instrumentation replace or user decoder functionality (it is illegal
+   to invoke these methods from any other context). The
+   methods perform longjmps and do not return.
+<p>
+   This interface is internal and may change without notice.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(x86_exception) {
+        void (*DE_fault)(conf_object_t *cpu);
+
+        void (*BR_fault)(conf_object_t *cpu);
+        void (*UD_fault)(conf_object_t *cpu);
+        void (*NM_fault)(conf_object_t *cpu);
+        void (*DF_abort)(conf_object_t *cpu, const char *desc);
+
+        void (*TS_fault)(conf_object_t *cpu, uint16 sel);
+        void (*NP_fault)(conf_object_t *cpu, uint16 sel_vec, bool is_vec);
+
+        void (*SS_fault)(conf_object_t *cpu, uint16 sel);
+        void (*GP_fault)(conf_object_t *cpu, uint16 sel_vec, bool is_vec,
+                         const char *desc);
+        void (*PF_fault)(conf_object_t *cpu, linear_address_t laddr,
+                         uint32 ecode);
+        void (*MF_fault)(conf_object_t *cpu);
+        void (*AC_fault)(conf_object_t *cpu);
+        void (*XM_fault)(conf_object_t *cpu);
+};
+#define X86_EXCEPTION_INTERFACE "x86_exception"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">The methods in this interface may only be called from
+   user decoder service routines. 
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_ept.html">x86_ept</a>
+<a href="__rm_interface_x86_exception_query.html">x86_exception_query</a>
+</div>

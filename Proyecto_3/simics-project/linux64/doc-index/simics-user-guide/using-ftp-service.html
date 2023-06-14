@@ -1,0 +1,112 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7.7 Using FTP service</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="using-tftp.html">7.6 Using TFTP</a>
+<a href="copying-real-disks.html">7.8 Importing a Real Disk into Simics</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Using-FTP-service">7.7 Using FTP service</a></h1>
+<p>
+
+<a name="FTP"></a>
+The <b>service-node</b> provides a FTP service to support file
+transfers with the host using FTP clients on a target machine.
+</p><p>
+Assuming a <b>service-node</b> has been created, and that it
+is named <code>default_service_node0</code>, the FTP-service will be named
+<code>default_service_node0.ftp</code>.
+The service node must be configured with an IP address and connected to a link
+before the FTP service can be enabled and configured.
+The FTP root directory, the location
+on the host system for transferred files, can be set by the
+<b>set-ftp-directory</b> command. The default root directory is
+the current directory for the Simics session, usually your project
+directory.
+</p><p>
+On a target that runs Clear Linux there is usually a <b>curl</b> command
+for transferring data using various protocols, it can put a file to the server
+and retrieve a file from the server.
+</p><p>
+Here is an example on using the FTP service on a target
+running <i>Firststeps</i> with a network. Start Simics
+and run the following commands:
+</p><pre class="jdocu_small">simics&gt; run-command-file "targets/qsp-x86/firststeps.simics"
+simics&gt; default_service_node0.set-ftp-directory dir = "/tmp/"
+</pre><p>
+A <i>Firststeps</i> target was created. The target
+machine's IP address is 10.10.0.1 and it contains
+a <b>default_service_node0</b> with the FTP service. The root
+directory was set to the <code>/tmp/</code> directory on the
+host file system.
+</p><p>
+Continue the simulation until a prompt is reached.
+</p><pre class="jdocu_small">simics&gt; c</pre><p>
+When prompt has been reached, the <b>curl</b> command can be run
+in the text console.
+</p><p>
+</p><pre class="jdocu_small">~ # curl -T /etc/hostname ftp://10.10.0.1/targetfile.txt</pre><p>
+The contents of the target file <code>/etc/hostname</code> has now
+been sent to the host file <code>targetfile.txt</code> in the path
+set from the <b>set-ftp-directory</b> command. In similar way:
+</p><pre class="jdocu_small">~ # curl ftp://10.10.0.1/targetfile.txt -o hostfile.txt</pre><p>
+will retrieve a file, <code>targetfile.txt</code>, from the host and
+save it as <code>hostfile.txt</code> on the target.
+</p><p>
+Using other kind of distributions of Linux than Clear Linux there will
+most likely exist a <b>ftp</b> command in the shell for running
+a ftp client. An example on how to put a file to the host:
+</p><p>
+</p><pre class="jdocu_small">#&gt; <b>ftp 10.10.0.1</b>
+Connected to 10.10.0.1.
+220 Welcome to the Simics FTP server
+Name (10.10.0.1:simics): <b>&lt;enter&gt;</b>
+230 User logged in
+ftp&gt; <b>put /proc/cpuinfo targetfile.txt</b>
+local: /proc/cpuinfo remote: targetfile.txt
+200 OK
+150 transfer about to start
+226 file transfer done
+6520 bytes sent in 0.00 secs (12734.4 kB/s)</pre><p>
+</p><p>
+If running Microsoft Windows as target then Windows Internet Explorer
+can be used as client to connect to the FTP service by
+entering <a class="jdocu" href="ftp://10.10.0.1">ftp://10.10.0.1</a> as address. This will allow transfer
+from host to target. To be able to transfer files back to the host you
+will need to select
+<b>Page → Open FTP Site in Windows Explorer</b>.
+</p>
+<div class="chain">
+<a href="using-tftp.html">7.6 Using TFTP</a>
+<a href="copying-real-disks.html">7.8 Importing a Real Disk into Simics</a>
+</div>

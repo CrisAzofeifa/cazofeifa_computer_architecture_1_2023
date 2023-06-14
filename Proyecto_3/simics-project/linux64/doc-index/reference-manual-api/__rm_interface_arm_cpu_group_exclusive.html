@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>arm_cpu_group_exclusive</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_arm_cpu_group_event.html">arm_cpu_group_event</a>
+<a href="__rm_interface_arm_cpu_group_tlb.html">arm_cpu_group_tlb</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_arm_cpu_group_exclusive">arm_cpu_group_exclusive</a></h1>
+<p>
+
+<a name="arm_cpu_group_exclusive"></a><a name="arm_cpu_group_exclusive_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is only intended to be used between Arm CPU objects. It
+   contains the functions needed for cross-CPU communication related to
+   exclusive memory accesses.
+<p>
+   <b><i>mark_exclusive</i></b> notifies the CPU that another CPU has marked the
+   address range as exclusive. The CPU must then probe all CPUs in the CPU
+   group for exclusive address ranges using <b><i>probe_exclusive</i></b> and
+   possibly invalidate them using <b><i>clear_exclusive</i></b> before accessing
+   the address range.
+</p><p>
+   <b><i>clear_and_probe_exclusive</i></b> notifies the CPU to invalidate any
+   exclusive address ranges that it has overlapping the specified clear address
+   range. Also returns true if the CPU still has any exclusive address ranges
+   overlapping the specified probe address range.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(arm_cpu_group_exclusive) {
+        void (*mark_exclusive)(
+                conf_object_t *obj,
+                physical_address_t address,
+                physical_address_t size);
+        bool (*clear_and_probe_exclusive)(
+                conf_object_t *obj,
+                physical_address_t clear_address,
+                physical_address_t clear_size,
+                physical_address_t probe_address,
+                physical_address_t probe_size);
+};
+
+#define ARM_CPU_GROUP_EXCLUSIVE_INTERFACE "arm_cpu_group_exclusive"
+
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Threaded Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_arm_cpu_group_event.html">arm_cpu_group_event</a>
+<a href="__rm_interface_arm_cpu_group_tlb.html">arm_cpu_group_tlb</a>
+</div>

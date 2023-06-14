@@ -1,0 +1,70 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>enable-real-time-mode</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-enable-probes.html">enable-probes</a>
+<a href="rm-cmd-enable-reverse-execution.html">enable-reverse-execution</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="enable-real-time-mode"></a>
+<a name="disable-real-time-mode"></a>
+<a name="real-time-mode"></a>
+<h1 id="enable-real-time-mode"><a href="#enable-real-time-mode">enable-real-time-mode</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>enable-real-time-mode</b> [<i>speed</i>] [<i>check_interval</i>] [<i>drift-compensate</i>] [<i>clock</i>] <br><b>disable-real-time-mode</b><br><b>real-time-mode</b><br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ In some cases simulated time may run faster than real time; this can happen if the OS is in a tight idle loop or an instruction halts execution waiting for an interrupt, or if the host machine is simply sufficiently fast. This can cause problems for programs that interact with the real world (for example the user), since time-outs may expire really fast.
+<p>
+A <tt>realtime</tt> object will, when enabled, periodically check the simulation speed and wait for a while if it is too high. <i>speed</i> specifies how fast simulated time is allowed to run, in percent of real time; default is 100. <i>check_interval</i> specifies how often the check should take place, in milliseconds of simulated time; default is 1000. Higher values give better performance; lower values reduce the maximum difference between real and simulated time. Setting this to less than <code>set-time-quantum</code> has no effect.
+</p><p>
+The <i>speed</i> argument says how fast the simulation <em>should</em> run, but the actual speed will always deviate a little from that value even if the host is fast enough. To keep these errors from accumulating, the simulation speed has to be adjusted; <i>drift-compensate</i> regulates how much it may be adjusted. If set to (for example) 0.25, simulation speed may be increased or decreased by up to 25% if necessary to make up for any accumulated drift with respect to real time. If set to zero (the default), the simulation speed may not be changed at all from its set value.
+</p><p>
+The <i>clock</i> will control which clock is used for real-time comparison. A configuration may have many clocks/processors. Virtual time is based on a Simics clock and by default the first clock found is used to control real-time mode. However, some use cases may allow clocks to drift apart significantly, which may affect real-time mode. In such a case, it may be useful to use the <i>clock</i> argument. Notice that the clock can not be changed after the real-time command has been invoked.
+</p><p>
+Control this feature by the <code>enable-real-time-mode</code> and <code>disable-real-time-mode</code> commands. The <code>real-time-mode</code> command will query whether real-time is enabled or not.
+</p><p>
+It is possible to run the <code>enable-real-time-mode</code> command before any cycle object exists in the configuration. In this case creation of the <tt>realtime</tt> object will be postponed until a cycle object has been created. Run <code>disable-real-time-mode</code> to inhibit postponed mode. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.realtime.html">realtime</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-enable-probes.html">enable-probes</a>
+<a href="rm-cmd-enable-reverse-execution.html">enable-reverse-execution</a>
+</div>

@@ -1,0 +1,87 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pcie_device</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pci_upstream_operation.html">pci_upstream_operation</a>
+<a href="__rm_interface_pcie_map.html">pcie_map</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pcie_device">pcie_device</a></h1>
+<p>
+
+<a name="pcie_device"></a><a name="pcie_device_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface must be implemented by all PCIe devices that can receive
+   downstream transactions.
+<p>
+   <b><i>connected</i></b> and <b><i>disconnected</i></b> are used to indicate that
+   the device is (dis)connected to <i>port_obj</i> with device id
+   <i>device_id</i> and may use the <code>pcie_map</code> interface to
+   add/remove functions and claim/release other resources
+</p><p>
+   <b><i>hot_reset</i></b> is used to indicate that a Hot Reset has been signaled
+   on the PCIe link to which the device is connected. It is up to the device to
+   reset functions and other resources mapped using the <code>pcie_map</code>
+   interface.
+</p><p>
+   Note: This interface is considered tech-preview and may change without
+   notice.
+</p><p>
+   </p><pre class="jdocu_small">
+typedef enum {
+        PCIE_Type_Not_Set,
+        PCIE_Type_Mem,
+        PCIE_Type_IO,
+        PCIE_Type_Cfg,
+        PCIE_Type_Msg,
+        PCIE_Type_Other,
+} pcie_type_t;
+
+SIM_INTERFACE(pcie_device) {
+        void (*connected)(conf_object_t *obj, conf_object_t *port_obj,
+                          uint16 device_id);
+        void (*disconnected)(conf_object_t *obj, conf_object_t *port_obj,
+                             uint16 device_id);
+        void (*hot_reset)(conf_object_t *obj);
+};
+
+#define PCIE_DEVICE_INTERFACE "pcie_device"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pci_upstream_operation.html">pci_upstream_operation</a>
+<a href="__rm_interface_pcie_map.html">pcie_map</a>
+</div>

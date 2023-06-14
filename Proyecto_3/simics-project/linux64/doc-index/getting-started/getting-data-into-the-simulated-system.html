@@ -1,0 +1,333 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.7 Getting data into the simulated system</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="virtual-disks.html">2.6 Virtual disks</a>
+<a href="hardware-inspection.html">2.8 Hardware inspection</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="getting-data-into-the-simulated-system">2.7 <a href="#getting-data-into-the-simulated-system">Getting data into the simulated system</a></h1>
+<p>There are several situations when it is necessary and/or useful to let the simulated target machine interact with the host system, or even other systems accessible to the host via networking. Probably the most common situation is the need to transfer files between the target and the host.</p>
+<p>This section will describe a few ways of transferring data between the simulation and the real world:</p>
+<ol>
+<li>Data transfer using the preferred method, the <em>Simics Agent</em>. </li>
+<li>Data transfer by attaching simulated disks, using disk images. </li>
+<li>Data transfer using the simulated network and the <em>service node</em>. </li>
+<li>Data transfer when connecting the simulated network to a real network. </li>
+</ol>
+<h2 id="transferring-data-using-the-simics-agent">2.7.1 <a href="#transferring-data-using-the-simics-agent">Transferring data using the Simics Agent</a></h2>
+<p>File transfer can be done in several ways. The preferred method is to use the <em>Simics Agent</em>, which is piece of software that must be present on the target machine. The Clear Linux distribution for the <code>QSP-x86</code> machine has the agent pre-installed. If the agent is not present, it must be transferred to the target machine using one of the methods described later. The Simics Agent is preferred since it is the fastest and least intrusive method.</p>
+<p>The <strong>Simics Agent manager</strong> is a single global manager in Simics, used to manage all connections to all agents on all targets. When a connection is set up to a specific agent on a target, a <strong>Simics Agent handle</strong> is created. The handle is used to do actual operations. There can be multiple handles in use at once, connected to different agents.</p>
+<p>Here is an example of using the Simics Agent for transferring files, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>Start the Simics Agent manager. Here we also give it an explicit name. </li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>$m = (start-agent-manager name = mgr0)</strong>
+</code></pre>
+<ul>
+<li>Boot the target machine, log in as simics, and start the simics-agent from the target console prompt (the ClearLinux target has in fact done so already as part of its boot, but we start another one for this example). </li>
+</ul>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>simics-agent qsp &amp;</strong>
+qsp connected (1b90f02e10d5a84c)
+</code></pre>
+<ul>
+<li>Now we can connect the agent manager to the simics-agent on the target. A connection between the agent manager and a specific agent is represented by an agent handle. All commands are performed by the user using the agent handle.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>$m.connect-to-agent name = agent0 identifier = qsp</strong>
+agent0 connected to qsp0 (0x1b90f02e10d5a84c)
+</code></pre>
+<p>The <code>agent0</code> object is the new agent handle.</p>
+<ul>
+<li>Using the handle, we can transfer a file from the host to the target.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>agent0.upload from = "%simics%/targets/qsp-x86/firststeps.simics" to = /tmp</strong>
+agent0:job 1 (upload firststeps.simics)
+simics&gt; <strong>agent0.run-until-job 1</strong>
+agent0:job 1 (upload firststeps.simics) finished
+</code></pre>
+<ul>
+<li>Similarly, we can use the agent handle to transfer a file from the target to the host.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>agent0.download -overwrite from = "/tmp/firststeps.simics" to = /tmp</strong>
+agent0:job 2 (download firststeps.simics)
+simics&gt; <strong>agent0.run-until-job 2</strong>
+agent0:job 2 (download firststeps.simics) finished
+</code></pre>
+<p>Note that the agent operations are necessarily asynchronous, which is why we must wait for them to finish. However, there is no need to wait after each command; several commands can be queued up before a wait is issued.</p>
+<p>The Simics Agent can also perform other operations, such as</p>
+<ul>
+<li>List files on the target, see <strong>agent0.ls</strong> </li>
+<li>Print target file contents, see <strong>agent0.print-file</strong> </li>
+<li>Run arbitrary target (shell) commands, see <strong>agent0.run</strong> </li>
+<li>Retrieve output of the commands, see <strong>agent0.get-captured-output</strong> </li>
+</ul>
+<h2 id="transferring-files-using-disk-images">2.7.2 <a href="#transferring-files-using-disk-images">Transferring files using disk images</a></h2>
+<p>There are other methods for transferring data in and out of the simulation. If the Simics Agent is not already present on the target machine, one of them must be used first to copy the agent software.</p>
+<ul>
+<li><strong>USB</strong> - from a USB disk image, a virtual USB disk can be created and connected to the target machine. </li>
+<li><strong>SATA</strong> - from a disk image, typically in CRAFF format, a virtual hard disk can be created and connected to the target machine. </li>
+</ul>
+<p>Here is an example of transferring the Simics Agent to the target using USB, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>
+<p>Boot the target machine, log in as simics.</p>
+</li>
+<li>
+<p>Create and connect a virtual USB disk using the Simics Agent disk images provided with Simics.</p>
+</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>$usb_img = "%simics%/targets/common/images/simics_agent_binaries.img"</strong>
+</code></pre>
+<pre><code class="language-simics">simics&gt; <strong>$usb_disk = (new-usb-disk-comp file = $usb_img name = usb_disk)</strong>
+</code></pre>
+<pre><code class="language-simics">simics&gt; <strong>$usb_disk.connect-to $system</strong>
+Connecting usb_disk.usb_host to board.mb.sb.usb_port[10]
+</code></pre>
+<ul>
+<li>The new USB disk has been created and detected by the target machine operating system. Now we can mount it, copy and run the agent.</li>
+</ul>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>sudo mount /dev/sdc1 /media</strong>
+simics@cl-qsp ~ $ <strong>find /media -name simics_agent_x86_linux64</strong>
+/media/simics_agent_x86_linux64
+simics@cl-qsp ~ $ <strong>cp /media/simics_agent_x86_linux64 .</strong>
+simics@cl-qsp ~ $ <strong>./simics_agent_x86_linux64 qsp &amp;</strong>
+</code></pre>
+<ul>
+<li>With the agent now running on the target machine, we can now proceed as in the earlier section if we want to transfer other files.</li>
+</ul>
+<p>Here is another example of transferring the Simics Agent to the target using a second hard disk, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine. This machine is already set up to allow easy addition of an extra disk, using the <code>disk1_image</code> parameter.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics disk1_image=targets/common/images/simics_agent_binaries.img</strong>
+</code></pre>
+<ul>
+<li>Boot the target machine, log in as simics.</li>
+</ul>
+<ul>
+<li>Mount the second hard disk.</li>
+</ul>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>sudo mount /dev/sdb1 /media</strong>
+simics@cl-qsp ~ $ <strong>find /media -name simics_agent_x86_linux64</strong>
+/media/simics_agent_x86_linux64
+</code></pre>
+<ul>
+<li>Copy and run the Simics Agent.</li>
+</ul>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>cp /media/simics_agent_x86_linux64 .</strong>
+simics@cl-qsp ~ $ <strong>./simics_agent_x86_linux64 qsp &amp;</strong>
+</code></pre>
+<ul>
+<li>With the agent now running on the target machine, we can now proceed as in the earlier section if we want to transfer other files.</li>
+</ul>
+<h2 id="network-simulation-and-the-service-node">2.7.3 <a href="#network-simulation-and-the-service-node">Network simulation and the service node</a></h2>
+<p>Simics is a full system simulator, which can also simulate a network of machines. It includes a feature called the <em>service node</em> which acts like a separate machine on the simulated network, with its own IP address. The service node can expose common useful network services, such as DHCP, DNS, NTP as well as an FTP server that facilitates connecting to the host system and transfer files.</p>
+<p>The Clear Linux distribution for the <code>QSP-x86</code> machine uses the service node DHCP and DNS servers during boot, to set up its network services.</p>
+<p>Here is an example of transferring the Simics Agent to the target machine over FTP, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>
+<p>Boot the target machine, log in as simics.</p>
+</li>
+<li>
+<p>Notice that the service node and the target machine is set up in the service node DNS. The IP and MAC addresses are internal to the simulated network.</p>
+</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>$service_node.sn.list-host-info</strong>
+┌───────────┬───────────────────┬─────────────────┐
+│    IP     │    name.domain    │       MAC       │
+├───────────┼───────────────────┼─────────────────┤
+│10.10.0.1  │simics0.network.sim│20:20:20:20:20:00│
+│10.10.0.100│board.network.sim  │00:17:a0:00:00:00│
+└───────────┴───────────────────┴─────────────────┘
+</code></pre>
+<ul>
+<li>From the target console, we can also verify that the DNS is working by querying the service node IP.</li>
+</ul>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>host simics0</strong>
+simics0.network.sim has address 10.10.0.1
+</code></pre>
+<ul>
+<li>Now we can set up the service node FTP server by specifying its root directory on the host.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>$img_dir = "%simics%/targets/common/images"</strong>
+simics&gt; <strong>$service_node.set-ftp-directory dir = $img_dir</strong>
+</code></pre>
+<ul>
+<li>Now we can run an FTP client on the target to copy the agent, and then run it.</li>
+</ul>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>lftpget ftp://simics0/simics_agent_binaries.zip</strong>
+simics@cl-qsp ~ $ <strong>unzip -q simics_agent_binaries.zip</strong>
+simics@cl-qsp ~ $ <strong>./simics_agent_x86_linux64 qsp &amp;</strong>
+</code></pre>
+<ul>
+<li>With the agent now running on the target machine, we can now proceed as in the earlier section if we want to transfer other files.</li>
+</ul>
+<h2 id="connecting-to-real-networks">2.7.4 <a href="#connecting-to-real-networks">Connecting to real networks</a></h2>
+<p>Simics can let the target machine connect to any network that the host system has access to. This can be achieved in several ways, where NAPT is the simplest option. Simics then acts similarly like a regular home router, performing network address translation between the simulated network and the network that the host is connected to. The service node DNS server can also act as a proxy for real DNS.</p>
+<p>The Clear Linux distribution for the <code>QSP-x86</code> machine is set up to allow such usage.</p>
+<p>Here is an example of transferring data from the host to the target using regular networking, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>
+<p>Boot the target machine, log in as simics.</p>
+</li>
+<li>
+<p>Enable real time mode, to avoid network timeouts. This makes sure that Simics will not run the simulation faster than real time.</p>
+</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>enable-real-time-mode</strong>
+
+Real-time mode enabled.
+</code></pre>
+<ul>
+<li>Set up a simple HTTP server on the host. This command can naturally also be executed in any host shell, but here we use the <code>shell</code> command from within Simics.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>$python = (lookup-file "%simics%/bin/mini-python")</strong>
+simics&gt; <strong>$imgs = (lookup-file "%simics%/targets/common/images")</strong>
+simics&gt; <strong>shell -bg ($python + " -m http.server --directory " + $imgs)</strong>
+</code></pre>
+<ul>
+<li>For easier access of the host system from the target, we add the host IP address to the service node DNS.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>$service_node.sn.add-host name = "host0" ip = (sim-&gt;host_ipv4)</strong>
+</code></pre>
+<ul>
+<li>Now we can fetch data from the host using curl in the target console.</li>
+</ul>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>curl -s http://host0:8000/simics_agent_binaries.zip</strong>
+</code></pre>
+<ul>
+<li>On the target machine, we can verify that the file has been transferred.</li>
+</ul>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>ls simics_agent_binaries.zip</strong>
+simics_agent_binaries.zip
+</code></pre>
+<p>In this example we only connected to the host itself, but in fact the same technique can be used to connect to any other system that the host can access. Also note that the HTTP server we open on the host will be accessible by any web browser.</p>
+<p>Using port forwarding, the target can also be accessed from the host, and potentially from any system that can access the host, so this should be used with care. Here is an example of transferring a file to the target from the host over ssh, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine. This assumes that the host has ssh installed.</p>
+<ul>
+<li>
+<p>Install ssh on your host, if not already present. </p>
+</li>
+<li>
+<p>Start Simics with the mentioned target. </p>
+</li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>Inspect the service node DNS to find the IP address of the target machine.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>$service_node.sn.list-host-info</strong>
+
+┌───────────┬───────────────────┬─────────────────┐
+│    IP     │    name.domain    │       MAC       │
+├───────────┼───────────────────┼─────────────────┤
+│10.10.0.1  │simics0.network.sim│20:20:20:20:20:00│
+│10.10.0.100│board.network.sim  │00:17:a0:00:00:00│
+└───────────┴───────────────────┴─────────────────┘
+</code></pre>
+<ul>
+<li>Set up port forwarding to the target. By default, this opens a few ports on the host corresponding to FTP, SSH, Telnet and HTTP, and connects them to the target. Other ports can also be opened by specifying parameters to the command.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>connect-real-network target-ip = 10.10.0.100</strong>
+NAPT already enabled.
+Host TCP port 4021 -&gt; 10.10.0.100:21
+Host TCP port 4022 -&gt; 10.10.0.100:22
+Host TCP port 4023 -&gt; 10.10.0.100:23
+Host TCP port 4080 -&gt; 10.10.0.100:80
+Warning: This can expose the target system on the host local network.
+</code></pre>
+<ul>
+<li>
+<p>Boot the target machine, log in as simics.</p>
+</li>
+<li>
+<p>Enable real time mode, to avoid network timeouts.</p>
+</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>enable-real-time-mode</strong>
+Real-time mode enabled.
+</code></pre>
+<ul>
+<li>Now we can transfer the Simics Agent to the target machine over ssh. Note that we connect to the host itself and make use of the port forwarding.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>$fn = (lookup-file "%simics%/targets/common/images/simics_agent_binaries.zip")</strong>
+simics&gt; <strong>shell -bg "scp -P 4022 " + $fn + " simics@localhost:agent.zip"</strong>
+</code></pre>
+<ul>
+<li>On the target machine, we can verify that the file has been transferred.</li>
+</ul>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>ls agent.zip</strong>
+agent.zip
+</code></pre>
+<p>In this example we only copied a file, but using port forwarding, we can connect to other network service available on the target, such as web servers.</p>
+
+<div class="chain">
+<a href="virtual-disks.html">2.6 Virtual disks</a>
+<a href="hardware-inspection.html">2.8 Hardware inspection</a>
+</div>

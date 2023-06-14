@@ -1,0 +1,233 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4 Miscellaneous Notes</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simulated-machines.html">3 Simulated Machines</a>
+<a href="limitations.html">5 Limitations</a>
+</div>
+<div class="path">
+<a href="index.html">QSP-x86 Target Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Miscellaneous-Notes">4 Miscellaneous Notes</a></h1>
+<p>
+    
+    </p><h2 class="jdocu"><a name="Timing-problems">4.1 Timing problems</a></h2>
+<p>
+    
+    If you have problems typing in the password when logging in
+    because the simulated machine times out too quickly you can issue the
+    Simics command:
+</p><pre class="jdocu_small">simics&gt; enable-real-time-mode
+</pre><p>
+    This will cause Simics not to run faster than the wall clock.
+    Normally this is not a problem and it will only happens when the x86 processor
+    is sitting idle on a HLT instruction.
+</p><p>
+    For NetBSD, you will also need to lower the check interval to
+    avoid repeated keystrokes:
+</p><pre class="jdocu_small">simics&gt; enable-real-time-mode check_interval=100
+</pre><p>
+</p><p>
+    To run as fast as possible again you simply run the command:
+</p><pre class="jdocu_small">simics&gt; disable-real-time-mode
+</pre><p>
+    See the Reference Manual for further information.
+    </p><h2 class="jdocu"><a name="Console-input">4.2 Console input</a></h2>
+<p>
+    
+</p><p>
+    Certain key combinations are normally caught by the host operating
+    system or the window manager and may have dangerous side effects. An
+    example is the ctrl + alt + del combination used to bring up the task
+    manager on Windows and to reboot Linux systems. Such key combinations
+    can be safely inserted using Simics commands instead.
+</p><p>
+    For example to send ctrl + alt + del:
+    </p><pre class="jdocu_small">    simics&gt; board.console.con.input -e "C-A-Del"
+    </pre><p>
+</p><p>
+    Regular strings can also be issued:
+    </p><pre class="jdocu_small">    simics&gt; board.console.con.input "mkdir foo\n"
+    </pre><p>
+</p><p>
+    </p><h2 class="jdocu"><a name="Absolute-Positioning-Pointer">4.3 Absolute Positioning Pointer</a></h2>
+<p>
+      
+</p><p>
+    Without the connection of the USB tablet device, only the relative
+    coordinates of the mouse can be reported to the graphical console.
+    So if the simulated console and the real desktop disagree about the mouse
+    acceleration or position, you will get seemingly erratic mouse behavior
+    which is common and very irritating.
+</p><p>
+    To resolve the problem, you can connect the USB tablet device by setting
+    the parameter <b>connect_usb_tablet</b> to <code>TRUE</code>. Then in the Simics
+    target script, enable the absolute pointer like this:
+    </p><pre class="jdocu_small">    if ($connect_usb_tablet == TRUE) {
+        $console.con-&gt;abs_pointer_enabled = TRUE
+    }
+    </pre><p>
+</p><p>
+    Now the absolute mouse coordinates will be reported, which means that the
+    mouse pointer is exactly at the point where it is on the real desktop. You
+    can then start Simics and the mouse movement in the graphical console
+    should become normal.
+</p><p>
+    
+    </p><h2 class="jdocu"><a name="Changing-the-Processor-Clock-Frequency">4.4 Changing the Processor Clock Frequency</a></h2>
+<p>
+
+<a name="configurationtips"></a> 
+<a name="processor-clock-frequency"></a>
+<a name="interactive-use-of-simulated-machines"></a>
+</p><p>
+The clock frequency of a simulated processor can be set arbitrarily in
+Simics.  This will not affect the actual speed of simulation, but it
+will affect the number of instructions that need to be executed for a
+certain amount of simulated time to pass.  If your execution only
+depends on executing a certain number of instructions, increasing the clock frequency will take
+the same amount of host time (but a shorter amount of target
+time). However, if there are time based delays of some kind in the simulation,
+these will take  longer to execute. 
+</p><p>
+At a simulated 1 MHz, one million target instructions will correspond to a
+simulated second (assuming the simple default timing of one cycle per
+instruction). At 100 MHz, on the other hand, it will take 100 million
+target instructions to complete a simulated second. So with a higher clock
+frequency, less simulated target time is going to pass for a certain
+period of host execution time.
+</p><p>
+If Simics is used to emulate an interactive system (especially one
+with a graphical user interface) it is a good idea to set the clock
+frequency quite low.  Keyboard and mouse inputs events are handled by
+periodic interrupts in most operating systems, using a higher clock
+frequency will result in longer delays between invocations of periodic
+interrupts.  Thus, the simulated system will feel slower in its user
+response, and update the mouse cursor position etc. less frequently.
+If this is a problem, the best technique for running experiments at a
+high clock frequency is to first complete the configuration of the
+machine using a low clock frequency.  Save all configuration changes
+to a disk diff (like when installing operating systems).  Then change
+the configuration to use a higher a clock frequency and reboot the
+target machine.
+</p><p>
+Note that for a lightly-loaded machine (for example, working at an
+interactive prompt on a serial console to an embedded Linux system),
+Simics will often execute quickly enough at the real target clock
+frequency that there is no need to artificially lower it.
+</p><p>
+
+	</p><h2 class="jdocu"><a name="Sample-Core-Timing-Model">4.5 Sample Core Timing Model</a></h2>
+<p>
+	  
+	  The sample-core-timing model is a simple instrumentation tool that can adjust the timing
+	  based on what goes on in a core. The code can serve as an example on one way to extend a
+	  functional simulation with approximate timing.
+</p><p>
+	  The model works by running a number of instructions fast while collecting information about
+	  what goes on in what is called a period. Then the core is stalled to make the core's time match
+	  the calculated number of cycles for the instructions retired during the period.
+</p><p>
+	  The provided example model collects read and write operations, total number of instructions
+	  and number of instructions of a configurable set of instruction classes.
+	  This will not give any real timing information since the inner workings of a modern core
+	  is much more complicated.
+</p><p>
+	  Activity<br>
+	  The tool can also calculate activity to provide a base for power and temperature modeling.
+	  Activity is calculated in a similar way to the cycles but also include a base activity per cycle.
+	  Again, these numbers will not match the real thing but can be used to exercise power management code.
+</p><p>
+	  To create a sample-core-timing model and attach it to the core(s)
+	  </p><pre class="jdocu_small">simics&gt; new-sample-core-timing-tool name = timing -connect-all
+	  </pre><p>
+</p><p>
+	  This will create a central tool called timing and one timing-model object per core.
+</p><p>
+	  All the standard commands for instrumentation tools can also be used with sample-core-timing.
+	  See instrumentation chapter in the Simics User Guide for more information on the instrumentation
+	  framework.
+</p><p>
+	  There are a number of commands in the tool to help set it up. With the commands
+	  <b>set-base-cycles-per-instruction</b> and <b>set-base-activity-per-instruction</b>
+	  the number of cycles and amount of activity used for each instruction is set. With
+	  <b>set-base-activity-per-cycle</b> a background activity that is added per cycle can be set.
+	  Both cycles and activity can be specified as floating point numbers. Default for the activity
+	  settings is 0 but for cycles default is 1 cycle per instruction.
+</p><p>
+	  </p><pre class="jdocu_small">simics&gt; timing.set-base-cycles-per-instruction cycles = 0.5
+simics&gt; timing.set-base-activity-per-instruction activity = 227.4
+simics&gt; timing.set-base-activity-per-cycle activity = 4.56
+	  </pre><p>
+</p><p>
+	  Read and write operations can add both extra cycles and activity. The commands
+	  <b>set-cycles-per-read</b>, <b>set-activity-per-read</b>, <b>set-cycles-per-write</b>
+	  and <b>set-activity-per-write</b> are used to configure those settings.
+	  Default cycle and activity values are 0.
+</p><p>
+	  </p><pre class="jdocu_small">simics&gt; timing.set-cycles-per-read cycles = 0.11
+simics&gt;	timing.set-activity-per-read activity = 34.5
+simics&gt;	timing.set-cycles-per-write cycles = 0.27
+simics&gt; timing.set-activity-per-write activity = 128.3
+	  </pre><p>
+</p><p>
+	  Instruction classes<br>
+	  In this context an instruction class consists of a substring and adjustment settings for cycles
+	  and activity. Since base-cycles and base-activity are specified for all instructions, this is a
+	  way to tune for particular sets of instructions. To help set up there are a couple of commands.
+</p><p>
+	  With <b>add-instruction-class</b> a new instruction class is added. The adjustment values
+	  for cycles and activity can be either positive or negative. The activity value can be omitted
+	  which is the same as setting it to 0.
+</p><p>
+	  </p><pre class="jdocu_small">simics&gt; timing.add-instruction-class instruction = "div" extra_cycles = 0.7 extra_activity = 328
+simics&gt; timing.add-instruction-class instruction = "nop" extra_cycles = -0.25 extra_activity = -118
+simics&gt; timing.add-instruction-class instruction = "xmm" extra_cycles = 0 extra_activity = 147
+simics&gt; timing.list-instruction-classes
+	  </pre><p>
+</p><p>
+	  Finally, there are two commands to inspect what the sample-core-timing models have found out.
+	  The <b>list-performance-metrics</b> lists IPC, instructions per cycle, and activity per cycle
+	  for the last period and average IPC and activity per cycle for the whole time the model has been
+	  enabled.
+	  The <b>list-metrics</b> lists all the internal metrics accumulated in the timing models.
+</p><p>
+	  </p><pre class="jdocu_small">simics&gt; timing.list-performance-metrics
+simics&gt; timing-list-metrics
+	  </pre><p>
+</p><p>
+	  Telemetry from the timing model can be retrieved through the telemetry-interface.
+	  Three different telemetry-classes are provided.
+	  A notification called "isim-telemetry-update" is notified when there is new data
+	  to look at.
+</p><p>
+	
+</p>
+<div class="chain">
+<a href="simulated-machines.html">3 Simulated Machines</a>
+<a href="limitations.html">5 Limitations</a>
+</div>

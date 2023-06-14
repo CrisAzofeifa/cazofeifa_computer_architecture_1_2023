@@ -1,0 +1,87 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7 Python 3</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="consoles-migration.html">6 Target consoles</a>
+<a href="deprecation-table.html">8 Deprecated and Legacy Functionality</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Migration Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="python-migration">7 Python 3</a></h1>
+<p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="Introduction">7.1 Introduction</a></h2>
+<p>
+  
+</p><p>
+Simics contains an embedded Python interpreter, and in Simics 6 this
+has been upgraded to Python 3.7. 
+</p><p>
+In general, Python 2.7 code is not compatible with Python 3, so a
+porting effort is required. Python provides a tool <code>2to3</code> which
+converts source code from Python 2.7 syntax to Python 3 syntax. It
+applies textual transformations, and this can also be done
+selectively, to e.g. only apply transformations that maintain 2.7
+compatibility.
+</p><p>
+As a start to the porting work, study official Python documentation
+where an overview of the new features in Python 3 is provided.  
+
+</p><h2 class="jdocu"><a name="Modules-with-Python-source-files">7.2 Modules with Python source files</a></h2>
+<p>
+  
+</p><p>
+When building a Simics module, any Python source files (listed with
+the <code>PYTHON_FILES</code> variable in the module Makefile) will be
+built into <code>.pyc</code> files for Python 3. By setting the
+variable <code>PYTHON_2TO3</code> to <code>1</code> in the module Makefile,
+the <code>.py</code> files are first converted to Python 3 syntax by
+running the Python <code>2to3</code> tool, before being compiled for
+Python 3. When loading the module, the respective Simics version will
+use the corresponding <code>.pyc</code> files automatically.
+
+</p><h2 class="jdocu"><a name="Migration-process">7.3 Migration process</a></h2>
+<p>
+  
+</p><p>
+The migration process can be as follows:
+</p><p>
+</p><ol>
+  <li>Use the <code>2to3</code> tool to convert all source code to Python
+  3 syntax.</li>
+  <li>Make sure all tests work (the <code>2to3</code> tool occasionally
+  makes mistakes).</li>
+</ol>
+
+<p>
+</p>
+<div class="chain">
+<a href="consoles-migration.html">6 Target consoles</a>
+<a href="deprecation-table.html">8 Deprecated and Legacy Functionality</a>
+</div>

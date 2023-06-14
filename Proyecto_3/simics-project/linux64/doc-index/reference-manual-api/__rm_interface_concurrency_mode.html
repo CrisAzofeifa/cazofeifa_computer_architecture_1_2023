@@ -1,0 +1,102 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>concurrency_mode</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_concurrency_group.html">concurrency_group</a>
+<a href="__rm_interface_connector.html">connector</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_concurrency_mode">concurrency_mode</a></h1>
+<p>
+
+<a name="concurrency_mode"></a><a name="concurrency_mode_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="concurrency_mode_t"></a>
+<p>
+   The <code>concurrency_mode</code> interface allows a model to
+   support a concurrency mode other than the default
+   <code>Sim_Concurrency_Mode_Serialized</code>.
+</p><p>
+   The <b><i>supported_modes</i></b> method returns a bitmask
+   with all the supported modes.
+</p><p>
+   The <b><i>current_mode</i></b> method returns the currently active
+   mode. Note that the model should normally checkpoint this setting.
+</p><p>
+   The <b><i>switch_mode</i></b> method is invoked by Simics to notify
+   a model that a different concurrency mode has been selected by the user.
+   This typically happens when the user switches threading mode using
+   the <b>set-threading-mode</b> command. The object will typically
+   be placed in a different thread domain shortly after the call to this
+   method.
+</p><p>
+   A model will be placed in the cell thread domain if it uses
+   the <code>Sim_Concurrency_Mode_Serialized</code> mode and
+   in a separate thread domain otherwise. The <code>concurrency_group</code>
+   interface can be used to ensure that multiple objects are placed in the
+   same thread domain.
+</p><p>
+   Refer to the chapter about threading in the
+   <em>API Reference Manual</em> for details about thread domains,
+   the Standard Device Model and the Threaded Device Model.
+</p><p>
+   
+</p><pre class="jdocu_small">typedef enum {
+        /* Model uses the Standard Device Model */
+        Sim_Concurrency_Mode_Serialized = 1,
+
+        /* Model uses the Threaded Device Model.
+           Direct memory pages are protected against concurrency. */
+        Sim_Concurrency_Mode_Serialized_Memory = 2,
+
+        /* Model uses the Threaded Device Model.
+           Concurrency can be observed on direct memory pages */
+        Sim_Concurrency_Mode_Full = 4,
+} concurrency_mode_t;</pre><p>
+
+   </p><pre class="jdocu_small">SIM_INTERFACE(concurrency_mode) {
+        concurrency_mode_t (*supported_modes)(conf_object_t *NOTNULL obj);
+        concurrency_mode_t (*current_mode)(conf_object_t *NOTNULL obj);
+        void (*switch_mode)(conf_object_t *NOTNULL obj,
+                            concurrency_mode_t mode);
+};
+#define CONCURRENCY_MODE_INTERFACE "concurrency_mode"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_concurrency_group.html">concurrency_group</a>
+<a href="__rm_interface_connector.html">connector</a>
+</div>

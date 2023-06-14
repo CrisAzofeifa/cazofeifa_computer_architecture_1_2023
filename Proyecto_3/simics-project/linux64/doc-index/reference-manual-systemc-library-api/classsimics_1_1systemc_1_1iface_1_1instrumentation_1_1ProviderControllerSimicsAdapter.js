@@ -1,0 +1,4 @@
+var classsimics_1_1systemc_1_1iface_1_1instrumentation_1_1ProviderControllerSimicsAdapter =
+[
+    [ "ProviderControllerSimicsAdapter", "classsimics_1_1systemc_1_1iface_1_1instrumentation_1_1ProviderControllerSimicsAdapter.html#a1091adfc7f9d3363bdf473de81da5920", null ]
+];

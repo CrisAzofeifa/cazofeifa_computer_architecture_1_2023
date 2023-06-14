@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-gdb-remote</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-new-frankie-carbone.html">new-frankie-carbone</a>
+<a href="rm-cmd-new-generic-pcie-switch.html">new-generic-pcie-switch</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="new-gdb-remote"></a>
+<h1 id="new-gdb-remote"><a href="#new-gdb-remote">new-gdb-remote</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>new-gdb-remote</b> [<i>"name"</i>] [<i>port</i>] [<i>cpu</i>] [<i>"architecture"</i>] [<i>context</i>] [-disallow-remote-commands] [-ipv4] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Starts listening to incoming connection requests from GDB sessions (provided that a configuration has been loaded). Simics will listen to TCP/IP requests on the port specified by <i>port</i>, or 9123 by default. If <i>port</i> is set to zero, an arbitrary free port will be selected.
+<p>
+The <tt>gdb-remote</tt> object will get a name assigned automatically unless one is specified using <i>name</i>.
+</p><p>
+A processor to connect to should be specified using the <i>cpu</i> argument, the GDB session will follow the execution on that particular processor. It will see all code that runs on that processor: user processes, operating system, hypervisor, everything. If no <i>cpu</i> argument is given the current cpu object will be used.
+</p><p>
+The <i>architecture</i> argument can be used to specify a particular architecture for the GDB session. It should be the architecture name used by Simics and not the GDB architecture name. For example, if you are debugging a 32-bit program on a 64-bit x86 processor, you may want to specify <tt>x86</tt> as <i>architecture</i> and run <tt>set architecture i386</tt> in GDB before connecting. For 64-bit PowerPC platforms set this argument to <tt>ppc32</tt> to debug a 32-bit program. If not given, the architecture of the specified processor will be used.
+</p><p>
+The <tt>-disallow-remote-commands</tt> argument will prevent the client from using the <em>monitor</em> command, which sends a <em>qRcmd</em> message, to perform any Simics CLI command over the remote connection.
+</p><p>
+In GDB, use the command <b>target remote <i>host</i>:<i>port</i></b> to connect to Simics. Upon connection GDB assumes that the simulation is paused. GDB also assumes that it has full 'run control' (continue, step, next, etc.) and will be confused if simulation also is controlled by other means, such as using Simics commands. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.gdb-remote.html">gdb-remote</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-new-frankie-carbone.html">new-frankie-carbone</a>
+<a href="rm-cmd-new-generic-pcie-switch.html">new-generic-pcie-switch</a>
+</div>

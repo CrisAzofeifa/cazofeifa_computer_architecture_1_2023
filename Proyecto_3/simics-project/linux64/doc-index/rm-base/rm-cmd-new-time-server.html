@@ -1,0 +1,64 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-time-server</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-new-text-graphics-console-comp.html">new-text-graphics-console-comp</a>
+<a href="rm-cmd-new-tracer.html">new-tracer – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="new-time-server"></a>
+<h1 id="new-time-server"><a href="#new-time-server">new-time-server</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>new-time-server</b> [<i>port</i>] [<i>"name"</i>] [-poll] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+
+<p>
+Create a new time server that listens on <i>port</i> (8123 by default), or use <i>port</i> 0 for any port. <i>name</i> is optional and the name of the created object will be returned.
+</p><p>
+With the <tt>-poll</tt> flag the time-server will periodically poll the time and return the polled value in queries. Otherwise, the time server will always return the current time in queries. Polled mode offers better performance when the time server is queried at a high frequency, but does not support events.
+</p><p>
+Connected clients can query the virtual time, install alarm events that are triggered after a certain amount of virtual time, or install keepalive events that trigger at a periodic rate (real time).
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.time-server-c.html">time-server-c</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-new-text-graphics-console-comp.html">new-text-graphics-console-comp</a>
+<a href="rm-cmd-new-tracer.html">new-tracer – deprecated</a>
+</div>

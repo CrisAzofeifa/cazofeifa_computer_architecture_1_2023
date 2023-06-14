@@ -1,0 +1,3869 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>6.2 Simulator API Functions</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simulator-api-data-types.html">6.1 Simulator API Data Types</a>
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-api.html">6 Simulator API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Simulator-API-Functions">6.2 Simulator API Functions</a></h1>
+<p>
+
+    
+
+</p><p>
+</p><h2 class="jdocu"><a class="not-numbered" name="Breakpoints">Breakpoints</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_break_cycle">SIM_break_cycle()</a></h3>
+<p>
+
+<a name="SIM_break_cycle2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_break_cycle"></a><b>SIM_break_cycle</b> — insert breakpoint in time queue</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_break_cycle(conf_object_t *NOTNULL obj, int64 cycles);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Insert a breakpoint event at <i>cycles</i> clock cycles from now,
+   causing simulation to stop when reached by <i>obj</i>.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_break_step">SIM_break_step()</a></h3>
+<p>
+
+<a name="SIM_break_step2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_break_step"></a><b>SIM_break_step</b> — set a step breakpoint</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_break_step(conf_object_t *NOTNULL obj, int64 steps);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Sets a step breakpoint on a processor. The <i>steps</i>
+   argument is the number of instructions until the break occurs.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_InterfaceNotFound</b> Thrown if the <i>obj</i> object
+   doesn't implement the <code>step</code> interface.
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_breakpoint">SIM_breakpoint()</a></h3>
+<p>
+
+<a name="SIM_breakpoint2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_breakpoint"></a><b>SIM_breakpoint</b> — set breakpoint</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">breakpoint_id_t
+SIM_breakpoint(conf_object_t *NOTNULL obj,
+               breakpoint_kind_t kind,
+               access_t access,
+               uint64 address,
+               uint64 length,
+               breakpoint_flag_t flags);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Add breakpoint on an <i>object</i> implementing
+   the <code>breakpoint</code> interface. This is typically
+   a memory space object such as physical memory.
+<p>
+   The <i>kind</i> argument sets what type of address to break on:
+</p><p>
+   
+   <a name="breakpoint_kind_t"></a>
+   </p><pre class="jdocu_small">typedef enum {
+        Sim_Break_Physical = 0,
+        Sim_Break_Virtual  = 1,
+        Sim_Break_Linear   = 2      /* x86 only */
+} breakpoint_kind_t;</pre><p>
+</p><p>
+   
+</p><p>
+   The <i>access</i> argument is a bit-field setting the type of
+   access. Any combination of the three alternatives can be given (added
+   together).
+</p><p>
+   
+   <a name="access_t"></a>
+   </p><pre class="jdocu_small">typedef enum {
+        Sim_Access_Read = 1,
+        Sim_Access_Write = 2,
+        Sim_Access_Execute = 4
+} access_t;</pre><p>
+</p><p>
+   
+</p><p>
+   The <i>address</i> is the start of the breakpoint range and
+   <i>length</i> is its length in bytes. This range will be truncated
+   as necessary to fit in the address space. An access intersecting the given
+   range will trigger the breakpoint. If <i>length</i> is zero, the
+   breakpoint range will be the entire address space.
+</p><p>
+   The <i>flags</i> argument should be the sum of
+   zero or more enumeration constants from 
+   <code>breakpoint_flag_t</code>:
+</p><p>
+   <a name="breakpoint_flag_t"></a><a name="breakpoint_flag_t2"></a>
+   
+</p><pre class="jdocu_small">typedef enum breakpoint_flag {
+        Sim_Breakpoint_Temporary = 1,
+        Sim_Breakpoint_Simulation = 2,
+        Sim_Breakpoint_Private = 4
+} breakpoint_flag_t;</pre><p>
+
+</p><p>
+   If the <code>Sim_Breakpoint_Temporary</code> bit is set, the breakpoint
+   is automatically disabled when triggered the first time.
+</p><p>
+   If the <code>Sim_Breakpoint_Simulation</code> bit is set, the breakpoint
+   will not show up in the <b>&lt;bp-manager&gt;.list</b> command, nor can
+   it be removed by the <b>&lt;bp-manager&gt;.delete</b> command. Also,
+   there will be no message printed on the Simics console when this breakpoint
+   is triggered. This bit should be set when using breakpoints to simulate the
+   target system; it will prevent Simics from temporarily disabling the
+   breakpoint as an optimization measure. This could otherwise happen during
+   certain reverse execution operations.
+</p><p>
+   If the <code>Sim_Breakpoint_Private</code> bit is set, the breakpoint will
+   not show up in the <b>&lt;bp-manager&gt;.list</b> command, nor can it be
+   removed by the <b>&lt;bp-manager&gt;.delete</b> command.
+</p><p>
+   The default action for a triggered breakpoint is to return to the frontend
+   (this can be changed  by using haps). On execution breakpoints Simics will
+   return to the frontend before the instructions is executed, while
+   instructions triggering read or write breakpoints will complete before
+   control is returned to the frontend.
+</p><p>
+   Several breakpoints can be set on the same address and Simics will break on
+   them in turn. If hap handlers are connected to the breakpoints they will
+   also be executed in turn. Hap handlers are called before the access is
+   performed, allowing the user to read a memory value that may be overwritten
+   by the access. See the Simics Reference Manual for a description of hap
+   handlers.
+</p><p>
+   Several attributes can be set for a breakpoint for breaking only when some
+   conditions are true. See the <i>breakpoints</i> attribute in the
+   <b>sim</b> class.
+</p><p>
+   This function returns the breakpoint id which is used for further reference
+   to the breakpoint:
+</p><p>
+   <a name="breakpoint_id_t"></a>
+</p><pre class="jdocu_small">typedef int breakpoint_id_t;</pre><p>
+
+</p><p>
+   Breakpoints can be removed using <b><i>SIM_delete_breakpoint</i></b>.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the type or access arguments are
+   illegal. Also thrown if obj cannot handle breakpoints of the given kind.
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Breakpoint id, -1 on exception.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_breakpoint_remove</i></b>, <b><i>SIM_delete_breakpoint</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_breakpoint_remove">SIM_breakpoint_remove()</a></h3>
+<p>
+
+<a name="SIM_breakpoint_remove2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_breakpoint_remove"></a><b>SIM_breakpoint_remove</b> — delete breakpoint range</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_breakpoint_remove(int id,
+                      access_t access,
+                      generic_address_t address,
+                      generic_address_t length);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Deletes a breakpoint range from an existing breakpoint. Can thus be used to
+   create holes in the breakpoint range. <i>id</i> is the breakpoint
+   to operate on, as returned by <b><i>SIM_breakpoint</i></b>. A value of zero
+   will operate on all breakpoints that were not set using the
+   <code>Sim_Breakpoint_Simulation</code> flag.
+<p>
+   <i>access</i> is a bitfield describing the type of breakpoint to
+   remove using the enumeration constants of the <code>access_t</code> enum.
+</p><p>
+   <i>address</i> is the start address of the range and
+   <i>length</i> is the length of the range in bytes.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Index</b> Thrown if illegal breakpoint
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_breakpoint</i></b>, <b><i>SIM_delete_breakpoint</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_delete_breakpoint">SIM_delete_breakpoint()</a></h3>
+<p>
+
+<a name="SIM_delete_breakpoint2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_delete_breakpoint"></a><b>SIM_delete_breakpoint</b> — delete breakpoint</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_delete_breakpoint(breakpoint_id_t id);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Deletes breakpoint <i>id</i> as returned by
+   <b><i>SIM_breakpoint</i></b>. A value of zero will delete all breakpoints
+   that were set without the <code>Sim_Breakpoint_Simulation</code> flag.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Index</b> Thrown if no breakpoint with the id is found.
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_disable_breakpoint">SIM_disable_breakpoint()</a></h3>
+<p>
+
+<a name="SIM_disable_breakpoint2"></a><a name="SIM_enable_breakpoint"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_disable_breakpoint"></a><b>SIM_disable_breakpoint</b><b>, SIM_enable_breakpoint</b> — disable breakpoint</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_disable_breakpoint(breakpoint_id_t id);
+</pre><p></p><pre class="jdocu_small">void
+SIM_enable_breakpoint(breakpoint_id_t id);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Enables and disables breakpoint <i>id</i>, as returned by
+   <b><i>SIM_breakpoint</i></b>.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Index</b> Thrown if no breakpoint with the id is found.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Configuration">Configuration</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_add_configuration">SIM_add_configuration()</a></h3>
+<p>
+
+<a name="SIM_add_configuration2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_add_configuration"></a><b>SIM_add_configuration</b> — set configuration from Python</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_add_configuration(pre_conf_object_set_t *NOTNULL set,
+                      const char *file);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function creates objects from the parse objects in <i>set</i>
+  and adds the initialized objects to the current configuration (creating one
+  if necessary).
+  When called from Python (which is the intended usage), the configuration
+  <i>set</i> is a sequence (list or tuple) of pre_conf_object Python
+  objects, or a dictionary of the form
+  <nobr><code>{</code><i>name</i><code> : </code><i>pre_conf_object</i><code>}</code></nobr>.
+<p>
+  The <i>file</i> argument is the name of the file that a configuration
+  was read from, and should be set to None/NULL if not used.
+</p><p>
+  The following examples are written in Python. As they do not map any devices
+  in <code>phys_mem</code>, they will not work as stand-alone simulations.
+</p><p>
+  Example when <i>set</i> is a sequence:
+</p><p>
+  </p><pre class="jdocu_small">    clock = pre_conf_object('timer', 'clock')
+    clock.freq_mhz = 20
+    space = pre_conf_object('phys_mem', 'memory-space')
+    space.queue = clock
+
+    SIM_add_configuration([clock, space], None)
+  </pre><p>
+</p><p>
+  Example when <i>set</i> is a dictionary:
+</p><p>
+  </p><pre class="jdocu_small">    objects = {}
+    objects['clock'] = pre_conf_object('timer', 'clock')
+    objects['clock'].freq_mhz = 20
+    objects['space'] = pre_conf_object('phys_mem', 'memory-space')
+    objects['space'].queue = objects['clock']
+
+    SIM_add_configuration(objects, None)
+  </pre><p></p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if Simics fails to initialize all objects.
+<p>
+  </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_create_object">
+    SIM_create_object</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_set_configuration"> SIM_set_configuration</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_read_configuration">
+    SIM_read_configuration
+  </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_class_has_attribute">SIM_class_has_attribute()</a></h3>
+<p>
+
+<a name="SIM_class_has_attribute2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_class_has_attribute"></a><b>SIM_class_has_attribute</b> — check if class implements attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">bool
+SIM_class_has_attribute(conf_class_t *NOTNULL cls, const char *NOTNULL attr);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns true if the class <i>cls</i> implements an attribute with
+   the name <i>attr</i>.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-functions.html#__jdocu_seealso_SIM_register_attribute">
+     SIM_register_attribute</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_get_attribute">
+     SIM_get_attribute
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_create_object">SIM_create_object()</a></h3>
+<p>
+
+<a name="SIM_create_object2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_create_object"></a><b>SIM_create_object</b> — create and initialize object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIM_create_object(conf_class_t *NOTNULL cls, const char *name,
+                  attr_value_t attrs);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Creates a new instance of the configuration class <i>cls</i>.
+   <i>name</i> must consist of a letter followed by letters, digits
+   or underscores (<code>_</code>). A unique name will be created if <i>name</i>
+   is an empty string or NULL. For backward compatibility, hyphens (<code>-</code>)
+   are allowed instead of underscores but their use is deprecated.
+<p>
+   The new object is initialized with attributes from
+   <i>attrs</i>, which must be a list of (<i>attribute-name</i>,
+   <i>value</i>) pairs, where each pair is a two-element list. All
+   required attributes for the class <i>cls</i> must be present in
+   <i>attrs</i>. In Python, <i>attrs</i> can be omitted (if no
+   attributes are required), it can be normal lists:
+   <code>[['attribute1', value1], ['attribute2', value2]]</code>
+   or keyword arguments: <code>attribute1=value1, attribute2=value2</code>.
+</p><p>
+   Attributes in ports of the <i>cls</i> class can be initialized by
+   prefixing the attribute name with the port name,
+   e.g. <code>['p.portname.attr', value]</code>.
+</p><p>
+   The argument value may be modified, but the caller is still responsible for
+   freeing it. Neither point applies when the function is called from
+   Python.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The new object, or <code>NULL</code> on
+   error (in which case an exception is raised).</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the name is not well-formed, if an object
+   named <i>name</i> already exists, or if the initialisation failed.
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_add_configuration">
+     SIM_add_configuration</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_set_configuration"> SIM_set_configuration
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_current_checkpoint_dir">SIM_current_checkpoint_dir()</a></h3>
+<p>
+
+<a name="SIM_current_checkpoint_dir2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_current_checkpoint_dir"></a><b>SIM_current_checkpoint_dir</b> — directory of checkpoint being loaded</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">char *
+SIM_current_checkpoint_dir(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+If called during the loading of a checkpoint, this function returns the
+     checkpoint (bundle) directory. Otherwise, the return value is NULL. The
+     directory can be absolute or relative, and may be the empty string if the
+     checkpoint directory is the current working directory.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context
+     </dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_read_configuration">
+       SIM_read_configuration</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_add_configuration">
+       SIM_add_configuration
+     </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_delete_objects">SIM_delete_objects()</a></h3>
+<p>
+
+<a name="SIM_delete_objects2"></a><a name="SIM_delete_object"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_delete_objects"></a><b>SIM_delete_objects</b><b>, SIM_delete_object</b> — delete a list of objects</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">int
+SIM_delete_objects(attr_value_t val);
+</pre><p></p><pre class="jdocu_small">int
+SIM_delete_object(conf_object_t *NOTNULL obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Delete the list of objects <i>val</i> (or the single object
+   <i>obj</i>) passed as argument, provided that no reference to these
+   objects is left in the rest of the configuration. Descendant objects of an
+   object being deleted will also be deleted.
+<p>
+   Some specific objects in Simics, such as <b>sim</b>, are protected
+   against deletion and will be ignored by this function. 
+</p><p>
+   If Simics finds references to the objects in the rest of the configuration,
+   a warning will be printed and the operation will be aborted. Note that in
+   this case, the deletion process has started and the objects may already have
+   began their clean-up routines. The safest action at this point is to fix the
+   dangling references and to try to delete the objects once again.
+</p><p>
+   Events posted by the objects in cycle queues or step queues will be
+   automatically removed. Hap callbacks and script branches waiting on deleted
+   objects will be interrupted as well.</p></dd>
+<dt class="jdocu_descitem">RECURSION</dt><dd>
+While removing the listed objects, SIM_delete_objects()
+   will call various callbacks (<code>Core_Conf_Object_Pre_Delete</code> and
+   <code>Core_Conf_Object_Delete</code> haps, as well as
+   <b><i>pre_delete_instance</i></b> and <b><i>delete_instance</i></b> for each
+   object). Recursive calls to SIM_delete_objects() are allowed during the
+   <em>pre-delete</em> phase (Pre_Delete hap and
+   <b><i>pre_delete_instance</i></b> callback), and the new objects will be
+   added to the current list of objects to delete. Recursive calls after this
+   stage will fail.
+<p>
+   This limited recursion is meant to let objects that "own" other objects
+   destroy them automatically if they themselves are to be deleted. This is
+   used for example by the standard Simics components.</p></dd>
+<dt class="jdocu_descitem">BUGS</dt><dd>
+Note that for successful deletion of objects, each class
+   should implement the proper deletion methods called by
+   SIM_delete_objects(). If the methods are not present, SIM_delete_objects()
+   will simply remove any reference to the object, but this may leave memory
+   and resources unrecoverable.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Returns zero if successful. Throws an exception and
+   returns non-zero otherwise.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if an error occurred or a reference to the
+   objects is left in the rest of the configuration.
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+The following line at the Simics prompt:
+   <pre class="jdocu_small">   @SIM_delete_objects(SIM_get_all_objects())
+   </pre><p>
+   will delete all unprotected objects in the configuration, leaving the Simics
+   session empty.</p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_all_classes">SIM_get_all_classes()</a></h3>
+<p>
+
+<a name="SIM_get_all_classes2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_all_classes"></a><b>SIM_get_all_classes</b> — get list of all loaded classes</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_get_all_classes(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return an unordered list of the names of all configuration classes loaded
+   into simulation.
+<p>
+   The Python function <b><i>cli.global_cmds.list_classes</i></b> can be used to
+   get class names, by default including not-loaded classes.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+List of class names.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_all_objects">SIM_get_all_objects()</a></h3>
+<p>
+
+<a name="SIM_get_all_objects2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_all_objects"></a><b>SIM_get_all_objects</b> — get list of all objects</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_get_all_objects(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return a list of all configuration objects.
+   The order is unspecified and may vary between calls to this function.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+List of objects.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_attribute">SIM_get_attribute()</a></h3>
+<p>
+
+<a name="SIM_get_attribute2"></a><a name="SIM_get_attribute_idx"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_attribute"></a><b>SIM_get_attribute</b><b>, SIM_get_attribute_idx</b> — get attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_get_attribute(conf_object_t *NOTNULL obj, const char *NOTNULL name);
+</pre><p></p><pre class="jdocu_small">attr_value_t
+SIM_get_attribute_idx(conf_object_t *NOTNULL obj, const char *NOTNULL name,
+                      attr_value_t *NOTNULL index);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Extracts the attribute specified by <i>name</i> parameter from
+   <i>obj</i>. If an error occurs, an invalid value is returned. The
+   _idx version of the function can be used to get a single entry in a list or
+   data attribute. The attribute must support indexing for this to work.
+<p>
+   The caller is as usual responsible for freeing the returned value by
+   calling <b><i>SIM_attr_free</i></b>.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Attribute value. An attribute of Invalid type
+   is returned if the attribute could not be read.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<ul>
+   <li><b>SimExc_AttrNotFound</b> If the object did not have the specified
+   attribute.</li>
+
+   <li><b>SimExc_AttrNotReadable</b> If the attribute cannot be read.</li>
+
+   <li><b>SimExc_Type</b> If the index has the wrong type.</li>
+
+   <li><b>SimExc_General</b> If <b><i>SIM_attribute_error</i></b> or
+   <b><i>SIM_c_attribute_error</i></b> was called inside the getter function.</li>
+   </ul>
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-functions.html#__jdocu_seealso_SIM_attr_free">SIM_attr_free</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_set_attribute">
+   SIM_set_attribute</a>, <a class="jdocu" href="device-api-functions.html#__jdocu_seealso_SIM_attribute_error"> SIM_attribute_error</a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_attribute_attributes">SIM_get_attribute_attributes()</a></h3>
+<p>
+
+<a name="SIM_get_attribute_attributes2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_attribute_attributes"></a><b>SIM_get_attribute_attributes</b> — get attribute flags</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_attr_t
+SIM_get_attribute_attributes(conf_class_t *NOTNULL cls,
+                             const char *NOTNULL attr);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the attribute flags of the <i>attr</i> attribute of the
+   class <i>cls</i>.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-functions.html#__jdocu_seealso_SIM_register_attribute">
+     SIM_register_attribute
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_class_attribute">SIM_get_class_attribute()</a></h3>
+<p>
+
+<a name="SIM_get_class_attribute2"></a><a name="SIM_get_class_attribute_idx"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_class_attribute"></a><b>SIM_get_class_attribute</b><b>, SIM_get_class_attribute_idx</b> — get class attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_get_class_attribute(conf_class_t *NOTNULL cls, const char *NOTNULL name);
+</pre><p></p><pre class="jdocu_small">attr_value_t
+SIM_get_class_attribute_idx(conf_class_t *NOTNULL cls,
+                            const char *NOTNULL name,
+                            attr_value_t *NOTNULL index);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Extracts the class attribute specified by <i>name</i> from the class
+   <i>cls</i>. If an error occurs, an invalid value is returned. The
+   _idx version of the function can be used to get a single entry in a list or
+   data attribute. The attribute must support indexing for this to work.
+<p>
+   The caller is as usual responsible for freeing the returned value by
+   calling <b><i>SIM_attr_free</i></b>.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Attribute value. A value of Invalid type is
+   returned if the attribute could not be read.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<ul>
+       <li><b>SimExc_AttrNotFound</b> If the class did not have the specified
+       attribute.</li>
+
+       <li><b>SimExc_AttrNotReadable</b> If the attribute cannot not be
+       read.</li>
+
+       <li><b>SimExc_Type</b> If the index has the wrong type.</li>
+
+       <li><b>SimExc_General</b> Other errors.</li>
+     </ul>
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context, unless the attribute
+   documentation says otherwise.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-functions.html#__jdocu_seealso_SIM_attr_free">
+     SIM_attr_free</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_set_class_attribute"> SIM_set_class_attribute
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_object">SIM_get_object()</a></h3>
+<p>
+
+<a name="SIM_get_object2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_object"></a><b>SIM_get_object</b> — get object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIM_get_object(const char *NOTNULL name);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the object with name <i>name</i>.
+<p>
+   The function does an object look-up in the order; <em>object ID</em>,
+   <em>object name</em>, and <em>hierarchical location</em> for all objects in
+   the simulation. The function returns the first match from the look-up or
+   NULL if there was no object match.
+</p><p>
+   The <em>object ID</em> is a unique name that never changes and is returned
+   by the <b><i>SIM_object_id</i></b> function. The <em>object name</em> is the
+   name of the object, used for instance when printing log messages and is
+   returned by the <b><i>SIM_object_name</i></b> function. The <em>hierarchical
+   location</em> is the absolute location of the object in the component
+   hierarchy. The <em>object name</em> and the <em>hierarchical location</em>
+   is the same.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Object, or NULL if not found.
+   </dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the object can not be found.
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-functions.html#__jdocu_seealso_SIM_object_name">SIM_object_name</a>, <a class="jdocu" href="device-api-functions.html#__jdocu_seealso_SIM_object_id">
+   SIM_object_id</a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_python_interface_type">SIM_get_python_interface_type()</a></h3>
+<p>
+
+<a name="SIM_get_python_interface_type2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_python_interface_type"></a><b>SIM_get_python_interface_type</b> — get Python interface type</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">PyObject *
+SIM_get_python_interface_type(const char *NOTNULL name);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the Python data type for the <i>name</i> interface, or NULL
+   if not available from Python.
+<p>
+   If necessary, will try to load modules registering the Python translation
+   for this interface.</p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_object_class">SIM_object_class()</a></h3>
+<p>
+
+<a name="SIM_object_class2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_object_class"></a><b>SIM_object_class</b> — get object class</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">FORCE_INLINE conf_class_t *
+SIM_object_class(const conf_object_t *NOTNULL obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the class of an object.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_get_class</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_object_descendant">SIM_object_descendant()</a></h3>
+<p>
+
+<a name="SIM_object_descendant2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_object_descendant"></a><b>SIM_object_descendant</b> — return a descendant of the specified object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIM_object_descendant(conf_object_t *obj, const char *NOTNULL relname);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function returns the descendant object of <i>obj</i>
+   which has the relative name <i>relname</i>, or NULL if
+   no such object exists.
+<p>
+   It is legal for the relative name to contain multiple components,
+   like "device.p.RESET".
+</p><p>
+   If <i>obj</i> is NULL, then the object lookup is performed
+   relative the object hierarchy root.
+</p><p>
+   If <i>obj</i> is instantiated at the same time as the descendant,
+   then the function is guaranteed to succeed if called after the
+   <b><i>alloc_object</i></b> phase of object initialization; i.e., it is safe for
+   <i>obj</i> to invoke the function from its <b><i>init_object</i></b>
+   method.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Object, or NULL if the object has no
+   hierarchical descendant with the specified relative name.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+        </a><b><i>SIM_object_parent</i></b>
+        <b><i>SIM_register_port</i></b>
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_object_is_processor">SIM_object_is_processor()</a></h3>
+<p>
+
+<a name="SIM_object_is_processor2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_object_is_processor"></a><b>SIM_object_is_processor</b> — test if object is a processor</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">bool
+SIM_object_is_processor(conf_object_t *NOTNULL obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns non-zero if <i>obj</i> is a processor.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+All contexts (including Threaded Context)
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_object_iterator">SIM_object_iterator()</a></h3>
+<p>
+
+<a name="SIM_object_iterator2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_object_iterator"></a><b>SIM_object_iterator</b> — start object iteration</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">object_iter_t
+SIM_object_iterator(conf_object_t *obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b><i>SIM_object_iterator</i></b> function returns an
+   iterator for the descendants of the object <i>obj</i>.
+   If <i>obj</i> is NULL, then the returned iterator
+   will iterate over all objects in the configuration.
+<p>
+   The iterator returns objects sorted by name,
+   with parents before children.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Object iterator</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_object_iterator_next,
+        SIM_shallow_object_iterator</i></b></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_object_iterator_next">SIM_object_iterator_next()</a></h3>
+<p>
+
+<a name="SIM_object_iterator_next2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_object_iterator_next"></a><b>SIM_object_iterator_next</b> — get next object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIM_object_iterator_next(object_iter_t *iter);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b><i>SIM_object_iterator_next</i></b> function returns the next
+   object from an iterator obtained from <b><i>SIM_object_iterator</i></b>
+   or <b><i>SIM_shallow_object_iterator</i></b>. If there are no more
+   objects in the sequence, then NULL is returned.
+<p>
+   It is illegal to call <b><i>SIM_object_iterator_next</i></b> using
+   an iterator which has reached the end of its sequence.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Next object or NULL</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_object_iterator_next,
+        SIM_object_iterator</i></b></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_object_parent">SIM_object_parent()</a></h3>
+<p>
+
+<a name="SIM_object_parent2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_object_parent"></a><b>SIM_object_parent</b> — get object parent</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIM_object_parent(conf_object_t *NOTNULL obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the hierarchical parent of the specified object.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Object, or NULL if the object has no
+   hierarchical parent.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+   </a><b><i>SIM_object_descendant, SIM_port_object_parent</i></b></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_port_object_parent">SIM_port_object_parent()</a></h3>
+<p>
+
+<a name="SIM_port_object_parent2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_port_object_parent"></a><b>SIM_port_object_parent</b> — get object parent</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIM_port_object_parent(conf_object_t *NOTNULL obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the parent of the specified port object.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Object, or NULL if the object is not
+   a port object.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_object_parent, SIM_object_descendant</i></b></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_read_configuration">SIM_read_configuration()</a></h3>
+<p>
+
+<a name="SIM_read_configuration2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_read_configuration"></a><b>SIM_read_configuration</b> — read configuration</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_read_configuration(const char *NOTNULL file);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Read configuration from <i>filename</i> and create a machine
+   accordingly.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the file could not be opened, the machine
+   was already initialized, or if an error in the configuration file was
+   detected.
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_register_context_handler">SIM_register_context_handler()</a></h3>
+<p>
+
+<a name="SIM_register_context_handler2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_register_context_handler"></a><b>SIM_register_context_handler</b> — register mandatory interface and attribute for context handler
+   objects</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">int
+SIM_register_context_handler(conf_class_t *NOTNULL cls,
+                             const context_handler_interface_t *NOTNULL iface);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Register the <i>cls</i> class as a class for context handler
+   objects. This includes registering the <code>context_handler</code>
+   interface (<i>iface</i>), in addition to which
+   <b><i>SIM_register_context_handler</i></b> registers a
+   <i>current_context</i> attribute which will hold the current context.
+<p>
+   The <code>context_handler</code> interface will be wrapped by standard
+   functions so that standard context change behavior is taken care off
+   automatically. This includes, among other things, making sure that the
+   context is valid, and triggering the correct haps on context changes. Thus
+   the context_handler implementation need only care about the effect of the
+   change on the <code>context</code>_handler object itself (virtual
+   breakpoints present in the context, cache flushing, etc.).
+</p><p>
+   The return value is 0 if everything works, and non-zero if something
+   fails. <b><i>SIM_register_context_handler</i></b> will return the error value
+   provided by <b><i>SIM_register_interface</i></b>.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Returns non-zero on failure, 0 otherwise.
+   </dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the <code>context_handler</code> interface
+   has already been registered for this class.
+<p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_register_interface</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_set_attribute">SIM_set_attribute()</a></h3>
+<p>
+
+<a name="SIM_set_attribute2"></a><a name="SIM_set_attribute_idx"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_set_attribute"></a><b>SIM_set_attribute</b><b>, SIM_set_attribute_idx</b> — set attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">set_error_t
+SIM_set_attribute(conf_object_t *NOTNULL obj,
+                  const char *NOTNULL name,
+                  attr_value_t *NOTNULL value);
+</pre><p></p><pre class="jdocu_small">set_error_t
+SIM_set_attribute_idx(conf_object_t *NOTNULL obj,
+                      const char *NOTNULL name,
+                      attr_value_t *NOTNULL index,
+                      attr_value_t *NOTNULL value);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Set the <i>name</i> attribute in <i>obj</i> to <i>value</i>.
+<p>
+   The <code>_idx</code> version of the function can be used to get a
+   single entry in a list or data attribute. For this to work, the
+   attribute must support indexing.
+</p><p>
+   After the call the <i>value</i> is still owned by the caller.
+</p><p>
+   If the attribute setter function calls <b><i>SIM_attribute_error</i></b> or
+   <b><i>SIM_c_attribute_error</i></b> and returns Sim_Set_Ok, it is treated like
+   Sim_Set_IllegalValue.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The return value is from the
+   <code>set_error_t</code> enum, with <code>Sim_Set_Ok</code> indicating
+   success.<a name="set_error_t"></a></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<ul>
+   <li><b>SimExc_AttrNotFound</b> If the object did not have the specified
+   attribute</li>
+
+   <li><b>SimExc_AttrNotWritable</b> if the attribute cannot not be
+   written</li>
+
+   <li><b>SimExc_Type</b> if the index has the wrong type, the value to be set
+   does not match the type specified by the attribute or the setter function
+   returned Sim_Set_Illegal_Type</li>
+
+   <li><b>SimExc_IllegalValue</b> if the setter function returned
+   Sim_Set_Illegal_Value</li>
+
+   <li><b>SimExc_Index</b> if the setter function returned
+   Sim_Set_Illegal_Index</li>
+
+   <li><b>SimExc_InterfaceNotFound</b> if the setter function returned
+   Sim_Set_Interface_Not_Found</li>
+
+   <li><b>SimExc_General</b> if the setter function returned something else than
+   Sim_Set_Ok, Sim_Set_Illegal_Type, Sim_Set_Illegal_Value,
+   Sim_Set_Illegal_Index or Sim_Set_Interface_Not_Found.</li>
+   </ul>
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context in general; individual attributes may be less
+     constrained.
+   </dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_get_attribute">
+     SIM_get_attribute</a>, <a class="jdocu" href="device-api-functions.html#__jdocu_seealso_SIM_attribute_error">
+     SIM_attribute_error</a>, <a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_set_error_t">
+     set_error_t
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_set_class_attribute">SIM_set_class_attribute()</a></h3>
+<p>
+
+<a name="SIM_set_class_attribute2"></a><a name="SIM_set_class_attribute_idx"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_set_class_attribute"></a><b>SIM_set_class_attribute</b><b>, SIM_set_class_attribute_idx</b> — set class attribute</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">set_error_t
+SIM_set_class_attribute(conf_class_t *NOTNULL cls,
+                        const char *NOTNULL name,
+                        attr_value_t *NOTNULL value);
+</pre><p></p><pre class="jdocu_small">set_error_t
+SIM_set_class_attribute_idx(conf_class_t *NOTNULL cls,
+                            const char *NOTNULL name,
+                            attr_value_t *NOTNULL index,
+                            attr_value_t *NOTNULL value);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Set the <i>name</i> attribute in <i>cls</i> to <i>value</i>.
+<p>
+   The <code>_idx</code> version of the function can be used to set a
+   single entry in a list or data attribute. For this to work, the
+   attribute must support indexing.
+</p><p>
+   After the call the <i>value</i> is still owned by the caller.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The return value is from the
+   <code>set_error_t</code> enum, with <code>Sim_Set_Ok</code> indicating
+   success.<a name="set_error_t2"></a></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_get_attribute">
+     SIM_get_attribute</a>, <a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_set_error_t"> set_error_t
+   </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_set_configuration">SIM_set_configuration()</a></h3>
+<p>
+
+<a name="SIM_set_configuration2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_set_configuration"></a><b>SIM_set_configuration</b> — set configuration from data</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_set_configuration(attr_value_t conf);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<div class="note">
+<b>Note:</b>
+It is recommended that the <b><i>SIM_add_configuration</i></b> function is
+  used instead of <b><i>SIM_set_configuration</i></b>.</div>This function is an alternative to reading the configuration
+  from a file. A configuration is an <code>attr_value_t</code>
+  which should have the following structure.
+<p>
+  <span class="jdocu_smaller"></span></p><pre class="jdocu_small">  (("name", "class",  ("attr_name", attr_val) ... ), ... )
+  </pre><p>
+</p><p>
+  That is a list of object specifiers containing name, class,
+  and a list of attribute specifiers. An attribute specifier is
+  a list of length 2 containing the attribute name and its
+  value. <b><i>SIM_set_configuration</i></b> allows an easy way
+  of parameterizing the configuration, especially if called from
+  Python.
+</p><p>
+  The argument value may be modified, but the caller is still responsible for
+  freeing it. Neither point applies when the function is called from
+  Python.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+The following is a Python example:
+<p>
+  <span class="jdocu_small">
+  </span></p><pre class="jdocu_small">  from configuration import OBJ
+  from simics import SIM_set_configuration
+
+  SIM_set_configuration([
+   ["cpu0", "x86",
+    ["queue", OBJ("cpu0")],
+    ["freq_mhz", 20],
+    ["physical_memory", OBJ("phys_mem0")]],
+
+   ["phys_mem0", "memory-space",
+    ["map",  [[0xa0000,    OBJ("vga0"),    1, 0, 0x20000],
+              [0x00000,    OBJ("mem0"),    0, 0x00000, 0xA0000],
+              [0xc0000,    OBJ("mem0"),    0, 0xc0000, 0x8000],
+              [0xc8000,    OBJ("setmem0"), 0, 0, 0x28000],
+              [0xf0000,    OBJ("mem0"),    0, 0xf0000, 0x10000],
+              [0x100000,   OBJ("mem0"),    0, 0x100000, 0x3ff00000],
+              [0xfee00000, OBJ("apic0"),   0, 0, 0x4000]]]],
+      ... ])
+  </pre><p>
+  
+  </p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Attribute</b> Thrown if malformed configuration list.<br>
+<p>
+  <b>SimExc_General</b> Thrown if Simics fails to initialize all objects.
+</p><p>
+  </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_add_configuration">
+    SIM_add_configuration</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_create_object"> SIM_create_object
+  </a></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_shallow_object_iterator">SIM_shallow_object_iterator()</a></h3>
+<p>
+
+<a name="SIM_shallow_object_iterator2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_shallow_object_iterator"></a><b>SIM_shallow_object_iterator</b> — start object iteration</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">object_iter_t
+SIM_shallow_object_iterator(conf_object_t *obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b><i>SIM_shallow_object_iterator</i></b> function returns an
+   iterator for the direct children of the object <i>obj</i>.
+   If <i>obj</i> is NULL, then the returned iterator
+   will iterate over objects on the root level.
+<p>
+   The iterator returns objects sorted by name.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Object iterator</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_object_iterator_next,
+        SIM_object_iterator</i></b></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_write_configuration_to_file">SIM_write_configuration_to_file()</a></h3>
+<p>
+
+<a name="SIM_write_configuration_to_file2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_write_configuration_to_file"></a><b>SIM_write_configuration_to_file</b> — write configuration</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_write_configuration_to_file(const char *NOTNULL file, save_flags_t flags);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Saves all objects to <i>filename</i>. Objects whose
+   <code>class_kind_t</code> is equal to <code>Sim_Class_Kind_Session</code>
+   or <code>Sim_Class_Kind_Pseudo</code> are not saved. This also holds for
+   attributes (in all objects) of types Sim_Attr_Session and Sim_Attr_Pseudo.
+<p>
+   The <i>flags</i> argument should be 0.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Embedding-Simics">Embedding Simics</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_init_arg_string">SIM_get_init_arg_string()</a></h3>
+<p>
+
+<a name="SIM_get_init_arg_string2"></a><a name="SIM_get_init_arg_boolean"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_init_arg_string"></a><b>SIM_get_init_arg_string</b><b>, SIM_get_init_arg_boolean</b> — get an argument that the Simics core was initialized with</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">const char *
+SIM_get_init_arg_string(const char *name, const char *default_value);
+</pre><p></p><pre class="jdocu_small">bool
+SIM_get_init_arg_boolean(const char *name, bool default_value);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the value of init argument <i>name</i> previously supplied
+   to Simics using <b><i>SIM_init_simulator2</i></b>. Arguments are either strings
+   (<code>char *</code>) or booleans (<code>bool</code>).</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The argument value or
+   <i>default_value</i> if the argument was not supplied to
+   <b><i>SIM_init_simulator2</i></b> or if the argument value was NULL.
+   </dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the argument is of the wrong type.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_init_simulator2</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_init_command_line">SIM_init_command_line()</a></h3>
+<p>
+
+<a name="SIM_init_command_line2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_init_command_line"></a><b>SIM_init_command_line</b> — initialize the Simics command line</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_init_command_line(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_init_command_line</i></b> initializes the Simics command line used
+   when running from a Linux shell or the Windows Command Prompt.
+<p>
+   This function must be called after <b><i>SIM_init_simulator2</i></b> and should
+   only be called when embedding Simics in another application.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the function already has been called once.
+<p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_init_simulator2</i></b>, <b><i>SIM_main_loop</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_init_environment">SIM_init_environment()</a></h3>
+<p>
+
+<a name="SIM_init_environment2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_init_environment"></a><b>SIM_init_environment</b> — perform early initialization of the simulator</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_init_environment(char **NOTNULL argv,
+                     bool handle_signals, bool allow_core_dumps);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b><i>SIM_init_environment</i></b> function should be called as early as
+   possible when Simics is embedded in another application, before any other
+   Simics API function. It will initialize Simics dynamic memory handling
+   <code>VTMEM</code>, set up signal handling and perform some other early
+   initialization.
+<p>
+   The <i>argv</i> argument is a NULL terminated list of strings. It must
+   not be NULL. It must contain at least one element, which will be used as
+   the program name. Often you can use the <i>argv</i> that <b><i>main</i></b> receives as the value of this argument.
+</p><p>
+   If <i>handle_signals</i> is true, Simics will install its handler for
+   Control-C, e.g. the SIGINT signal on Linux and ConsoleCtrlHandler on
+   Windows. Set this value to false if the embedding application handles
+   signals itself.
+</p><p>
+   If <i>allow_core_dumps</i> is true, Simics will not install handlers for
+   fatal signals but instead let the application crash possibly generating a
+   core dump on Linux systems. If the argument is false, no core
+   dump is generated and Simics will try to catch fatal signals and return
+   control to the command line again.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_init_simulator</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_init_simulator2">SIM_init_simulator2()</a></h3>
+<p>
+
+<a name="SIM_init_simulator22"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_init_simulator2"></a><b>SIM_init_simulator2</b> — perform initialization of the simulator</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_init_simulator2(init_arg_t *NOTNULL init_args);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_init_simulator2</i></b> initializes the simulator core and should
+   only be called when embedding Simics in another application. It has to be
+   called after <b><i>SIM_init_environment</i></b> but before using most other
+   parts of the Simics API. The <i>init_args</i> argument is an array with
+   <code>init_arg_t</code> structs, where the last entry has NULL in the
+   <code>name</code> field.
+<p>
+   Each entry in the <i>init_args</i> array contains an argument name
+   and an associated value that is either a string or a boolean. Simics has a
+   number of pre-defined arguments that are used to configure the simulator.
+</p><p>
+   It is possible to provide additional arguments in the call to 
+   <b><i>SIM_init_simulator2</i></b>. Such arguments are ignored by Simics and
+   assumed to be used-defined. Their values can be obtained using the
+   <b><i>SIM_get_init_arg_string</i></b> and <b><i>SIM_get_init_arg_boolean</i></b>
+   functions in the Simics API.
+</p><p>
+   List of pre-defined parameters and their types:
+   <table>
+
+   <tbody><tr><td class="jdocu_noborder">batch-mode</td>         <td class="jdocu_noborder">bool</td>
+     <td class="jdocu_noborder">See -batch-mode command line flag.</td></tr>
+
+   <tr><td class="jdocu_noborder">deprecation-level</td>  <td class="jdocu_noborder">char *</td>
+     <td class="jdocu_noborder">One of <code>0</code>, <code>1</code> and <code>2</code>.
+         See the sim.deprecation_level attribute.</td></tr>
+
+   <tr><td class="jdocu_noborder">expire-time</td>        <td class="jdocu_noborder">char *</td>
+     <td class="jdocu_noborder">See -expire command line flag.</td></tr>
+
+   <tr><td class="jdocu_noborder">gui-mode</td>           <td class="jdocu_noborder">char *</td>
+     <td class="jdocu_noborder">One of <code>gui</code>, <code>mixed</code> and <code>no-gui</code></td></tr>
+
+   <tr><td class="jdocu_noborder">fail-on-warnings</td>   <td class="jdocu_noborder">bool</td>
+     <td class="jdocu_noborder">See -werror command line flag.</td></tr>
+
+   <tr><td class="jdocu_noborder">license-file</td>       <td class="jdocu_noborder">char *</td>
+     <td class="jdocu_noborder">License file to use, overriding any preference setting.</td></tr>
+
+   <tr><td class="jdocu_noborder">log-enable</td>         <td class="jdocu_noborder">bool</td>
+     <td class="jdocu_noborder">Deprecated.</td></tr>
+
+   <tr><td class="jdocu_noborder">log-file</td>           <td class="jdocu_noborder">char *</td>
+     <td class="jdocu_noborder">See -log-file command line flag.</td></tr>
+
+   <tr><td class="jdocu_noborder">no-settings</td>        <td class="jdocu_noborder">bool</td>
+     <td class="jdocu_noborder">See -no-settings command line flag.</td></tr>
+
+   <tr><td class="jdocu_noborder">no-windows</td>         <td class="jdocu_noborder">bool</td>
+     <td class="jdocu_noborder">See -no-win command line flag.</td></tr>
+
+   <tr><td class="jdocu_noborder">python-verbose</td>     <td class="jdocu_noborder">bool</td>
+     <td class="jdocu_noborder">Run the Python interpreter in verbose mode.</td></tr>
+
+   <tr><td class="jdocu_noborder">project</td>            <td class="jdocu_noborder">char *</td>
+     <td class="jdocu_noborder">See -project command line flag.</td></tr>
+
+   <tr><td class="jdocu_noborder">quiet</td>              <td class="jdocu_noborder">bool</td>
+     <td class="jdocu_noborder">See -quiet command line flag.</td></tr>
+
+   <tr><td class="jdocu_noborder">script-trace</td>       <td class="jdocu_noborder">bool</td>
+     <td class="jdocu_noborder">Show when a Simics script is entered/exited, along with any parameters
+     passed to it and result variables returned from it.</td></tr>
+
+   <tr><td class="jdocu_noborder">verbose</td>            <td class="jdocu_noborder">bool</td>
+     <td class="jdocu_noborder">See -verbose command line flag.</td></tr>
+
+   <tr><td class="jdocu_noborder">Internal or deprecated:</td><td class="jdocu_noborder"></td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">allow-license-gui</td>  <td class="jdocu_noborder">bool</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">alt-settings-dir</td>   <td class="jdocu_noborder">char *</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">application-mode</td>   <td class="jdocu_noborder">char *</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">check-ifaces</td>       <td class="jdocu_noborder">bool</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">disable-dstc</td>       <td class="jdocu_noborder">bool</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">disable-istc</td>       <td class="jdocu_noborder">bool</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">eclipse-params</td>     <td class="jdocu_noborder">char *</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">package-list</td>       <td class="jdocu_noborder">char *</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">py3k-warnings</td>       <td class="jdocu_noborder">bool</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">sign-module</td>        <td class="jdocu_noborder">bool</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">as-py-module</td>       <td class="jdocu_noborder">bool</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">py-import-all</td>      <td class="jdocu_noborder">bool</td><td class="jdocu_noborder"></td></tr>
+
+   <tr><td class="jdocu_noborder">use-module-cache</td>   <td class="jdocu_noborder">bool</td><td class="jdocu_noborder"></td></tr>
+
+   </tbody></table></p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+None</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_init_environment</i></b>,
+     <b><i>SIM_get_init_arg_string</i></b>, <b><i>SIM_get_init_arg_boolean</i></b>.
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_main_loop">SIM_main_loop()</a></h3>
+<p>
+
+<a name="SIM_main_loop2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_main_loop"></a><b>SIM_main_loop</b> — run the Simics main loop</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_main_loop(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_main_loop</i></b> enters the main loop of Simics and never returns.
+   It should only be called when embedding Simics in another application that
+   wishes to transfer full control of the simulation to Simics.
+<p>
+   The main loop waits for work requests to be posted by notifiers,
+   <b><i>SIM_thread_safe_callback</i></b> and <b><i>SIM_realtime_event</i></b>. If
+   the command line has been initialized it will be active as well.
+</p><p>
+   If the embedding application do not wish to transfer the control to Simics
+   while the simulation is not advancing should use the
+   <b><i>SIM_process_work</i></b> or <b><i>SIM_process_pending_work</i></b> to make
+   sure that Simics can process any pending idle work.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the function is called recursively.
+<p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_init_simulator2</i></b>, <b><i>SIM_init_command_line</i></b>,
+     <b><i>SIM_realtime_event</i></b>, <b><i>SIM_thread_safe_callback</i></b>,
+     <b><i>SIM_process_work</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_process_work">SIM_process_work()</a></h3>
+<p>
+
+<a name="SIM_process_work2"></a><a name="SIM_process_pending_work"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_process_work"></a><b>SIM_process_work</b><b>, SIM_process_pending_work</b> — run the Simics main loop</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">int
+SIM_process_work(int (*done)(lang_void *done_data), lang_void *done_data);
+</pre><p></p><pre class="jdocu_small">int
+SIM_process_pending_work(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_process_work</i></b> and <b><i>SIM_process_pending_work</i></b>
+   processes work posted by <b><i>SIM_thread_safe_callback</i></b> and
+   <b><i>SIM_realtime_event</i></b>. These process work functions are typically
+   called when embedding Simics in another application to allow periodic and
+   asynchronous Simics work to run while the simulation is not advancing.
+<p>
+   <b><i>SIM_process_pending_work</i></b> runs all work that has been queued up
+   since the last call and returns immediately after.
+</p><p>
+   <b><i>SIM_process_work</i></b> is similar but waits for new work to arrive.
+   Each time some work has been processed, the supplied <i>done</i>
+   callback is called with <i>done_data</i> as its only argument. A return
+   value of 1 tells <b><i>SIM_process_work</i></b> to stop processing work and
+   return control to the caller again while 0 tells it to continue.
+</p><p>
+   The <i>done</i> predicate is only evaluated between callbacks
+   that are run in Global Context, that is, not registered with the
+   <i>run_in_thread</i> parameter set).
+</p><p>
+   The process work functions return -1 if the user has pressed the interrupt
+   key before or while they were running, provided that the simulator core was
+   initialized to catch signals. Otherwise the return value is 0.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_init_simulator2</i></b>, <b><i>SIM_main_loop</i></b>,
+     <b><i>SIM_realtime_event</i></b>, <b><i>SIM_thread_safe_callback</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_set_frontend_context">SIM_set_frontend_context()</a></h3>
+<p>
+
+<a name="SIM_set_frontend_context2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_set_frontend_context"></a><b>SIM_set_frontend_context</b> — register a stack context buffer for Simics to longjmp back to</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_set_frontend_context(void *context);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+When Simics encounters a fatal error that it cannot handle, it uses
+   <code>longjmp()</code> to give control back to the main loop. The longjmp
+   destination depends on the stack context buffer registered by the embedding
+   application using <b><i>SIM_set_frontend_context</i></b>.
+<p>
+   If the embedding application uses Simics's own main loop to control the
+   simulation, i.e., by running <b><i>SIM_main_loop</i></b>, then there is no
+   need to register any stack context buffer.
+</p><p>
+   A stack context buffer is created by calling <code>sigsetjmp()</code> on Linux
+   and <code>setjmp()</code> on Windows.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_init_simulator2</i></b>, <b><i>SIM_main_loop</i></b>,
+     <b><i>SIM_process_work</i></b>
+   </dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Haps">Haps</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_all_hap_types">SIM_get_all_hap_types()</a></h3>
+<p>
+
+<a name="SIM_get_all_hap_types2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_all_hap_types"></a><b>SIM_get_all_hap_types</b> — get list of all hap types</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_get_all_hap_types(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Get a list of the names of all registered hap types.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Attribute list of strings.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_hap_get_number</i></b>,
+   <b><i>SIM_hap_add_type</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_hap_add_callback">SIM_hap_add_callback()</a></h3>
+<p>
+
+<a name="SIM_hap_add_callback2"></a><a name="SIM_hap_add_callback_index"></a><a name="SIM_hap_add_callback_range"></a><a name="SIM_hap_add_callback_obj"></a><a name="SIM_hap_add_callback_obj_index"></a><a name="SIM_hap_add_callback_obj_range"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_hap_add_callback"></a><b>SIM_hap_add_callback</b><b>, SIM_hap_add_callback_index</b><b>, SIM_hap_add_callback_range</b><b>, SIM_hap_add_callback_obj</b><b>, SIM_hap_add_callback_obj_index</b><b>, SIM_hap_add_callback_obj_range</b> — install callback on a hap</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">hap_handle_t
+SIM_hap_add_callback(const char *NOTNULL hap,
+                     NOTNULL obj_hap_func_t func,
+                     lang_void *user_data);
+</pre><p></p><pre class="jdocu_small">hap_handle_t
+SIM_hap_add_callback_index(const char *NOTNULL hap,
+                           NOTNULL obj_hap_func_t func,
+                           lang_void *user_data,
+                           int64 index);
+</pre><p></p><pre class="jdocu_small">hap_handle_t
+SIM_hap_add_callback_range(const char *NOTNULL hap,
+                           NOTNULL obj_hap_func_t func,
+                           lang_void *user_data,
+                           int64 start,
+                           int64 end);
+</pre><p></p><pre class="jdocu_small">hap_handle_t
+SIM_hap_add_callback_obj(const char *NOTNULL hap,
+                         conf_object_t *NOTNULL obj,
+                         hap_flags_t flags,
+                         NOTNULL obj_hap_func_t func,
+                         lang_void *user_data);
+</pre><p></p><pre class="jdocu_small">hap_handle_t
+SIM_hap_add_callback_obj_index(const char *NOTNULL hap,
+                               conf_object_t *NOTNULL obj,
+                               hap_flags_t flags,
+                               NOTNULL obj_hap_func_t func,
+                               lang_void *user_data,
+                               int64 index);
+</pre><p></p><pre class="jdocu_small">hap_handle_t
+SIM_hap_add_callback_obj_range(const char *NOTNULL hap,
+                               conf_object_t *NOTNULL obj,
+                               hap_flags_t flags,
+                               NOTNULL obj_hap_func_t func,
+                               lang_void *user_data,
+                               int64 start,
+                               int64 end);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Registers a function, pointed to by <i>func</i>, to be called
+   when <i>hap</i> occurs for object <i>obj</i>.
+   If a hap add function that
+   does not have the <i>obj</i> argument is used, then the callback
+   function will be called regardless of what object that triggers
+   the hap. The <i>user_data</i> argument is the callback-specific
+   data, and it will be passed as first argument to the installed callback
+   function.
+<p>
+   Some hap add functions also take a <i>flags</i> argument. This flag
+   is currently Simics internal and should be set to 0.
+</p><p>
+   The hap callback functions should not return any data. In C, the functions
+   are declared to have a <code>void</code> return type and in Python, any
+   return value is ignored. Since callback functions with different arguments
+   may be installed using the same API function, the compiler may warn about a
+   type mismatch. The solution is to cast the callback function pointer to the
+   <code>obj_hap_func_t</code> type.
+</p><p>
+   The callback will be called in Cell Context, unless the
+   documentation for the hap states otherwise.
+</p><p>
+   In hap functions, the execution can be interrupted by calling
+   <b><i>SIM_break_simulation</i></b>. If a frontend or Python exception is
+   raised, an error message will be printed including a stack trace if the
+   callback is written in Python.
+</p><p>
+   The <code>_index_</code> and <code>_range_</code> versions will install callbacks
+   that only trigger for a specified index, or range of indices. The index
+   is specific for each hap type, see the hap documentation. The index and
+   range must be non-negative and the end of the range must not be lower than
+   the start.
+</p><p>
+   <a name="hap_handle_t"></a>
+</p><pre class="jdocu_small">typedef int hap_handle_t;</pre><p>
+</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The return value is a hap callback handle (identifier) of the type
+   <code>hap_handle_t</code>, or -1 on error. This handle can be used to remove
+   the installed callback with <b><i>SIM_hap_delete_callback_id</i></b>.
+   </dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Lookup</b> Thrown if the hap does not exist.<br>
+<p>
+   <b>SimExc_Attribute</b> Thrown if the index is negative or if the range is
+   negative in value or size.
+</p><p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context for hap callbacks tied to
+   an object, and Global Context for hap callbacks not tied to an
+   object. An exception is made for callbacks on Core_Breakpoint_Memop, which
+   can be installed with SIM_hap_add_callback_index even in Cell Context.</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_hap_delete_callback">SIM_hap_delete_callback()</a></h3>
+<p>
+
+<a name="SIM_hap_delete_callback2"></a><a name="SIM_hap_delete_callback_obj"></a><a name="SIM_hap_delete_callback_id"></a><a name="SIM_hap_delete_callback_obj_id"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_hap_delete_callback"></a><b>SIM_hap_delete_callback</b><b>, SIM_hap_delete_callback_obj</b><b>, SIM_hap_delete_callback_id</b><b>, SIM_hap_delete_callback_obj_id</b> — delete installed hap callback</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_hap_delete_callback(const char *NOTNULL hap,
+                        NOTNULL obj_hap_func_t func, lang_void *user_data);
+</pre><p></p><pre class="jdocu_small">void
+SIM_hap_delete_callback_obj(const char *NOTNULL hap,
+                            conf_object_t *NOTNULL obj,
+                            NOTNULL obj_hap_func_t func, lang_void *user_data);
+</pre><p></p><pre class="jdocu_small">void
+SIM_hap_delete_callback_id(const char *NOTNULL hap, hap_handle_t handle);
+</pre><p></p><pre class="jdocu_small">void
+SIM_hap_delete_callback_obj_id(const char *NOTNULL hap,
+                               conf_object_t *NOTNULL obj, hap_handle_t handle);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Removes a callback for a hap type specified by the <code>hap</code> argument.
+<p>
+   The <b><i>SIM_hap_delete_callback_obj...</i></b> functions will remove a
+   callback that is installed on the specified object <i>obj</i>.
+</p><p>
+   <b><i>SIM_hap_delete_callback</i></b> removes a callback not associated with
+   any object, with the callback function <code>func</code> and the same
+   <code>user_data</code>.
+   The <b><i>SIM_hap_delete_callback_..._id</i></b> functions take a hap handle
+   argument instead, as returned by the <b><i>SIM_hap_add_callback...</i></b>
+   functions.
+</p><p>
+   These functions will trigger the <code>Core_Hap_Callback_Removed</code> hap
+   for each removed callback.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Lookup</b> Thrown if the specified hap does not exist.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context for callbacks tied to an
+   object. Global Context for callbacks not tied to an object.</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Logging">Logging</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_quiet">SIM_get_quiet()</a></h3>
+<p>
+
+<a name="SIM_get_quiet2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_quiet"></a><b>SIM_get_quiet</b> — return setting of the quiet flag</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">bool
+SIM_get_quiet(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function returns the current value of Simics's quiet flag.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_verbose">SIM_get_verbose()</a></h3>
+<p>
+
+<a name="SIM_get_verbose2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_verbose"></a><b>SIM_get_verbose</b> — get the verbose flag</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">bool
+SIM_get_verbose(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function returns the value of Simics's verbosity flag
+   (corresponding to the <code>-verbose</code> command line argument).</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_set_quiet">SIM_set_quiet()</a></h3>
+<p>
+
+<a name="SIM_set_quiet2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_set_quiet"></a><b>SIM_set_quiet</b> — enable/disable quiet mode</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_set_quiet(bool quiet);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Calling this function with an argument of <code>true</code> will enable the
+   quiet mode, whereas an argument of <code>false</code> will disable it. Any other
+   arguments will cause a frontend exception. Please note that enabling the
+   quiet mode will disable verbose mode.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_set_verbose">SIM_set_verbose()</a></h3>
+<p>
+
+<a name="SIM_set_verbose2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_set_verbose"></a><b>SIM_set_verbose</b> — enable/disable verbose mode</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_set_verbose(bool verbose);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function sets Simics's internal verbosity flag (corresponding to the
+   <code>-verbose</code> command line argument). The <code>verbose</code> argument can
+   be either <code>true</code> or <code>false</code>. Note that setting this flag will
+   disable quiet mode.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Memory">Memory</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_load_binary">SIM_load_binary()</a></h3>
+<p>
+
+<a name="SIM_load_binary2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_load_binary"></a><b>SIM_load_binary</b> — read an executable file into memory</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">physical_address_t
+SIM_load_binary(conf_object_t *NOTNULL obj, const char *NOTNULL file,
+                physical_address_t offset, bool use_pa, bool verbose);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Read a binary file (ELF, Motorola S-Record, PE32, PE32+,
+   or TI COFF format) into memory and return the code entry point.
+<p>
+   The file will be loaded at the address formed by adding
+   the virtual load address from the file, with the offset
+   <i>offset</i>. If the flag <i>use_pa</i> is set, the ELF
+   physical load address is used instead. The <i>verbose</i> flag
+   will cause Simics to print info about the binary to the console.
+</p><p>
+   The memory space to load into is given in the <i>obj</i>
+   parameter.  If the given space is a CPU object, its current virtual
+   address space will be used, and addresses will be translated before
+   writing to the physical memory space attached to the CPU.
+</p><p>
+   If the file is not found in the current directory, the search path (see
+   <b>add-directory</b>) is used to find the file.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<code>SimExc_IOError</code> Thrown if there was a problem reading the
+     file.<br>
+     <code>SimExc_General</code> Thrown if binary cannot be read into
+     memory.
+   </dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The code entry address.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_load_file">SIM_load_file()</a></h3>
+<p>
+
+<a name="SIM_load_file2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_load_file"></a><b>SIM_load_file</b> — read a file into memory</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_load_file(conf_object_t *NOTNULL obj, const char *NOTNULL file,
+              physical_address_t base_address, bool verbose);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Loads the contents of <i>file</i> into memory starting at address
+   <i>base_address</i>. The <i>obj</i> argument can either be
+   a processor, a memory-space, or an image object. In case of a processor,
+   the address is interpreted as a virtual address.
+<p>
+   The <i>file</i> can be either a raw binary file or a file in the craff
+   format.
+</p><p>
+   The <i>verbose</i> flag will cause Simics to print some information
+   about the load.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_IOError</b> Thrown if there was a problem reading the file.<br>
+     <b>SimExc_General</b> Thrown if file cannot be read into memory.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_read_byte">SIM_read_byte()</a></h3>
+<p>
+
+<a name="SIM_read_byte2"></a><a name="SIM_write_byte"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_read_byte"></a><b>SIM_read_byte</b><b>, SIM_write_byte</b> — read/write byte from a memory space</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">uint8
+SIM_read_byte(conf_object_t *NOTNULL obj, generic_address_t paddr);
+</pre><p></p><pre class="jdocu_small">void
+SIM_write_byte(conf_object_t *NOTNULL obj,
+               generic_address_t paddr, uint8 value);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Read or write a byte from a given address in the memory space <i>obj</i>.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Memory</b> Thrown if the memory space threw an exception<br>
+   <p>
+   <b>SimExc_General</b> Thrown if the object does not implement the memory
+   space interface.
+</p><p>
+   </p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The byte read.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_read_phys_memory">SIM_read_phys_memory()</a></h3>
+<p>
+
+<a name="SIM_read_phys_memory2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_read_phys_memory"></a><b>SIM_read_phys_memory</b> — read data from a physical address</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">uint64
+SIM_read_phys_memory(conf_object_t *NOTNULL cpu,
+                     physical_address_t paddr,
+                     int length);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Reads <i>length</i> bytes from address <i>paddr</i> in the physical
+   memory space associated with the processor <i>cpu</i>.
+<p>
+   Up to 8 bytes can be read in one call. The memory access will be of
+   inquiry type, i.e. no timing-model or snoop device will be called.
+</p><p>
+   For non-inquiry accesses, use the <code>memory_space</code>
+   interface directly.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Memory</b> Thrown if no memory defined at <i>paddr</i>.<br>
+<p>
+     <b>SimExc_Attribute</b> Thrown if <i>length</i> is out of range.
+</p><p>
+     <b>SimExc_General</b> Thrown if the processors physical memory does not
+     implement the necessary interface methods.
+</p><p>
+   </p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The read data, zero-extended.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_read_phys_memory_tags">SIM_read_phys_memory_tags()</a></h3>
+<p>
+
+<a name="SIM_read_phys_memory_tags2"></a><a name="SIM_write_phys_memory_tags"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_read_phys_memory_tags"></a><b>SIM_read_phys_memory_tags</b><b>, SIM_write_phys_memory_tags</b> — access auxiliary bits in physical memory</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">uint64
+SIM_read_phys_memory_tags(conf_object_t *NOTNULL mem_space,
+                          physical_address_t paddr, unsigned ntags);
+</pre><p></p><pre class="jdocu_small">void
+SIM_write_phys_memory_tags(conf_object_t *NOTNULL mem_space,
+                           physical_address_t paddr,
+                           uint64 tag_bits, unsigned ntags);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Reads or writes <i>ntags</i> auxiliary bits starting at <i>paddr</i>
+   in the physical memory space <i>mem_space</i>.
+   Up to 64 bits can be accessed at once. The bits are specified and returned
+   right-aligned, least significant bit corresponding to the lowest address.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_write_phys_memory">SIM_write_phys_memory()</a></h3>
+<p>
+
+<a name="SIM_write_phys_memory2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_write_phys_memory"></a><b>SIM_write_phys_memory</b> — write data to a physical address</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_write_phys_memory(conf_object_t *NOTNULL cpu,
+                      physical_address_t paddr,
+                      uint64 value, int length);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Writes <i>length</i> bytes to address <i>paddr</i> in the physical
+   memory space associated with the processor <i>cpu</i>.
+<p>
+   Up to 8 bytes can be written in one call. The memory access will be of
+   inquiry type, i.e. no timing-model or snoop device will be called.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Memory</b> Thrown if no memory defined at <i>paddr</i>.<br>
+<p>
+     <b>SimExc_Attribute</b> Thrown if <i>length</i> is out of range.
+</p><p>
+     <b>SimExc_General</b> Thrown if the processors physical memory does not
+     implement the necessary interface methods.
+</p><p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Modules">Modules</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_add_module_dir">SIM_add_module_dir()</a></h3>
+<p>
+
+<a name="SIM_add_module_dir2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_add_module_dir"></a><b>SIM_add_module_dir</b> — add loadable module search path</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_add_module_dir(const char *path);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Add given path to the list of paths where Simics searches for loadable
+   modules. The function <b><i>SIM_module_list_refresh</i></b> has to be called
+   after calling this function, for the change to take effect.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_all_failed_modules">SIM_get_all_failed_modules()</a></h3>
+<p>
+
+<a name="SIM_get_all_failed_modules2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_all_failed_modules"></a><b>SIM_get_all_failed_modules</b> — return a list of all modules that failed to load</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_get_all_failed_modules(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+A failed module is a module that is not loadable by the current version
+   of Simics. The list returned contains information about why the module
+   failed. Each list entry is another list with module specific information.
+   The layout of this sub-list is described below. The list may change
+   in future Simics versions.
+   <ul>
+   <li><i>name</i> - Module name (string).</li>
+   <li><i>path</i> - File system path to the module (string).</li>
+   <li><i>duplicate</i> - Flag indicating a duplicate module
+   (boolean).</li>
+   <li><i>linker</i> - Flag indicating a linker error (boolean).</li>
+   <li><i>version</i> - Simics ABI version that the module was built for
+   (integer).</li>
+   <li><i>build_id</i> - Simics build number when the module was built
+   (integer).</li>
+   <li><i>build_date</i> - When the module was built, in seconds from epoch
+   (integer).</li>
+   <li><i>user version</i> - User version of the module (string).</li>
+   <li><i>error</i> - Error message, typically from the linker
+   (string or nil).</li>
+   </ul></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_get_all_modules</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_all_modules">SIM_get_all_modules()</a></h3>
+<p>
+
+<a name="SIM_get_all_modules2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_all_modules"></a><b>SIM_get_all_modules</b> — return a list of all modules</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_get_all_modules(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The list returned contains information about all modules that can be loaded
+   into Simics. Each list entry is another list with module specific
+   information. The layout of this sub-list is described below. The list may
+   grow in future Simics version, but the currently defined fields will not
+   change.
+   <ul>
+   <li><i>name</i> - Module name (string).</li>
+   <li><i>path</i> - File system path to the module (string).</li>
+   <li><i>loaded</i> - Flag indicating that the module is already loaded
+   (boolean).</li>
+   <li><i>version</i> - Oldest Simics ABI version that the module was built for
+   (integer).</li>
+   <li><i>user version</i> - User version of the module (string).</li>
+   <li><i>build-id</i> - Simics build-id that indicates in which Simics 
+   build this module was created (integer).</li>
+   <li><i>build-date</i> - Build date of the module, in seconds 
+   (integer).</li>
+   <li><i>classes</i> - Classes this module claims to implement.</li>
+   <li><i>thread-safe</i> - If the module is thread-safe.</li>
+   <li><i>components</i> - Components this module claims to implement.</li>
+   <li><i>user path</i> - Module was loaded from path provided by user.</li>
+   </ul></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_get_all_failed_modules</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_load_module">SIM_load_module()</a></h3>
+<p>
+
+<a name="SIM_load_module2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_load_module"></a><b>SIM_load_module</b> — load a module</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_load_module(const char *NOTNULL module);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Load a Simics module. Normally, modules are loaded automatically
+     as needed for the configuration classes they implement, and there is
+     rarely any need to call this function explicitly.
+<p>
+     The <i>module</i> argument is the name of the module (not
+     file name) to be loaded.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_License</b> Thrown if the module requires a non-existing
+       license feature.<br>
+<p>
+       <b>SimExc_General</b> Thrown if the module failed to load for other
+       reasons.
+</p><p>
+     </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_module_list_refresh">SIM_module_list_refresh()</a></h3>
+<p>
+
+<a name="SIM_module_list_refresh2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_module_list_refresh"></a><b>SIM_module_list_refresh</b> — refresh list of loadable modules</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_module_list_refresh(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Simics maintains a list of all modules that can be loaded successfully. If a
+   module is changed or added, the list has to be refreshed before Simics can
+   load this module.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Object-Locks">Object Locks</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_ASSERT_CELL_CONTEXT">SIM_ASSERT_CELL_CONTEXT()</a></h3>
+<p>
+
+<a name="SIM_ASSERT_CELL_CONTEXT2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_ASSERT_CELL_CONTEXT"></a><b>SIM_ASSERT_CELL_CONTEXT</b> — assert Cell Context</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">SIM_ASSERT_CELL_CONTEXT(obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b><i>SIM_ASSERT_CELL_CONTEXT</i></b> function verifies that cell
+  thread domain associated with <i>obj</i> is held by the calling thread
+  and raises a hard failure if this is not the case.
+<p>
+  In other worlds, the macro ensures that the execution context is either
+  Cell Context or Global Context.</p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_ASSERT_OBJECT_LOCK">SIM_ASSERT_OBJECT_LOCK()</a></h3>
+<p>
+
+<a name="SIM_ASSERT_OBJECT_LOCK2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_ASSERT_OBJECT_LOCK"></a><b>SIM_ASSERT_OBJECT_LOCK</b> — assert thread domain is held</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">SIM_ASSERT_OBJECT_LOCK(obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b><i>SIM_ASSERT_OBJECT_LOCK</i></b> function checks that the
+  thread domain associated with <i>obj</i> is held. A hard failure
+  is raised if the thread domain is not held.</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_acquire_cell">SIM_acquire_cell()</a></h3>
+<p>
+
+<a name="SIM_acquire_cell2"></a><a name="SIM_release_cell"></a><a name="SIM_ACQUIRE_CELL"></a><a name="SIM_RELEASE_CELL"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_acquire_cell"></a><b>SIM_acquire_cell</b><b>, SIM_release_cell</b><b>, SIM_ACQUIRE_CELL</b><b>, SIM_RELEASE_CELL</b> — enter Cell Context</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">domain_lock_t *
+SIM_acquire_cell(conf_object_t *NOTNULL obj,
+                 const char *function_name,
+                 const char *source_location);
+</pre><p></p><pre class="jdocu_small">void
+SIM_release_cell(conf_object_t *NOTNULL obj, domain_lock_t *dh);
+</pre><p></p><pre class="jdocu_small">SIM_ACQUIRE_CELL(obj, lockp);
+</pre><p></p><pre class="jdocu_small">SIM_RELEASE_CELL(obj, lockp);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Enters Cell Context for the cell associated with the
+   object <i>obj</i>.
+<p>
+   As part of entering Cell Context, the cell thread domain
+   for the cell associated with <i>obj</i> is acquired.
+</p><p>
+   Entering Cell Context multiple times is allowed, but
+   acquired thread domains must be released in strict reverse order.
+</p><p>
+   This function will block until the cell is available if another
+   thread is currently holding the cell thread domain.
+   While blocking, any previously held domains can be acquired by
+   the thread already in Cell Context. Thus, the caller must
+   be prepared to handle e.g. incoming interface calls.
+</p><p>
+   In Cell Context, API functions marked with Cell Context
+   or Global Context can be called safely, and interfaces
+   on objects belonging to the same cell can be called directly. More
+   generally, the full Standard Device Model applies in Cell Context.
+   Refer to the chapter about threading in the API Reference Manual for more
+   details.
+</p><p>
+   The macro version of this API call sets the
+   <i>function_name</i> and <i>source_line</i> arguments automatically
+   with the information where the API call was made. This data is used
+   when lock statistics collection is enabled
+   through the <b>enable-object-lock-stats</b> command.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_acquire_object">
+   SIM_acquire_object</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_acquire_target">
+   SIM_acquire_target
+   </a></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+<b><i>SIM_acquire_cell</i></b> returns a domain lock handle which should
+     be passed as an argument to <b><i>SIM_release_cell</i></b> when the
+     lock is released. <b><i>SIM_ACQUIRE_CELL</i></b> does not return
+     anything but instead stores the domain lock handle in the pointer
+     passed as the second argument.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Any</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_acquire_object">SIM_acquire_object()</a></h3>
+<p>
+
+<a name="SIM_acquire_object2"></a><a name="SIM_release_object"></a><a name="SIM_ACQUIRE_OBJECT"></a><a name="SIM_RELEASE_OBJECT"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_acquire_object"></a><b>SIM_acquire_object</b><b>, SIM_release_object</b><b>, SIM_ACQUIRE_OBJECT</b><b>, SIM_RELEASE_OBJECT</b> — acquire thread domain</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">domain_lock_t *
+SIM_acquire_object(conf_object_t *NOTNULL obj,
+                   const char *function_name,
+                   const char *source_line);
+</pre><p></p><pre class="jdocu_small">void
+SIM_release_object(conf_object_t *NOTNULL obj, domain_lock_t *dh);
+</pre><p></p><pre class="jdocu_small">SIM_ACQUIRE_OBJECT(obj, lockp);
+</pre><p></p><pre class="jdocu_small">SIM_RELEASE_OBJECT(obj, lockp);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Acquires the thread domain associated with the object <i>obj</i>.
+<p>
+   A particular thread domain can only be held by a single thread at a time,
+   and this function blocks until the domain is available. Once the domain
+   is held, the thread can safely access state protected
+   by the domain.
+</p><p>
+   While blocking, any previously held domains can be acquired by
+   threads with higher priority, such as a thread running in
+   Cell Context.
+</p><p>
+   More than one thread domain can be held simultaneously, and the same
+   thread domain may be acquired multiple times.
+   However, domains must be released in strict reverse order.
+</p><p>
+   This function is typically used by models using the Threaded Device Model
+   to acquire the model's own thread domain from its interface methods.
+   In this case, <i>obj</i> is set to the model itself.
+</p><p>
+   The macro version of this API call sets the
+   <i>function_name</i> and <i>source_line</i> arguments automatically
+   with the information where the API call was made. This data is used
+   when lock statistics collection is enabled
+   through the <b>enable-object-lock-stats</b> command.
+</p><p>
+   More details about thread domains and the threading model are
+   available in the chapter about threading in the API Reference Manual.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_acquire_target">
+   SIM_acquire_target</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_acquire_cell">
+   SIM_acquire_cell
+   </a></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+<b><i>SIM_acquire_object</i></b> returns a domain lock handle which should
+     be passed as an argument to <b><i>SIM_release_object</i></b> when the
+     lock is released. <b><i>SIM_ACQUIRE_OBJECT</i></b> does not return
+     anything but instead stores the domain lock handle in the pointer
+     passed as the second argument.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Any</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_acquire_object_for_execution">SIM_acquire_object_for_execution()</a></h3>
+<p>
+
+<a name="SIM_acquire_object_for_execution2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_acquire_object_for_execution"></a><b>SIM_acquire_object_for_execution</b> — acquire object lock for execution</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">domain_lock_t *
+SIM_acquire_object_for_execution(conf_object_t *NOTNULL obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Acquire the thread domain lock associated with object <i>arg</i>.
+<p>
+   Note: This API function is considered tech-preview and may
+   change without notice.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Domain lock handle which should be passed as
+   an argument to <b><i>SIM_release_object</i></b> when the lock is released.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Any</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_acquire_target">SIM_acquire_target()</a></h3>
+<p>
+
+<a name="SIM_acquire_target2"></a><a name="SIM_release_target"></a><a name="SIM_ACQUIRE_TARGET"></a><a name="SIM_RELEASE_TARGET"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_acquire_target"></a><b>SIM_acquire_target</b><b>, SIM_release_target</b><b>, SIM_ACQUIRE_TARGET</b><b>, SIM_RELEASE_TARGET</b> — conditionally enter Cell Context</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">domain_lock_t *
+SIM_acquire_target(conf_object_t *NOTNULL obj,
+                   const char *function_name,
+                   const char *source_location);
+</pre><p></p><pre class="jdocu_small">void
+SIM_release_target(conf_object_t *NOTNULL obj, domain_lock_t *dh);
+</pre><p></p><pre class="jdocu_small">SIM_ACQUIRE_TARGET(obj, lockp);
+</pre><p></p><pre class="jdocu_small">SIM_RELEASE_TARGET(obj, lockp);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Enters Cell Context if the specified object
+   <i>obj</i> uses the Standard Device Model.
+   The function does nothing if <i>obj</i> is a thread-aware object,
+   i.e., if the object belongs to a thread-domain other than the cell.
+<p>
+   The intended use for this function is ensuring that Cell Context
+   is entered before a code running in Threaded Context invokes an
+   interface on some external object. If the external object is thread aware,
+   and does not require Cell Context, this function avoids entering
+   Cell Context as an optimization.
+</p><p>
+   The macro version of this API call sets the
+   <i>function_name</i> and <i>source_line</i> arguments automatically
+   with the information where the API call was made. This data is used
+   when lock statistics collection is enabled
+   through the <b>enable-object-lock-stats</b> command.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+<b><i>SIM_acquire_target</i></b> returns a domain lock handle which should
+     be passed as an argument to <b><i>SIM_release_target</i></b> when the
+     lock is released. <b><i>SIM_ACQUIRE_TARGET</i></b> does not return
+     anything but instead stores the domain lock handle in the pointer
+     passed as the second argument.
+   </dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_acquire_object">
+     SIM_acquire_object</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_acquire_cell">
+     SIM_acquire_cell
+   </a></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Any</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_drop_thread_domains">SIM_drop_thread_domains()</a></h3>
+<p>
+
+<a name="SIM_drop_thread_domains2"></a><a name="SIM_reacquire_thread_domains"></a><a name="SIM_DROP_THREAD_DOMAINS"></a><a name="SIM_REACQUIRE_THREAD_DOMAINS"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_drop_thread_domains"></a><b>SIM_drop_thread_domains</b><b>, SIM_reacquire_thread_domains</b><b>, SIM_DROP_THREAD_DOMAINS</b><b>, SIM_REACQUIRE_THREAD_DOMAINS</b> — temporarily release all held thread domains</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">domain_lock_t *
+SIM_drop_thread_domains(void);
+</pre><p></p><pre class="jdocu_small">void
+SIM_reacquire_thread_domains(domain_lock_t *dl);
+</pre><p></p><pre class="jdocu_small">SIM_DROP_THREAD_DOMAINS(obj, lockp);
+</pre><p></p><pre class="jdocu_small">SIM_REACQUIRE_THREAD_DOMAINS(obj, lockp);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Temporarily releases all held thread domains and enters
+   Threaded Context.
+<p>
+   This function is intended to use before blocking is initiated on an
+   external synchronization mechanism, like a condition variable.
+   Releasing thread domains before blocking is often necessary
+   to avoid deadlock situations where other threads get stuck
+   trying to acquire thread domains held by the blocking thread.
+</p><p>
+   Each call to <b><i>SIM_drop_thread_domains</i></b> must be
+   followed with a call to <b><i>SIM_reacquire_thread_domains</i></b>
+   to reacquire the released thread domains. This must
+   be done from the same thread.
+</p><p>
+   If the purpose of the call is just to provide other threads
+   an opportunity to acquire held domains, then the more efficient
+   <b><i>SIM_yield_thread_domains</i></b> should be used instead.
+</p><p>
+   The macro versions of the API calls are currently wrappers of
+   the corresponding SIM-function. In the future, they might collect
+   extra information about where in the code the domain locks are
+   reacquired.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+<b><i>SIM_drop_thread_domains</i></b> returns a domain lock handle
+     which should be passed as an argument to
+     <b><i>SIM_reacquire_thread_domains_object</i></b>.
+     The <b><i>SIM_DROP_THREAD_DOMAINS</i></b> does not return
+     anything but instead stores the domain lock handle in the pointer
+     passed as the second argument.
+   </dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_yield_thread_domains">
+   SIM_yield_thread_domains
+   </a></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Any</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_yield_thread_domains">SIM_yield_thread_domains()</a></h3>
+<p>
+
+<a name="SIM_yield_thread_domains2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_yield_thread_domains"></a><b>SIM_yield_thread_domains</b> — yield held thread domains</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_yield_thread_domains(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Yields held thread domains if there are other threads waiting to
+   acquire them.
+<p>
+   The function blocks until all threads waiting for one of the
+   held domains have had the opportunity to acquire the domain in question,
+   and then resumes execution with the domains held again.
+</p><p>
+   One example usage of this function is when a CPU model is notified
+   through the <code>execute_control</code> interface that another
+   thread wants to acquire the CPU's thread domain. Then the CPU
+   function should call this function as quickly as possible,
+   preferably before starting the simulation of the next instruction.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_SIM_drop_thread_domains">
+   SIM_drop_thread_domains</a>, <a class="jdocu" href="#__jdocu_seealso_SIM_acquire_object">
+   SIM_acquire_object
+   </a></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Any</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Output">Output</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_add_output_handler">SIM_add_output_handler()</a></h3>
+<p>
+
+<a name="SIM_add_output_handler2"></a><a name="SIM_remove_output_handler"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_add_output_handler"></a><b>SIM_add_output_handler</b><b>, SIM_remove_output_handler</b> — add or remove output handler</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_add_output_handler(void (*NOTNULL f)(lang_void *user_data,
+                                         const char *text,
+                                         size_t length),
+                       lang_void *user_data);
+</pre><p></p><pre class="jdocu_small">void
+SIM_remove_output_handler(void (*NOTNULL f)(lang_void *user_data,
+                                            const char *text,
+                                            size_t length),
+                          lang_void *user_data);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_add_output_handler</i></b> registers
+   <b><i>f</i></b>(<i>user_data</i>, <i>text</i>, <i>length</i>) 
+   to be called whenever there is text output from Simics.
+<p>
+   <i>text</i> contains <i>length</i> bytes of output data.
+   <i>user_data</i> is passed unchanged to the output handler.
+</p><p>
+   <b><i>SIM_remove_output_handler</i></b> removes <i>f</i> as an output
+   recipient. If <i>user_data</i> is <code>NULL</code>, all output
+   handlers with the same function will be removed; otherwise, only those with
+   equal <i>user_data</i> will be removed.
+</p><p>
+   Output handlers must be thread-safe in order to handle output from different
+   threads properly. There will only be one activation of each handler at a
+   given instant so strict re-entrancy is not required, but proper locking
+   around resources shared with other code should be in place.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_write</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_write">SIM_write()</a></h3>
+<p>
+
+<a name="SIM_write2"></a><a name="SIM_flush"></a><a name="SIM_putchar"></a><a name="SIM_puts"></a><a name="SIM_printf_vararg"></a><a name="SIM_printf"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_write"></a><b>SIM_write</b><b>, SIM_flush</b><b>, SIM_putchar</b><b>, SIM_puts</b><b>, SIM_printf_vararg</b><b>, SIM_printf</b> — text output routines</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">int
+SIM_write(const void *NOTNULL src, int length);
+</pre><p></p><pre class="jdocu_small">int
+SIM_flush(void);
+</pre><p></p><pre class="jdocu_small">int
+SIM_putchar(int c);
+</pre><p></p><pre class="jdocu_small">int
+SIM_puts(const char *NOTNULL s);
+</pre><p></p><pre class="jdocu_small">int
+SIM_printf_vararg(const char *NOTNULL format, va_list ap);
+</pre><p></p><pre class="jdocu_small">int
+SIM_printf(const char *NOTNULL format, ...);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+These are the Simics versions of the <b><i>write</i></b>,
+   <b><i>putchar</i></b>, <b><i>puts</i></b>, <b><i>printf</i></b>,
+   <b><i>vprintf</i></b>, and <b><i>fflush</i></b> C library functions.
+   The arguments and return values
+   are the same as for the library functions, except for
+   <b><i>SIM_write</i></b> which does not take any file argument.
+<p>
+   The output will be sent to <i>stdout</i>, but more output recipients
+   can be added using the <b><i>SIM_add_output_handler</i></b> function.
+   Output is line buffered. <b><i>SIM_flush</i></b> will force output of an
+   unterminated line.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_add_output_handler</i></b></dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Path">Path</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_add_directory">SIM_add_directory()</a></h3>
+<p>
+
+<a name="SIM_add_directory2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_add_directory"></a><b>SIM_add_directory</b> — add directory to search path</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_add_directory(const char *NOTNULL directory, bool prepend);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Adds a directory to Simics's search path. This is a list of directories
+   which Simics uses when searching for files such as disk dumps, kernel
+   images, etc.
+   <p>
+   The <i>directory</i> argument is first converted using
+   <b><i>SIM_native_path</i></b>, to yield a path on host native form.
+   If the path does not exist, a frontend exception is raised.
+</p><p>
+   If <i>prepend</i> is true, the directory is inserted first in the
+   list of directories.
+</p><p>
+   This list of directories is saved as the attribute
+   <i>simics_path</i> when doing <b>write-configuration</b>.
+   Each directory is first converted to absolute form if relative.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the directory does not exist.
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_lookup_file</i></b>, <b><i>SIM_clear_directories</i></b>
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_clear_directories">SIM_clear_directories()</a></h3>
+<p>
+
+<a name="SIM_clear_directories2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_clear_directories"></a><b>SIM_clear_directories</b> — clear the search path</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_clear_directories(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Deletes all directories from the search path.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_add_directory</i></b>, <b><i>SIM_lookup_file</i></b>
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_directories">SIM_get_directories()</a></h3>
+<p>
+
+<a name="SIM_get_directories2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_directories"></a><b>SIM_get_directories</b> — get the current search path</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_get_directories(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the current value of the directory search path.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_lookup_file">SIM_lookup_file()</a></h3>
+<p>
+
+<a name="SIM_lookup_file2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_lookup_file"></a><b>SIM_lookup_file</b> — find a file using simics search path</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">char *
+SIM_lookup_file(const char *file);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Searches for a file in the Simics search path.
+<p>
+   The returned path will always be in host native format, so it will not need
+   to be converted. See <b><i>SIM_native_path</i></b> for more details on what
+   "host native format" means.
+</p><p>
+   <code>NULL</code> is returned if <i>file</i> cannot be found.
+</p><p>
+   The search algorithm is as follows.
+</p><p>
+   </p><ul>
+     <li> If <i>file</i> is <code>NULL</code> or an empty string,
+          the function returns <code>NULL</code>. </li>
+
+     <li> If <i>file</i> exists and is an absolute path, it is
+          converted to host native form and returned.</li>
+
+     <li> If <i>file</i> starts with <code>%simics%</code>, the rest of the
+          path is looked up first in the current Simics project, and then in
+          all configured Simics packages. If a match is found, the native form
+          of the file found will be returned.</li>
+
+     <li> If <i>file</i> exists in or relative to the current
+          directory, it is returned without using the Simics search path. This
+          is more or less equivalent of always having "." first in the
+          search path.</li>
+
+     <li> For each directory in Simics search path: The directory and the file
+          is concatenated and converted to host native format. Each such file
+          is looked up first in the current Simics project, and then in all
+          Simics packages. If a match is found, the native form of the file
+          found will be returned.</li>
+   </ul>
+<p>
+   If the file was found, a pointer to the full path to the file is returned.
+   The ownership of the string is passed to the caller.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_add_directory</i></b>, <b><i>SIM_clear_directories</i></b>
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_native_path">SIM_native_path()</a></h3>
+<p>
+
+<a name="SIM_native_path2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_native_path"></a><b>SIM_native_path</b> — convert path to its native form</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">char *
+SIM_native_path(const char *NOTNULL path);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Translates a path to its host native form. This functions is a no-op on all
+   platforms except Windows.
+<p>
+   The value returned by this function is allocated and owned by the caller.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Processor">Processor</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_clear_augmentation_bit">SIM_clear_augmentation_bit()</a></h3>
+<p>
+
+<a name="SIM_clear_augmentation_bit2"></a><a name="SIM_get_augmentation_bit"></a><a name="SIM_set_augmentation_bit"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_clear_augmentation_bit"></a><b>SIM_clear_augmentation_bit</b><b>, SIM_get_augmentation_bit</b><b>, SIM_set_augmentation_bit</b> — convenience functions to work with augmented memory bits</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">FORCE_INLINE void
+SIM_clear_augmentation_bit(uint8 *tag_page_data, unsigned pofs);
+</pre><p></p><pre class="jdocu_small">FORCE_INLINE int
+SIM_get_augmentation_bit(uint8 *tag_page_data, unsigned pofs);
+</pre><p></p><pre class="jdocu_small">FORCE_INLINE void
+SIM_set_augmentation_bit(uint8 *tag_page_data, unsigned pofs);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b><i>SIM_clear_augmentation_bit</i></b>,
+     <b><i>SIM_get_augmentation_bit</i></b>,
+     and <b><i>SIM_set_augmentation_bit</i></b> functions are used to modify
+     and read augmented memory bits. The <code>direct_memory_tags</code>
+     interface supports augmented memory through the <code>data</code>
+     field in the <code>direct_memory_tags_t</code> struct.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_disassemble_address">SIM_disassemble_address()</a></h3>
+<p>
+
+<a name="SIM_disassemble_address2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_disassemble_address"></a><b>SIM_disassemble_address</b> — disassemble address</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">tuple_int_string_t
+SIM_disassemble_address(conf_object_t *NOTNULL cpu, generic_address_t address, 
+                        int logical, int sub_operation);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function disassembles the instruction at the given
+   address. Address is either a physical address (logical == 0) or a
+   logical address (logical == 1). For VLIW architectures,
+   <i>sub_operation</i> is used to select which sub-operation
+   to disassemble. A request for a not present sub-operation (for
+   example <i>sub-operation</i> != 0 for non-VLIW
+   architectures) results in the int part of the return tuple being
+   set to zero.
+<p>
+   A <code>tuple_int_string_t</code> is returned which contains the
+   disassembly string as well as the length of the instruction in
+   bytes.  <a name="tuple_int_string_t">tuple_int_string_t</a> is defined like this: 
+   
+</p><pre class="jdocu_small">typedef struct {
+        int integer;
+        char *string;
+} tuple_int_string_t;</pre><p>
+ For the Sparc and PowerPC
+   targets the length is always 4 bytes.
+</p><p>
+   This function can be more convenient to use than the
+   <b><i>disassemble</i></b> function in the
+   <code>processor_info</code> interface.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if arguments are invalid.<br>
+<p>
+   <b>SimExc_Memory</b> Thrown if the address is undefined or not mapped in the
+   MMU (for logical addresses).
+   </p><p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_all_processors">SIM_get_all_processors()</a></h3>
+<p>
+
+<a name="SIM_get_all_processors2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_all_processors"></a><b>SIM_get_all_processors</b> — get list of all processors</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_get_all_processors(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return a list of all processor objects.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+List of processors.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_processor">SIM_get_processor()</a></h3>
+<p>
+
+<a name="SIM_get_processor2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_processor"></a><b>SIM_get_processor</b> — get processor pointer from number</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIM_get_processor(int proc_no);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Converts processor id number to processor pointer. This function cannot be
+   used until a configuration had been loaded successfully.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Index</b> Thrown if no processor with number <i>proc_no</i>
+   exists.
+   <p>
+   </p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The processor pointer, NULL on failure.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_processor_number">SIM_get_processor_number()</a></h3>
+<p>
+
+<a name="SIM_get_processor_number2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_processor_number"></a><b>SIM_get_processor_number</b> — get the number of a processor</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">int
+SIM_get_processor_number(const conf_object_t *NOTNULL cpu);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the global processor number for a processor in Simics.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+The processor number</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_number_processors">SIM_number_processors()</a></h3>
+<p>
+
+<a name="SIM_number_processors2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_number_processors"></a><b>SIM_number_processors</b> — number of processors</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">int
+SIM_number_processors(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the current total number of processors in the system.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Number of processors.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_processor_privilege_level">SIM_processor_privilege_level()</a></h3>
+<p>
+
+<a name="SIM_processor_privilege_level2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_processor_privilege_level"></a><b>SIM_processor_privilege_level</b> — return the current privilege level for a processor</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">int
+SIM_processor_privilege_level(conf_object_t *NOTNULL cpu);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return the current privilege level for a processor.  The definition
+  of privilege levels depends on the processor type.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+For SPARC, and PowerPC, and ARM processors: 0 for User mode, and
+  1 for Supervisor mode.<br>
+  For x86 and IA-64 processors: 0-3, where 0 is the most privileged.<br>
+  For MIPS processors: 0
+  </dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if <i>cpu</i> does not implement the privilege
+   level interface function.
+<p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_reset_processor">SIM_reset_processor()</a></h3>
+<p>
+
+<a name="SIM_reset_processor2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_reset_processor"></a><b>SIM_reset_processor</b> — reset the processor</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_reset_processor(conf_object_t *NOTNULL cpu, int hard_reset);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Performs a reset on the processor, causing a System Reset exception to be
+   taken when execution continues. <i>cpu</i> is the processor that should be
+   reset.
+   <i>hard_reset</i> indicates if a soft (0) or hard (1) (power-on type) reset
+   should be performed. If a hard reset is requested, a number of register are
+   initiated with default values.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if <i>cpu</i> does not implement reset.<br>
+<p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Profiling">Profiling</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_iter_next">SIM_iter_next()</a></h3>
+<p>
+
+<a name="SIM_iter_next2"></a><a name="SIM_iter_addr"></a><a name="SIM_iter_free"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_iter_next"></a><b>SIM_iter_next</b><b>, SIM_iter_addr</b><b>, SIM_iter_free</b> — Iterate over address profile counters</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">FORCE_INLINE uint64
+SIM_iter_next(addr_prof_iter_t *iter);
+</pre><p></p><pre class="jdocu_small">FORCE_INLINE generic_address_t
+SIM_iter_addr(addr_prof_iter_t *iter);
+</pre><p></p><pre class="jdocu_small">FORCE_INLINE void
+SIM_iter_free(addr_prof_iter_t *iter);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b>EXPERIMENTAL.</b> While this functionality is expected to be retained in
+   future releases, the interface is likely to change.
+<p>
+   
+</p><p>
+   
+
+   An address profile iterator visits some of the counters of an address
+   profiler in some order. It is obtained from the <b><i>iter</i></b> function of
+   the <code>address_profiler</code> interface.
+</p><p>
+   <b><i>SIM_iter_next</i></b> advances the address profile iterator
+   <i>iter</i> to the next nonzero counter and returns the count. It
+   will return 0 when there are no more counters to visit. Note that the order
+   in which the counters are visited is unspecified.
+</p><p>
+   <b><i>SIM_iter_addr</i></b> returns the address of the counter returned by the
+   most recent call to <b><i>iter_next</i></b>.
+</p><p>
+   When you are done with the iterator, deallocate it with
+   <b><i>SIM_iter_free</i></b>.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Simulation-Control">Simulation Control</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_break_message">SIM_break_message()</a></h3>
+<p>
+
+<a name="SIM_break_message2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_break_message"></a><b>SIM_break_message</b> — stop the simulation</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_break_message(const char *msg);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Display the reason why Simics will stop simulation.
+<p>
+   This is similar to <b><i>SIM_break_simulation</i></b>, with the
+   difference that it doesn't actually break the simulation. It can be
+   used by code that wants to display a break message and stop the
+   simulation by some other means.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_break_simulation</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_break_simulation">SIM_break_simulation()</a></h3>
+<p>
+
+<a name="SIM_break_simulation2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_break_simulation"></a><b>SIM_break_simulation</b> — stop the simulation</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_break_simulation(const char *msg);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Ask Simics to stop the simulation as soon as possible, displaying the
+   supplied message.
+<p>
+   Simics will normally stop before the next instruction is executed.
+   If this function is called when an instruction has started
+   executing, and the instruction can be aborted, it will rewind to
+   before the instruction.  This might leave the simulation in a state
+   where some repeatable part of the instruction is already executed.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_break_message</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_continue">SIM_continue()</a></h3>
+<p>
+
+<a name="SIM_continue2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_continue"></a><b>SIM_continue</b> — run the simulation</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">pc_step_t
+SIM_continue(int64 steps);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Run the simulation. In typical usage with <i>steps</i> being 0, the
+   simulation will run forward until it is stopped, either by a breakpoint,
+   internal event, or through the user interface.
+<p>
+   With a non-zero <i>steps</i>, Simics will make sure that at least
+   one processor runs <i>steps</i> steps and then stop the
+   simulation. As with <i>steps</i> being 0, the function can also
+   return early if other break criteria are met.
+</p><p>
+   In order to properly control when simulation stops in time, it is advisable
+   to use step or cycle breakpoints on one or more objects.
+</p><p>
+   The function returns non-zero if the simulation was started, and 0 otherwise.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the simulation could not be started. Check
+   the exception message for more information.
+<p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_current_clock">SIM_current_clock()</a></h3>
+<p>
+
+<a name="SIM_current_clock2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_current_clock"></a><b>SIM_current_clock</b> — return current clock</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIM_current_clock(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the clock (an object implementing the <code>cycle</code>
+   interface) that is driving the simulation in the current cell and current
+   thread. In Global Context, <code>NULL</code> is returned.
+<p>
+   Normally, one uses <b><i>SIM_object_clock</i></b> to obtain the clock
+   used for posting events. E.g. when a device processes a transaction it
+   typically takes the clock from the initiator.
+</p><p>
+   This function can instead be used in situations where it is important to
+   know the currently running clock, e.g. to post events right after the
+   current instruction finishes.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_object_clock</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_simics_is_running">SIM_simics_is_running()</a></h3>
+<p>
+
+<a name="SIM_simics_is_running2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_simics_is_running"></a><b>SIM_simics_is_running</b> — check if simulation is running</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">bool
+SIM_simics_is_running(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns true if the simulation is running, e.g. if it has been started using
+   <b><i>SIM_continue</i></b>, or false otherwise. It also returns true when the
+   simulation is reversing.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Simulation-Independent-Services">Simulation Independent Services</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_cancel_realtime_event">SIM_cancel_realtime_event()</a></h3>
+<p>
+
+<a name="SIM_cancel_realtime_event2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_cancel_realtime_event"></a><b>SIM_cancel_realtime_event</b> — cancel callback in host time</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">int
+SIM_cancel_realtime_event(int64 id);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Cancel a callback registered by <b><i>SIM_realtime_event</i></b>, whose
+   return value is specified as <i>id</i>.
+<p>
+   Returns 0 if the callback existed and was cancelled, or -1 if no callback
+   with that identifier existed. (No exception is raised.)</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_realtime_event</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_notify_on_socket">SIM_notify_on_socket()</a></h3>
+<p>
+
+<a name="SIM_notify_on_socket2"></a><a name="SIM_notify_on_object"></a><a name="SIM_notify_on_descriptor"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_notify_on_socket"></a><b>SIM_notify_on_socket</b><b>, SIM_notify_on_object</b><b>, SIM_notify_on_descriptor</b> — register notification on host I/O events</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_notify_on_socket(socket_t sock, notify_mode_t mode, int run_in_thread,
+                     void (*callback)(lang_void *data), lang_void *data);
+</pre><p></p><pre class="jdocu_small">void
+SIM_notify_on_object(HANDLE obj, int run_in_thread,
+                     void (*callback)(lang_void *data), lang_void *data);
+</pre><p></p><pre class="jdocu_small">void
+SIM_notify_on_descriptor(int fd, notify_mode_t mode, int run_in_thread,
+                         void (*callback)(lang_void *data),
+                         lang_void *data);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+These functions allow the function <i>callback</i> to be called
+   with argument <i>data</i> whenever a specific I/O event occurs on
+   the host machine. If <i>callback</i> is a null function pointer,
+   a previously installed notification is removed.
+<p>
+   If <i>run_in_thread</i> is 1, the callback function may be run
+   in a thread where it cannot access or call anything in Simics except for
+   these functions and <b><i>SIM_thread_safe_callback</i></b>. If
+   <i>run_in_thread</i> is zero, the callback function is always run in
+   Global Context. This may incur a small penalty in latency (time
+   between the occurrence of the host event and execution of
+   <i>callback</i>).
+</p><p>
+   Values other than 0 and 1 for <i>run_in_thread</i> are reserved.
+</p><p>
+   Notification on a specific event will be blocked during the execution of
+   its callback function.
+</p><p>
+   <b><i>SIM_notify_on_socket</i></b> will call a registered callback depending
+   on <i>mode</i>:
+</p><p>
+   <table>
+
+    <tbody><tr>
+     <td class="jdocu_noborder"><i>mode</i></td>
+     <td class="jdocu_noborder">condition</td>
+    </tr>
+
+    <tr>
+     <td class="jdocu_noborder"><code>Sim_NM_Read</code></td>
+     <td class="jdocu_noborder">Socket is readable, closed, or incoming connection accepted</td>
+    </tr>
+
+    <tr>
+     <td class="jdocu_noborder"><code>Sim_NM_Write</code></td>
+     <td class="jdocu_noborder">Socket is writeable, or outgoing connection has completed</td>
+    </tr>
+
+   </tbody></table>
+   <a name="notify_mode_t"></a>
+</p><p>
+   Socket notifiers of the mode <code>Sim_NM_Write</code> are not guaranteed
+   to be called again unless a previous attempt to send data to the socket
+   failed for flow control reasons (that is, it would have blocked).
+</p><p>
+   This means that notifiers of that mode should only be enabled for waiting on
+   the completion of a nonblocking outgoing connection or for a previously
+   "full" socket to accept data again.
+</p><p>
+   <b>Linux only</b>: <b><i>SIM_notify_on_descriptor</i></b> will call a
+   registered callback depending on <i>mode</i> for a given file
+   descriptor in a way similar to <b><i>SIM_notify_on_socket</i></b>.
+</p><p>
+   <b>Windows only</b>: <b><i>SIM_notify_on_object</i></b> will call a registered
+   callback when <i>object</i> (which must be a waitable object) is in
+   signalled state. The signalling object is modified in the same way as
+   the Windows wait functions (<b><i>WaitForMultipleObjects</i></b> etc).
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+A notification should be removed before its socket or descriptor is
+   closed.</div><div class="note">
+<b>Note:</b>
+On Windows, sockets registered for notification become nonblocking and
+   must remain so for as long as they are registered. This is a limitation of
+   the underlying Win32 API.</div></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context (call);
+   Threaded Context (callback with nonzero <i>run_in_thread</i>);
+   Global Context (callback otherwise)</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_thread_safe_callback</i></b></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_realtime_event">SIM_realtime_event()</a></h3>
+<p>
+
+<a name="SIM_realtime_event2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_realtime_event"></a><b>SIM_realtime_event</b> — schedule callback in host time</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">int64
+SIM_realtime_event(unsigned delay, void (*NOTNULL callback)(lang_void *data),
+                   lang_void *data, int run_in_thread, const char *desc);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Register <i>callback</i> to be run in <i>delay</i> ms, with
+   argument <i>data</i>. The delay is in real time (on the host
+   machine), and the actual delay may be somewhat larger because of host
+   scheduling.
+<p>
+   If <i>run_in_thread</i> is 1, the callback may be run in a
+   thread where it cannot access or call anything in Simics except for
+   <b><i>SIM_thread_safe_callback</i></b>. If <i>run_in_thread</i> is
+   zero, the callback function is always run in Global Context,
+   with the simulation temporarily suspended and the entire Simics API 
+   available. This may cause the call to occur slightly later than requested,
+   depending on what Simics is doing at the time.
+</p><p>
+   Values other than 0 and 1 for <i>run_in_thread</i> are reserved.
+</p><p>
+   The <i>desc</i> parameter is only present for debugging and has no
+   other effect; it should be a static string describing the callback but may
+   also be left NULL if desired.
+</p><p>
+   The callback is only called once.
+</p><p>
+   The return value is a non-zero identifier that can be used to cancel the
+   callback using <b><i>SIM_cancel_realtime_event</i></b>.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context. The callback is called in
+   Threaded Context if <i>run_in_thread</i> is nonzero,
+   in Global Context otherwise.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_cancel_realtime_event</i></b>, <b><i>SIM_thread_safe_callback</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_register_work">SIM_register_work()</a></h3>
+<p>
+
+<a name="SIM_register_work2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_register_work"></a><b>SIM_register_work</b> — register function to be called in Global Context</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_register_work(void (*NOTNULL f)(lang_void *data), lang_void *data);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Register work to be done in Global Context as soon as
+   possible,
+   (but not during the call to <b><i>SIM_register_work</i></b> itself). This
+   function is also useful for doing work without blocking a notifier.
+<p>
+   In general, the function <b><i>SIM_run_alone</i></b> should be used
+   instead of this function when a callback is posted from
+   Cell Context. The reason is that <b><i>SIM_run_alone</i></b>,
+   but not <b><i>SIM_register_work</i></b>, guarantees that the callback
+   is executed before the next instruction is dispatched.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context (call);
+   Global Context (callback)</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_run_async_work">SIM_run_async_work()</a></h3>
+<p>
+
+<a name="SIM_run_async_work2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_run_async_work"></a><b>SIM_run_async_work</b> — launch asynchronous work in a separate thread</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_run_async_work(lang_void *(*NOTNULL async_call)(lang_void *arg),
+                   void (*async_ready)(lang_void *async_ret, lang_void *arg),
+                   lang_void *arg);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_run_async_work</i></b> creates a new thread, running in parallel with
+   the Simics main thread, where the <i>async_call</i> function will be
+   called. Since the function runs in Threaded Context, most Simics API
+   functions, except, e.g., <b><i>SIM_thread_safe_callback</i></b>,
+   are not be available. Once the
+   <i>async_call</i> function has run, its return value is passed to
+   <i>async_ready</i>, if supplied, that will be called in
+   Global Context, i.e. in the Simics main thread.
+<p>
+   The user supplied <i>arg</i> parameter is passed unmodified to both
+   callback functions.
+</p><p>
+   <b><i>SIM_run_async_work</i></b> is typically used when calling functions that
+   would block the main thread for a long time while obtaining their result.
+</p><p>
+   If the result of <b><i>SIM_run_async_work</i></b> is used in the simulation,
+   it should be sent through a recorder to make sure that the session can be
+   replayed. This is needed for features such as reverse execution to work.
+   See the recorder module and the <code>recorder_v2</code> interface for
+   more information.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+<pre class="jdocu_small">import socket
+
+def async_call(arg):
+    # runs in separate thread without blocking Simics
+    return socket.gethostbyname(arg)
+
+def async_ready(ret, arg):
+    # runs in Simics main thread with access to the full Simics API
+    print("Host %s has IP address %s" % (arg, ret))
+
+simics.SIM_run_async_work(async_call, async_ready, "www.intel.com")
+</pre><p></p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context (call);
+     Threaded Context (<i>async_call</i> callback);
+     Global Context (<i>async_ready</i> callback)
+   </dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_notify_on_descriptor</i></b>, <b><i>SIM_notify_on_object</i></b>,
+     <b><i>SIM_notify_on_socket</i></b>, <b><i>SIM_thread_safe_callback</i></b>,
+     <b><i>SIM_run_alone</i></b>, <b><i>SIM_run_unrestricted</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_run_in_thread">SIM_run_in_thread()</a></h3>
+<p>
+
+<a name="SIM_run_in_thread2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_run_in_thread"></a><b>SIM_run_in_thread</b> — run function in a separate thread</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_run_in_thread(void (*NOTNULL f)(lang_void *arg), lang_void *arg);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_run_in_thread</i></b> schedules the callback <i>f</i> to run
+   on a separate thread. The callback will run in Threaded Context
+   and must observe the associated restrictions.
+<p>
+   Simics maintains a pool of worker threads used by this function, and hence
+   the callback can typically be started quickly.
+</p><p>
+   The callback is allowed to block or otherwise run for a long time.
+</p><p>
+   The user supplied <i>arg</i> parameter is passed unmodified to the
+   callback.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Any thread context (call);
+     Threaded Context (callback);
+   </dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_run_async_work</i></b>, <b><i>SIM_run_alone</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_thread_safe_callback">SIM_thread_safe_callback()</a></h3>
+<p>
+
+<a name="SIM_thread_safe_callback2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_thread_safe_callback"></a><b>SIM_thread_safe_callback</b> — register function to be called in Global Context</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_thread_safe_callback(void (*NOTNULL f)(lang_void *data), lang_void *data);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This is the function in the Simics API that can be called from threads
+   that are not created by Simics (i.e., from Threaded context).
+<p>
+   When the callback is run, it is executed in Global Context,
+   which means that it is safe to call any API functions from
+   it. Another thread in the module may at this time also call API
+   functions, if it synchronizes correctly with the callback
+   function. For example, the callback function might just signal to the
+   foreign thread to do its Simics API calls, wait for the thread to
+   signal that it has finished, and then return.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Threaded context (call);
+   Global Context (callback)</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Simulator-Translation-Caches">Simulator Translation Caches</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_STC_flush_cache">SIM_STC_flush_cache()</a></h3>
+<p>
+
+<a name="SIM_STC_flush_cache2"></a><a name="SIM_flush_I_STC_logical"></a><a name="SIM_flush_D_STC_logical"></a><a name="SIM_flush_I_STC_physical"></a><a name="SIM_flush_D_STC_physical"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_STC_flush_cache"></a><b>SIM_STC_flush_cache</b><b>, SIM_flush_I_STC_logical</b><b>, SIM_flush_D_STC_logical</b><b>, SIM_flush_I_STC_physical</b><b>, SIM_flush_D_STC_physical</b> — flush or remove entries in the STCs of a cpu</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_STC_flush_cache(conf_object_t *NOTNULL cpu);
+</pre><p></p><pre class="jdocu_small">void
+SIM_flush_I_STC_logical(conf_object_t *NOTNULL cpu,
+			logical_address_t vaddr,
+                        logical_address_t length);
+</pre><p></p><pre class="jdocu_small">void
+SIM_flush_D_STC_logical(conf_object_t *NOTNULL cpu,
+			logical_address_t vaddr,
+                        logical_address_t length);
+</pre><p></p><pre class="jdocu_small">void
+SIM_flush_I_STC_physical(conf_object_t *NOTNULL cpu,
+                         physical_address_t paddr,
+                         physical_address_t length);
+</pre><p></p><pre class="jdocu_small">void
+SIM_flush_D_STC_physical(conf_object_t *NOTNULL cpu,
+                         physical_address_t paddr,
+                         physical_address_t length,
+                         read_or_write_t read_or_write);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+These functions remove entries from the Simics internal caches (STCs) or
+   completely flushes the STCs contents. Memory mappings which have been
+   cached in the STCs will be faster for Simics to execute. Simics
+   extensions such as a cache model will need to flush entries in the STC
+   when a cache line is replaced, in order to be called when a cache line
+   is used again.
+   <p>
+   <b><i>SIM_STC_flush_cache</i></b> flushes the entire contents of the STCs
+   (both instruction and data) from the specified cpu.
+</p><p>
+   The <b><i>SIM_flush_<em>xxx</em></i></b> functions removes specified memory
+   ranges in the instruction or data STC. The address range is either the
+   logical or the physical address. The <code>read_or_write</code> parameter
+   specifies whether the read or the write D-STC should be flushed. If the
+   function doesn't have such a parameter, both read and write D-STCs are
+   flushed. The flushed address range is at least [ <i>vaddr</i>
+   ... (<i>vaddr</i> + <i>length</i> − 1) ], but may be larger.
+   <b><i>SIM_flush_D_STC_logical</i></b> currently always flushes an entire
+   page.
+</p><p>
+   The <b><i>SIM_flush_<em>xxx</em></i></b> functions can only be used on CPUs
+   that implement the internal <code>stc</code> interface; hence, they can
+   not be used on user-defined CPU models.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_flush_all_caches">SIM_flush_all_caches()</a></h3>
+<p>
+
+<a name="SIM_flush_all_caches2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_flush_all_caches"></a><b>SIM_flush_all_caches</b> — clear Simics's internal caches</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_flush_all_caches(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Clears Simics's internal caches such as STC contents and intermediate code.
+   This function is mainly for internal use (for debugging purposes)
+   and may be removed in the future.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_flush_cell_caches">SIM_flush_cell_caches()</a></h3>
+<p>
+
+<a name="SIM_flush_cell_caches2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_flush_cell_caches"></a><b>SIM_flush_cell_caches</b> — clear internal caches for a given cell</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_flush_cell_caches(conf_object_t *NOTNULL obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Clears internal caches in Simics for a given cell, such as STC contents and
+   intermediate code.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Stalling">Stalling</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_stall_count">SIM_stall_count()</a></h3>
+<p>
+
+<a name="SIM_stall_count2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_stall_count"></a><b>SIM_stall_count</b> — get number of cycles a processor has been stalled</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">cycles_t
+SIM_stall_count(conf_object_t *NOTNULL obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_stall_count</i></b> returns the total number of cycles the
+   processor associated to <i>obj</i> has been stalled.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Returns the total number of cycles the processor associated with
+   <i>obj</i> has been stalled.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_stall_cycle">SIM_stall_cycle()</a></h3>
+<p>
+
+<a name="SIM_stall_cycle2"></a><a name="SIM_stall"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_stall_cycle"></a><b>SIM_stall_cycle</b><b>, SIM_stall</b> — stall execution a specified number of cycles</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_stall_cycle(conf_object_t *NOTNULL obj, cycles_t cycles);
+</pre><p></p><pre class="jdocu_small">void
+SIM_stall(conf_object_t *NOTNULL obj, double seconds);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_stall_cycle</i></b> and <b><i>SIM_stall</i></b> set the stall duration
+   of the processor <i>obj</i>. The stall duration is given in clock
+   cycles or seconds and is how long <i>obj</i> will stall before
+   resuming its normal activity. If <i>obj</i> was already stalling,
+   the time remaining is changed. A zero stall duration is a request to cease
+   stalling immediately.
+<p>
+   The specified duration is interpreted as relative the local time of
+   <i>obj</i>.
+</p><p>
+   <i>obj</i> must implement the <code>stall</code> and
+   <code>cycle</code> interfaces.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if <i>cycles</i> or <i>seconds</i> is negative.
+<p>
+   </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+     </a><b><i>SIM_stalled_until</i></b>, <b><i>SIM_stall_count</i></b>
+   </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_stalled_until">SIM_stalled_until()</a></h3>
+<p>
+
+<a name="SIM_stalled_until2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_stalled_until"></a><b>SIM_stalled_until</b> — query how many cycles that remains of stall</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">cycles_t
+SIM_stalled_until(conf_object_t *NOTNULL obj);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_stalled_until</i></b> returns how many more cycles the
+   processor will stall before the associated processor starts to
+   execute instructions again.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="Time-and-Events">Time and Events</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_run_alone">SIM_run_alone()</a></h3>
+<p>
+
+<a name="SIM_run_alone2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_run_alone"></a><b>SIM_run_alone</b> — run callback with all execution stopped</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_run_alone(void (*NOTNULL f)(lang_void *data), lang_void *data);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_run_alone</i></b> will make sure that the callback <i>f</i>,
+   passed as argument, will be run in a context where all execution threads are
+   stopped and the full Simics API is available (Global Context).
+   This is useful for temporarily stopping the simulation to run API functions
+   not allowed in Cell Context.
+<p>
+   If the callback is posted while an instruction is being emulated
+   then the callback be invoked when the current instruction has completed
+   and before the next instruction is dispatched.
+</p><p>
+   Although no other execution threads are running when the callback is
+   invoked, their exact position in simulated time may vary between runs. If
+   the callback accesses objects in cells other than the one that
+   <b><i>SIM_run_alone</i></b> was called from, then care must be taken to
+   preserve determinism.</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+All contexts including Threaded Context (call);
+   Global Context (callback)
+   </dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<b><i>SIM_run_unrestricted</i></b></dd>
+</dl><p>
+
+</p><h2 class="jdocu"><a class="not-numbered" name="User-Interface">User Interface</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="SIM_call_python_function">SIM_call_python_function()</a></h3>
+<p>
+
+<a name="SIM_call_python_function2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_call_python_function"></a><b>SIM_call_python_function</b> — call a Python named function</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_call_python_function(const char *NOTNULL func, attr_value_t *NOTNULL args);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Calls the Python function named <i>func</i> with arguments in
+     <i>args</i>, which must be a list.
+<p>
+     The namespace searched for <i>func</i> is the same as the Simics
+     commands <b>@</b> and <b>python</b> use; i.e., the Python module
+     <code>__main__</code>. You may want to use a module-relative name for
+     <i>func</i> such as <code>__builtin__.repr</code> when calling functions 
+     not defined at the Simics command-line. This avoids calling any local
+     redefinition of that function.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Type</b> Thrown if <i>args</i> is not list or cannot be
+       converted to Python or if <b><i>func</i></b> is not callable or if the
+       return value cannot be converted to an <code>attr_value_t</code>.<br>
+<p>
+       <b>SimExc_Lookup</b> Thrown if <b><i>func</i></b> does not exist.<br>
+       <b>SimExc_General</b> Thrown if there was an error executing
+       Python code.<br>
+       <b>SimExc_Break</b> Thrown on user interrupt.
+     </p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Return value of the Python function
+     </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context
+     </dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+       </a><b><i>SIM_make_attr_list</i></b>, <b><i>SIM_run_python</i></b>
+     </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_api_function">SIM_get_api_function()</a></h3>
+<p>
+
+<a name="SIM_get_api_function2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_api_function"></a><b>SIM_get_api_function</b> — return an API function by name</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">api_function_t
+SIM_get_api_function(const char *function);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Looks up a C function in the Simics API based on its name and returns a
+   pointer to it. Typically used to access a function added to the Simics API
+   in an update release (minor version) while remaining binary compatible with
+   older versions of Simics.
+<p>
+   The pre-processor macro <code><a name="GET_API_FUNCTION">GET_API_FUNCTION</a></code> provides
+   wrapping of <b><i>SIM_get_api_function</i></b> for simpler type casting.
+</p><p>
+   <b><i>SIM_get_api_function</i></b> is neither available nor needed in Python.
+   To access a new function in a backward compatible way there, the build id
+   can be used to write conditional code, see example below.</p></dd>
+<dt class="jdocu_descitem">EXAMPLE</dt><dd>
+A new function <b><i>SIM_foo</i></b> is introduced in the
+   Simics release with <em>build id</em> 5234. Since older versions of Simics
+   do not have this function, a module writer that wants to use it while
+   remaining compatible with old Simics versions, can write the following:<br>
+   <pre class="jdocu_small">    GET_API_FUNCTION(tmp_SIM_foo, SIM_foo);
+    if (tmp_SIM_foo != NULL)
+        tmp_SIM_foo(1);
+    else
+        // code for older versions
+   </pre><p>
+</p><p>
+   Once compatibility with versions before build id 5234 can be dropped, the
+   code in the example is simply replaced with a direct call to
+   <b><i>SIM_foo</i></b>.
+</p><p>
+   The corresponding implementation in Python:<br>
+   </p><pre class="jdocu_small">    if conf.sim.build_id &gt;= 5234:
+        SIM_foo(1)
+    else
+        # code for older versions
+   </pre><p>
+   </p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Returns a pointer to the API function if it exists
+   or zero. The return type <code>api_function_t</code> is defined as:
+   
+<pre class="jdocu_small">typedef void (*api_function_t)(void);</pre><p>
+</p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_batch_mode">SIM_get_batch_mode()</a></h3>
+<p>
+
+<a name="SIM_get_batch_mode2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_batch_mode"></a><b>SIM_get_batch_mode</b> — return setting of the batch-mode</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">bool
+SIM_get_batch_mode(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This function returns the current value of Simics's batch-mode flag.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_get_debugger">SIM_get_debugger()</a></h3>
+<p>
+
+<a name="SIM_get_debugger2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_get_debugger"></a><b>SIM_get_debugger</b> — return the debugger object</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">conf_object_t *
+SIM_get_debugger(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns the Simics Debugger. The returned object is the object which
+   implements the Simics Debugger API. The debugger object is created if it
+   does not already exist. Returns NULL and signals an exception if the
+   debugger could not be created.</dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+Returns the debugger object</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if the debugger could not be created.
+   </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_load_target">SIM_load_target()</a></h3>
+<p>
+
+<a name="SIM_load_target2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_load_target"></a><b>SIM_load_target</b> — load Simics target from file</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_load_target(const char *NOTNULL target,
+               const char *ns, attr_value_t presets,
+               attr_value_t cmdline_args);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Load the target <i>target</i> into Simics. This can either be a
+   file name or a target name, as returned by the <b>list-targets</b>
+   command.
+<p>
+   This function is functionally equivalent to invoking the script by passing
+   it as a command line argument or to running the script with the
+   <b>load-target</b> or <b>run-script</b> command, with the
+   <code>local</code> flag set.
+</p><p>
+   The <i>ns</i> and <i>presets</i> arguments have the same
+   semantics as <i>namespace</i> and <i>presets</i> arguments to the
+   <b>run-script</b> command.
+</p><p>
+   The <i>cmdline_args</i> argument should be a list of 2-element lists
+   of target parameters <code>[name, value]</code>.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Break</b> Thrown if the script was interrupted by the user.<br>
+<p>
+   <b>SimExc_General</b> Thrown if the script was interrupted by an error.<br>
+</p><p>
+   <b>SimExc_IOError</b> Thrown if the script file could not be opened.<br>
+</p><p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_quit">SIM_quit()</a></h3>
+<p>
+
+<a name="SIM_quit2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_quit"></a><b>SIM_quit</b> — quit Simics</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_quit(int exit_code);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Quit Simics in an orderly fashion. The Simics process will return the value
+   <i>exit_code</i>. See the Core_Clean_At_Exit and Core_At_Exit haps
+   for ways to run user code when Simics exits. Callbacks for the
+   Core_Clean_At_Exit hap will only run if <b><i>SIM_quit</i></b> is called from
+   Global Context, while Core_At_Exit is always called.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context. Global Context
+   if possible.</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_run_command">SIM_run_command()</a></h3>
+<p>
+
+<a name="SIM_run_command2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_run_command"></a><b>SIM_run_command</b> — evaluate a CLI command</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_run_command(const char *NOTNULL line);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Runs a CLI command and returns the value, if any, as an attr_value_t.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if there was an error executing the CLI
+   command.<br>
+<p>
+   <b>SimExc_Type</b> Thrown if the return value could not be converted
+   to an <code>attr_value_t</code>.
+</p><p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_run_command_file">SIM_run_command_file()</a></h3>
+<p>
+
+<a name="SIM_run_command_file2"></a><a name="SIM_run_command_file_params"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_run_command_file"></a><b>SIM_run_command_file</b><b>, SIM_run_command_file_params</b> — read CLI commands from file</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_run_command_file(const char *NOTNULL file, bool local);
+</pre><p></p><pre class="jdocu_small">void
+SIM_run_command_file_params(const char *NOTNULL file, bool local,
+                            attr_value_t params);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Read and execute the script file <i>file</i>; i.e., execute each line
+   in the file as if it was typed at the Simics prompt.
+   <p>
+   This function is functionally equivalent to invoking the script by
+   passing it as a command line argument or to running the script with
+   the <b>run-command-file</b> command.
+</p><p>
+   If <i>local</i> is true, the script will run with its own
+   copy of all global CLI variables. When the script has finished executing,
+   the previous variable set is restored.
+</p><p>
+   The <i>params</i> argument can be used to pass parameters to the
+   script. It must be a list of name-value pairs of strings, for example, from
+   Python it could be <code>[["num_cores", "4"], ["memory_megs", "1024"]]</code>.</p></dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_Break</b> Thrown if the script was interrupted by the user.<br>
+<p>
+   <b>SimExc_General</b> Thrown if the script was interrupted by an error.<br>
+</p><p>
+   <b>SimExc_IOError</b> Thrown if the script file could not be opened.<br>
+</p><p>
+   </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_run_python">SIM_run_python()</a></h3>
+<p>
+
+<a name="SIM_run_python2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_run_python"></a><b>SIM_run_python</b> — run a Python expression</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">attr_value_t
+SIM_run_python(const char *NOTNULL line);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_run_python</i></b> runs a Python expression or statement. The
+     return value, if any, is converted to a Simics attribute value. If
+     <i>line</i> is a statement, a NIL attribute is returned.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if there was an error executing
+       Python code.<br>
+<p>
+       <b>SimExc_Type</b> Thrown if the return value could not be converted
+       to an <code>attr_value_t</code>.<br>
+</p><p>
+       <b>SimExc_Break</b> Thrown on user interrupt.
+     </p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="device-api-data-types.html#__jdocu_seealso_4">
+       </a><b><i>SIM_call_python_function</i></b>
+     </dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context
+     </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_shutdown">SIM_shutdown()</a></h3>
+<p>
+
+<a name="SIM_shutdown2"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_shutdown"></a><b>SIM_shutdown</b> — shutdown Simics</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_shutdown(void);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Perform the same clean up as <b><i>SIM_quit</i></b>, but do not exit the
+   process. After having called this function, no Simics API function can be
+   called.</dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Cell Context. Global Context
+   if possible.</dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="SIM_source_python">SIM_source_python()</a></h3>
+<p>
+
+<a name="SIM_source_python2"></a><a name="SIM_source_python_in_module"></a>
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_SIM_source_python"></a><b>SIM_source_python</b><b>, SIM_source_python_in_module</b> — execute Python source file</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">void
+SIM_source_python(const char *NOTNULL file);
+</pre><p></p><pre class="jdocu_small">void
+SIM_source_python_in_module(const char *NOTNULL file,
+                            const char *NOTNULL module);
+</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+<b><i>SIM_source_python</i></b> executes Python from <i>file</i> in the
+     global Python scope. <b><i>SIM_source_python_in_module</i></b> is similar
+     but executes the file contents in a named Python module.</dd>
+<dt class="jdocu_descitem">EXCEPTIONS</dt><dd>
+<b>SimExc_General</b> Thrown if there was an error executing
+       Python code.<br>
+<p>
+       <b>SimExc_IOError</b> Thrown if there was an error opening the file.<br>
+</p><p>
+       <b>SimExc_Break</b> Thrown on user interrupt.
+</p><p>
+     </p></dd>
+<dt class="jdocu_descitem">EXECUTION CONTEXT</dt><dd>
+Global Context
+     </dd>
+</dl><p>
+
+
+</p>
+<div class="chain">
+<a href="simulator-api-data-types.html">6.1 Simulator API Data Types</a>
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+</div>

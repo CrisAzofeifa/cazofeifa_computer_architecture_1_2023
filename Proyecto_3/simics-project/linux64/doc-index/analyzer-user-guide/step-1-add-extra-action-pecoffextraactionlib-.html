@@ -1,0 +1,53 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>B.1 Step 1 - Add Extra Action (PeCoffExtraActionLib)</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="uefi-fw-trk-uefi-notification-update.html">B Update UEFI For Notification Tracking</a>
+<a href="step-2-disable-default-extra-action-trigger.html">B.2 Step 2 - Disable Default Extra Action Trigger</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="uefi-fw-trk-uefi-notification-update.html">B Update UEFI For Notification Tracking</a>
+&nbsp;/&nbsp;</div>
+<h1 id="step-1-add-extra-action-pecoffextraactionlib">B.1 <a href="#step-1-add-extra-action-pecoffextraactionlib">Step 1 - Add Extra Action (PeCoffExtraActionLib)</a></h1>
+<p>We start with updating the <em>Platform Description File (.dsc)</em> to add the library library <em>PeCoffExtraActionLib</em> which will provide module data to the tracker. In our example, this platform description file is <code>SimicsX58Pkg/SimicsX58PkgIa32X64.dsc</code>. Search for <code>PeCoffExtraActionLibDebug</code> in the .dsc file, and replace: </p>
+<pre><code>
+|MdePkg/Library/BasePeCoffExtraActionLibNull/BasePeCoffExtraActionLibNull.inf
+  
+</code></pre>
+<p>with: </p>
+<pre><code>
+|SourceLevelDebugPkg/Library/PeCoffExtraActionLibDebug/PeCoffExtraActionLibDebug.inf
+  
+</code></pre>
+<p>This will add the module <code>PeCoffExtraActionLibDebug</code> module to the build when also not building with <code>$(SOURCE_DEBUG_ENABLE)</code></p>
+
+<div class="chain">
+<a href="uefi-fw-trk-uefi-notification-update.html">B Update UEFI For Notification Tracking</a>
+<a href="step-2-disable-default-extra-action-trigger.html">B.2 Step 2 - Disable Default Extra Action Trigger</a>
+</div>

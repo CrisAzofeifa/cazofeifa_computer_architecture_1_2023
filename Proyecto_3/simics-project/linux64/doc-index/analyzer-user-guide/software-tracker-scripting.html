@@ -1,0 +1,177 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.5 Scripting</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="node-tree-patterns.html">2.4 Node path patterns</a>
+<a href="event-system.html">2.6 Event system</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="scripting">2.5 <a href="#scripting">Scripting</a></h1>
+<p>The OS Awareness framework supports scripting against the node tree. The <code>osa_node_tree_query</code> interface implemented by the <code>os_awareness</code> object can be used for retrieving the current state of the node tree. The <code>osa_node_tree_notification</code> interface, also implemented by the <code>os_awareness</code> object, can be used to register callbacks for notifications about changes to the node tree.</p>
+<p>The administrator object can be retrieved by calling the <code>get_admin</code> function in the <code>osa_component</code> interface, implemented by the OSA object. This interface also provides the <code>get_root_node</code> function. This gives a known node ID which can be used to access the root node and its descendant nodes. </p>
+<p>Details about the interfaces used for scripting can be found in the <em>API - Reference Manual</em>.</p>
+<p>The following Python example script uses the OS Awareness framework and the Linux tracker to track a process and count all hardware exceptions that happen while that process is active. The basic idea is to activate the <code>Core_Exception</code> hap only when the given program is activate. It assumes that the target system is named <code>board</code>.</p>
+<p>
+</p><pre><code>import simics
+import conf
+class exception_counter:
+    "This class counts hardware exceptions for a specific process."
+
+    def __init__(self, software_comp, process_name):
+        # Get the osa_admin object from the component, this will be used to
+        # access the node tree interfaces.
+        self.osa_admin = software_comp.iface.osa_component.get_admin()
+        self.notifiers = set()
+        self.exc_haps = {}
+
+        self.exceptions = {}          # The result
+
+        # Most OSA interface functions require a node ID. Retrieve the root_id
+        # from the component. Using the root ID in combination with the
+        # recursive flag makes it possible to get notifications for the entire
+        # node tree.
+        root_node = software_comp.iface.osa_component.get_root_node()
+        if not root_node.valid:
+            print ("No root node present")
+            return
+        self.root_id = root_node.id
+
+        # The node names will be truncated to 15 characters, since
+        # they use the Linux task 'comm' field. So we only match the
+        # first 15 characters of the requested process name.
+        process_name = process_name[:15]
+
+        # Get interface used to register callback functions for node tree
+        # updates.
+        self.notification_ifc = self.osa_admin.iface.osa_node_tree_notification
+        # Get interface used to query the current state in the node tree.
+        self.query_ifc = self.osa_admin.iface.osa_node_tree_query
+
+        # Install a callback on node creation.
+        cid = self.notification_ifc.notify_create(self.root_id, True,
+                                                  self.create_cb, process_name)
+        self.notifiers.add(cid)
+
+        # Install a callback on changes to the 'name' property in any node, in
+        # case the program switches name after the node was created.
+        self.notifiers.add(
+            self.notification_ifc.notify_property_change(
+                self.root_id, "name", True, self.name_cb,
+                process_name))
+
+        print(("Will count exceptions for the next process called %s"
+               % process_name))
+
+    def is_process(self, node_id):
+        # This will only work for the Linux tracker. It uses the fact that a
+        # process node contains the process id, but not the thread id.
+        props = self.query_ifc.get_node(node_id)
+        return 'pid' in props and not 'tid' in props
+
+    def create_cb(self, process_name, osa_admin, curcpu, node_id):
+        # There can be other nodes than the process node with a
+        # matching name, for example thread nodes. Verify both name
+        # and that it is a process.
+        if (self.query_ifc.get_node(node_id)['name'] == process_name
+            and self.is_process(node_id)):
+            self.process_found(node_id)
+
+    def name_cb(self, process_name, osa_admin, curcpu, node_id,
+                key, old_val, new_val):
+        # There can be other nodes than the process node with a
+        # matching name, for example thread nodes. Verify both name
+        # and that it is a process.
+        if new_val == process_name and self.is_process(node_id):
+            self.process_found(node_id)
+
+    def process_found(self, node_id):
+        # Remove the callbacks for node creation and name changes.
+        while self.notifiers:
+            self.notification_ifc.cancel_notify(self.notifiers.pop())
+
+        # Install callbacks when processors enter and leave this
+        # process node.
+        self.notifiers.add(
+            self.notification_ifc.notify_cpu_move_to(node_id, self.move_to_cb,
+                                                     None))
+        self.notifiers.add(
+            self.notification_ifc.notify_cpu_move_from(node_id,
+                                                       self.move_from_cb, None))
+
+        # Install a callback when the process finishes.
+        self.notifiers.add(
+            self.notification_ifc.notify_destroy(node_id, False,
+                                                 self.destroy_cb, None))
+
+        # For each CPU already executing in this node, make sure
+        # to enable counting.
+        for cpu in self.query_ifc.get_current_processors(node_id):
+            self.enable_counting(cpu)
+
+    def enable_counting(self, cpu):
+        # Install a hap callback for the exception hap.
+        self.exc_haps[cpu] = simics.SIM_hap_add_callback_obj(
+            "Core_Exception", cpu, 0, self.exception_cb, None)
+
+    def disable_counting(self, cpu):
+        simics.SIM_hap_delete_callback_id("Core_Exception", self.exc_haps[cpu])
+
+    def move_to_cb(self, data, osa_admin, cpu, node_path):
+        self.enable_counting(cpu)
+
+    def move_from_cb(self, data, osa_admin, cpu, node_path):
+        self.disable_counting(cpu)
+
+    def destroy_cb(self, data, osa_admin, cpu, node_id):
+        print("The process finished")
+        for exc in sorted(self.exceptions.keys()):
+            print("%5d %-30s: %8d" % (exc, cpu.iface.exception.get_name(exc),
+                                      self.exceptions[exc]))
+        while self.notifiers:
+            self.notification_ifc.cancel_notify(self.notifiers.pop())
+
+    def exception_cb(self, data, cpu, exception):
+        if exception in self.exceptions:
+            self.exceptions[exception] += 1
+        else:
+            self.exceptions[exception] = 1
+
+counter = exception_counter(conf.board.software, "ls")
+</code></pre>
+<p></p>
+<div class="note">
+<p>Remember that this will only work if the tracker is enabled. It can be enabled with the <code>enable-tracker</code> command.</p>
+</div>
+
+<div class="chain">
+<a href="node-tree-patterns.html">2.4 Node path patterns</a>
+<a href="event-system.html">2.6 Event system</a>
+</div>

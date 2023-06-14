@@ -1,0 +1,80 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.3 Simulated Time</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="non-intrusive-inspection-and-debugging.html">2.2 Non-intrusive Inspection and Debugging</a>
+<a href="feature-overview.html">II Feature Overview</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="introduction.html">I Introduction</a>
+&nbsp;/&nbsp;
+<a href="simulation-concepts.html">2 Simulation Concepts</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="sim-time">2.3 Simulated Time</a></h1>
+<p>
+
+<a name="time"></a>
+<a name="simulationtime"></a>
+</p><p>
+One of the most powerful properties of full-system simulation is that
+time inside the simulation and time in the real world are two
+completely different things. This brings a number of substantial
+benefits:
+</p><p>
+</p><ul>
+
+  <li>You can pause the simulation at any time, and the software
+  running in the simulation simply <em>cannot</em> detect this. This
+  allows you to inspect (and optionally modify) the state even at
+  points where real hardware would be unable to stop.</li>
+
+  <li>You can save the state of the simulation to disk (this is called
+  a <em>checkpoint</em>), and start again from that point at any time,
+  any number of times.</li>
+
+  <li>The simulation is completely deterministic. Every time you start
+  from the same state (such as a checkpoint), the <em>exact</em> same
+  thing will happen. This can be tremendously useful when hunting down
+  certain types of bugs.</li>
+
+  <li>The simulation can be reversed, making it possible to answer
+  questions such as "This value is garbage now. When did this happen,
+  and who did it?"; simply set a write breakpoint and run backward
+  until it triggers, and you have your culprit.</li>
+
+</ul>
+<p>
+These advantages apply to the entire simulated system, whether it is a
+single target machine or an entire network.
+</p><p>
+</p>
+<div class="chain">
+<a href="non-intrusive-inspection-and-debugging.html">2.2 Non-intrusive Inspection and Debugging</a>
+<a href="feature-overview.html">II Feature Overview</a>
+</div>

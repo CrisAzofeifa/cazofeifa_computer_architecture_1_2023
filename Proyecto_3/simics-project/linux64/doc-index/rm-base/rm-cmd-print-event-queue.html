@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>print-event-queue</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-print-device-regs.html">print-device-regs</a>
+<a href="rm-cmd-print-image-memory-stats.html">print-image-memory-stats</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="print-event-queue"></a>
+<a name="peq"></a>
+<h1 id="print-event-queue"><a href="#print-event-queue">print-event-queue</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>print-event-queue</b> [<i>obj</i>] [<i>queue</i>] [-i] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Prints the event queues for a processor, i.e. an object implementing a step or cycle queue. Events such as interrupts and exceptions are posted on these event queues. For each event, the time to its execution, the object posting it and a brief description is printed.
+<p>
+If the command is used in an expression, if no <i>queue</i> is given it returns a list of lists of triplets, with the step queue as the first inner list. Otherwise it returns a list of triplets for the given queue.
+</p><p>
+If no processor is specified in <i>obj</i>, the currently selected frontend processor is used.
+</p><p>
+The <i>queue</i> can be used to select the "cycle" or the "step" queue. The old integer values are deprecated.
+</p><p>
+The <tt>-i</tt> flag enables printing of Simics-internal events.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-print-realtime-queue.html">print-realtime-queue</a>, 
+<a href="rm-cmd-pselect.html">pselect</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-print-device-regs.html">print-device-regs</a>
+<a href="rm-cmd-print-image-memory-stats.html">print-image-memory-stats</a>
+</div>

@@ -1,0 +1,76 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>trace-io – deprecated</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-trace-hap.html">trace-hap – deprecated</a>
+<a href="rm-cmd-trace-io-setup.html">trace-io-setup – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="trace-io"></a>
+<h1 id="trace-io"><a href="#trace-io">trace-io – deprecated</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>trace-io</b> [<i>"device"</i>] [<i>port</i>] [<i>offset</i>] [<i>length</i>] [-r] [-w] [-all] [-list] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ The command enables tracing of accesses to a <i>device</i>. With the <tt>-all</tt> flag, accesses to all devices are traced.
+<p>
+Accesses made to one or all device objects through their <tt>io_memory</tt> interface are traced. The following information is included in a trace: the initiator object, physical address of the access, size of the access, value (read or written), port name and port-relative address. The port name is <tt>None</tt> when the non-port <tt>io_memory</tt> interface of the given <i>device</i> is accessed.
+</p><p>
+The <i>port</i> argument, if given, restricts the monitoring in different ways. If it is a string, only accesses to the <tt>io_memory</tt> port interface by that name are considered. If an integer, only accesses to the non-port <tt>io_memory</tt> interface using that function number are considered.
+</p><p>
+When <i>offset</i> and <i>length</i> are given, tracing is restricted to that address interval within the bank. The default interval length is 1 if <i>offset</i> is given.
+</p><p>
+By default, both reads and writes are traced. With <tt>-r</tt> only reads are traced, and with <tt>-w</tt> only writes are traced.
+</p><p>
+Devices providing multiple banks of registers usually expose them as <tt>io_memory</tt> port interfaces using the bank names. Some devices use the non-port <tt>io_memory</tt> interface with a function number instead.
+</p><p>
+List all tracers and their ID numbers with the <tt>-list</tt> flag.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>bp.bank.trace, 
+<a href="rm-cmd-bp-manager.bank.break.html">&lt;bp-manager.bank&gt;.break</a>, 
+<a href="rm-cmd-memory-space.map.html">&lt;memory-space&gt;.map</a>, 
+<a href="rm-cmd-log-setup.html">log-setup</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-trace-hap.html">trace-hap – deprecated</a>
+<a href="rm-cmd-trace-io-setup.html">trace-io-setup – deprecated</a>
+</div>

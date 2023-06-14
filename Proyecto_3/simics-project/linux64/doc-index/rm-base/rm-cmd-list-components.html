@@ -1,0 +1,79 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>list-components</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-list-commands.html">list-commands</a>
+<a href="rm-cmd-list-debug-contexts.html">list-debug-contexts</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="list-components"></a>
+<h1 id="list-components"><a href="#list-components">list-components</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>list-components</b> [<i>component</i>] [<i>"class"</i>] [-s] [-v] [-t] [-all] [-recursive] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Print or lists components with their names, types, and connectors; and for each connector, the destination component and connector.
+<p>
+With the <i>class</i> argument, you can restrict the listing to components of a particular class.
+</p><p>
+By default, only the components in the current namespace are listed (see the <code>change-namespace</code> command). If no current namespace has been selected, only top-level components are shown. The <i>component</i> argument can be used to override the current namespace.
+</p><p>
+With the <tt>-all</tt> flag, list all components, regardless of where they live. With the <tt>-recursive</tt> flag, in addition to listing all components that are in the selected namespace, also list all components in the namespaces below it. With <tt>-t</tt>, list only top-level components. The <tt>-s</tt> and <tt>-v</tt> flags select a briefer listing (default), and a more verbose listing, respectively.
+</p><p>
+Example of default output. Columns are explained by the bottom row. </p><pre>board            chassis_qsp_x86
+ethernet_switch0 ethernet_switch
+slot             class name       not instantiated, if applicable
+</pre>
+<p>
+Example of verbose output. Components are printed in bold and columns for the connectors are explained by the bottom row: </p><pre><b>board            chassis_qsp_x86</b>
+
+<b>ethernet_switch0 ethernet_switch</b>
+device0          ethernet-link    any         board.mb.sb:eth_slot
+device1          ethernet-link    any         service_node_cmp0:connector_link0
+connector        type             direction   destinations, if any
+</pre>
+<p>
+The <code>list-components</code> command returns a list of components when used in an expression. The <code>get-component-list</code> command just returns such a list.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-list-commands.html">list-commands</a>
+<a href="rm-cmd-list-debug-contexts.html">list-debug-contexts</a>
+</div>

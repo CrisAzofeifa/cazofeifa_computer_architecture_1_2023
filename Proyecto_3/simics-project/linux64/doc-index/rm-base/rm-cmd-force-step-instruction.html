@@ -1,0 +1,76 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>force-step-instruction</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-finish-function.html">finish-function</a>
+<a href="rm-cmd-foreach.html">foreach</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="force-step-instruction"></a>
+<a name="fstepi"></a>
+<a name="fsi"></a>
+<a name="step.force-step-instruction"></a>
+<a name="step.fstepi"></a>
+<a name="step.fsi"></a>
+<h1 id="force-step-instruction"><a href="#force-step-instruction">force-step-instruction</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>force-step-instruction</b> [<i>count</i>] [-r] [-n] [-q] <br><b>&lt;step&gt;.force-step-instruction</b> [<i>count</i>] [-r] [-q] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Executes <i>count</i> instructions on the currently selected frontend processor, printing the instruction executed at each step. The default value for <i>count</i> is 1. No instructions are run on other processors, although their virtual time may pass. As a result, the default round-robin scheduling of processors is not obeyed. The <code>force-step-instruction</code> command will refuse to run if the processor is stalling.
+<p>
+The <tt>-n</tt> flag tells the command to switch to the next processor in the scheduling list of the cell after each instruction.
+</p><p>
+With the <tt>-r</tt> flag, register changes are printed after every step.
+</p><p>
+The <tt>-q</tt> flag tells the command not to disassemble the executed instruction.
+</p><p>
+Since the <code>force-step-instruction</code> command changes the default scheduling order of processors, the same execution path will not be followed if the simulation is rerun using reverse execution for example. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-step-instruction.html">step-instruction</a>, 
+<a href="rm-cmd-step-cycle.html">step-cycle</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-finish-function.html">finish-function</a>
+<a href="rm-cmd-foreach.html">foreach</a>
+</div>

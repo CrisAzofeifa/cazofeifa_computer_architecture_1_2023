@@ -1,0 +1,95 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>instrumentation_order</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_instruction_fetch.html">instruction_fetch</a>
+<a href="__rm_interface_int_register.html">int_register</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_instrumentation_order">instrumentation_order</a></h1>
+<p>
+
+<a name="instrumentation_order"></a><a name="instrumentation_order_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is used to control the dispatch order of connected
+   instrumentation. It is implemented by instrumentation providers that have
+   the ability to change the order in which instrumentation events occur. This
+   works by associating every instrumentation event with a connection
+   object. It is up to the provider to supply a way to do this. See the
+   <code>cpu_instrumentation_subscribe</code> interface for an example.  Most
+   users of any instrumentation will only be observing the state of the
+   provider, in which case the order is unimportant. However, if users
+   of instrumentation may change the behavior of the provider, this interface
+   may be useful.
+<p>
+   The default order for callbacks that should be honored by all providers,
+   where possible, regardless if they implement the
+   <code>instrumentation_order</code> interface or not is:
+</p><p>
+   </p><ol>
+   <li>all anonymous connections, i.e. NULL connections, in registration order</li>
+   <li>connection order, which if not re-ordered will be the connection
+   registration order</li>
+   <li>callback registration order</li>
+   </ol>
+<p>
+   The <i>get_connections</i> method should return an
+   <code>attr_value_t</code> list with connection objects that represent the
+   current order. The first element in the list is the first object in the
+   dispatch order, etc.
+</p><p>
+   The <i>move_before</i> method moves the connection given by the
+   <i>connection</i> argument before the connection given by the
+   <i>anchor</i> argument. If the <i>anchor</i> is NULL the connection
+   will be moved last. The given connection objects must be present in the
+   current dispatch order for this to succeed.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(instrumentation_order) {
+        // Returns an object list in the connection order
+        attr_value_t (*get_connections)(conf_object_t *obj);
+        
+        bool (*move_before)(conf_object_t *self, conf_object_t *connection,
+                            conf_object_t *before); 
+};
+#define INSTRUMENTATION_ORDER_INTERFACE "instrumentation_order"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods, but must be called from a callback
+   receiving a handle of type <code>instruction_handle_t</code>.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_instruction_fetch.html">instruction_fetch</a>
+<a href="__rm_interface_int_register.html">int_register</a>
+</div>

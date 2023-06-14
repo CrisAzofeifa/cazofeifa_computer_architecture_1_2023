@@ -1,0 +1,121 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.2 Ethernet VLAN Switch</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="ethernet-links.html">3.1 Ethernet Links</a>
+<a href="link-object-timing.html">3.3 Link Object Timing</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="simicsnet.html">3 Network Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Ethernet-VLAN-Switch">3.2 Ethernet VLAN Switch</a></h1>
+<p>
+<a name="ethernet-vlan-switch"></a>
+<a name="VLAN"></a>
+
+</p><p>
+The <b>ethernet_switch</b> described in the previous section
+complains if it receives frames tagged with VLAN information. For VLAN
+the <b>eth-links</b> provides a <a name="IEEE-802.1Q">IEEE 802.1Q</a> VLAN
+aware switch: <b>ethernet_vlan_switch</b>.
+ </p><p>
+</p><div class="note">
+<b>Note:</b>
+This section assumes you know what VLAN is. It only shows how to
+configure and use the ethernet_vlan_switch.
+</div>The VLAN switch has the same functionality as the basic Ethernet
+switch, but the interface is different to handle the added complexity
+of VLAN. You need to add VLAN groups to the switch before you can
+connect Ethernet devices to it. Each VLAN group has its own set of
+connectors.
+<p>
+The VLAN switch is created in the same way as the other Ethernet link
+components:
+</p><p>
+
+
+
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module eth-links</b>
+simics&gt; <b>create-ethernet-vlan-switch evs</b>
+Created non-instantiated 'ethernet_vlan_switch' component 'evs'
+</pre><p>
+</p><p>
+Once the link has been created you need to add VLAN groups to it:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>evs.add-vlan 1</b>
+</pre><p>
+</p><p>
+Each VLAN group adds two kinds of connectors:
+vlan_<em>X</em>_dev<em>Y</em> and vlan_<em>X</em>_trunk_dev<em>Y</em>,
+where <em>X</em> is the VLAN group id and <em>Y</em> is the an identifier
+for the connector. When a connector of one kind is used the switch
+automatically creates a new empty connector of the same kind with a
+new identifier.
+</p><p>
+Use the vlan_<em>X</em>_dev<em>Y</em> connectors to connect devices which
+do not expect or add VLAN tags. For example, to connect the first network 
+port of the <i>QSP-x86</i> machine created by the 
+<code>firststeps-multi.simics</code> script:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>connect board0.mb.sb.eth_slot evs.vlan_1_dev0</b>
+</pre><p>
+</p><p>
+Frames sent from the switch on these connections will not have any
+VLAN tags and the switch will generate a warning if it receives a
+tagged frame on such a connection.
+</p><p>
+Each VLAN group also has trunk connectors. On these connections the
+switch will parse frames sent to the switch to find which VLAN group
+they should be sent to and the switch will ensure that outgoing frames
+are tagged with the correct VLAN group.
+</p><p>
+To avoid having to keep track of the connector identifiers you can use
+<b>get-free-connector</b> to get an available non-trunk connector
+for a VLAN group:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>evs.get-free-connector 1</b>
+"evs.vlan_1_dev1"
+simics&gt; <b>connect board1.mb.sb.eth_slot (evs.get-free-connector 1)</b>
+simics&gt; <b>evs.get-free-connector 1</b>
+"evs.vlan_1_dev2"
+</pre><p>
+</p><p>
+and <b>get-free-trunk-connector</b> to get an available trunk
+connector for a VLAN group:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>evs.get-free-trunk-connector 1</b>
+"evs.vlan_1_trunk_dev0"
+</pre><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="ethernet-links.html">3.1 Ethernet Links</a>
+<a href="link-object-timing.html">3.3 Link Object Timing</a>
+</div>

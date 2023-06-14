@@ -1,0 +1,135 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7.8 Importing a Real Disk into Simics</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="using-ftp-service.html">7.7 Using FTP service</a>
+<a href="foreign-image-formats-including-qemu-and-vmware.html">7.9 Foreign Image Formats Including QEMU and VMware</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Copying-Real-Disks">7.8 Importing a Real Disk into Simics</a></h1>
+<p>
+
+<a name="diskscopying-real"></a>
+</p><p>
+It is possible to create an image by copying data from a real disk. If the disk
+to be copied contains an operating system, you must have at least two operating
+systems on the machine, since the partition that should be copied should
+<b>not</b> be in use or mounted.
+</p><p>
+Before making a copy of a disk, some information about the disk should be
+gathered:
+</p><p>
+</p><ul>
+  <li>The number of disk cylinders</li>
+  <li>The number of sectors per track</li>
+  <li>The number of disk heads</li>
+  <li>The offset where the specific partition starts (optional)</li>
+  <li>The size of a specific partition (optional)</li>
+</ul>
+<p>
+
+On Linux, these numbers can be obtained using the <code>fdisk</code> utility.
+You can choose to make a copy of the whole disk or just a partition of the
+disk using the <code>dd</code> utility. Example:
+</p><pre class="jdocu_small">dd if=/dev/hdb of=hdb_disk.img
+</pre><p>
+</p><p>
+<br>
+On Windows, you can use the System Information application to find the
+information under <code>Components/Storage/Disks</code>. You have to select
+the <b>Advanced</b> setting from the <b>View</b> menu.
+If you have Cygwin (<a class="jdocu" href="http://www.cygwin.com" rel="noopener noreferrer" target="_top">http://www.cygwin.com</a>) installed,
+you can use the <code>dd</code> utility to create the image, provided that the
+correct entries in the <code>/dev</code> file system are created. To access the
+first hard drive (<code>/dev/hda</code>):
+</p><p>
+</p><pre class="jdocu_small">mkdir -p /dev/hda
+mount -s -b '\\.\PHYSICALDRIVE0' /dev/hda
+</pre><p>
+</p><p>
+You can also mount a specific drive letter:
+</p><p>
+</p><pre class="jdocu_small">mkdir -p /dev/fd0
+mount -s -b '\\.\A:' /dev/fd0
+</pre><p>
+</p><p>
+or
+</p><p>
+</p><pre class="jdocu_small">mkdir -p /dev/hda1
+mount -s -b '\\.\C:' /dev/hda1
+</pre><p>
+</p><p>
+Cygwin's <code>mount</code> program creates persistent mounts (they are stored
+in the registry), so you will only need to set these things up once. The
+<i>-b</i> option to <code>mount</code> ensures that no CR/LF conversions are
+made. See the Cygwin documentation for further details on how to use the
+<code>mount</code> command.
+</p><p>
+On Windows hosts without Cygwin, a third-party program can be used to create
+the disk images. See figure <a class="reference" href="cd-roms-and-floppies.html#listofwindowsisoprograms">1</a> for more
+details.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+To save space, you may want to compress the disk image using the
+<code>craff</code> utility. See section <a class="reference" href="working-with-images.html#The-craff-utility">7.2.8</a>.
+</div>The next step is to prepare the target configuration so it can use the new
+disk. For x86 targets, the <i>dredd</i> machine has a
+<code>$disk_files</code> parameter that can be set to a list of files to use in
+the image object of the boot disk, and also <code>$disk_size</code> that specifies
+the size of that disk.
+<pre class="jdocu_small">$disk_size = 1056964608
+$disk_files = [["hdb_disk.img", "ro", 0, 1056964608, 0]]
+</pre><p>
+</p><p>
+For other machines, that do not have these parameters, attributes in the
+disk object and its corresponding image objects have to be set instead.
+</p><p>
+Make sure to set the <code>$disk_size</code> correctly to reflect the size of the
+disk that has been copied. If only a partition has been copied, the offset
+where the partition starts, and the size of the partition, should be set in the
+file list. If the whole disk has been copied, the offset is zero and the size
+should be the size of the whole disk. Several partitions can be combined to
+form the complete disk, as described in section
+<a class="reference" href="working-with-images.html#add-multiple-partitions">7.2.7</a>.
+</p><p>
+For an x86 machine, the system component will automatically set the BIOS
+geometry for the <code>C:</code> disk. It can also be set manually:
+</p><pre class="jdocu_small">simics&gt; <b>system_cmp0.cmos-hd C 1023 16 63</b>
+</pre><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="using-ftp-service.html">7.7 Using FTP service</a>
+<a href="foreign-image-formats-including-qemu-and-vmware.html">7.9 Foreign Image Formats Including QEMU and VMware</a>
+</div>

@@ -1,0 +1,180 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>9.1 Command Set</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="instrumentation.html">9 Instrumentation</a>
+<a href="instrumentation-tools.html">9.2 Instrumentation Tools</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="instrumentation.html">9 Instrumentation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Command-Set">9.1 Command Set</a></h1>
+<p>
+  
+  This chapter describes an overview of the Simics commands that can
+  be used in relation to instrumentation support.
+  </p><p>
+  When Simics has loaded a system configuration,
+  providers normally already exist, as part of the device models.
+  Which tools that are available depends on the
+  Simics packages installed. To get an overview of the available
+  instrumentation commands in Simics, use the command:
+  <b>help Instrumentation</b>.
+</p><p>
+  It is also possible to use the <b>list-instrumentation-tools</b>
+  command to see the tools available.
+  </p><p>
+  Available tools must first be created with a
+  <b>new-&lt;tool&gt;</b> command, for example
+  <b>new-instruction-histogram</b>.
+  </p><p>
+  Once a tool has been created it will have a number of generic
+  instrumentation commands associated with it, as well as tool
+  specific commands. Tools typically supports the following generic
+  commands:
+  </p><ul>
+    <li><b>&lt;tool&gt;..add-instrumentation</b> —
+      connect the tool to provider(s).</li>
+    <li><b>&lt;tool&gt;..remove-instrumentation</b> —
+      disconnect the tool from provider(s).</li>  
+    <li><b>&lt;tool&gt;..disable-instrumentation</b> —
+      temporary disable information gathering.</li>  
+    <li><b>&lt;tool&gt;..enable-instrumentation</b> —
+      re-enable information gathering.</li>
+    <li><b>&lt;tool&gt;..add-filter</b> —
+      adds a filter to the tool.</li>
+    <li><b>&lt;tool&gt;..remove-filter</b> —
+      remove a filter from the tool.</li>      
+  </ul>
+  <p>
+  By connecting an <i>Instrumentation tool</i> object to an
+  <i>Instrumentation provider</i> object, information
+  can be extracted from the running system. Connecting can
+  be done either directly when the tool is created with the
+  <b>new-&lt;tool&gt;</b> command, or done afterwards with
+  the <b>&lt;tool&gt;.add-instrumentation</b> command.
+    </p><p>
+  The established connections between providers and tools can be listed
+  with the <b>list-instrumentation</b> command.
+</p><p>
+  Figure <a class="reference" href="#command-example">10</a> shows a simple example of
+  commands for creating two different instruction histograms and
+  their output after running some instructions.
+  </p><div class="figure" id="command-example">
+
+<pre class="jdocu_small">simics&gt; <b>new-instruction-histogram -connect-all view = size</b>
+[board.mb.cpu0.core[0][0] info] VMP not engaged. Reason: instrumentation enabled.
+Created ihist0 (connected to 1 processor)
+simics&gt; <b>new-instruction-histogram -connect-all view = mnemonic</b>
+Created ihist1 (connected to 1 processor)
+simics&gt; <b>list-instrumentation</b>
+  1 ihist0 - connected to board.mb.cpu0.core[0][0]:0 view = "size"
+  2 ihist1 - connected to board.mb.cpu0.core[0][0]:1 view = "mnemonic"
+simics&gt; <b>c 10000</b>
+simics&gt; <b>ihist0.histogram</b>
+┌─────┬───────┬─────┬───────┬───────────┐
+│Row #│  Size │Count│ Count%│Accumulated│
+│     │(bytes)│     │       │   Count%  │
+├─────┼───────┼─────┼───────┼───────────┤
+│    1│      2│ 4480│ 44.80%│     44.80%│
+│    2│      1│ 1661│ 16.61%│     61.41%│
+│    3│      3│ 1596│ 15.96%│     77.37%│
+│    4│      5│ 1074│ 10.74%│     88.11%│
+│    5│      4│  560│  5.60%│     93.71%│
+│    6│      6│  408│  4.08%│     97.79%│
+│    7│      7│  212│  2.12%│     99.91%│
+│    8│      8│    8│  0.08%│     99.99%│
+│    9│     10│    1│  0.01%│    100.00%│
+├─────┼───────┼─────┼───────┼───────────┤
+│Sum  │       │10000│100.00%│           │
+└─────┴───────┴─────┴───────┴───────────┘
+Average size of executed instruction: 2.702500 (21 bits)
+
+simics&gt; <b>ihist1.histogram max = 10</b>
+┌─────────┬────────┬─────┬───────┬───────────┐
+│  Row #  │mnemonic│Count│ Count%│Accumulated│
+│         │        │     │       │   Count%  │
+├─────────┼────────┼─────┼───────┼───────────┤
+│        1│mov     │ 3025│ 30.25%│     30.25%│
+│        2│jmp     │  901│  9.01%│     39.26%│
+│        3│add     │  864│  8.64%│     47.90%│
+│        4│cmp     │  854│  8.54%│     56.44%│
+│        5│out     │  731│  7.31%│     63.75%│
+│        6│movsx   │  413│  4.13%│     67.88%│
+│        7│jne     │  386│  3.86%│     71.74%│
+│        8│inc     │  377│  3.77%│     75.51%│
+│        9│je      │  345│  3.45%│     78.96%│
+│       10│jae     │  267│  2.67%│     81.63%│
+├─────────┼────────┼─────┼───────┼───────────┤
+│# 10/42  │        │     │       │           │
+│Sum (all)│        │10000│100.00%│           │
+│Sum shown│        │ 8163│ 81.63%│           │
+└─────────┴────────┴─────┴───────┴───────────┘
+</pre><p>
+</p><div class="caption">Figure 10. Command Example</div>
+</div>
+
+  <p>
+  The framework also supports creating named groups, which can be used
+  in the above commands to, for example, disable a number of
+  connections with a single command. Such groups can be created with
+  the <b>create-instrumentation-group</b> command. The group name
+  can then be used when the connection is established with
+  the <b>new-&lt;tool&gt;</b>
+  and <b>&lt;tool&gt;.add-instrumentation</b> commands.
+</p><p>
+  Each established connection between a provider and tool gets a
+  connection specific sub-object associated with the tool.  When
+  multiple tools are connected to a provider, by default, the provider
+  will give instrumentation information to each tool in the order they
+  where connected. That is, each new connection automatically comes
+  last.
+  </p><p>
+  Some providers, however, supports re-arranging the order of how the
+  tools are called. This can be useful if one tool makes any kind
+  of change to the simulation that the other tools should see the
+  effect of. For providers which support re-arranging the dispatch
+  order, the <b>instrumentation-order</b> command can be used to see
+  the order and the <b>instrumentation-move</b> command
+  can be used to move a tool connection to an earlier or later stage.
+  </p><p>
+  The instrumentation setup is session specific, thus it will not be
+  saved in checkpoints. To re-establish the instrumentation capabilities
+  after loading a checkpoint, objects must be re-created and
+  communication setup again using the same commands that was used before
+  the checkpoint was saved. This can for example be done in a script
+  executed after the checkpoint has been loaded.
+  
+</p>
+<div class="chain">
+<a href="instrumentation.html">9 Instrumentation</a>
+<a href="instrumentation-tools.html">9.2 Instrumentation Tools</a>
+</div>

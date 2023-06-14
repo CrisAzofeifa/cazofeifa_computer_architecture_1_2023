@@ -1,0 +1,231 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>image</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-ieee_802_15_4_probe.html">ieee_802_15_4_probe</a>
+<a href="rm-class-index-map.html">index-map</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="image"><a href="#image">image</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The <tt>image</tt> class provides persistent file-backed flat-address storage of devices such as physical memory and disks. Writes are fully shadowed, which allows changes to be stored in a compact way and the original images be kept unchanged. Memory page allocation is done lazily.
+<p>
+In an image object, one or more files represent the image data. This is done in a transparent way: page ranges not present in one file is searched in subsequent files.
+</p><p>
+Image files can be in raw format, compressed craff format, read-only DMG format, or VHDX format (fixed virtual hard disks and dynamic virtual hard disks are supported). Use the <code>craff</code> utility to convert between the first two image file formats.
+</p><h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, image, checkpoint, linear_image, page_bank
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-image.add-diff-file.html">add-diff-file</a>
+ – add a diff file to the image</li>
+<li>
+<a href="rm-cmd-image.add-partial-diff-file.html">add-partial-diff-file</a>
+ – add a partial diff file to the image</li>
+<li>
+<a href="rm-cmd-image.clear-files.html">clear-files</a>
+ – clear the list of files for an image</li>
+<li>
+<a href="rm-cmd-image.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-image.list-files.html">list-files</a>
+ – list files representing the contents of an image</li>
+<li>
+<a href="rm-cmd-image.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="commands-for-interface-image">
+<a href="#commands-for-interface-image">Commands for interface image</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-image.get.html">get</a>
+ – get bytes from image</li>
+<li>
+<a href="rm-cmd-load-file.html">load-file</a>
+ – load file into an image</li>
+<li>
+<a href="rm-cmd-load-intel-hex.html">load-intel-hex</a>
+ – load Intel HEX file into an image</li>
+<li>
+<a href="rm-cmd-load-intel-obj.html">load-intel-obj</a>
+ – load Intel .obj or .32.obj file into an image</li>
+<li>
+<a href="rm-cmd-image.load-vmem.html">load-vmem</a>
+ – load Verilog VMEM file into memory</li>
+<li>
+<a href="rm-cmd-print-image-memory-stats.html">print-image-memory-stats</a>
+ – image memory usage statistics</li>
+<li>
+<a href="rm-cmd-image.save.html">save</a>
+ – save image to disk</li>
+<li>
+<a href="rm-cmd-image.save-diff-file.html">save-diff-file</a>
+ – save changes since last checkpoint</li>
+<li>
+<a href="rm-cmd-save-file.html">save-file</a>
+ – save memory contents to a binary file</li>
+<li>
+<a href="rm-cmd-save-intel-obj.html">save-intel-32-obj</a>
+ – save memory contents to an Intel .32.obj file</li>
+<li>
+<a href="rm-cmd-save-intel-hex.html">save-intel-hex</a>
+ – save memory contents to an Intel HEX file</li>
+<li>
+<a href="rm-cmd-save-intel-obj.html">save-intel-obj</a>
+ – save memory contents to an Intel .obj file</li>
+<li>
+<a href="rm-cmd-image.save-vmem.html">save-vmem</a>
+ – save VMEM file of memory</li>
+<li>
+<a href="rm-cmd-image.set.html">set</a>
+ – set bytes in image to specified value</li>
+<li>
+<a href="rm-cmd-x.html">x</a>
+ – examine image data</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:image_snoop_devices">
+<i>image_snoop_devices</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[o*]</code>
+<br>Objects implementing the image_snoop. Installed objects will be called through the interface when image data is modified.</dd>
+<dt id="dt:size">
+<i>size</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Logical image size in bytes.</dd>
+<dt id="dt:files">
+<i>files</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[saii]|[saiii]|[saiiii]*]</code>
+<br>((<i>file</i>, <i>is-writable</i>, <i>start</i>, <i>size</i>[, <i>offset</i>])+) Specifies the files that represent the (initial) image contents. Several files may be specified and may also overlap in memory. Later files override earlier files. <i>file</i> is the file name of a file in craff, DMG, VHDX, or raw format, or a raw disk device (typically, /dev/sd* on Linux and \\.\PhysicalDriveN on Windows; administrative privileges may be required for access). <i>is-writable</i> is "rw" or "ro" and specifies whether changes made to an image should be written back to the file or cached in memory. <i>start</i> is the first address in the image represented by the file. <i>size</i> is the number of bytes the file represents. If zero, the size is taken from the file. <i>offset</i> is the offset in the file where this mapping starts.<br>
+ In checkpoint files generated by Simics, <i>file</i> may contain a path of the form %<i>n</i>%. Such a sequence will be replaced by the <i>n</i>th element of the <tt>checkpoint_path</tt> attribute in the <tt>sim</tt> object, counting from zero. By using %<i>n</i>% as path, all absolute paths are kept in the <tt>checkpoint_path</tt> attribute, making it easier to update a checkpoint when files that it depends on have moved.<br>
+ Only the last file in the list may have <i>is-writable</i> set to "rw". That file will be updated in place with any changes done to the image. If no file is in "rw" mode, changes done to the image are stored as dirty pages. These changes can be saved as a diff-file or to a new checkpoint.</dd>
+<dt id="dt:linear">
+<i>linear</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i|b</code>
+<br>Set if the memory should be preallocated, resident and contiguous. This can only be set before the object is instantiated.</dd>
+<dt id="dt:byte_access">
+<i>byte_access</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>d</code>
+<br>Read/write access to single bytes. The attribute is indexed by an integer specifying offset, or by a slice (pair of integers) specifying range.</dd>
+<dt id="dt:dirty">
+<i>dirty</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>b</code>
+<br>Whether there are unsaved changes not backed by any writable file.</dd>
+<dt id="dt:init_pattern">
+<i>init_pattern</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Contents of uninitialized bytes (default zero). Must be a single byte.</dd>
+<dt id="dt:cache_reads">
+<i>cache_reads</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, always cache data being read in memory. This improves performance when repeatedly accessing the same or nearby data, at the cost of increased memory consumption. The default is FALSE.</dd>
+<dt id="dt:persistent">
+<i>persistent</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>b</code>
+<br>Whether the image data is persistent.</dd>
+</dl>
+<h3 id="class-attributes">
+<a href="#class-attributes">Class Attributes</a>
+</h3>
+<dl>
+<dt id="dt:memory_limit">
+<i>memory_limit</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Maximum number of bytes cached by all images in the system before pages are swapped to disk. This is used to reduce memory consumption. Setting this limit too high or too low will adversely affect system performance. If set to 0, the limit is disabled.</dd>
+<dt id="dt:memory_usage">
+<i>memory_usage</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>Total memory usage of image pages.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-class-ieee_802_15_4_probe.html">ieee_802_15_4_probe</a>
+<a href="rm-class-index-map.html">index-map</a>
+</div>

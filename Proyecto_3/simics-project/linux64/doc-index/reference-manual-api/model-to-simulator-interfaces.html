@@ -1,0 +1,459 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5 Model-to-Simulator Interfaces</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_xtensa_tie_output_queue.html">xtensa_tie_output_queue</a>
+<a href="__rm_interface_abs_pointer.html">abs_pointer</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Model-to-Simulator-Interfaces">5 Model-to-Simulator Interfaces</a></h1>
+<p>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</p>
+<ul class="subsections">
+<li>
+<a href="__rm_interface_abs_pointer.html">abs_pointer</a>
+</li>
+<li>
+<a href="__rm_interface_abs_pointer_activate.html">abs_pointer_activate</a>
+</li>
+<li>
+<a href="__rm_interface_apic_bus_v2.html">apic_bus_v2</a>
+</li>
+<li>
+<a href="__rm_interface_bank_after_read.html">bank_after_read</a>
+</li>
+<li>
+<a href="__rm_interface_bank_after_write.html">bank_after_write</a>
+</li>
+<li>
+<a href="__rm_interface_bank_before_read.html">bank_before_read</a>
+</li>
+<li>
+<a href="__rm_interface_bank_before_write.html">bank_before_write</a>
+</li>
+<li>
+<a href="__rm_interface_bank_instrumentation_subscribe.html">bank_instrumentation_subscribe</a>
+</li>
+<li>
+<a href="__rm_interface_branch_recorder_handler.html">branch_recorder_handler</a>
+</li>
+<li>
+<a href="__rm_interface_breakpoint.html">breakpoint</a>
+</li>
+<li>
+<a href="__rm_interface_breakpoint_change.html">breakpoint_change</a>
+</li>
+<li>
+<a href="__rm_interface_breakpoint_query.html">breakpoint_query</a>
+</li>
+<li>
+<a href="__rm_interface_breakpoint_query_v2.html">breakpoint_query_v2</a>
+</li>
+<li>
+<a href="__rm_interface_breakpoint_trigger.html">breakpoint_trigger</a>
+</li>
+<li>
+<a href="__rm_interface_callback_info.html">callback_info</a>
+</li>
+<li>
+<a href="__rm_interface_cell_inspection.html">cell_inspection</a>
+</li>
+<li>
+<a href="__rm_interface_co_execute.html">co_execute</a>
+</li>
+<li>
+<a href="__rm_interface_component.html">component</a>
+</li>
+<li>
+<a href="__rm_interface_component_connector.html">component_connector</a>
+</li>
+<li>
+<a href="__rm_interface_concurrency_group.html">concurrency_group</a>
+</li>
+<li>
+<a href="__rm_interface_concurrency_mode.html">concurrency_mode</a>
+</li>
+<li>
+<a href="__rm_interface_connector.html">connector</a>
+</li>
+<li>
+<a href="__rm_interface_cpu_cached_instruction.html">cpu_cached_instruction</a>
+</li>
+<li>
+<a href="__rm_interface_cpu_cached_instruction_once.html">cpu_cached_instruction_once</a>
+</li>
+<li>
+<a href="__rm_interface_cpu_cached_stream.html">cpu_cached_stream</a>
+</li>
+<li>
+<a href="__rm_interface_cpu_exception_query.html">cpu_exception_query</a>
+</li>
+<li>
+<a href="__rm_interface_cpu_instruction_decoder.html">cpu_instruction_decoder</a>
+</li>
+<li>
+<a href="__rm_interface_cpu_instruction_query.html">cpu_instruction_query</a>
+</li>
+<li>
+<a href="__rm_interface_cpu_instrumentation_subscribe.html">cpu_instrumentation_subscribe</a>
+</li>
+<li>
+<a href="__rm_interface_cpu_memory_query.html">cpu_memory_query</a>
+</li>
+<li>
+<a href="__rm_interface_cycle.html">cycle</a>
+</li>
+<li>
+<a href="__rm_interface_cycle_control.html">cycle_control</a>
+</li>
+<li>
+<a href="__rm_interface_cycle_event.html">cycle_event</a>
+</li>
+<li>
+<a href="__rm_interface_cycle_event_instrumentation.html">cycle_event_instrumentation</a>
+</li>
+<li>
+<a href="__rm_interface_decoder.html">decoder</a>
+</li>
+<li>
+<a href="__rm_interface_describe_registers.html">describe_registers</a>
+</li>
+<li>
+<a href="__rm_interface_device_identification.html">device_identification</a>
+</li>
+<li>
+<a href="__rm_interface_direct_memory.html">direct_memory</a>
+</li>
+<li>
+<a href="__rm_interface_direct_memory_flush.html">direct_memory_flush</a>
+</li>
+<li>
+<a href="__rm_interface_direct_memory_lookup.html">direct_memory_lookup</a>
+</li>
+<li>
+<a href="__rm_interface_direct_memory_lookup_v2.html">direct_memory_lookup_v2</a>
+</li>
+<li>
+<a href="__rm_interface_direct_memory_tags.html">direct_memory_tags</a>
+</li>
+<li>
+<a href="__rm_interface_direct_memory_update.html">direct_memory_update</a>
+</li>
+<li>
+<a href="__rm_interface_disk_component.html">disk_component</a>
+</li>
+<li>
+<a href="__rm_interface_event_delta.html">event_delta</a>
+</li>
+<li>
+<a href="__rm_interface_event_handler.html">event_handler</a>
+</li>
+<li>
+<a href="__rm_interface_event_provider.html">event_provider</a>
+</li>
+<li>
+<a href="__rm_interface_exception.html">exception</a>
+</li>
+<li>
+<a href="__rm_interface_exec_trace.html">exec_trace</a>
+</li>
+<li>
+<a href="__rm_interface_execute.html">execute</a>
+</li>
+<li>
+<a href="__rm_interface_execute_control.html">execute_control</a>
+</li>
+<li>
+<a href="__rm_interface_freerun.html">freerun</a>
+</li>
+<li>
+<a href="__rm_interface_gfx_con.html">gfx_con</a>
+</li>
+<li>
+<a href="__rm_interface_hap_listen.html">hap_listen</a>
+</li>
+<li>
+<a href="__rm_interface_hypersim_pattern.html">hypersim_pattern</a>
+</li>
+<li>
+<a href="__rm_interface_hypersim_pattern_matcher.html">hypersim_pattern_matcher</a>
+</li>
+<li>
+<a href="__rm_interface_image.html">image</a>
+</li>
+<li>
+<a href="__rm_interface_image_snoop.html">image_snoop</a>
+</li>
+<li>
+<a href="__rm_interface_instruction_fetch.html">instruction_fetch</a>
+</li>
+<li>
+<a href="__rm_interface_instrumentation_order.html">instrumentation_order</a>
+</li>
+<li>
+<a href="__rm_interface_int_register.html">int_register</a>
+</li>
+<li>
+<a href="__rm_interface_keyboard.html">keyboard</a>
+</li>
+<li>
+<a href="__rm_interface_keyboard_console.html">keyboard_console</a>
+</li>
+<li>
+<a href="__rm_interface_linear_image.html">linear_image</a>
+</li>
+<li>
+<a href="__rm_interface_magic_pipe_reader.html">magic_pipe_reader</a>
+</li>
+<li>
+<a href="__rm_interface_magic_pipe_setup.html">magic_pipe_setup</a>
+</li>
+<li>
+<a href="__rm_interface_magic_pipe_writer.html">magic_pipe_writer</a>
+</li>
+<li>
+<a href="__rm_interface_memory_profiler.html">memory_profiler</a>
+</li>
+<li>
+<a href="__rm_interface_mmc.html">mmc</a>
+</li>
+<li>
+<a href="__rm_interface_mouse.html">mouse</a>
+</li>
+<li>
+<a href="__rm_interface_opcode_info.html">opcode_info</a>
+</li>
+<li>
+<a href="__rm_interface_pool_protect.html">pool_protect</a>
+</li>
+<li>
+<a href="__rm_interface_pre_decoder.html">pre_decoder</a>
+</li>
+<li>
+<a href="__rm_interface_processor_cli.html">processor_cli</a>
+</li>
+<li>
+<a href="__rm_interface_processor_endian.html">processor_endian</a>
+</li>
+<li>
+<a href="__rm_interface_processor_gui.html">processor_gui</a>
+</li>
+<li>
+<a href="__rm_interface_processor_info.html">processor_info</a>
+</li>
+<li>
+<a href="__rm_interface_processor_info_v2.html">processor_info_v2</a>
+</li>
+<li>
+<a href="__rm_interface_ram_access_subscribe.html">ram_access_subscribe</a>
+</li>
+<li>
+<a href="__rm_interface_simple_timing_v2.html">simple_timing_v2</a>
+</li>
+<li>
+<a href="__rm_interface_simulator_cache.html">simulator_cache</a>
+</li>
+<li>
+<a href="__rm_interface_snoop_memory.html">snoop_memory</a>
+</li>
+<li>
+<a href="__rm_interface_stall.html">stall</a>
+</li>
+<li>
+<a href="__rm_interface_step.html">step</a>
+</li>
+<li>
+<a href="__rm_interface_step_cycle_ratio.html">step_cycle_ratio</a>
+</li>
+<li>
+<a href="__rm_interface_step_event_instrumentation.html">step_event_instrumentation</a>
+</li>
+<li>
+<a href="__rm_interface_step_info.html">step_info</a>
+</li>
+<li>
+<a href="__rm_interface_synchronous_mode.html">synchronous_mode</a>
+</li>
+<li>
+<a href="__rm_interface_temporal_state.html">temporal_state</a>
+</li>
+<li>
+<a href="__rm_interface_timing_model.html">timing_model</a>
+</li>
+<li>
+<a href="__rm_interface_transaction.html">transaction</a>
+</li>
+<li>
+<a href="__rm_interface_tsc_update.html">tsc_update</a>
+</li>
+<li>
+<a href="__rm_interface_uint64_state.html">uint64_state</a>
+</li>
+<li>
+<a href="__rm_interface_vga_text_info.html">vga_text_info</a>
+</li>
+<li>
+<a href="__rm_interface_vga_text_update.html">vga_text_update</a>
+</li>
+<li>
+<a href="__rm_interface_vga_update.html">vga_update</a>
+</li>
+<li>
+<a href="__rm_interface_virtual_data_breakpoint.html">virtual_data_breakpoint</a>
+</li>
+<li>
+<a href="__rm_interface_virtual_instruction_breakpoint.html">virtual_instruction_breakpoint</a>
+</li>
+<li>
+<a href="__rm_interface_x86_monitor.html">x86_monitor</a>
+</li>
+<li>
+<a href="__rm_interface_x86_monitor_notification.html">x86_monitor_notification</a>
+</li>
+<li>
+<a href="__rm_interface_x86_smm_notification.html">x86_smm_notification</a>
+</li>
+<li>
+<a href="__rm_interface_x86_unplug.html">x86_unplug</a>
+</li>
+<li>
+<a href="__rm_interface_x86_unplug_v2.html">x86_unplug_v2</a>
+</li>
+</ul>
+<div class="chain">
+<a href="__rm_interface_xtensa_tie_output_queue.html">xtensa_tie_output_queue</a>
+<a href="__rm_interface_abs_pointer.html">abs_pointer</a>
+</div>

@@ -1,0 +1,215 @@
+<!doctype html>
+<head>
+<meta charset=utf-8>
+<link rel="stylesheet" href="simics.css">
+<title>QSP ISIM Target Guide and Tutorial</title>
+<script>function postUrl() {
+    window.parent.postMessage({content_url: window.location.href}, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD"}).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+                     error);
+    });
+}</script>
+</head><body>
+<div class=chain>
+<span></span>
+</div>
+<div class=path>
+</div>
+<h1 id="qsp-isim-target-guide-and-tutorial"><a href="#qsp-isim-target-guide-and-tutorial">QSP ISIM Target Guide and Tutorial</a></h1>
+<h2 id="introduction"><a href="#introduction">Introduction</a></h2>
+<h3 id="overview"><a href="#overview">Overview</a></h3>
+<p>Intel® ISIM (Integrated Simulation Infrastructure with Modeling) is a versatile framework for simulating a system-on-chip (SOC) or an entire platform. It is fast enough to run real software workloads while generating functional, performance, power, and thermal profiles. Also, it has been designed to support coupling between different domains while maintaining domain modularity for easy development and integration as shown in the figure below: </p>
+<p><img alt="ISIM_architecture" src="ISIM_architecture.png"></p>
+<p>The "QSP ISIM" package is an example of an end-to-end Intel® ISIM flow. The package augments the functional Quick Start Platform model with power and thermal properties, and is composed of four modules:</p>
+<ul>
+<li>Functional model (Intel® Simics)</li>
+<li>Behavioral Power-Management unit (Thermal Manager, OS Power Manager)</li>
+<li>Physical model (Power/Thermal model, Intel® Docea™)</li>
+<li>Performance model (Intel® Simics)</li>
+</ul>
+<p>These models communicate through standard interfaces as shown in the figure below:</p>
+<p><img alt="Diagram" src="diagram.png"></p>
+<p>Note: The models used in this example have been intentionally kept simple for didactic purposes. Feel free to replace them by a more complex one if needed.</p>
+<h3 id="dependencies"><a href="#dependencies">Dependencies</a></h3>
+<p>To run simulations, you need to install the <strong>latest version</strong> of the following Simics packages:</p>
+<ul>
+<li>Simics Base (package 1000)</li>
+<li>Quick Start Platform for x86 (package 2096)</li>
+<li>QSP Clear Linux (package 4094)</li>
+<li>Docea Base (package 7801)</li>
+<li>QSP ISIM (where this manual is contained, package 8144)</li>
+<li>Viewer (to view the ISIM simulation results, package 8126)</li>
+</ul>
+<h2 id="simulated-system"><a href="#simulated-system">Simulated System</a></h2>
+<h3 id="functional-model"><a href="#functional-model">Functional model</a></h3>
+<p>The functional model represents a generic PC, allowing us to run unmodified software such as Linux or Windows. For more information on the functional model, please refer to the functional QSP package.</p>
+<h3 id="power-thermal-model"><a href="#power-thermal-model">Power/Thermal model</a></h3>
+<p>The power consumption and thermal behavior of each core are purposely simple for this example and given in the equations below:</p>
+<p><img alt="Physical_model" src="Physical_model.png"></p>
+<h3 id="power-thermal-management"><a href="#power-thermal-management">Power/Thermal management</a></h3>
+<p>Each core has a Power-Management Unit that uses two concurrent algorithms to control power and thermal:</p>
+<ul>
+<li>A thermal throttling algorithm using a control loop filter (Proportional Integrator Derivative).</li>
+<li>A higher level of power management that mimics what an operating system implements. The user can choose between three distinct power management policies. &nbsp;The first, named “performance”, favors performance over battery-life. The second named “on demand”,  dynamically monitors the workload activity to provide the required performance. The last one, "powersave", maintain the frequency at its lowest possible value (defined in the workpoints) during the simulation.</li>
+</ul>
+<p>The Power-Management Unit takes a decision based on the output of those two modules. The algorithms used here are very simple behavioral models and can be replaced by more realistic ones.</p>
+<h2 id="performance-model"><a href="#performance-model">Performance model</a></h2>
+<p>Documentation on this module is located in the section "Sample Core Timing Model" of the "QSP-X86 target guide".</p>
+<h2 id="getting-started-with-qsp-isim"><a href="#getting-started-with-qsp-isim">Getting started with QSP ISIM</a></h2>
+<h3 id="running-a-simulation"><a href="#running-a-simulation">Running a simulation</a></h3>
+<p>After installing Simics and the required packages, you can run the simulation from the project directory with the following command:</p>
+<p>Linux environment:</p>
+<pre><code>simics targets/qsp-isim/qsp-isim-clear-linux.simics
+</code></pre>
+<p>Windows environment:</p>
+<pre><code>simics.bat targets\qsp-isim\qsp-isim-clear-linux.simics
+</code></pre>
+<p>This command sets up the functional model. The Simics command line interface should appear. You can then start the simulation by using the following command:</p>
+<pre><code>simics&gt; run
+</code></pre>
+<p>This command will boot the linux OS of the simulated system. When the boot is done, the performance, power-manager and power/thermal models are instantiated and connected to the functional model. The default workload executed by the system is to create a .zip file of its bin directory ("<em>time zip -9 zipped2 /bin/*\n</em>"). 
+The viewer window appears and starts plotting the curves (frequency, power, instructions per cycle and temperature of each the core). Depending on the simulation environment, <strong>you may observe a small delay (around 10 seconds) between the opening of the viewer window and the time the curves start being plotted.</strong>
+You should see a window looking like the following one:</p>
+<p><img alt="sim-window" src="sim-window.png"></p>
+<p>You can find the viewer documentation in your project directory under <code>[project_folder]/doc/Viewer.pdf</code></p>
+<p>The time series are saved in the following file:</p>
+<pre><code>logs/sim_result/tracer0.csv
+</code></pre>
+<p>Finally, you can visualize the <code>logs/sim_result/tracer0.csv</code> file containing the time series of the previous simulation using the following command (from your project directory):</p>
+<p>Linux environment:</p>
+<pre><code>bin/start-viewer -L=[simics-qsp-isim-package-installation_path]/targets/pvf_dsbs/config_machine0.pvf_dsb
+</code></pre>
+<p>Windows environment:</p>
+<pre><code>bin\start-viewer.bat -L=[simics-qsp-isim-package-installation_path]\targets\pvf_dsbs\config_machine0.pvf_dsb
+</code></pre>
+<p>Where [simics-qsp-isim-package-installation_path] is the path where QSP for ISIM package is installed.</p>
+<p>You can also copy the pvf_dsb file to your project if you want to customize it.</p>
+<p>Note: Exiting the Simics simulation does not automatically close the viewer window.</p>
+<h3 id="importing-the-simulation-script-to-your-project-directory"><a href="#importing-the-simulation-script-to-your-project-directory">Importing the simulation script to your project directory</a></h3>
+<p>The simics script you have run in the previous section (<code>[project_folder]/targets/qsp-isim/qsp-isim-clear-linux.simics</code>) is a trampoline to the actual script, containing the model parameters and instantiation of the simulated system. This "original" script is located in your simics installation folder at <code>[simics_install_folder]/simics-6-install/simics-qsp-isim-6.0.pre0/targets/qsp-isim/qsp-isim-clear-linux.simics</code>.</p>
+<p>To be able to tune simulation parameters and adapt the system to your needs, you need to copy the original script <code>[simics_install_folder]/simics-6-install/simics-qsp-isim-6.0.pre0/targets/qsp-isim/qsp-isim-clear-linux.simics</code> and paste this copy in your project folder at the following location: <code>[project_folder]/targets/my-qsp-isim/</code> (we chose here to name the simulation folder my-qsp-isim but you can choose any name that you would like)</p>
+<p>You can now tune the parameters of the new script you have just created: <code>[project_folder]/targets/my-qsp-isim/qsp-isim-clear-linux.simics</code>.</p>
+<p>Finally, you can run it from the project directory, with the following command:</p>
+<p>Linux environment:</p>
+<pre><code>simics targets/my-qsp-isim/qsp-isim-clear-linux.simics
+</code></pre>
+<p>Windows environment:</p>
+<pre><code>simics.bat targets\my-qsp-isim\qsp-isim-clear-linux.simics
+</code></pre>
+<h3 id="useful-commands"><a href="#useful-commands">Useful Commands</a></h3>
+<ul>
+<li><code>machine0.docea.docea_physical_model.compute-average-metrics</code> Displays a table containing the frequency and energy per instruction, averaged on all cores, from the beginning of the simulation to the current simulation time.</li>
+<li><code>@conf.machine0.docea.docea_physical_model.initial_time_s</code> Outputs the time when the physical simulation was enabled for each core.</li>
+<li><code>@conf.machine0.docea.docea_physical_model.all_signals_values</code> Outputs the current physical and functional state of each core (temperature, power, etc..).</li>
+</ul>
+<h3 id="console"><a href="#console">Console</a></h3>
+<p>The serial console of the system is used to interact with the functional model. By default, the system creates a .zip file of its bin directory (for demo purposes). However, you are free to execute whatever is relevant for your use case.</p>
+<h3 id="scope-of-the-example"><a href="#scope-of-the-example">Scope of the example</a></h3>
+<p>The workload used in the example is a steady workload. However, there is no technology limitation to enhance the performance model with more realistic instructions characterization and run a more dynamic workload on the top of it.</p>
+<h3 id="known-limitations"><a href="#known-limitations">Known limitations</a></h3>
+<p><strong>Dazed and confused error message:</strong></p>
+<p>When running the simulation with "ondemand" governor the user may notice that the console outputs the following message:</p>
+<p>"<em>Uhhuh. NMI received for unknown reason 21 on CPU 0.
+Do you have a strange power saving mode enabled?
+Dazed and confused, but trying to continue</em>"</p>
+<p>This message doesn't have any impact on the simulation results. The team is currently working on fixing this issue.</p>
+<h2 id="model-parameters"><a href="#model-parameters">Model parameters</a></h2>
+<p>All models expose a set of configurable parameters. Those parameters can be modified by the user at the beginning of the simulation in the qsp-isim-clear-linux.simics script. The rest of this section presents some of the parameters.  Note: the list is not exhaustive and will change over time</p>
+<h3 id="parameters-from-the-functional-model"><a href="#parameters-from-the-functional-model">Parameters from the functional model</a></h3>
+<ul>
+<li><code>num_cores</code>: Number of cores of the simulated system</li>
+</ul>
+<h3 id="parameters-from-the-power-manager-module"><a href="#parameters-from-the-power-manager-module">Parameters from the power-manager module</a></h3>
+<ul>
+<li><code>workpoints</code>: List of (voltage, frequency) work points for the core.</li>
+<li><code>kdict</code>: Dictionary of Kp, Kd, Ki values of the PID controller.</li>
+<li><code>thermal_throt_limit</code>: Limit threshold of temperature for the core.</li>
+<li><code>thermal_hysteresis</code>: The thermal manager stays on the same work point if thermal_hysteresis[0] &lt; absolute error &lt; thermal_hysteresis[1].</li>
+<li><code>governor</code>: Choose <code>ondemand</code>, <code>performance</code>, <code>powersave</code></li>
+<li><code>cdyn_virus</code>: Cdyn value used at the beginning of the simulation by the Power-Management (before the performance module starts providing the actual/real cdyn values).</li>
+</ul>
+<h3 id="parameters-from-the-power-thermal-model"><a href="#parameters-from-the-power-thermal-model">Parameters from the power/thermal model</a></h3>
+<p>All those parameters appear in the power/thermal equations detailed above.</p>
+<ul>
+<li><code>leakage_parameter</code>: Models the amount of leakage consumption in the core</li>
+<li><code>ambient</code>: Ambient temperature</li>
+<li><code>cdyn_idle</code>: Dynamic Capacitance idleness value</li>
+<li><code>thermal_R</code>: Thermal resistance of the core</li>
+<li><code>thermal_C</code>: Thermal capacitance of the core</li>
+<li><code>reference_temp</code>: Leakage reference temperature</li>
+<li><code>cdyn_idle</code>: Idle dynamic capacitance of the system </li>
+</ul>
+<h3 id="parameters-from-the-performance-module"><a href="#parameters-from-the-performance-module">Parameters from the performance module</a></h3>
+<p>The performance module allows you to set multiple parameters. For example, you can set the number of base cycles per instruction and you can add or delete specific instruction classes. Documentation on this module is located in the section "Sample Core Timing Model" of the "QSP-X86 target guide".</p>
+<h2 id="further-experiments"><a href="#further-experiments">Further experiments</a></h2>
+<p>The QSP-ISIM simulation has many tunable parameters (detailed in the "Model Parameters" section) and can thus be used for several studies and use cases. We will showcase below how modifying power-management parameters impacts the simulation results. All the following simulations are obtained by running the <em>targets/qsp-isim/qsp-isim-clear-linux.simics</em> script. The default value of parameters are used; except for <em>kdict['Ki']</em>, <em>governor</em> and <em>num_cores</em>. </p>
+<h3 id="tuning-the-thermal-throttling-algorithm-pid-controller-"><a href="#tuning-the-thermal-throttling-algorithm-pid-controller-">Tuning the Thermal Throttling algorithm (PID controller)</a></h3>
+<p>In this first experiment, only one core is being simulated for simplicity (num_cores = 1, Ki = 1.0, governor = "ondemand"). 
+As the workload is running, the plotter displays the core functional and physical behavior. See the following figure:</p>
+<p><img alt="1C-ond-ki1" src="1C-ond-ki1.png"></p>
+<p>The figure displays, from top to bottom, the power, temperature, clock frequency and instructions per cycle of the simulated core. The core activity (instructions per cycle) is nearly constant during the workload. The core’s temperature increases until it reaches the threshold (which is a tunable parameter of the simulation). In response, the PID controller decreases the frequency and voltage, preventing the core from melting. As soon as the core temperature is safe, the controller boosts performance.</p>
+<p>We then tune the integration coefficient of the PID controller and observe how this change impacts the energy and duration of the workload (num_cores = 1, <strong>Ki = 1.0 or 0.0</strong>, governor = "ondemand"). </p>
+<p>In this first figure:</p>
+<ul>
+<li>Integration coefficient (Ki) = 1.0</li>
+<li>Time to complete workload = 72.359 s</li>
+<li>Average energy per instruction = 0.54 njoules</li>
+<li>Average frequency = 1.54 Ghz</li>
+</ul>
+<p><img alt="1C-ond-ki1" src="1C-ond-ki1.png"></p>
+<p>In this second figure:</p>
+<ul>
+<li>Integration coefficient (Ki) = 0.0</li>
+<li>Time to complete workload = 66.729 s</li>
+<li>Average energy per instruction = 0.47 njoules</li>
+<li>Average frequency = 1.65 Ghz</li>
+</ul>
+<p><img alt="1C-ond-ki0" src="1C-ond-ki0.png"></p>
+<p>A nonzero integrator coefficient causes temperature overshoots, which causes silicon aging issues, and frequency undershoots, reducing performance. On the other hand, we can see that removing the integration part offers better performance while keeping the temperature under control.</p>
+<h3 id="os-governor-performance-ondemand-or-powersave-"><a href="#os-governor-performance-ondemand-or-powersave-">OS governor: "performance", "ondemand" or "powersave"?</a></h3>
+<p>The governor works closely with the thermal throttling algorithm and mimics the behavior of the OS power management. The figure below shows the two power management algorithms (governor and thermal throttling) in action:</p>
+<p><img alt="Example2_results" src="Example2_results.png"></p>
+<p>To observe the impact of the governor policy, we run three concurrent simulations. One with the "ondemand" governor, one with the "powersave" governor and another one with the "performance" governor (num_cores = 3, Ki = 0.0, <strong>governor = "ondemand" or "performance" or "powersave"</strong>).
+The performance governor always ask for the highest possible frequency while the ondemand one can scale the frequency down depending on the idleness of the core. The powersave keeps the frequency at the lowest possible value.
+As expected, the workload executed with the "performance" governor finishes first but has higher energy cost than the two other ones. The "powersave" uses less energy but takes way more time to finish. The "ondemand" governor is a good balance between the two others to lower energy consumption while keeping simulation time acceptable.</p>
+<p><strong>Ondemand governor</strong>:</p>
+<ul>
+<li>Time to complete workload = 57 s</li>
+<li>Average energy per instruction = 152.62 njoules</li>
+<li>Average frequency = 2.26 Ghz</li>
+</ul>
+<p><img alt="ondemand" src="ondemand.png"></p>
+<p><strong>Performance governor</strong>:</p>
+<ul>
+<li>Time to complete workload = 55 s</li>
+<li>Average energy per instruction = 180.52 njoules</li>
+<li>Average frequency = 3.26 Ghz</li>
+</ul>
+<p><img alt="performance" src="performance.png"></p>
+<p><strong>Powersave governor</strong>:</p>
+<ul>
+<li>Time to complete workload = 117 s</li>
+<li>Average energy per instruction = 84.06 njoules</li>
+<li>Average frequency = 1.0 Ghz</li>
+</ul>
+<p><img alt="powersave" src="powersave.png"></p>
+<h2 id="next-steps"><a href="#next-steps">Next Steps</a></h2>
+<p>Intel® ISIM provides the unique ability to run real-world workloads on top of a virtual multi-domain model that frees you from the constraints of physical hardware. Now that you‘ve seen the QSP example, you can use ISIM’s capabilities to build your own models. Please send us your feedback; we’re eager to hear from you!</p>
+<div class=chain>
+<span></span>
+</div>

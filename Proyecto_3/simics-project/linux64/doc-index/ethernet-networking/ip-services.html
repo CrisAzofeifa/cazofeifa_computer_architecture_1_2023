@@ -1,0 +1,119 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.4 IP Services</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="link-object-timing.html">3.3 Link Object Timing</a>
+<a href="ip-based-routing.html">3.4.1 IP Based Routing</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="simicsnet.html">3 Network Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="IP-Services">3.4 IP Services</a></h1>
+<p>
+
+</p><p>
+It is often useful to let the simulated machines use services (e.g. DHCP service)
+available on the simulated network. Normally these services run on
+servers connected to the network. To avoid having to set up simulated servers
+just to provide them, Simics implements a <em><a name="service-node">service node</a></em>
+instead.
+</p><p>
+The <a name="service-nodeservice_node_comp"></a><b>service_node_comp</b>
+component class, available after importing the <b>std-comp</b>
+module, provides a virtual network node that acts as a server for a number of
+TCP/IP-based protocols, and as an IP router between simulated networks.  It
+handles both <a name="IPv4">IPv4</a> and <a name="IPv6">IPv6</a> protocol versions.  The
+supported services are:
+</p><p>
+</p><ul>
+<li>IP based Routing (v4 and v6)</li>
+<li>RARP (v4)</li>
+<li>DHCP/BOOTP (v4) and DHCPv6 (v6)</li>
+<li>DNS (v4 and v6)</li>
+<li>FTP (v4) (see section <i>Using FTP Service</i> of <i>Simics User
+ Manual</i> and <b>ftp-service</b> class description in <i>Simics
+ Reference Manual</i>)</li>
+<li>TFTP (v4)</li>
+<li>NFS (v4)</li>
+<li>Real network connections (see chapter <a class="reference" href="real-network.html">4</a>)</li>
+
+</ul>
+<p>
+There can be any number of <b>service_node_comp</b> components, and each
+one can be connected to any number of Ethernet links.  In most configurations,
+however, there will be a single service node. A service node can be created
+using the <b>create/new-service-node-comp</b> commands:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module std-comp</b>
+simics&gt; <b>new-service-node-comp sn0</b>
+Created instantiated 'service_node_comp' component 'sn0'.
+</pre><p>
+</p><p>
+This service node can then be connected to an Ethernet link component. Note
+that the service-node IP address on the link must be specified:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>sn0.connect-to-link ethernet_hub0 10.10.0.1</b>
+Adding host info for IP 10.10.0.1: simics0.network.sim<img alt="Line break" src="nextline.png">
+MAC: 20:20:20:20:20:00
+simics&gt;
+</pre><p>
+</p><p>
+The rest of the configuration can be done <em>when the service node has been
+instantiated</em>, using the available commands, such as:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>sn0.list-host-info</b>
+IP         name.domain          MAC
+-------------------------------------------------
+10.10.0.1  simics0.network.sim  20:20:20:20:20:00
+simics&gt;
+</pre><p>
+</p><p>
+
+</p>
+<ul class="subsections">
+<li>
+<a href="ip-based-routing.html">3.4.1 IP Based Routing</a>
+</li>
+<li>
+<a href="dhcp-and-bootp.html">3.4.2 DHCP and BOOTP</a>
+</li>
+<li>
+<a href="dns.html">3.4.3 DNS</a>
+</li>
+<li>
+<a href="tftp.html">3.4.4 TFTP</a>
+</li>
+<li>
+<a href="service-node-nfsd.html">3.4.5 NFS</a>
+</li>
+</ul>
+<div class="chain">
+<a href="link-object-timing.html">3.3 Link Object Timing</a>
+<a href="ip-based-routing.html">3.4.1 IP Based Routing</a>
+</div>

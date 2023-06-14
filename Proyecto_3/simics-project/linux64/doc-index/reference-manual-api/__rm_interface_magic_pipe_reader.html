@@ -1,0 +1,107 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>magic_pipe_reader</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_linear_image.html">linear_image</a>
+<a href="__rm_interface_magic_pipe_setup.html">magic_pipe_setup</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_magic_pipe_reader">magic_pipe_reader</a></h1>
+<p>
+
+<a name="magic_pipe_reader"></a><a name="magic_pipe_reader_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">An interface for reading received data from a magic pipe application running
+  in the target system. This interface is called by a simics extension running
+  in the host system communicating with a target application via a magic
+  pipe. The communication is identified by a magic number. These numbers are
+  acquired or reserved in the magic_pipe_setup_interface.
+<p>
+  The magic pipe library on the target system allocates a page-locked pipe
+  buffer for the target application, which uses the buffer to communicate data
+  to and from the host system. That buffer is fragmented when read by the host
+  system and therefore copied into a new unfragmented buffer, which is used for
+  all read accesses in this interface. All C-code readewr callback functions
+  are allowed direct access to this memory area, while Python reader callback
+  functions require another copy for ownership reasons.
+</p><p>
+  This interface does not modify the pipe buffer data in any way, and the
+  callers are not allowed to do that neither. It is therefore safe for several
+  readers to subscribe to the same data.
+</p><p>
+    </p><div class="note">
+<b>Note:</b>
+This interface is an experimental feature. It is excluded from
+  the standard support program, and is subject to change or removal
+  without notice.</div><pre class="jdocu_small">SIM_INTERFACE(magic_pipe_reader) {
+        /* Query whether the byte-order of the simulated target system differs
+           from that of the simulator host system. */
+        bool (*is_byte_swap_needed)(conf_object_t *obj, uintptr_t buf);
+
+        /* Query the amount of used pipe buffer space. This value is always
+           less than the allocated buffer size because it does not count the
+           internal pipe buffer header. */
+        size_t (*read_buffer_size)(conf_object_t *obj, uintptr_t buf);
+
+#ifndef PYWRAP
+        /* Get direct read-only access to the incoming pipe buffer data, at the
+           desired offset. The function returns a pointer to, and the remaining
+           used size from, the specified offset.
+
+           This function gives a direct pointer into internal memory and
+           therefore cannot be used by Python code. */
+        bytes_t (*read_data_direct)(conf_object_t *obj, uintptr_t buf,
+                                    size_t offs);
+#endif
+
+        /* Get a copy the pipe buffer data, at the specified offset with the
+           specified length. If the length argument is zero, then the length of
+           the remaining space from the offset is assumed.
+
+           This function will allocate a new data buffer to hold the desired
+           amount of data and return it to the caller, who is responsible to
+           deallocating it once it has served its purpose. */
+        bytes_t (*read_data_copy)(conf_object_t *obj, uintptr_t buf,
+                                  size_t offs, size_t len);
+};
+
+#define MAGIC_PIPE_READER_INTERFACE "magic_pipe_reader"
+</pre><p>
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_linear_image.html">linear_image</a>
+<a href="__rm_interface_magic_pipe_setup.html">magic_pipe_setup</a>
+</div>

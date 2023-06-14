@@ -1,0 +1,102 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>16.7 Performance Tweaks</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="vmp.html">16.6 VMP</a>
+<a href="scaling-simics.html">17 Scaling Simics</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="simulation-performance.html">16 Simulation Performance</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Performance-Tweaks">16.7 Performance Tweaks</a></h1>
+<p>
+
+</p><p>
+There are a number of parameters in Simics which can be tweaked which might
+lead to increased performance.
+</p><p>
+</p><ul>
+
+<li><em>Multicore Accelerator</em> can be enabled.</li>
+
+<li>The instruction per cycle (IPC) parameter can be decreased, see command
+<b>&lt;cpu&gt;.set-step-rate</b>. Similar to reducing the CPU frequency,
+this will cause virtual time to progress more rapidly with the same amount of
+instructions executed.</li>
+
+<li>Devices sometimes have a timing model that can be changed by
+attributes.</li>
+
+<li>When real-time performance is required, the <b>real-time</b> module
+provides some means to achieve this. See
+command <b>enable-real-time-mode</b>.</li>
+
+<li>For distributed simulation, multithreading, and Multicore
+Accelerator, you might want to tweak the default latency or allowed
+virtual time window. Increasing the latency/time window will diminish
+the cost of synchronizing the simulation. More information is
+available in chapter <a class="reference" href="scaling-simics.html">17</a>.</li>
+
+<li>In a similar way, you may want to check the time quantum used to schedule
+the simulated processors within a Simics process or a simulation
+cell. Processors unrelated to each other (they do not share memory, for
+example) do not need to be simulated with a small time quantum.</li>
+
+<li>The frequencies of the processors can be lowered
+(<i>cpu_freq_mhz</i>).  This will cause virtual time to progress more
+rapidly with the same amount of instructions executed.</li>
+
+<li>If page/swap activities can be monitored on the host running Simics you
+might want to decrease the memory-limit. See the
+<b>set-image-memory-limit</b>
+command. See chapter <a class="reference" href="working-with-images.html#set-image-memory-limit">7.2.3</a>.</li>
+
+<li>For large configuration using many cells and/or processors, Simics
+will create as many execution threads as there are available host
+processors and schedule the execution on these. However, sometimes it
+is not beneficial to use the SMT threads on the host but instead
+reduce the amount of created threads, using only 1 SMT thread per
+core. In that case, use the <b>set-thread-limit</b> command to
+limit the thread count to the available number of host cores.</li>
+
+<li>The <i>sim-&gt;max_worker_threads</i> attribute controls the
+number of threads that can be used for JIT compilation. The default
+number of JIT threads is automatically set conservatively low, to
+avoid interfering with the execution threads. This attribute can be
+adjusted at any time. To disable parallel JIT compilation, the
+<i>sim-&gt;use_jit_threads</i> attribute can be set to <code>false</code>.
+Then the execution threads themselves run the compilation.</li>
+</ul>
+
+<div class="chain">
+<a href="vmp.html">16.6 VMP</a>
+<a href="scaling-simics.html">17 Scaling Simics</a>
+</div>

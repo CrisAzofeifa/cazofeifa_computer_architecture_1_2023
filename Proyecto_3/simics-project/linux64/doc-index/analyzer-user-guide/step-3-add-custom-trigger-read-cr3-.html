@@ -1,0 +1,54 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>B.3 Step 3 - Add Custom Trigger (Read CR3)</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="step-2-disable-default-extra-action-trigger.html">B.2 Step 2 - Disable Default Extra Action Trigger</a>
+<a href="patch.html">B.4 Patch</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="uefi-fw-trk-uefi-notification-update.html">B Update UEFI For Notification Tracking</a>
+&nbsp;/&nbsp;</div>
+<h1 id="step-3-add-custom-trigger-read-cr3">B.3 <a href="#step-3-add-custom-trigger-read-cr3">Step 3 - Add Custom Trigger (Read CR3)</a></h1>
+<p>As a final step, add <em>reading</em> of <code>CR3</code> to the extra action library. Reading CR3 be used to trigger a notification that is intercepted by the tracker. Add a call to <code>AsmReadCr3</code> in <code>PeCoffLoaderExtraActionCommon</code> directly after the call to <code>AsmWriteDr3</code> in the file:</p>
+<p><code>SourceLevelDebugPkg/Library/PeCoffExtraActionLibDebug/PeCoffExtraActionLib.c
+   </code></p>
+<p>The result end should be similar to: </p>
+<pre><code>
+AsmWriteDr0 (Signature);
+AsmWriteDr1 ((UINTN) ImageContext-&gt;PdbPointer);
+AsmWriteDr2 ((UINTN) ImageContext);
+AsmWriteDr3 (IO_PORT_BREAKPOINT_ADDRESS);
+AsmReadCr3 (); # &lt;--- Trigger Simics UEFI Tracker
+  
+</code></pre>
+
+<div class="chain">
+<a href="step-2-disable-default-extra-action-trigger.html">B.2 Step 2 - Disable Default Extra Action Trigger</a>
+<a href="patch.html">B.4 Patch</a>
+</div>

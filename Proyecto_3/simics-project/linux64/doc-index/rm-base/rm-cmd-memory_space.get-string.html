@@ -1,0 +1,73 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;memory_space&gt;.get-string</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-memory_space.debug.html">&lt;memory_space&gt;.debug</a>
+<a href="rm-cmd-memory_space.load-vmem.html">&lt;memory_space&gt;.load-vmem</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="memory_space.get-string"></a>
+<a name="memory_space.read-string"></a>
+<a name="port_space.read-string"></a>
+<h1 id="memory_space.get-string"><a href="#memory_space.get-string">&lt;memory_space&gt;.get-string</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;memory_space&gt;.get-string</b> <i>address</i> [<i>max-size</i>] [-list] [<i>term</i>] <br><b>&lt;memory_space&gt;.read-string</b> <i>address</i> [<i>max-size</i>] [-list] [<i>term</i>] <br><b>&lt;port_space&gt;.read-string</b> <i>address</i> [<i>max-size</i>] [-list] [<i>term</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Read up to <i>max-size</i> characters (default 256, maximum 1024) from physical memory at <i>address</i>, returning them as a string or list. The <i>term</i> argument controls how the end of the string in memory is determined. If <i>term</i> is "none" then all <i>max-size</i> characters are read and the returned string will contain any null bytes encountered. If it is "null" (default) the command stops reading from memory when it finds a null-terminator while an error is generated if no null-terminator is found within <i>max-size</i> characters. The "optional-null" argument value is similar to "null" but all <i>max-size</i> characters are returned as a string if no null-terminator is found.
+<p>
+The string is returned as a list of bytes if the <tt>-list</tt> argument is supplied.
+</p><p>
+The string read from memory must be in ASCII or UTF-8 encoding to be returned as a CLI string otherwise an exception is raised.
+</p><p>
+The <code>get-string</code> command performs the access in inquiry mode without triggering any side-effects while <code>read-string</code> may trigger side-effects.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-memory_space.set-string.html">&lt;memory_space&gt;.set-string</a>, 
+<a href="rm-cmd-memory_space.get-string.html">&lt;memory_space&gt;.read-string</a>, 
+<a href="rm-cmd-get.html">&lt;memory_space&gt;.get</a>, 
+<a href="rm-cmd-get.html">&lt;memory_space&gt;.read</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-memory_space.debug.html">&lt;memory_space&gt;.debug</a>
+<a href="rm-cmd-memory_space.load-vmem.html">&lt;memory_space&gt;.load-vmem</a>
+</div>

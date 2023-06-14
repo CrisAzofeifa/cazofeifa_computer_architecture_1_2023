@@ -1,0 +1,310 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>1.2 Simics API Information</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="programming-concepts.html">1.1 Programming Concepts</a>
+<a href="api-usage-rules.html">1.3 API usage rules</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="introduction.html">1 Introduction</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Simics-API-Information">1.2 Simics API Information</a></h1>
+<p>
+
+</p><p>
+This chapter describes the organization of the Simics API,
+and how to use it. It also shows how it interacts with
+system, Device, Simulator, Processor, and Link Library APIs.
+</p><p>
+</p><h2 class="jdocu"><a name="spc-api-parts">1.2.1 The Simics API</a></h2>
+<p>
+
+<a name="Simics-API"></a><a name="APISimics"></a>Simics provides a number of unique
+APIs designed to allow the integration of new modules with the Simics family of
+products.
+</p><p>
+The Simics API is partitioned into three major parts, and an additional three
+groups of interfaces. There is one header file to include for each part of the
+Simics API, while the interfaces are split over several independent header
+files.
+</p><p>
+With a partitioned API the part needed by models can be kept as small and
+simple as possible, and the boundary between models and the simulator
+infrastructure is more clearly defined. A small Device API makes device
+modeling easier and reduces the risk of writing code with the
+potential to break determinism, reverse execution, or multi-threading.
+</p><p>
+For a model representing a piece of hardware, you should
+only need to use the <em>Device API</em> together with the
+necessary <em>model-to-model</em> and <em>model-to-simulator</em> interfaces.
+</p><p>
+To find out how to get access to a particular API function or data type, you
+can use the <b><a name="api-help">api-help</a></b> CLI command. This will tell you
+which header file, if any, to include (in either DML or C/C++).
+</p><p>
+</p><h3 class="jdocu"><a name="Device-API">1.2.1.1 Device API</a></h3>
+<p>
+
+The basic functionality of the Simics API and the only part available to device
+models.
+<br>The Device API is always accessible from DML; from C/C++ it is available
+using:
+</p><pre class="jdocu_small">C/C++: #include &lt;simics/device-api.h&gt;
+</pre><p>
+
+</p><h3 class="jdocu"><a name="Model-to-Model-Interfaces">1.2.1.2 Model-to-Model Interfaces</a></h3>
+<p>
+
+Interfaces between models typically represent standard hardware
+interfaces such as PCI, IC, Ethernet and interrupt
+lines. These interfaces are included in the Device API.
+</p><p>
+<br>Accessible from DML and C/C++ using:
+</p><pre class="jdocu_small">DML:   import "simics/devs/<em>interface</em>.dml";
+C/C++: #include &lt;simics/devs/<em>interface</em>.h&gt;
+</pre><p>
+where <em>interface</em> should be replaced with the actual header file name.
+</p><p>
+To find out which header file the <code>foo</code> interface is defined in, you can
+use the Simics CLI command <b>api-help <em>foo</em>_interface_t</b>.
+
+</p><h3 class="jdocu"><a name="Model-to-Simulator-Interfaces">1.2.1.3 Model-to-Simulator Interfaces</a></h3>
+<p>
+
+These interfaces fall into two categories:
+</p><ul>
+  <li>Interfaces that models may implement, which are called by the
+  Simics framework.</li>
+  <li>Interfaces implemented by the Simics framework or by Simics simulator
+  objects, which may be called by simulation models.</li>
+</ul>
+Interfaces included in this list are part of the Device API.
+<p>
+<br>They are accessed from DML and C/C++ using:
+</p><pre class="jdocu_small">DML:   import "simics/model-iface/<em>interface</em>.dml";
+C/C++: #include &lt;simics/model-iface/<em>interface</em>.h&gt;
+</pre><p>
+where <em>interface</em> should be replaced with the actual header file name.
+</p><p>
+To find out which header file the <code>foo</code> interface is defined in, you can
+use the Simics CLI command <b>api-help <em>foo</em>_interface_t</b>.
+
+</p><h3 class="jdocu"><a name="Simulator-API">1.2.1.4 Simulator API</a></h3>
+<p>
+
+The Simulator API contains the complete Simics API, including parts that are
+not available to models. This API may be used by simulator extensions.
+</p><p>
+<br>Accessible from DML and C/C++ using:
+</p><pre class="jdocu_small">DML:   import "simics/simulator-api.dml";
+C/C++: #include &lt;simics/simulator-api.h&gt;
+</pre><p>
+
+</p><h3 class="jdocu"><a name="Simulator-to-Simulator-Interfaces">1.2.1.5 Simulator-to-Simulator Interfaces</a></h3>
+<p>
+
+Interfaces that are only used between simulator extensions and that
+should not be used by any model are collected into this group. These
+interfaces are part of the Simulator API.
+</p><p>
+<br>Accessible from DML and C/C++ using:
+</p><pre class="jdocu_small">DML:   import "simics/simulator-iface/<em>interface</em>.dml";
+C/C++: #include &lt;simics/simulator-iface/<em>interface</em>.h&gt;
+</pre><p>
+where <em>interface</em> should be replaced with the actual header file name.
+</p><p>
+To find out which header file the <code>foo</code> interface is defined in, you can
+use the Simics CLI command <b>api-help <em>foo</em>_interface_t</b>.
+
+</p><h3 class="jdocu"><a name="Processor-API">1.2.1.6 Processor API</a></h3>
+<p>
+
+The Processor API extends the Device API with functions needed when modeling
+processors in Simics.
+<br>Accessible from DML and C/C++ using:
+</p><pre class="jdocu_small">DML:   import "simics/processor-api.dml";
+C/C++: #include &lt;simics/processor-api.h&gt;
+</pre><p>
+
+</p><h3 class="jdocu"><a name="Link-Library-API">1.2.1.7 Link Library API</a></h3>
+<p>
+
+The Link Library API extends device modeling capabilities with Simics by
+allowing users to write Simics link models.
+<br>Accessible from DML and C/C++ using:
+</p><pre class="jdocu_small">DML:   import "simics/devs/liblink.dml";
+C/C++: #include &lt;simics/devs/liblink.h&gt;
+</pre><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="Python-API">1.2.1.8 Python API</a></h3>
+<p>
+
+Simics users may utilize Python to interact with the Simics API.  For
+example, Python can be used to write or run Simics commands.
+Python may also be used to write components and modules for Simics.
+</p><p>
+The API is accessible from Python by importing the respective
+modules listed in chapter
+<a class="reference" href="python-api.html">10</a>.
+</p><p>
+Python can also be used directly from the Simics command line and
+in set-up scripts.
+
+
+</p><h2 class="jdocu"><a name="API-Version">1.2.2 API Version</a></h2>
+<p>
+
+Device makefiles have a variable called <code><a name="SIMICS_API">SIMICS_API</a></code>, which
+specifies which version of the Simics API the model uses.
+It is a good idea to set <code><a name="SIMICS_API2">SIMICS_API</a></code> to the current
+Simics API. This will cause compile errors for uses of deprecated features. 
+</p><pre class="jdocu_small">SIMICS_API := 6
+</pre><p>
+Python modules do not have a SIMICS_API flag to force compiler
+checking and thus need to be checked manually. Command line options can be
+passed to Simics to ensure any runtime usage of deprecated features trigger
+errors.
+
+</p><h2 class="jdocu"><a name="System-Calls-and-Signals">1.2.3 System Calls and Signals</a></h2>
+<p>
+
+<a name="modulesignals"></a>
+</p><p>
+<a name="system-callsrestartable"></a> On Linux,
+Simics will register its built-in <a name="signal-handlers">signal handlers</a> to make
+system calls restartable after the signal has been handled (cf. the
+<code><a name="SA_RESTART">SA_RESTART</a></code> flag in the
+<code><a name="sigaction">sigaction</a>(2)</code> man page).
+</p><p>
+However, only some system calls are restartable, so when writing
+modules for Simics, you have to make sure that you restart the other
+system calls yourself:<a name="EINTR"></a>
+</p><p>
+</p><pre class="jdocu_small">do {
+        res = accept(sock, &amp;saddr, &amp;slen);
+} while (res == -1 &amp;&amp; errno == EINTR);
+</pre><p>
+
+</p><h2 class="jdocu"><a name="Text-Output">1.2.4 Text Output</a></h2>
+<p>
+
+</p><p>
+Simics has its own text output routines that use the command-line
+window for display and also allow output to be directed elsewhere. To
+maintain this functionality these output routines
+should be used instead of the standard C library output routines: Use
+<b><i><a name="SIM_printf">SIM_printf</a></i></b> instead of
+<b><i><a name="printf">printf</a></i></b>, <b><i><a name="SIM_putchar">SIM_putchar</a></i></b>
+instead of <b><i>putchar</i></b>, and so on.
+</p><p>
+The Simics output functions (<b><i>SIM_write</i></b>,
+<b><i>SIM_printf</i></b>, etc.) also send the resulting text to handlers
+registered using <b><i><a name="SIM_add_output_handler">SIM_add_output_handler</a></i></b>.
+</p><p>
+Here is an example showing how a module could get Simics to write a
+copy of all its text output to a log file:
+</p><p>
+</p><pre class="jdocu_small">static void
+output_handler(void *file, const void *buf, size_t count)
+{
+    fwrite(buf, 1, count, (FILE *)file);
+}
+
+static void
+init_local(void)
+{
+    SIM_add_output_handler(output_handler,
+                           (void *)fopen("my.log", "a"));
+}
+</pre><p>
+</p><p>
+
+</p><h2 class="jdocu"><a name="Using-Threads-in-Simics-Modules">1.2.5 Using Threads in Simics Modules</a></h2>
+<p>
+
+</p><p>
+It is possible to write modules for Simics that use
+POSIX <a name="threads">threads</a>, but only a restrictive part of the
+Simics API can be used directly from such threads.
+It is possible, however, to post callbacks that have
+access to the entire API. One way to do that is through the
+<b><i>SIM_thread_safe_callback</i></b> API function. It is also possible
+to enter a context where a larger part of the Simics API is available.
+This, and the threading model in general, is discussed in some
+detail in chapter <a class="reference" href="rmapi-threading-model.html">2</a>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Header-Inclusion-Order">1.2.6 Header Inclusion Order</a></h2>
+<p>
+
+<a name="include-filesorder"></a>
+<a name="header-filesorder"></a>
+<a name="order-of-inclusion"></a>
+</p><p>
+For modules written in C or C++, the general order of header file inclusion
+should be from most to least general:
+</p><p>
+<table>
+
+ <tbody><tr>
+  <td class="jdocu_noborder">Language</td>
+  <td class="jdocu_noborder">e.g., <code>&lt;stdio.h&gt;</code> (C), <code>&lt;map&gt;</code> (C++)</td>
+ </tr>
+
+ <tr>
+  <td class="jdocu_noborder">Operating system</td>
+  <td class="jdocu_noborder">e.g., <code>&lt;unistd.h&gt;</code> (Linux),
+      <code>&lt;windows.h&gt;</code> (Windows)</td>
+ </tr>
+
+ <tr>
+  <td class="jdocu_noborder">Simics</td>
+  <td class="jdocu_noborder">e.g., <code>&lt;simics/device-api.h&gt;</code></td>
+ </tr>
+
+ <tr>
+  <td class="jdocu_noborder">Application</td>
+  <td class="jdocu_noborder">specific to your module</td>
+ </tr>
+
+</tbody></table>
+</p><p>
+When this order is observed problems related to interference between
+include files should be minimized. In particular, Simics may redefine
+some standard functions with preprocessor macros and this can cause
+problems unless the standard headers are included first.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="programming-concepts.html">1.1 Programming Concepts</a>
+<a href="api-usage-rules.html">1.3 API usage rules</a>
+</div>

@@ -1,0 +1,71 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.1 Introduction to Cache Simulation with Simics</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="caches.html">5 Cache Simulation</a>
+<a href="simulating-a-simple-cache.html">5.2 Simulating a Simple Cache</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="caches.html">5 Cache Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 id="introduction-to-cache-simulation-with-simics">5.1 <a href="#introduction-to-cache-simulation-with-simics">Introduction to Cache Simulation with Simics</a></h1>
+<p>By default, Simics does not model any cache system. It uses its own memory system to achieve high speed simulation, and modeling a hardware cache model would only slow it down. Simics exposes however, by the instrumentation API, the flow of memory operations coming from the processor, and thus allows users to write tracing tools and collect statistics on the memory behavior of their simulations.</p>
+<p>Additionally, Simics lets user-written <em>timing models</em> control how long memory transaction takes. <em>Stalling</em> the execution, as it is called in Simics, helps improving the timing accuracy of the simulation, as compared to a real system. Historically, the timing model/snoop device interfaces has been use in Simics to model caches. Since those interfaces block memory accesses from being looked up in a fast address translation table in Simics, the execution speed has suffered considerably. From Simics 6, the instrumentation API has been available as a core feature and this has improved the performance on cache modeling. The instrumentation API works with the fast table lookup and makes Simics very suitable for various types of cache simulation:</p>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:cache-profiling">Cache Profiling</span><br>
+The goal is to gather information about the cache behavior of a system or an application, e.g., explore different prefetching algorithms. Unless the application runs on multiprocessors, takes a lot of interrupts or runs a lot of system-level code, the timing of the memory operations is often irrelevant, thus no stalling is necessary.</p>
+<p>Note that this type of simulation <em>does not change</em> the execution of the target program. It could be done by using Simics as a simple memory operation trace generator, and then computing the cache state evolution afterwards or during the simulation.</p>
+</li>
+<li>
+<p><span class="term" id="dt:cache-timing">Cache Timing</span><br>
+The goal is to study the timing behavior of the transactions, in which case a transaction to memory should take much more time than, for example, a transaction to an L1 cache. This is useful when studying interactions between several CPUs, or to estimate the number of cycles per instruction (CPI) of an application. Simics models can be used for such a simulation.</p>
+<p>This type of simulation <em>modifies</em> the execution, since interrupts and multi-processor interaction will be influenced by the timing provided by the cache model. However, unless the target program is not written properly, the execution will always be correct, although different from the execution obtained without any cache model.</p>
+<p>There are two types of possible modeling techniques for this class. Either a mechanistic model, where you try to implement as many details as possible in the cache system, possibly with slower simulation speed, or a statistical model, where you try to estimate the time from a set of events that happens in the cache system. This can be achieved by using regression models calculated from more detailed simulation models or from real hardware. In this case the simulation speed may be better since you may cut the number of events that need be collected, but the regression models can still give you a good approximation. Of course both of these methods, has trade offs between simulation speed and accuracy. They can also be combined to estimate the time of different parts of the memory hierarchy with either a mechanistic approach or a statistical.</p>
+</li>
+<li>
+<p><span class="term" id="dt:cache-content-simulation">Cache Content Simulation</span><br>
+It is possible to change Simics coherency model by allowing a cache model to contain data that is different from the contents of the memory. Such a model needs to properly handle the memory transactions as it must be able to change the values of loads and stores.</p>
+<p>Note that this kind of simulation is difficult to do and requires a well-written, bug-free cache model, since it can prevent the target program from executing properly. The instrumentation API supports this kind of modeling since it allows memory accesses to be redirected from memory into the cache model data storage for each cache line.</p>
+</li>
+</ul>
+</div>
+<p>Simics comes with a cache model called <code>simple_cache</code>, which allows cached profiling and cache timing: it handles one transaction at a time in a flat way: all needed operations (copy-back, fetch, etc.) are performed in order and at once. The cache returns the sum of the stall times reported for each operation. This cache should not be considered as a final solution for cache modeling, rather it should be seen as starting point with some of the basic cache concepts modeled. The source code is available so it should be possible to extend it with new features (the module is called simple-cache-tool).</p>
+<p>Before going further and describing the simple cache in more details, a few things should be mentioned:</p>
+<ul>
+<li>For performance and correctness we will not penalize a single instruction, i.e., stalling it as many cycles the transaction takes (both instruction access and data access), instead all extra stalls are collected in an other object and at regular intervals the entire processor is stalled the given added penalty. Although, not currently modeled by the simple cache, this scheme allows more complex models such a out of order execution of the transactions and simultaneously outstanding transactions. Stalling a single instruction would be meaningless, i.e., model a completely serial processor, would be way off in terms of correct timing. This also means that you cannot look at small code snippets and get a good time estimate, but on average running much longer this will give better time estimates.</li>
+<li>For simplicity, Simics does not model incoherence. In Simics, the memory is <em>always</em> up to date with the latest CPU and device transactions. This property holds even when doing cache simulation with Simics standard model, as it does not contain any data, only cache line status information. But as mentioned above it is possible to create such a cache.</li>
+<li>Currently DMA accesses are not seen by the <code>simple_cache</code>. </li>
+</ul>
+
+<div class="chain">
+<a href="caches.html">5 Cache Simulation</a>
+<a href="simulating-a-simple-cache.html">5.2 Simulating a Simple Cache</a>
+</div>

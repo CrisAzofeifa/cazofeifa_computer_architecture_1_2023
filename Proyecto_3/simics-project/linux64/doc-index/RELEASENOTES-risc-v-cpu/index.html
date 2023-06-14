@@ -1,0 +1,452 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>RISC-V CPU Release Notes</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>RISC-V CPU Release Notes</h1>
+
+    
+    
+    
+    
+<h2 class="jdocu"><a name="Introduction">1 Introduction</a></h2>
+<p>
+
+</p><p>
+This document identifies important information for the RISC-V CPU
+package for Simics 6. All users of this specific package
+should review this document carefully.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Minor-Changes-Since-Simics-6.0.0">2 Minor Changes Since Simics 6.0.0</a></h2>
+<p>
+
+The following is a list of changes since the initial Simics
+6.0.0 release.
+</p><p>
+</p><ul><li><p><a name="__rn_build_id_6218"></a>6.0.55 (build 6218)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Add new attributes to control processor core extensions.
+	  Misa extensions can be configured using <i>extensions.A</i>, 
+	  <i>extensions.C</i>, <i>extensions.D</i>, <i>extensions.F</i>, 
+	  <i>extensions.I</i>, <i>extensions.M</i>, <i>extensions.S</i> and
+	  <i>extensions.U</i>.
+	  The available attributes depend on what can be configured in each processor core class.
+<p>
+	  Other extensions can be configured using the following attributes
+	  <i>extensions.Zba</i>, <i>extensions.Zbb</i>, <i>extensions.Zbc</i>
+	  and <i>extensions.Zbs</i>.</p></li></ul></li><li><b>RISC-V Generic Package Changes</b><ul><li>Changed default max MMU mode supported
+    for the generic <b>riscv-rv64</b> core to Sv39.
+    Max supported mode can still be changed using the <i>mmu_mode_support</i>
+    attribute.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6215"></a>6.0.54 (build 6215)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Bitmap extensions no longer use B-extension in the <code>misa</code>
+	  register. Use Zba, Zbb, Zbc and Zbs fields in <i>isa_variants</i> attribute to control
+	  available instructions.</li><li> Fix bug when accessing CSR register <code>stvec</code>
+	  old value was incorrectly taken from CSR register <code>mtvec</code>.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6209"></a>6.0.pre53 (build 6209)
+</p><ul><li><b>RISC-V Interrupt Controllers</b><ul><li>Added support for stalling the CPU
+      when mtime is read. The number of cycles to stall can be set in the
+      attribute <i>mtime_read_cycles</i> which defaults to
+      0.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6205"></a>6.0.pre52 (build 6205)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li>Lower bits of writes to csr <code>stvec</code> are now
+      masked according to implemented interrupt features.</li><li> Accesses to user mode shadowed hardware performance counters
+	  are now checked against CSR <code>mcounteren</code> and <code>scounteren</code> if available.
+      </li><li> The number of available ASID bits is now set to 0 by default.
+	  It is still possible to change through the <i>ASIDLEN</i> attribute.
+      </li><li> A new attribute <i>trap_on_rdtime</i> has been added
+	  to control the behavior of pseudo instructions <code>rdtime</code> and <code>rdtimeh</code>.
+	  </li></ul></li><li><b>RISC-V Generic Package Changes</b><ul><li>Moved the Simple RISC-V target platform
+    to its own package 2053.</li></ul></li><li><b>RISC-V Interrupt Controllers</b><ul><li>Added interrupt source list to PLIC info command.
+    It is now simple to view the interrupt map of peripheral devices connected
+    to the PLIC.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6200"></a>6.0.pre51 (build 6200)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li>Added CLOCK_DISABLE signal port.
+	  (bug #18020152725).</li></ul></li><li><b>RISC-V Interrupt Controllers</b><ul><li>Added CLOCK_DISABLE signal ports to clint and plic.
+	  (bug #18020152725).</li><li>Added HRESET signal port to plic.
+      </li></ul></li></ul></li><li><p><a name="__rn_build_id_6190"></a>6.0.pre50 (build 6190)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Add attribute <i>mmu_mode_support</i>
+	  to control MMU mode support.</li><li> Fixed autohyper issue resulting in ASSERTION ERROR.
+	  The problem only occurs on cores without ext-C, compressed instructions.
+      </li></ul></li></ul></li><li><p><a name="__rn_build_id_6187"></a>6.0.pre49 (build 6187)
+</p><ul><li><b>RISC-V Generic Package Changes</b><ul><li> Packages 2050 and 2052 has swapped number
+    so that 2050 is generic RISC-V models and 2052 is SiFive models.
+  </li></ul></li></ul></li><li><p><a name="__rn_build_id_6185"></a>6.0.pre47 (build 6185)
+</p><ul><li><b>RISC-V Generic Package Changes</b><ul><li> New package with generic RISC-V cores
+    <b>riscv-rv64</b> and <b>riscv-rv32</b>.
+  </li></ul></li><li><b>RISC-V Interrupt Controllers</b><ul><li>Removed sifive clic e2x from public
+    distribution. It is now restricted to internal intel only.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6181"></a>6.0.pre46 (build 6181)
+</p><ul><li><b>CPU generic</b><ul><li>Temporarily rolled back minimum
+  host processor requirements to Nehalem, since some systems need more
+  time to migrate to match the official Haswell requirement
+  (bug #18024604079).</li></ul></li><li><b>Generic RISC-V CPU model Changes</b><ul><li> Corrected some floating point operations
+      involving NaNs (bug #22015869714).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6180"></a>6.0.pre45 (build 6180)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Support for Sv32 and supervisor mode for
+      RV32 has been added.</li><li> The generic RISC-V CPU class
+	  <b>riscv-rv32</b> now has support for supervisor mode and
+	  extension D.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6179"></a>6.0.pre44 (build 6179)
+</p><ul><li><b>CPU generic</b><ul><li>The instrumentation for System Management Mode
+      (<code>smm_instrumentation_subscribe</code> interface)
+      does not block VMP execution anymore, (bug #SIMICS-19625).
+      </li></ul></li></ul></li><li><p><a name="__rn_build_id_6178"></a>6.0.pre43 (build 6178)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Add support for Zbc and Zbs variants of the
+      Bit-Manipulation ISA-extensions.</li><li> Add missing hint instructions in the
+      RVC encoding space.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6163"></a>6.0.pre40 (build 6163)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Several issues with instrumentation are
+      fixed. All of the instrumentation api is now available to use with RISC-V
+      models.</li><li> Haps added for mode change, csr accesses and
+      return from exception.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6161"></a>6.0.pre39 (build 6161)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Some information log messages has been moved
+      to new levels. Illegal instructions is now on level 2 and IRQ level
+      changes are now on level 3.</li><li> All RV64 core models now include all 32
+      event counters. The event counters are hardwired to zero.
+      </li></ul></li></ul></li><li><p><a name="__rn_build_id_6160"></a>6.0.pre38 (build 6160)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Magic instruction is added. SRAI zero, zero,
+      imm will trigger Hap for magic instruction with <code>imm</code> as parameter.
+      </li></ul></li></ul></li><li><p><a name="__rn_build_id_6152"></a>6.0.pre37 (build 6152)
+</p><ul><li><b>CPU generic</b><ul><li>All CPUs have been updated to issue
+      transactions to the memory space connected to
+      the <i>physical_memory</i> attribute through
+      the <code>transaction</code> interface, instead of sending memory
+      transactions through the <code>memory_space</code>
+      interface.</li></ul></li><li><b>RISC-V Interrupt Controllers</b><ul><li>Correctly mask access
+      to <code>enabled</code> register in PLIC when the number of supported
+      interrupts is not a multiple of 32. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6150"></a>6.0.pre36 (build 6150)
+</p><ul><li><b>CPU generic</b><ul><li>Simics now stops with an error,
+      instead of a message, if the event queue overflows</li></ul></li><li><b>Generic RISC-V CPU model Changes</b><ul><li> Internal page caching is now ASID aware.
+      </li></ul></li></ul></li><li><p><a name="__rn_build_id_6145"></a>6.0.pre35 (build 6145)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Add support for Zba and Zbb variants of
+      the Bit-Manipulation ISA-extensions.
+      A new attribute <i>isa_variants</i> holds the supported variants
+      for a core.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6144"></a>6.0.pre34 (build 6144)
+</p><ul><li><b>CPU generic</b><ul><li>Parallel JIT compilation:
+      JIT blocks compiled, but later rejected for insertion,
+      previously leaked a resource. This has now been fixed.
+      If many blocks were rejected, the lack of resources
+      caused a reduced amount of blocks could be compiled, and
+      eventually no blocks where compiled at all.
+      (bug #14015758898).</li></ul></li><li><b>Generic RISC-V CPU model Changes</b><ul><li> Read only csrs <code>mvendorid</code>,
+      <code>marchid</code>, <code>mimpid</code> and <code>mhartid</code>
+      are no longer reset to zero when a core is reset.
+      (bug #18020627325)</li></ul></li></ul></li><li><p><a name="__rn_build_id_6143"></a>6.0.pre33 (build 6143)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Rename exception for misaligned store/AMO access
+	  to Exc_Store_AMO_Address_Misaligned.</li><li> New MMU implemented with TLB. Added
+      attribute <i>ASIDLEN</i> to control number of bits available for
+      asid.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6141"></a>6.0.pre31 (build 6141)
+</p><ul><li><b>CPU generic</b><ul><li>Instrumentation: fixed an assertion
+      error for processor models without JIT support. This previously
+      happened when calling the <b><i>instruction_query-&gt;logical_address()</i></b>
+      method (bug #1309492050).
+    </li></ul></li></ul></li><li><p><a name="__rn_build_id_6133"></a>6.0.pre30 (build 6133)
+</p><ul><li><b>RISC-V Interrupt Controllers</b><ul><li>Removed the obsolete internal
+      attribute <i>interrupts</i> from the class
+      <b>riscv-plic</b> which used to serve as backing storage
+      for the attribute <i>irq_dev</i>.</li><li>Removed use of
+      internal method <code>_log_miss</code>.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6131"></a>6.0.pre29 (build 6131)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Add two generic cores, riscv-rv32 that is
+      a RV32IMAFC core with support for user mode, and riscv-rv64 that is a
+      RV64GC core with support for user mode and supervisor mode.
+      Both these cores support physical memory protection and local platform
+      interrupts as an alternative to PLIC.</li><li> Add NIOS V/m core. It implements RV32IA
+	  together with local platform interrupts. The core class is called
+	  <b>riscv-nios-v-m</b>.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6130"></a>6.0.pre28 (build 6130)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Port interfaces has been redesigned as real
+	  port-objects. This affects MSIP, MTIP, MEIP, SEIP, HRESET, reset_vector,
+	  inject_halt_error and control_debug_mode.
+	  There are now objects for all of these ports. Ex:
+      <i>core_object.ports.MEIP.signal</i> can now be found at
+      <i>core_object.port.MEIP.iface.signal</i>.
+      Signals accessed through clint, plic or clic are not affected by this
+      change.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6129"></a>6.0.pre27 (build 6129)
+</p><ul><li><b>CPU generic</b><ul><li> Fixed a bug that prevented
+    VMP to be reengaged after all instrumentation callbacks have been removed
+      (bug #SIMICS-10259). </li></ul></li><li><b>Generic RISC-V CPU model Changes</b><ul><li> Outgoing signals has been added for halt
+      state and debug state. Halt state and debug state are only supported as
+      execution states. There is no error checking that can trigger halt state
+      and there is no debug module simulation.
+<p>
+      To inject a halt error call the set method in the
+      <code>uint64_state</code> interface on port inject_halt_error with the
+      value one. In halt mode the halt_from_tile signal is raised. The core will
+      stay in halt state until reset.
+</p><p>
+      Debug mode can be controlled through the <code>uint64_state</code> on
+      port control_debug_mode. Call the set method with the value 1 to enter
+      debug-mode and zero to exit debug-mode. During debug mode the core is
+      disabled and the debug_from_tile signal is raised. The core will stay in
+      Debug mode over a core reset.
+      (bug #18018543567)</p></li><li> Fix problem with checkpointing of MIP register
+	  when SEIP signal is raised.(bug #SIMINT-1450)</li><li> Add attribute <i>writable_misa</i> to
+      control which bits in the <code>misa</code> can be written to from
+      instructions. This does not affect changes to the attribute
+      <i>misa</i> from CLI and Python. Default for
+      <i>writable_misa</i> is <code>0</code>.</li><li> It is now possible to disable the compressed
+      instructions extension (C). A new read-only attribute <i>IALIGN</i>
+      holds the minimum alignment of instructions.</li><li> A new model targeting a generic
+      RISC-V RV32EMA is added. Main difference is that it only has 16 general
+      purpose registers.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6120"></a>6.0.pre26 (build 6120)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Virtual address instead of physical address
+      is written to <code>mtval</code> with unhandled unaligned access exceptions.
+      (bug #SIMINT-1422).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6117"></a>6.0.pre25 (build 6117)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Exceptions are now raised for unhandled
+      unaligned data accesses. A new attribute
+      <i>exception_for_unaligned_data_access</i> has been added to control
+      if the core handles unaligned accesses or not
+      (bug #SIMINT-1422).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6116"></a>6.0.pre24 (build 6116)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li>Fix PMP NAPOT range
+      calculation (bug #SIMINT-1423).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6114"></a>6.0.pre23 (build 6114)
+</p><ul><li><b>RISC-V Interrupt Controllers</b><ul><li>Fix segfault when writing bad values to
+      claim register(bug #SIMICS-17663).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6110"></a>6.0.pre22 (build 6110)
+</p><ul><li><b>Common</b><ul><li>Simics no longer comes with documentation
+  in PDF format.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6105"></a>6.0.pre21 (build 6105)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Added SiFive specific CSRs, <code>bpm</code>
+      with CSR address <code>0x7c0</code> and <code>csr_0x7c1</code> with CSR address
+      0x7c1. None of the features controlled by these CSR's are modeled.
+      These CSRs are available for SiFive models e31, e34, s54, u54 and u74.
+      (bug #18016853795)</li></ul></li></ul></li><li><p><a name="__rn_build_id_6103"></a>6.0.pre20 (build 6103)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Fixed register description for CSR registers
+      (bug #18016707847).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6098"></a>6.0.pre19 (build 6098)
+</p><ul><li><b>CPU generic</b><ul><li> Added support for obtaining the
+      CPU frequency from an object implementing the
+      <code>frequency</code> interface.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6096"></a>6.0.pre18 (build 6096)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Improved checkpoint stability.
+      </li><li> Added support for HRESET signal.
+      </li><li> Added SiFive specific instructions CEASE
+      and PAUSE. </li><li> Added outgoing signals for WFI and CEASE.
+      They can be setup using the attributes <i>wfi_signal_target</i>
+      and <i>cease_from_tile_signal_target</i>.</li><li> Added attributes
+      <i>reset_config_clear_gprs</i>, <i>reset_config_clear_fprs</i>
+      and <i>reset_config_reset_all_csrs</i> to allow control over how
+      muchof the core's state is cleared at reset. Interrupt state,
+      PMP configuration and MMU setup are always reset to startup state
+      at reset.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6093"></a>6.0.pre17 (build 6093)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Added support for SiFive E2x variant of
+      clic. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6092"></a>6.0.pre16 (build 6092)
+</p><ul><li><b>RISC-V Interrupt Controllers</b><ul><li>Added class <code>sifive-clic-e2x</code> which
+     models a SiFive* E2x Core-Local Interrupt Controller.</li><li>Fix bug in PLIC pseudo-attribute
+      <i>hart</i>.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6091"></a>6.0.pre15 (build 6091)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Added floating point registers to
+      <code>int-register</code> interface and
+      <code>describe_registers</code> interface. Float variables are still
+      not shown correctly on harts with the 64-bit floating point extension.
+      (bug #SIMINT-1367)</li></ul></li></ul></li><li><p><a name="__rn_build_id_6086"></a>6.0.pre14 (build 6086)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Improved assignments of <i>misa</i>
+      attribute. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6084"></a>6.0.pre13 (build 6084)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Fixed bug with masks used with updates to
+      csr's <code>mie</code> and <code>mip</code>. (bug #18014989371)
+      </li></ul></li></ul></li><li><p><a name="__rn_build_id_6082"></a>6.0.pre12 (build 6082)
+</p><ul><li><b>Common</b><ul><li>Documentation in HTML format has been added.
+  </li></ul></li></ul></li><li><p><a name="__rn_build_id_6081"></a>6.0.pre11 (build 6081)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Added some missing parts of the
+      <code>int_register</code> and <code>describe_registers</code>.
+      (bug #SIMINT-1347)</li></ul></li></ul></li><li><p><a name="__rn_build_id_6080"></a>6.0.pre10 (build 6080)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Fixed problem with accessing some of the
+      supervisor SCR's that are filtered machine SCR.
+      </li><li> Added way to customize core. Extensions can
+      be disabled by writing a new value to <code>misa</code>.
+      Number of PMP address registers can be set through
+      <i>number_of_pmp_address_registers</i>. To remove PMP support write
+      0 to <i>number_of_pmp_address_registers</i>.
+      </li><li> Corrected alignment of address used to flush
+      specific 4K region with sfence.vma instruction.
+      (bug #SIMINT-1329)</li><li> Added support for state-assertion.
+      </li></ul></li><li><b>RISC-V Interrupt Controllers</b><ul><li>Renamed classes riscv_plic to riscv-plic and
+    riscv_clint to riscv-clint (aliases added for the old
+    names).</li><li>Added attributes <i>max_interrupt</i>,
+    <i>max_priority</i> and <i>hart</i> to the
+    <b>riscv-plic</b>.</li></ul></li></ul></li><li><p><a name="__rn_build_id_6076"></a>6.0.pre9 (build 6076)
+</p><ul><li><b>Generic RISC-V CPU model Changes</b><ul><li> Released inside Intel.
+      </li></ul></li></ul></li><li><p><a name="__rn_build_id_6068"></a>6.0.pre8 (build 6068)
+</p><ul><li><b>CPU generic</b><ul><li> Reduce the dynamic memory foot-print of
+    automatic hypersim (even further).
+    (bug #1507506841) and
+    (bug #SIMICS-16237). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6047"></a>6.0.pre6 (build 6047)
+</p><ul><li><b>RISC-V Interrupt Controllers</b><ul><li> Initial release of CLINT
+    and PLIC </li></ul></li></ul></li><li><p><a name="__rn_build_id_6043"></a>6.0.pre5 (build 6043)
+</p><ul><li><b>CPU generic</b><ul><li> Correctly reduce the memory foot-print for
+    automatic hypersim
+    detection. The previous attempt was not working
+    (bug #1507506841). </li></ul></li><li><b>Common</b><ul><li> Fixed a problem on Windows where the
+    installer still asked for
+    the Model Builder key (bug #SIMINT-1236). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6037"></a>6.0.pre4 (build 6037)
+</p><ul><li><b>CPU generic</b><ul><li> Made messages from the
+    <b>register-break</b> command uniform
+    with messages from other breakpoints
+    (bug #SIMICS-15051). </li></ul></li></ul></li><li><p><a name="__rn_build_id_6032"></a>6.0.pre3 (build 6032)
+</p><ul><li><b>Common</b><ul><li> Support for Python 2.7 has been removed.
+    Simics now only embeds
+    a Python 3 interpreter. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6030"></a>6.0.pre2 (build 6030)
+</p><ul><li><b>Common</b><ul><li> The separation of source code into separate
+    packages has been
+    removed. Source code is now included directly into
+    each package. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6028"></a>6.0.pre1 (build 6028)
+</p><ul><li><b>CPU generic</b><ul><li> Avoid huge memory consumption when doing
+    automatic hypersim
+    detection for large complex blocks
+    (bug #1507506841). </li></ul></li><li><b>Common</b><ul><li> The installers for Linux and macOS have
+    been updated.
+    Support for fallback mode of decryption keys has
+    been removed. </li></ul></li></ul></li><li><p><a name="__rn_build_id_6025"></a>6.0.pre0 (build 6025)
+</p><ul><li><b>CPU generic</b><ul><li> Fixed an unusual problem where the
+    JIT-compilation engine was
+    disabled when failing to allocate memory with low addresses
+    (only noticed with Python3 and Windows host). Now low
+    address-allocation is not done anymore.
+    (bug #2208230108). </li><li> Remove assertion error checks from
+    (enable/disable)_connection_callbacks methods in
+    the <code>cpu_instrumentation_subscribe</code> interface.
+    This could happen if the user has not yet installed any callback
+    for a connection. Typically the implementation of enable/disable
+    in the connection_interface would call this methods. Now it it
+    is unnecessary to check whether any callbacks has been installed
+    before calling this method. This only affects instrumentation
+    usage available in package 1022. HSD-ES
+    (bug #1808121154). </li><li> A bug in <b>&lt;cpu&gt;.unbreak-register</b> command was fixed.
+    Previously, the command failed to delete a breakpoint in
+    some cases. </li><li> A new <b>&lt;cpu&gt;.break-register</b>
+    command has been
+    added, allowing the user to break both when general and control
+    registers are updated. See the command for details. Note that
+    this feature only exists for CPUs which supports the new CPU
+    instrumentation interfaces. The command is added in simics-base
+    rev 5.0.189. To use this new command, both simics-base and cpu
+    packages need to be updated. </li><li> Fixed a rare instrumentation bug where
+    instruction-after callbacks might be
+    missed in JIT generated code
+    (bug #SIMICS-12789). </li><li> Fixed a bug in measurement of how many
+    instructions that was
+    executed in JIT. Previously, exceptions triggered inside
+    the JIT block, caused too few instructions to be accounted
+    for. This lead to system-perfmeter presenting incorrect JIT% figures
+    (bug #SIMICS-9280). </li></ul></li><li><b>Generic RISC-V CPU model Changes</b><ul><li> First release of the RISC-V
+      CPU models. </li></ul></li></ul></li></ul>
+<p>
+
+
+
+
+
+
+
+
+
+
+
+
+</p><h2 class="jdocu"><a name="Changes-in-Simics-6">3 Changes in Simics 6</a></h2>
+<p>
+
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Limitations">4 Limitations</a></h2>
+<p>
+
+</p><p>
+This section briefly describes the known limitations of the
+RISC-V CPU package. Please refer to section
+<a class="reference" href="#Detailed-List-of-Limitations">5</a> for a more technical
+description.
+</p><p>
+For model oriented packages, additional limitations may be found in
+the model target guides.
+<br><br>
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Detailed-List-of-Limitations">5 Detailed List of Limitations</a></h2>
+<p>
+
+This section describes in detail the known limitations of the
+RISC-V CPU package. Please refer to
+section <a class="reference" href="#Limitations">4</a> for a more general description.
+</p><p>
+A register or field marked as <i>Not implemented</i> is present with
+read-write semantics but has no side effects on simulation. A register
+marked as <i>Not implemented (design limitation)</i> has the same
+semantics as a "Not implemented" register and there is no
+plan to extend the model with this functionality. A register with
+<i>Lack of documentation</i> has not been implemented because there is
+no available documentation describing its semantics.
+</p><p>
+<br><br>
+</p><p>
+
+
+
+</p><p>
+</p><h2 class="jdocu"><a name="Notices-amp-Disclaimers">6 Notices &amp; Disclaimers</a></h2>
+<p>
+
+</p><p>
+</p><div class="jdocu_copyright">
+<p>
+No product or component can be absolutely secure.
+</p><p>
+Intel technologies may require enabled hardware, software or
+service activation.
+</p><p>
+Your costs and results may vary.
+</p><p>
+Intel does not control or audit third-party data. You should
+consult other sources to evaluate accuracy.
+</p><p>
+You may not use or facilitate the use of this document in
+connection with any infringement or other legal analysis concerning
+Intel products described herein. You agree to grant Intel a
+non-exclusive, royalty-free license to any patent claim thereafter
+drafted which includes subject matter disclosed herein.
+</p><p>
+No license (express or implied, by estoppel or otherwise) to any
+intellectual property rights is granted by this document.
+</p><p>
+All product plans and roadmaps are subject to change without
+notice.
+</p><p>
+The products described may contain design defects or errors known
+as errata which may cause the product to deviate from published
+specifications. Current characterized errata are available on
+request.
+</p><p>
+Intel disclaims all express and implied warranties, including
+without limitation, the implied warranties of merchantability, fitness
+for a particular purpose, and non-infringement, as well as any
+warranty arising from course of performance, course of dealing, or
+usage in trade.
+</p><p>
+© 2010–2023 Intel Corporation. Intel, the Intel logo,
+and other Intel marks are trademarks of Intel Corporation or its
+subsidiaries. Other names and brands may be claimed as the property of
+others.
+</p><p>
+
+
+</p></div>
+<p>
+
+</p>
+<div class="chain">
+<span></span>
+</div>

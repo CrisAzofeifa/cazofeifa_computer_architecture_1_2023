@@ -1,0 +1,89 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_control_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_control.html">osa_control</a>
+<a href="__rm_interface_osa_machine_notification.html">osa_machine_notification</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_control_v2">osa_control_v2</a></h1>
+<p>
+
+<a name="osa_control_v2"></a><a name="osa_control_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_control_v2_interface_t2"></a>
+<p>
+   <a name="requestosa_control_v2-interface-method"></a> <b><i>request</i></b> is
+   used to register clients that are interested in using the tracker framework
+   and activates the tracker framework if it is not already activated. The
+   <i>initiator</i> argument is a string which should describe the client
+   that requests to activate the OS Awareness framework. The return format is
+   [bi|s]. If the first element is True, then the second element will contain
+   the request_id, which can be passed to the <b><i>release</i></b>
+   function to signal that the client no longer needs the OS Awareness
+   framework. If the first element is False, the second element will be an
+   error message.
+</p><p>
+   <a name="releaseosa_control_v2-interface-method"></a> <b><i>release</i></b>
+   removes a client that has previously requested to use the tracker
+   framework. The <i>id</i> argument is the returned value from
+   <b><i>request</i></b>. The tracker framework will be disabled when there are no
+   more registered users.
+</p><p>
+   <a name="clear_stateosa_control_v2-interface-method"></a>
+   <b><i>clear_state</i></b> can be called to clear the state in the tracker
+   framework that could exist after loading a checkpoint. This can only be
+   called while the tracker is disabled. The return value will be on the format
+   [bi|s]. If the first element is True then clearing state succeeded and the
+   second element can be ignored. If the first element is False then clearing
+   state failed and the second element will contain a string with a message of
+   what went wrong.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(osa_control_v2) {
+        attr_value_t (*request)(conf_object_t *NOTNULL obj,
+                                const char *initiator);
+        void (*release)(conf_object_t *NOTNULL obj, request_id_t id);
+        attr_value_t (*clear_state)(conf_object_t *NOTNULL obj);
+};
+
+#define OSA_CONTROL_V2_INTERFACE "osa_control_v2"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_control.html">osa_control</a>
+<a href="__rm_interface_osa_machine_notification.html">osa_machine_notification</a>
+</div>

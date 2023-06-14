@@ -1,0 +1,106 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>direct_memory_tags</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_direct_memory_lookup_v2.html">direct_memory_lookup_v2</a>
+<a href="__rm_interface_direct_memory_update.html">direct_memory_update</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_direct_memory_tags">direct_memory_tags</a></h1>
+<p>
+
+<a name="direct_memory_tags"></a><a name="direct_memory_tags_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="direct_memory_tags_t"></a>
+<p>
+   The <code>direct_memory_tags</code> interface is implemented by objects
+   that model RAM memory with support for auxiliary RAM bits.
+</p><p>
+   The <b><i>get_tags_data</i></b> method returns a 
+   <code>direct_memory_tags_t</code> value which contains 
+   a direct pointer to the memory used to store the tags bits.
+   The <i>handle</i> argument should be a handle for a region of memory
+   previously obtained from the <b><i>get_handle</i></b> method of
+   the <code>direct_memory</code> interface. 
+</p><p>
+   NOTE: The memory region specified indirectly by the <i>handle</i>
+   argument will be enlarged, if necessary, to have a natural 128-byte
+   alignment. This is done to ensure that the tags mapping is unambiguous.
+</p><p>
+   The returned data pointer points to tag bits for the region
+   specified by <i>handle</i>. The least significant bit of the
+   first byte corresponds to the first 16 bytes of the (aligned) region.
+</p><p>
+   The <i>len</i> field is set to the number of bytes holding
+   tags data that may be accessed and it equals the size of the
+   (aligned) region divided by 128.
+</p><p>
+   The augmented memory bits may be read or modified using the
+   returned pointer, provided that the user has corresponding
+   read or write permissions to the region specified by <i>handle</i>.
+</p><p>
+   The returned pointer will remain valid until the corresponding
+   permissions to the direct memory region are lost, which usually
+   happens through a call to the <b><i>update_permission</i></b> method of the
+   <code>direct_memory_update</code> interface. The returned pointer
+   must also be considered invalid when additional permissions
+   for the region are requested using the <b><i>request</i></b> method of
+   the <code>direct_memory</code> interface. This is necessary since
+   e.g. a write request could trigger copy-on-write behavior and
+   reallocation of the underlying storage.
+   </p><p>
+   
+   <a name="direct_memory_tags_t2"></a>
+   </p><pre class="jdocu_small">typedef struct {
+#ifndef PYWRAP
+        uint8 *data;
+#endif
+        unsigned len;
+} direct_memory_tags_t;</pre><p>
+</p><p>
+   
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(direct_memory_tags) {
+        direct_memory_tags_t (*get_tags_data)(conf_object_t *NOTNULL obj,
+                                              direct_memory_handle_t handle);
+};
+#define DIRECT_MEMORY_TAGS_INTERFACE "direct_memory_tags"        
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_direct_memory_lookup_v2.html">direct_memory_lookup_v2</a>
+<a href="__rm_interface_direct_memory_update.html">direct_memory_update</a>
+</div>

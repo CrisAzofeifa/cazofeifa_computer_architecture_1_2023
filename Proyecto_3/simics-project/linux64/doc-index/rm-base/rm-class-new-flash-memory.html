@@ -1,0 +1,400 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-flash-memory</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-namespace_root.html">namespace_root</a>
+<a href="rm-class-nfs_server.html">nfs_server</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="new-flash-memory"><a href="#new-flash-memory">new-flash-memory</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The generic-flash-memory class simulates different types of flash-memory depending on which attributes are set. Refer to [simics]/src/extensions/apps-python/flash_memory.py for a complete description of the features implemented and the flash chips that are pre-configured.
+<p>
+</p><dl><dt id="dt:limitations">Limitations</dt><dd><ul> <li>Many vendor-specific commands are not implemented.</li> <li>Erase suspend will complete the erase, and resume will then simply be ignored.</li></ul></dd></dl>
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, translator
+<h3 id="port-objects">
+<a href="#port-objects">Port Objects</a>
+</h3>
+<dl>
+<dt id="dt:port-reset">port.Reset</dt>
+<dd>
+<a href="rm-class-generic-flash-memory.html#Reset">generic-flash-memory.Reset</a>
+ – Reset the flash</dd>
+<dt id="dt:port-io">port.io</dt>
+<dd>
+<a href="rm-class-generic-flash-memory.html#io">generic-flash-memory.io</a>
+</dd>
+<dt id="dt:port-wren">port.wren</dt>
+<dd>
+<a href="rm-class-generic-flash-memory.html#wren">generic-flash-memory.wren</a>
+ – Enable/Disable Write to flash sector</dd>
+</dl>
+<h3 id="commands-for-interface-translator">
+<a href="#commands-for-interface-translator">Commands for interface translator</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-translator.memory-map.html">memory-map</a>
+ – print physical memory map</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:command_set">
+<i>command_set</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If no CFI structure is provided, this attribute should be set to indicate the command-set to use. Default is 0 (invalid command-set).</dd>
+<dt id="dt:cfi_query">
+<i>cfi_query</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|d|[i+]</code>
+<br>CFI query structure (if the device is CFI compatible). Default is none (device is not CFI compatible).</dd>
+<dt id="dt:device_id">
+<i>device_id</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i|[i+]</code>
+<br>Device ID/code as used in Intel identifier codes and AMD autoselect mode. Default is 0.</dd>
+<dt id="dt:manufacturer_id">
+<i>manufacturer_id</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Manufacturer ID/code as used in Intel identifier codes and AMD autoselect mode. Default is 0.</dd>
+<dt id="dt:write_buffer_size">
+<i>write_buffer_size</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Write buffer size *in bytes* for write buffer commands. Default is 32 (standard value for Intel Strataflash®).</dd>
+<dt id="dt:interleave">
+<i>interleave</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interleave (number of parallel flash memory chips).</dd>
+<dt id="dt:bus_width">
+<i>bus_width</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total width (in bits) of the data path connected to the flash device.</dd>
+<dt id="dt:max_chip_width">
+<i>max_chip_width</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Maximum data width (for example, specified as 16 for a x8/x16 capable device).</dd>
+<dt id="dt:unit_size">
+<i>unit_size</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i+]</code>
+<br>A list of block/sector sizes.</dd>
+<dt id="dt:ignore_timing">
+<i>ignore_timing</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Obsolete attribute since timing is not modeled. Kept for backward compatibility only.</dd>
+<dt id="dt:unit_erase_time">
+<i>unit_erase_time</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>Obsolete attribute since timing is not modeled. Kept for backward compatibility only.</dd>
+<dt id="dt:strict_cmd_set">
+<i>strict_cmd_set</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If set to 1, warnings that the command-set is misused become errors. Default is 0.</dd>
+<dt id="dt:storage_ram">
+<i>storage_ram</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>RAM object providing the backing store area.</dd>
+<dt id="dt:accept_smaller_reads">
+<i>accept_smaller_reads</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Obsolete, do not use.</dd>
+<dt id="dt:accept_smaller_writes">
+<i>accept_smaller_writes</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Obsolete, do not use.</dd>
+<dt id="dt:big_endian">
+<i>big_endian</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If 1, the flash device will behave as a big endian device. If 0, it will behave as a little endian device. Default is 0.</dd>
+<dt id="dt:intel_chip_erase">
+<i>intel_chip_erase</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, the flash device supports Intel chip erase command operations. If FALSE, Intel chip erase command is flagged as error. Default is FALSE.</dd>
+<dt id="dt:intel_program_verify">
+<i>intel_program_verify</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, the flash device supports Intel program verify command operations. If FALSE, Intel program verify command is flagged as error. Default is FALSE.</dd>
+<dt id="dt:intel_write_buffer">
+<i>intel_write_buffer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If 1, the flash device supports Intel write buffer operations. If 0, Intel write buffer operations are ignored. Default is 0.</dd>
+<dt id="dt:intel_protection_program">
+<i>intel_protection_program</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If 1, the flash device supports Intel protection program operations. If 0, Intel protection program operations are ignored. Default is 0.</dd>
+<dt id="dt:intel_configuration">
+<i>intel_configuration</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If 1, the flash device supports Intel configuration operations. If 0, Intel configuration operations are ignored. Default is 0.</dd>
+<dt id="dt:intel_lock">
+<i>intel_lock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If 2, the flash device supports advanced lock/unlock/lock down operations. If 1, the flash device supports simple lock/unlock all operations. If 0, lock operations are ignored. Default is 0.</dd>
+<dt id="dt:amd_ignore_cmd_address">
+<i>amd_ignore_cmd_address</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If 1, the address will be ignored when parsing AMD commands. Default is 0.</dd>
+<dt id="dt:lock_status">
+<i>lock_status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i*]*]</code>
+<br>Lock status for all units.</dd>
+<dt id="dt:hardware_lock_status">
+<i>hardware_lock_status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i*]*]</code>
+<br>Hardware lock status for all units (for Intel advanced lock system).</dd>
+<dt id="dt:unit_status">
+<i>unit_status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i*]*]</code>
+<br>Status for all units.</dd>
+<dt id="dt:ppb_bits">
+<i>ppb_bits</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i*]*]</code>
+<br>AMD non-volatile PPB section bits.</dd>
+<dt id="dt:dyb_bits">
+<i>dyb_bits</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i*]*]</code>
+<br>AMD volatile (dynamic) section protection bits.</dd>
+<dt id="dt:chip_mode">
+<i>chip_mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[s*]</code>
+<br>Current state for all chips.</dd>
+<dt id="dt:chip_write_buffer">
+<i>chip_write_buffer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[d|n*]</code>
+<br>Current write buffer for all chips.</dd>
+<dt id="dt:chip_write_buffer_start_address">
+<i>chip_write_buffer_start_address</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>Current write buffer start address for all chips.</dd>
+<dt id="dt:chip_write_buffer_current_count">
+<i>chip_write_buffer_current_count</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>Current write buffer count for all chips.</dd>
+<dt id="dt:amd_lock_register">
+<i>amd_lock_register</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>AMD lock register contents.</dd>
+<dt id="dt:amd_ppb_lock_bit">
+<i>amd_ppb_lock_bit</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>AMD PPB lock bit</dd>
+<dt id="dt:reset">
+<i>reset</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>Set to 1 in order to reset the device.</dd>
+<dt id="dt:busy_signal_targets">
+<i>busy_signal_targets</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[n|o|[os]*]</code>
+<br>(dst_object, dst_signal)* The destination device and signal name to connect the busy signal of the chips to. The destinations should implement the <tt>signal</tt> interface. Without a timing model, the device will never raise the busy signal.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.generic-flash-memory.html">generic-flash-memory</a>
+</section>
+<h2 id="Reset"><a href="#Reset">generic-flash-memory.Reset</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-2">
+<a href="#description-2">Description</a>
+</h3>
+Reset the flash
+<h3 id="interfaces-implemented-2">
+<a href="#interfaces-implemented-2">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<h2 id="io"><a href="#io">generic-flash-memory.io</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="interfaces-implemented-3">
+<a href="#interfaces-implemented-3">Interfaces Implemented</a>
+</h3>conf_object, log_object, io_memory
+</section>
+<h2 id="wren"><a href="#wren">generic-flash-memory.wren</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-3">
+<a href="#description-3">Description</a>
+</h3>
+Enable/Disable Write to flash sector
+<h3 id="interfaces-implemented-4">
+<a href="#interfaces-implemented-4">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<div class="chain">
+<a href="rm-class-namespace_root.html">namespace_root</a>
+<a href="rm-class-nfs_server.html">nfs_server</a>
+</div>

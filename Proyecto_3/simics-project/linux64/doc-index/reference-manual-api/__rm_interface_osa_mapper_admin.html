@@ -1,0 +1,113 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_mapper_admin</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_machine_query.html">osa_machine_query</a>
+<a href="__rm_interface_osa_mapper_control.html">osa_mapper_control</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_mapper_admin">osa_mapper_admin</a></h1>
+<p>
+
+<a name="osa_mapper_admin"></a><a name="osa_mapper_admin_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_mapper_admin_interface_t2"></a>
+<p>
+   <a name="tracker_updatedosa_mapper_admin-interface-method"></a>
+   <b><i>tracker_updated</i></b> is called from the node tree when entities are
+   added, modified or removed. To receive such an update, the mapper must
+   subscribe to tracker updates by calling <b><i>subscribe_tracker</i></b> in
+   the <code>osa_tracker_state_notification</code> interface. The
+   <i>initiator</i> argument is the processor object that initiated the
+   transaction. This can be nil if the transaction was not initiated by a
+   processor (for example, enable or disable tracker). The format of
+   <i>changeset</i> is a dictionary with tracker objects that were updated
+   as keys and other dictionaries as values.
+</p><p>
+   The dictionary that is set as the value for each tracker contains the
+   following keywords: <i>"added"</i>, <i>"modified"</i>,
+   <i>"removed"</i> and <i>"events"</i>.
+</p><p>
+   The value for <i>"added"</i> is a dictionary which contains the added
+   entity IDs as keys and the attributes of those entities as values.
+</p><p>
+   An example of <i>"added"</i> where two entities were added:
+   </p><pre class="jdocu_small">"added": {0x1000: {"name": "task1", "pid": 1},
+          0x2000: {"name": "task2", "pid": 2}}</pre><p>
+</p><p>
+   The value for <i>"modified"</i> is a dictionary which contains the
+   modified entity IDs as keys and a dictionary with the attribute name
+   as key and a list of old and new values for that attribute as its value.
+   Only the attributes that have changed will be included. If an attribute
+   is removed that will be set so that it changed to nil. If an attribute was
+   added that will be set so that it changed from nil.
+</p><p>
+   An example of <i>"modified"</i>, entity 0x1000 had <i>"name"</i>
+   changed and entity 0x2000 had <i>"tgid"</i> added and <i>"pid"</i>
+   removed:
+   </p><pre class="jdocu_small">"modified": {0x1000: {"name": ["task1", "new_name"]},
+             0x2000: {"tgid": [None, 4], "pid": [2, None]}}</pre><p>
+</p><p>
+   The value for <i>"removed"</i> is a list which contains the entity IDs
+   for the entities that have been removed.
+</p><p>
+   The value for <i>"events"</i> is a dictionary indexed by the entity
+   id. Each value is a list of lists, each inner list is an event. The first
+   element of the inner list is the event name and the second element is user
+   defined data associated with the event.
+</p><p>
+   An example of <i>"events"</i> where entity 0x1000 has two associated
+   events and entity 0x2000 has one associated event:
+   </p><pre class="jdocu_small">"events": {0x1000: [["event1", {}], ["event2", {}]],
+           0x2000: [["syscall", {'sys_num': 0x10, 'sys_name': "open"}]]}</pre><p>
+</p><p>
+   An example of how the complete <i>changeset</i> might look like:
+   </p><pre class="jdocu_small">{&lt;the tracker 'tracker1_obj'&gt;: {"added": {0x1000: {"name": "task"}},
+                                "modified": {0x2000: {"dummy": [1, 2]}},
+                                "removed": [0x3000, 0x3100]},}</pre><p>
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(osa_mapper_admin) {
+        void (*tracker_updated)(conf_object_t *NOTNULL obj,
+                                conf_object_t *initiator,
+                                attr_value_t changeset);
+};
+#define OSA_MAPPER_ADMIN_INTERFACE "osa_mapper_admin"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_machine_query.html">osa_machine_query</a>
+<a href="__rm_interface_osa_mapper_control.html">osa_mapper_control</a>
+</div>

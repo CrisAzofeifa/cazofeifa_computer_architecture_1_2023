@@ -1,0 +1,160 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>22 Modeling Ethernet Devices</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="modeling-network-communication.html">21 Modeling Network Communication</a>
+<a href="part-system-modeling.html">IV Creating Virtual Systems</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-common-hardware-components.html">III Modeling Common Hardware Components</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Modeling-Ethernet-Devices">22 Modeling Ethernet Devices</a></h1>
+<p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="Common-Ethernet-Interface">22.1 Common Ethernet Interface</a></h2>
+<p>
+
+</p><p>
+Modeling an Ethernet device is a relatively simple task: it must be able to
+send and receive Ethernet frames with one of the Ethernet link models that
+Simics provides. This is done through the <code>ethernet_common</code>
+interface:
+</p><p>
+
+   </p><pre class="jdocu_small">SIM_INTERFACE(ethernet_common) {
+        void (*frame)(conf_object_t *NOTNULL obj, const frags_t *frame,
+                      eth_frame_crc_status_t crc_status);
+};
+#define ETHERNET_COMMON_INTERFACE "ethernet_common"
+</pre><p>
+</p><p>
+   
+</p><p>
+For sending frames, an Ethernet device must provide an object attribute, i.e.,
+a DML <code>connect</code>, that expects an object implementing
+the <code>ethernet_common</code> interface. Sending a frame consists in
+calling the <b><i>frame()</i></b> function with the object, the frame (as
+a <code>frags_t</code>) and the CRC status for the frame.
+</p><p>
+For receiving frames, an Ethernet device must simply implement itself
+the <code>ethernet_common</code> interface. The link will call the device
+whenever it receives a frame, with the same information as above.
+</p><p>
+Ethernet frames sent via the <code>ethernet_common</code> interface should
+not contain any preamble nor SFD (Start Frame Delimiter), but they should
+contain all fields, CRC included. The frame is represented as
+a <code>frags_t</code>, which is described in section <a class="reference" href="frags_t.html">20</a>.
+</p><p>
+Because of the cost of computing valid CRC fields in a simulation environment,
+the simulated Ethernet links make it possible to optimize away the CRC and
+assume it is correct. Setting <i>crc_status</i>
+to <code>Eth_Frame_CRC_Match</code> indicates to the link that, regardless of
+the actual contents of the CRC field in <i>frame</i>, the CRC is
+considered matching the frame contents. In other words, whenever the frame is
+assumed to be correct in the simulation (on an Ethernet network without error),
+the CRC field of the frame can be left uncomputed,
+and <code>Eth_Frame_CRC_Match</code> passed to the link.
+</p><p>
+Setting <i>crc_status</i> to <code>Eth_Frame_CRC_Mismatch</code>
+indicates that, on contrary, the CRC field and the frame contents do not
+agree. The CRC field must then be filled with a non-matching CRC value, to make
+sure that any simulated hardware or software handling the problem will
+correctly obtain a mismatched CRC.
+</p><p>
+Finally, <i>crc_status</i> can be left
+as <code>Eth_Frame_CRC_Unknown</code>. This will force the link to compute
+the CRC and reset the status as either a match or a mismatch. This can be
+useful when receiving already prepared frames that have been computed by
+software or another device. Note that the link itself will never send to the
+device an <code>Eth_Frame_CRC_Unknown</code> status.
+</p><p>
+A complete description of the <code>ethernet_common</code> interface is
+provided in the <em>API Reference Manual</em>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Ethernet-Component">22.2 Ethernet Component</a></h2>
+<p>
+
+</p><p>
+Ethernet devices are connected to their link via a temporary endpoint
+object. This endpoint object provides the device with a private object to talk
+to, as well as a well-defined endpoint id on the link. This is used by the link
+when routing or switching packets. The simplest way to connect a device to a
+link is to use components, which will abstract away the endpoint object
+creation and configuration.
+</p><p>
+To connect to a link, a component encapsulating an Ethernet device should
+provide a connector of type <code>ethernet-link</code>. The connector information
+to pass along is a list containing either the device object itself, as
+[<em>device object</em>], or the device object and its port as a pair, if the
+device provides a port connection, as [[<em>device
+object</em>, <em>port</em>]]. This will provide sufficient information for the
+endpoint to talk with the device. In return, the endpoint will provide itself
+as object for connection to the link, as [<em>endpoint object</em>].
+</p><p>
+A complete type description of the <code>ethernet-link</code> connector is in
+section <a class="reference" href="creating-configurations.html#cmp-connector-types">24.10</a>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Ethernet-Transceiver">22.3 Ethernet Transceiver</a></h2>
+<p>
+
+</p><p>
+It is also possible—even recommended—to base a new
+Ethernet device model on an existing transceiver. The transceiver will
+connect to the link and handle the <code>ethernet_common</code>
+interface. In return, it will provide standard features for a
+transceiver model, such as bandwidth control and MII registers, and
+expose the <code>ieee_802_3_phy_v3</code> to the device for
+communication. The device itself must implement
+the <code>ieee_802_3_mac_v3</code> interface for receiving
+information from the transceiver.
+</p><p>
+The DEC21140A device model is built with a separate transceiver and
+provides a good example of this approach. It is described in section
+<a class="reference" href="example-models.html#examples-DEC21140A-dml">10.3</a>.
+</p><p>
+In most cases, the <b>generic_eth_phy</b> device can be used
+as an Ethernet transceiver.  The device is described in section
+<a class="reference" href="example-models.html#examples-generic_eth_phy">10.4</a>.
+</p><p>
+It may in some cases be desirable not to expose the transceiver as a
+separate device, and instead let the Ethernet device communicate
+directly with a link endpoint.  The <b>generic_eth_phy</b>
+device is actually a good example of how to communicate with a link
+endpoint, even though it is not a standalone Ethernet device.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="modeling-network-communication.html">21 Modeling Network Communication</a>
+<a href="part-system-modeling.html">IV Creating Virtual Systems</a>
+</div>

@@ -1,0 +1,205 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.3 Help System</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="tab-completion.html">4.2 Tab Completion</a>
+<a href="search-path.html">4.4 Simics's Search Path</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="cli.html">4 The Command Line Interface</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Help-System">4.3 Help System</a></h1>
+<p>
+
+<a name="help-system"></a><a name="command-line-interfacehelp-system"></a>
+</p><p>
+The most useful Simics commands are grouped into categories. To list these
+categories, just type <b>help</b> at the command prompt. The list should
+look like this:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>help</b>
+[...]
+To get you started, here is a list of command categories:
+  Breakpoints                  Files and Directories        Python                    
+  CD-ROM                       GUI                          Real Network              
+  Changing Simulated State     Haps                         Registers                 
+  Command Line Interface       Help                         Reverse Execution         
+  Components                   Inspecting Simulated State   Simics Search Path        
+  Configuration                Logging                      Speed                     
+  Debugging                    Memory                       Symbolic Debugging        
+  Disk                         Modules                      Test                      
+  Distributed Simulation       Networking                   Tracing                   
+  Ethernet                     Output                                                 
+  Execution                    Profiling                                              
+[...]
+</pre><p>
+</p><p>
+Note that since Simics's configuration can change between sessions and
+even dynamically through the loading of modules, the list of commands
+and command categories may look different.
+</p><p>
+Type <b>help <i>category</i></b> for a list of commands, e.g., <b>help
+"Changing Simulated State"</b> will list all commands belonging to that
+category:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>help "Changing Simulated State"</b>
+Commands available in the "Changing Simulated State" category:
+
+  &lt;image&gt;.set                  set bytes in image to specified value
+  &lt;int_register&gt;.write-reg     write to register
+  &lt;memory-space&gt;.load-binary   load binary (executable) file into memory
+  &lt;memory-space&gt;.load-file     load file into memory
+  &lt;memory-space&gt;.set           set physical address to specified value without side-effects
+  &lt;memory_space&gt;.write         set physical address to specified value
+  &lt;port_space&gt;.set             set physical address to specified value without side-effects
+  &lt;port_space&gt;.write           set physical address to specified value
+  &lt;processor_info&gt;.disable     switch processor off
+  &lt;processor_info&gt;.enable      switch processor on
+  &lt;processor_info&gt;.load-binary load binary (executable) file into memory
+  &lt;processor_info&gt;.set-pc      set the program counter
+
+  load-binary                  load binary (executable) file into memory
+  load-file                    load file into memory
+  pdisable                     switch processor off
+  penable                      switch processor on
+  set                          set physical address to specified value
+  set-pc                       set the current processor's program counter
+  write-reg                    write to register
+</pre><p>
+</p><p>
+Type <b>help <i>command</i></b> to print the documentation for a
+specific command.
+</p><p>
+The <b>help</b> command can do much more than printing command
+documentation: it gives you access to nearly all Simics documentation about
+commands, classes, modules, interfaces, API types and functions, haps and more
+according to the configuration loaded in the simulator. All documentation is
+also available in the reference manuals.
+</p><p>
+Here are some more examples of usage of the <b>help</b> command:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>help print-time</b>
+[... print-time command documentation ...]
+
+simics&gt; <b>help board.mb.cpu0.core[0][0].disassemble</b>
+[... &lt;processor_info&gt;.disassemble command documentation ...]
+
+simics&gt; <b>help &lt;processor_info&gt;.disassemble</b>
+[... &lt;processor_info&gt;.disassemble command documentation ...]
+
+simics&gt; <b>help board.mb.cpu0.core[0][0]</b>
+[... &lt;x86QSP1&gt; class documentation ...]
+
+simics&gt; <b>help x86QSP1</b>
+[... &lt;x86QSP1&gt; class documentation ...]
+
+simics&gt; <b>help processor_info</b>
+[... &lt;processor_info&gt; interface documentation ...]
+
+simics&gt; <b>help board.mb.cpu0.core[0][0].freq_mhz</b>
+[... &lt;x86QSP1&gt;.freq_mhz attribute documentation ...]
+
+simics&gt; <b>help x86QSP1.freq_mhz</b>
+[... &lt;x86QSP1&gt;.freq_mhz attribute documentation ...]
+
+simics&gt; <b>help Core_Exception</b>
+[... Core_Exception hap documentation ...]
+
+simics&gt; <b>help SIM_get_mem_op_type</b>
+[... SIM_get_mem_op_type() function declaration ...]
+
+simics&gt; <b>help x86-intel64-turbo</b>
+[... x86-intel64-turbo module documentation ...]
+</pre><p>
+</p><p>
+When a name matches several help topics (for example, a command and an
+attribute, or a module and a class), <b>help</b> will print out the first
+topic coming in this order: command categories, commands, classes, interfaces,
+haps, modules, attributes, API functions and symbols. It will also inform you
+at the end of the documentation output that other topics were matching your
+search:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module NS16450_c</b>
+simics&gt; <b>help NS16450_c</b>
+[... NS16450_c class documentation ...]
+     
+Note that your request also matched other topics:
+  module:NS16450_c
+</pre><p>
+</p><p>
+If you type <b>help module:NS16450_c</b>, the module documentation will
+be printed instead:
+</p><p>
+</p><pre class="jdocu_small"> 
+simics&gt; <b>help module:NS16450_c</b>
+[... NS16450_c module documentation ...]
+</pre><p>
+</p><p>
+You can use specifiers like <code>module:</code> or <code>class:</code> at any time. It
+will also allow the <b>help</b> command to provide you with better
+tab-completion, since only items in the selected category of documentation will
+be proposed. The following specifiers are available: <code>object:</code>,
+<code>class:</code>, <code>command:</code>, <code>attribute:</code>, <code>interface:</code>,
+<code>module:</code>, <code>api:</code>, <code>hap:</code> and <code>category:</code>.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+By default, <b>help</b> does not propose tab-completion for modules
+and API symbols, because they tend not to be the most searched for and would
+clutter the tab-completion propositions unnecessarily. You can get
+tab-completion for those by specifying <code>module:</code> or <code>api:</code> in
+front of what you are looking for.</div>The <b><a name="help-search">help-search</a></b> command can search for keywords in the
+documentation provided by <b>help</b>. Type <b>help-search
+<i>keyword</i></b> to get a list of all documentation topics
+matching this keyword. Its alias is <b>apropos</b>, named after
+the UNIX command-line utility which has similar behavior.
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>help-search step</b>
+The text 'step' appears in the documentation
+for the following items:
+ 
+Command        &lt;cycle&gt;.cycle-break
+Command        &lt;cycle&gt;.cycle-break-absolute
+Command        &lt;cycle&gt;.print-time
+Command        &lt;cycle&gt;.wait-for-cycle
+Command        &lt;cycle&gt;.wait-for-time
+[...]
+Interface      step_info
+
+simics&gt; <b>apropos step</b>
+[... yields the same output ...]
+</pre><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="tab-completion.html">4.2 Tab Completion</a>
+<a href="search-path.html">4.4 Simics's Search Path</a>
+</div>

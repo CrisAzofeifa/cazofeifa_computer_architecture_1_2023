@@ -1,0 +1,174 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.5 Raw Code Coverage Format</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="code-coverage-commands.html">4.4 Commands</a>
+<a href="explanation-of-source-coverage.html">4.6 Explanation of source coverage</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="code-coverage.html">4 Code Coverage</a>
+&nbsp;/&nbsp;</div>
+<h1 id="raw-code-coverage-format">4.5 <a href="#raw-code-coverage-format">Raw Code Coverage Format</a></h1>
+<p>The idea about the raw format files is to allow any user to create code coverage reports or do some automated analysis on them, in those cases that the HTML report is not the best match.</p>
+<p>The raw format file can contain all information required to create a coverage report, such as the HTML report. It may also contain partial data, such as information about available memory mappings and executed instructions. Which can later be extended in a way that it contains all required information.</p>
+<p>The raw format contains Python data structures that has been marshalled using the Python pickle library. In the following description a Python-like syntax is used. Where citation around a word means that the string has that exact name. Without any quotations, that item gives a short description of what it represents and a longer description will follow further down. Items within &lt;&gt; notation describes the type of the element. An asterisk at the end of a list means zero or more of the previous elements, while a plus at the end means one or more of the previous element.</p>
+<pre><code>
+      {"version"&lt;string&gt;: version&lt;int&gt;,
+       "features"&lt;string&gt;: {feature&lt;string&gt;: feature_specific_field&lt;unknown&gt;},
+       "errors"&lt;string&gt;: [[code&lt;int&gt;, message&lt;string&gt;]*],
+       "unknown"&lt;string&gt;: {address&lt;int&gt;: count&lt;int&gt;},
+       "mappings"&lt;string&gt;: [
+           {"map"&lt;string&gt;: {"symbol_file"&lt;string&gt;: file&lt;string&gt;,
+                             "address"&lt;string&gt;: address&lt;int&gt;, "size"&lt;string&gt;: size&lt;int&gt;,
+                             "file_offset"&lt;string&gt;: offset&lt;int&gt;,
+                             "file_size"&lt;string&gt;: size&lt;int&gt;,
+                             "relocation"&lt;string&gt;: relocation&lt;int&gt;,
+                             "section"&lt;string&gt;: section&lt;string&gt;},
+            "covered"&lt;string&gt;: {address&lt;int&gt;: count&lt;int&gt;},
+            "branches"&lt;string&gt;: {address&lt;int&gt;: {"taken"&lt;string&gt;: count&lt;int&gt;,
+                                                 "not_taken"&lt;string&gt;: count&lt;int&gt;}}
+            "file_table"&lt;string&gt;: {file_id&lt;string&gt;: source_file&lt;string&gt;},
+            "functions"&lt;string&gt;: {address&lt;int&gt;: {"name"&lt;string&gt;: name&lt;string&gt;,
+                                                  "size"&lt;string&gt;: size&lt;int&gt;}},
+            "data_labels"&lt;string&gt;: {address&lt;int&gt;: {"name"&lt;string&gt;: name&lt;string&gt;}},
+            "info"&lt;string&gt;: [{"address"&lt;string&gt;: address&lt;int&gt;, "op": [op&lt;int&gt;+],
+                               "mnemonic"&lt;string&gt;: mnemonic&lt;string&gt;,
+                               "format"&lt;string&gt;: format&lt;string&gt;,
+                               "executable_lines"&lt;string&gt;: {line&lt;int&gt;: True&lt;bool&gt;},
+                               "file_id"&lt;string&gt;: file_id&lt;string&gt;}*],
+            "src_info"&lt;string&gt;: {"file_id"&lt;string&gt;:
+                                 {line&lt;int&gt;: [[start_address&lt;int&gt;, end_address&lt;int&gt;]*]}},
+            "removed_data"&lt;string&gt;: {address&lt;int&gt;: {"size"&lt;string&gt;: size&lt;int&gt;}},
+            "cpu_classes": [cpu_class&lt;string&gt;*],
+            "disassembly_class": cpu_class&lt;string&gt;,
+            "errors"&lt;string&gt;: [[code&lt;int&gt;, message&lt;string&gt;]*]}*],
+       "cpu_classes": [cpu_class&lt;string&gt;*],
+       "unknown_mappings"&lt;string&gt;: [
+           {"map"&lt;string&gt;: {"address"&lt;string&gt;: address&lt;int&gt;,
+                            "size"&lt;string&gt;: size&lt;int&gt;},
+            "covered"&lt;string&gt;: {address&lt;int&gt;: count&lt;int&gt;}}]*}
+    
+</code></pre>
+<ul>
+<li>
+<p><code>version</code> - The version of the code coverage raw format that was used to create the raw file. This version number is only increased when there is a change to the format that is either extending the previous version or breaking it (should be very rare).</p>
+</li>
+<li>
+<p><code>features</code> - A dictionary that maps a <code>feature</code> to its <code>feature_specific_field</code> information. Available features are: </p>
+<ul>
+<li><code>access_count</code> - This feature is used to count how many times an instruction has been executed. The <code>feature_specific_field</code> is a bool, where <code>True</code> indicates that the feature is enabled. </li>
+<li><code>branch_coverage</code> - This feature is used to collect branch coverage on instruction level. The <code>feature_specific_field</code> is a bool, where <code>True</code> indicates that the feature is enabled. </li>
+</ul>
+</li>
+<li>
+<p><code>errors</code> - A list with zero or more entries, containing an error code and the matching error message for any errors that are not bound to a specific mapping.</p>
+</li>
+<li>
+<p><code>unknown</code> - A dictionary which in turn maps executed addresses without any known mappings, at the execution time, to a count of how many times it was executed. In order for the execution counter to be valid, the <code>access_count</code> feature must be enabled. Otherwise, it will always be one for such executed instruction.</p>
+</li>
+<li>
+<p><code>mappings</code> - This entry contains a list of each mapping that was known to the code coverage system while collecting data. The following entries are available</p>
+<ul>
+<li>
+<p><code>map</code> - A key containing a unique description of the mapping. Which has the following identifiers:</p>
+<ul>
+<li><code>symbol_file</code> - Gives the location of the module backing up the mapping.</li>
+<li><code>address</code> - Specifies the loaded address of the mapping.</li>
+<li><code>size</code> - Specifies the size of the mapping.</li>
+<li><code>file_offset</code> - Specifies the offset into the file where this segment or section can be found.</li>
+<li><code>file_size</code> - Specifies the size of the entry in the file.</li>
+<li><code>relocation</code> - Specifies the relocation address.</li>
+<li><code>section</code> - Optional field, included when only one section of a symbol file is used as mapping.</li>
+</ul>
+</li>
+<li>
+<p><code>covered</code> - This field works just like <code>unknown</code> field, except that this is per module and contains all executed addresses that were mapped to this mapping while executing.</p>
+</li>
+<li>
+<p><code>branches</code> - Keeps track of all branch instructions and how many times a branch at the given <code>address</code> was taken or not taken. Only available if <code>branch_coverage</code> feature was enabled when collecting data.</p>
+</li>
+<li>
+<p><code>file_table</code> - Maps <code>file_id</code> to a full source file path.</p>
+</li>
+<li>
+<p><code>functions</code> - Contains a function's start <code>address</code>, <code>name</code>, and <code>size</code>.</p>
+</li>
+<li>
+<p><code>data_labels</code> - Non-executable symbols in executable sections, containing the symbol's <code>address</code> and <code>name</code>.</p>
+</li>
+<li>
+<p><code>info</code> - Contains a list, with one element per disassembled address, where each entry has the following members: </p>
+<ul>
+<li><code>address</code> - The address of the disassembled instruction</li>
+<li><code>op</code> - A list of opcodes making up the instruction</li>
+<li><code>mnemonic</code> - The mnemonic of the instruction</li>
+<li><code>format</code> - Instruction format, currently only present for ARM. Tells if the instruction has <code>arm</code>, <code>thumb</code> or <code>aarch64</code> format.</li>
+<li><code>file_id</code> - A reference to the source file in the <code>file_table</code>. Only exists if source info has been added and exists for this <code>address</code></li>
+<li><code>executable_lines</code> - Describes which source lines the instruction belongs to. Only exists if source info has been added and exists for this <code>address</code></li>
+</ul>
+</li>
+</ul>
+<p>The raw data contains either this field or <code>src_info</code>, never both. </p>
+<ul>
+<li><code>src_info</code> - A dictionary with information about executable lines and addresses for source files. Each item in the dictionary is source file where the key corresponds to a <code>file_id</code> in <code>file_table</code>.</li>
+</ul>
+<p>The value of that item is another dictionary where there is an executable source <code>line</code> of that file and the value is a list of address ranges that correspond to that source line. Each address range in this list is a list of two elements, <code>start_address</code> and <code>end_address</code>, where the latter is inclusive.</p>
+<p>A source line can be considered executed if any of the addresses inside its address ranges is found in the <code>covered</code> entry.</p>
+<p>The raw data contains either this field or <code>info</code>, never both. </p>
+<ul>
+<li><code>cpu_classes</code> - Optional field. Keeps track of which cpu classes have been run in this specific mapping when collecting coverage.</li>
+<li><code>disassembly_class</code> - Optional field. Specifies which processor class has been used to disassemble this mapping. This field is only present when disassembling was done using a processor interface, not when a disassemble module was used.</li>
+<li><code>removed_data</code> - Address ranges in the mapping that have been removed because they were considered to be data. The dictionary has the start address as key the <code>size</code> of the removed region as value. The name of the removed symbol should be retrievable from <code>data_labels</code> using the start address.</li>
+<li><code>errors</code> - A per module error list, containing an error <code>code</code> and a <code>message</code>.</li>
+</ul>
+</li>
+<li>
+<p><code>cpu_classes</code> - Optional field. Keeps track of which cpu classes have been used to collect coverage with.</p>
+</li>
+<li>
+<p><code>unknown_mappings</code> - This entry contains a list of each mapping that was known to the code coverage system while collecting data, but did not have a symbol file name. The following entries are available</p>
+<ul>
+<li>
+<p><code>map</code> - A key containing the location of the unknown mapping. It has the following identifiers:</p>
+<ul>
+<li><code>address</code> - Specifies the loaded address of the mapping.</li>
+<li><code>size</code> - Specifies the size of the mapping.</li>
+</ul>
+</li>
+<li>
+<p><code>covered</code> - This field works just like <code>unknown</code> field, except that this is per module and contains all executed addresses that were mapped to this mapping while executing.</p>
+</li>
+</ul>
+</li>
+</ul>
+
+<div class="chain">
+<a href="code-coverage-commands.html">4.4 Commands</a>
+<a href="explanation-of-source-coverage.html">4.6 Explanation of source coverage</a>
+</div>

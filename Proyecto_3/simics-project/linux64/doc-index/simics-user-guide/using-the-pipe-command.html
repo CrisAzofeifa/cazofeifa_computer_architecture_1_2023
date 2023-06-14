@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.5 Using the Pipe Command</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="search-path.html">4.4 Simics's Search Path</a>
+<a href="running-shell-commands.html">4.6 Running Shell Commands</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="cli.html">4 The Command Line Interface</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Using-the-Pipe-Command">4.5 Using the Pipe Command</a></h1>
+<p>The <b><a name="pipe">pipe</a></b> command lets you send the output of
+   a Simics command to a shell command through a pipe:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>pipe "help" "grep Tracing"</b>
+</pre><p>
+</p><p>
+   This will run <b>help</b> (which lists all Simics commands categories)
+   and send its output to the standard input of the <b>grep trace</b>
+   process. <b>grep</b> will discard all lines not containing "Tracing" and
+   forward the rest to its standard output, which will be printed on the Simics
+   terminal.
+</p><p>
+   The <b>pipe</b> command can be used to send all the output of a command
+   to a file:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>pipe "stepi 1000" "cat &gt; trace.txt"</b>
+</pre><p>
+</p><p>
+   Or you can use it to view information using the shell command
+   <b>more</b>:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>pipe "print-processor-registers -all" more</b>
+</pre><p>
+</p><p>
+   Note that you have to enclose both the Simics command (the first argument)
+   and the shell command (the second argument) in double quotes if they contain
+   whitespace or other non-letter characters.
+      </p><p>
+   </p>
+<div class="chain">
+<a href="search-path.html">4.4 Simics's Search Path</a>
+<a href="running-shell-commands.html">4.6 Running Shell Commands</a>
+</div>

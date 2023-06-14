@@ -1,0 +1,87 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>disassemble</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_debug_symbol_file.html">debug_symbol_file</a>
+<a href="__rm_interface_follower_agent.html">follower_agent</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_disassemble">disassemble</a></h1>
+<p>
+
+<a name="disassemble"></a><a name="disassemble_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The disassemble interface can be used to disassemble code from a
+   buffer in memory. It is typically used to disassemble code for the
+   host architecture independent of the target architecture
+   implemented in a particular version of Simics.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(disassemble) {
+        /* Set up new block to disassemble */
+        void (*init)(conf_object_t *obj, uint8 *buff,
+                     int buff_len, uint64 address);
+        /* Disassemble the next instruction */
+        disasm_instr_t (*next)(conf_object_t *obj);
+};
+
+#define DISASSEMBLE_INTERFACE "disassemble"
+</pre><p>
+</p><p>
+
+   <b><i>init()</i></b> is used to initialize a new disassemble
+   session. You should provide a buffer in <code>buff</code>, the buffer
+   length in bytes in <code>buff_len</code> and the base address for this
+   chunk in <code>address</code>. The <code>address</code> parameter is used
+   to calculate program counter relative offsets (for branches and
+   other program counter relative constructs).
+</p><p>
+   <a name="disasm_instr_t"></a>
+    
+</p><pre class="jdocu_small">typedef struct {
+        int start;          /* Where the instructions starts in the buffer */
+        int length;         /* Length of instruction, or -1 if incomplete */
+        char *string;       /* Disassembly string (allocated) */
+} disasm_instr_t;</pre><p>
+
+</p><p>
+   <b><i>next()</i></b> returns a structure with the next disassembled
+   instruction. Repeated use of <b><i>next()</i></b> will disassemble
+   additional instructions.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_debug_symbol_file.html">debug_symbol_file</a>
+<a href="__rm_interface_follower_agent.html">follower_agent</a>
+</div>

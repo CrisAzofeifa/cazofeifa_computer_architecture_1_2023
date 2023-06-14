@@ -1,0 +1,86 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.6.1 From a Network Dump</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="injecting-and-modifying-network-traffic.html">3.6 Injecting and Modifying Network Traffic</a>
+<a href="from-an-ethernet-probe.html">3.6.2 From an Ethernet Probe</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="simicsnet.html">3 Network Simulation</a>
+&nbsp;/&nbsp;
+<a href="injecting-and-modifying-network-traffic.html">3.6 Injecting and Modifying Network Traffic</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="From-a-Network-Dump">3.6.1 From a Network Dump</a></h1>
+<p>
+
+</p><p>
+Simics comes with a <b>eth-injector</b> class that takes
+a <em>pcap</em> format file and injects the packets described in the file into
+the simulated network.
+</p><p>
+Each packet in a pcap file has a time stamp that usually is the
+absolute time when the packet was recorded. The
+<b>eth-injector</b> starts injecting the first packet of the pcap file
+directly after the <b>start</b> command has been run. The consecutive
+packets are injected after an amount of virtual time that is equal to the
+difference in time stamp between that packet and the first packet of the pcap
+file. If the packet cannot be injected because of bandwidth limitations, it is
+ignored. Incoming packets are ignored as well.
+</p><p>
+It is common that the CRC of Ethernet frames are not recorded in pcap files. In
+Simics, the whole Ethernet frame has to be present for a correct simulation
+result. The <i>-no-crc</i> option of
+the <b>&lt;eth-injector&gt;.start</b> command can be used to tell
+the injector that the
+pcap file contains no CRC. The injector then adds a CRC to each frame that
+Simics will handle as if it was correct. By not using the <i>-no-crc</i>
+option the frames in the pcap file are injected as they were recorded, without
+any modification.
+</p><p>
+The <b>eth-injector</b> can be connected to an Ethernet link like any
+other Ethernet device. It can also be connected directly to another Ethernet
+device without the need to have a link between the device and
+the <b>eth-injector</b>.
+</p><p>
+The following example creates a new <b>eth-injector</b>,
+connects it to an already existing <b>ethernet_switch</b> of
+name <b>ethernet_switch0</b> and starts packet playback from a
+file named <em>test.pcap</em>:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>load-module eth-injector-comp</b>
+simics&gt; <b>new-eth-injector-comp name = inj0</b>
+Created instantiated 'eth_injector_comp' component 'inj0'
+simics&gt; <b>connect ethernet_switch0.link inj0.link</b>
+simics&gt; <b>inj0.injector.start file = test.pcap</b>
+</pre><p>
+</p>
+<div class="chain">
+<a href="injecting-and-modifying-network-traffic.html">3.6 Injecting and Modifying Network Traffic</a>
+<a href="from-an-ethernet-probe.html">3.6.2 From an Ethernet Probe</a>
+</div>

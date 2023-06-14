@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>disassemble</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-disable-vmp-feature.html">disable-vmp-feature</a>
+<a href="rm-cmd-disassemble-settings.html">disassemble-settings</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="disassemble"></a>
+<a name="da"></a>
+<a name="processor_info.disassemble"></a>
+<a name="processor_info.da"></a>
+<h1 id="disassemble"><a href="#disassemble">disassemble</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>disassemble</b> [<i>cpu-name</i>] [<i>address</i>] [<i>count</i>] [<i>bytes</i>] <br><b>&lt;processor_info&gt;.disassemble</b> [<i>address</i>] [<i>count</i>] [<i>bytes</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Disassembles <i>count</i> instructions or <i>bytes</i> octets starting at <i>address</i> for processor <i>cpu-name</i>. If the processor is not given the current frontend processor will be used. You may also select a processor, e.g. <code>cpu0.disassemble</code>.
+<p>
+On some architectures, <i>address</i> must be word aligned. A physical address is given by prefixing the address with <tt>p:</tt> (e.g., <tt>p:0xf000</tt>). With no prefix, a virtual address will be assumed. If the address is omitted the current program counter will be used. <i>count</i> defaults to 1 instruction.
+</p><p>
+Global disassembly settings, such as whether to print the raw opcodes, can be set by the <code>disassemble-settings</code> command.
+</p><p>
+If supported by the processor, this command will also include various profiling statistics for the address of each instruction. One column is printed for each selected profiler. See the <tt>aprof-views</tt> command in each processor for more information.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-x.html">x</a>, 
+<a href="rm-cmd-disassemble-settings.html">disassemble-settings</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-disable-vmp-feature.html">disable-vmp-feature</a>
+<a href="rm-cmd-disassemble-settings.html">disassemble-settings</a>
+</div>

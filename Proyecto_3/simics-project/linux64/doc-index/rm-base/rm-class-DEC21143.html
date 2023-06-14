@@ -1,0 +1,363 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>DEC21143</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-DEC21140A-dml.html">DEC21140A-dml</a>
+<a href="rm-class-DS12887.html">DS12887</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="DEC21143"><a href="#DEC21143">DEC21143</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The DEC21143 is a fast Ethernet LAN controller providing a direct interface to the PCI bus. The DEC21143 interfaces to the host processor by using on-chip control and status registers (CSRs) and a shared host memory area, set up mainly during initialization.
+<p>
+Current limitations: </p><ul><li>Inquiry accesses are not supported.</li><li>Only aligned, 32-bits CSR accesses are supported.</li><li>Large incoming frames will not be split over several buffers, but dropped.</li><li>Mac address filtering is not supported.</li></ul>
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, pci_device, io_memory, ethernet_common
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-DEC21143.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-DEC21143.print-pci-config-regs.html">print-pci-config-regs</a>
+ – <i>deprecated</i> print PCI configuration registers</li>
+<li>
+<a href="rm-cmd-DEC21143.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:pci_bus">
+<i>pci_bus</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The PCI bus this device is connected to, implementing the <tt>pci-bus</tt> interface.</dd>
+<dt id="dt:interrupt_pin">
+<i>interrupt_pin</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iiii]</code>
+<br>State of the interrupt pin.</dd>
+<dt id="dt:config_registers">
+<i>config_registers</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{64}]</code>
+<br>The 64 PCI configuration registers, each 32 bits in size.</dd>
+<dt id="dt:write_masks">
+<i>write_masks</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ii]*]</code>
+<br>Write masks for all registered configuration registers. The format for each entry is (offset, mask).</dd>
+<dt id="dt:mappings">
+<i>mappings</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i{5:8}]|[iiiiiiiio|nii]*]</code>
+<br>List of all current PCI IO and memory mappings.</dd>
+<dt id="dt:expansion_rom">
+<i>expansion_rom</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|[oii]</code>
+<br>ROM object, map size, and map function number for the Expansion ROM.</dd>
+<dt id="dt:config_register_info">
+<i>config_register_info</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[isii]*]</code>
+<br>Register info for all registered configuration registers. The format for each entry is (offset, name, size, write-mask).</dd>
+<dt id="dt:csrs">
+<i>csrs</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>Control and status registers.</dd>
+<dt id="dt:pending_irq">
+<i>pending_irq</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Whether and interrupt is pending or not.</dd>
+<dt id="dt:current_tx_descriptor">
+<i>current_tx_descriptor</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Transmit address.</dd>
+<dt id="dt:current_rx_descriptor">
+<i>current_rx_descriptor</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Receive address.</dd>
+<dt id="dt:srom_address_width">
+<i>srom_address_width</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of address bits when communicating with the serial ROM.</dd>
+<dt id="dt:send_delay">
+<i>send_delay</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>f</code>
+<br>How often (in seconds) that packets are send out to the network.</dd>
+<dt id="dt:ether">
+<i>ether</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s</code>
+<br>Ethernet (MAC) address.</dd>
+<dt id="dt:srom_info">
+<i>srom_info</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[diiiiii]</code>
+<br>State information of the serial ROM.</dd>
+<dt id="dt:cfdd">
+<i>cfdd</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>CFDD.</dd>
+<dt id="dt:link">
+<i>link</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The Ethernet link that the network device is connected to.</dd>
+<dt id="dt:mac_address">
+<i>mac_address</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|[i{6}]|n</code>
+<br>Ethernet (MAC) address of the network interface.</dd>
+<dt id="dt:model_crc">
+<i>model_crc</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Deprecated. Do not use.</dd>
+<dt id="dt:network">
+<i>network</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Obsolete attribute. Use link instead.</dd>
+<dt id="dt:inject_packet">
+<i>inject_packet</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>d</code>
+<br>Attribute used to send a packet to the network device. Writing this attribute at any time injects a new packet into the device (without involving the network simulation). Injecting a packet copies the packet data, allowing the caller to reuse or dispose of the buffer used for creating the packet, after the attribute is written.</dd>
+<dt id="dt:add_crc_on_inject">
+<i>add_crc_on_inject</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Frames injected using the 'inject_packet' will get a correctly calculated CRC added at the end when this attribute is set to 1 (default). When set to 0, the user has to supply a CRC field with the injected frame. Note that you must always provide room for the CRC field, even when this attribute is set to 1.</dd>
+<dt id="dt:bmcr">
+<i>bmcr</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Internal Register</dd>
+<dt id="dt:bmsr">
+<i>bmsr</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Internal Register</dd>
+<dt id="dt:anar">
+<i>anar</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Internal Register</dd>
+<dt id="dt:anlpar">
+<i>anlpar</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Internal Register</dd>
+<dt id="dt:aner">
+<i>aner</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Internal Register</dd>
+<dt id="dt:mode">
+<i>mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Internal Register</dd>
+<dt id="dt:poll_reg">
+<i>poll_reg</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Internal Register</dd>
+<dt id="dt:cs_conf">
+<i>cs_conf</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Internal Register</dd>
+<dt id="dt:tp10_conf">
+<i>tp10_conf</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Internal Register</dd>
+<dt id="dt:serial_num_cycles">
+<i>serial_num_cycles</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>MII Management Interface serial communication state.</dd>
+<dt id="dt:serial_data_in">
+<i>serial_data_in</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>MII Management Interface serial communication state.</dd>
+<dt id="dt:serial_data_out">
+<i>serial_data_out</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>MII Management Interface serial communication state.</dd>
+<dt id="dt:serial_clock">
+<i>serial_clock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>MII Management Interface serial communication state.</dd>
+<dt id="dt:serial_port_status">
+<i>serial_port_status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>MII Management Interface serial communication state.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.DEC21143.html">DEC21143</a>
+</section>
+<div class="chain">
+<a href="rm-class-DEC21140A-dml.html">DEC21140A-dml</a>
+<a href="rm-class-DS12887.html">DS12887</a>
+</div>

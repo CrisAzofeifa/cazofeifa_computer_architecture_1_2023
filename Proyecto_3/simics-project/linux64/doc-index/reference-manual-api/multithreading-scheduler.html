@@ -1,0 +1,98 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.9 Simics Scheduler</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="multithreading-threads.html">2.8 Foreign Threads</a>
+<a href="device-api.html">3 Device API</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rmapi-threading-model.html">2 Threading Model</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="multithreading-scheduler">2.9 Simics Scheduler</a></h1>
+<p>
+
+The Simics scheduler is responsible for ensuring that models implementing the
+<code>execute</code> interface are scheduled. It is also
+responsible for mapping actual threads to the simulation workload and
+for keeping distinct CPUs synchronized in virtual time.
+</p><p>
+</p><h2 class="jdocu"><a name="multithreading-scheduler-basic">2.9.1 Basic Operation</a></h2>
+<p>
+
+The Simics Scheduler compiles a list of simulation tasks that can be
+run in parallel. Each task consists of a thread domain with
+one or more models implementing the <code>execute</code> interface.
+</p><p>
+The number of tasks that can be simulated in parallel depends on the
+thread domain partitioning, which in turn depends on the selected
+simulation mode. The simulation mode is configurable with the
+<b>set-threading-mode</b> command.
+</p><p>
+The available tasks are mapped to a set of execution threads
+managed by the scheduler. The number of threads used
+depends on the host hardware and any limit imposed by the user.
+The latter is settable with the <b>set-thread-limit</b> command.
+</p><p>
+A particular simulation task is usually simulated from a specific
+simulation thread in order to maximize cache locality. However, a task can be
+migrated to another thread when this is needed for load-balancing reasons.
+Thus, a model should not make any assumptions about the thread it is simulated
+from.
+
+</p><h2 class="jdocu"><a name="multithreading-scheduler-sync">2.9.2 Virtual Time Synchronization</a></h2>
+<p>
+
+</p><p>
+The scheduler ensures that all CPUs (and clocks) are kept synchronized
+in virtual time. More specifically, the virtual time for
+a pair of CPUs are not allowed to differ more than a fixed amount.
+A simulation task becomes blocked when it is about to break this
+invariant.
+</p><p>
+If a single thread domain contains more than one object implementing the
+<code>execute</code> interface, then the scheduler switches between
+them in a round-robin fashion. Each executor is simulated until the
+virtual time has advanced one <em>time-quantum</em>. The interval
+is settable with the <b>set-time-quantum</b> command.
+</p><p>
+The time difference for CPUs in the same cell, but in distinct
+thread domains, is not allowed to exceed the <em>max-time-span</em>
+limit. The limit is settable with the <b>set-max-time-span</b>
+command and is usually of the same order of magnitude as the time quantum.
+</p><p>
+The time difference between CPUs in distinct cells is kept below
+the <em>min-latency</em> limit. This limit is set with
+the <b>set-min-latency</b> command. The min-latency is often allowed
+to be a bit higher than the other limits.
+
+</p>
+<div class="chain">
+<a href="multithreading-threads.html">2.8 Foreign Threads</a>
+<a href="device-api.html">3 Device API</a>
+</div>

@@ -1,0 +1,605 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>12.1 Breakpoints</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="debug.html">12 Low-level Debugging with Simics</a>
+<a href="symbolic-debugging.html">12.2 Symbolic Debugging</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="low-level-debugging.html">III Low-Level Debugging</a>
+&nbsp;/&nbsp;
+<a href="debug.html">12 Low-level Debugging with Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="breakpoints">12.1 Breakpoints</a></h1>
+<p>
+<a name="breakpoint"></a>
+</p><p>
+Simics can set breakpoints on code and data. Unlike most debuggers,
+Simics breakpoints are not limited by what the hardware can support;
+for example, there is no restriction on the number of read/write
+breakpoints (also known as watchpoints).
+</p><p>
+In Simics you can set breakpoints on, for instance:
+</p><p>
+</p><ul>
+
+    <li>memory accesses: any range and combination of
+    read/write/execute</li>
+
+    <li>time (number of cycles or instructions executed)</li>
+
+    <li>instruction types, such as control register accesses</li>
+
+    <li>device accesses</li>
+
+    <li>output in the console</li>
+
+    <li>log output</li>
+</ul>
+<p>
+Simics is fully deterministic, and breakpoints in Simics are fully
+non-intrusive. This makes it possible to narrow down the location of
+difficult bugs by re-running the <em>exact</em> same run as many times
+as you need.
+</p><p>
+But there is often no need to run the bug multiple times, since
+breakpoints work even when the simulation is running backwards. For
+example, to find the code responsible for writing garbage to a
+pointer, run forward until your program crashes, then set a write
+breakpoint on the (now clobbered) pointer, and run backward; the
+breakpoint will trigger at the point in time when the pointer was last
+written to.
+</p><p>
+Simics has a <em>breakpoint manager</em> which stores information
+about all breakpoints, of all types. It has commands for listing
+breakpoints, enabling, deleting and other common
+operations. Breakpoint creation is specific to the different types,
+and is described in the following chapters. The breakpoint manager is
+the object <code>bp</code>.
+</p><p>
+In general, breakpoint creation commands return an ID, which can be
+used to later delete the breakpoint, or obtain information about it. The most important generic commands are
+</p><p>
+</p><ul>
+    <li><b>bp.list</b>, which lists all breakpoints.</li>
+
+    <li><b>bp.delete</b>, which removes
+    a particular breakpoint.</li>
+
+    <li><b>bp.show</b>, which shows more information about
+    a particular breakpoint.</li>
+</ul> 
+<p>
+</p><h2 class="jdocu"><a name="membreak">12.1.1 Memory Breakpoints</a></h2>
+<p>
+
+<a name="breakpointmemory"></a>
+</p><p>
+
+
+A memory breakpoint stops the simulation whenever a memory location in
+a specified address interval is accessed. The address interval can be
+of arbitrary length and the type of memory access can be specified
+as any combination of <i>read</i>, <i>write</i>, and <i>execute</i>.
+</p><p>
+The easiest way to set memory breakpoints is to use the
+<b>bp.memory.break</b> command:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>output-radix 16</b>
+simics&gt; <b>bp.memory.break p:0x10000</b>
+Breakpoint 1 set on address 0x10000 in 'board.mb.cpu0.mem[0][0]' with <img alt="Line break" src="nextline.png">
+access mode 'x'
+</pre><p>
+</p><p>
+Prefix the address with <code>p:</code> or <code>v:</code> to get a physical
+or virtual address, respectively. As you can see in the following
+example, Simics defaults to interpreting a breakpoint address as
+virtual if you do not specify otherwise:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>board.mb.cpu0.core[0][0]-&gt;current_virtual_context = "board.cell_context"</b>
+simics&gt; <b>bp.memory.break v:0x4711</b>
+[board.mb.cpu0.core[0][0] info] VMP not engaged. Reason: virtual breakpoint.
+Breakpoint 2 set on address 0x4711 in 'board.cell_context' with <img alt="Line break" src="nextline.png">
+access mode 'x'
+simics&gt; <b>bp.memory.break p:0x4711</b>
+Breakpoint 3 set on address 0x4711 in 'board.mb.cpu0.mem[0][0]' with <img alt="Line break" src="nextline.png">
+access mode 'x'
+simics&gt; <b>bp.memory.break 0x4711</b>
+Breakpoint 4 set on address 0x4711 in 'board.cell_context' with <img alt="Line break" src="nextline.png">
+access mode 'x'
+Note: overlaps with breakpoint 2
+</pre><p>
+</p><p>
+This way of setting breakpoints will attach them to the memory space
+(physical address) or context (virtual address) connected to the
+current processor. If this is not exactly what you want, read on.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The current processor can be set with the <b>pselect</b>
+command:
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>pselect board.mb.cpu0.core[0][0]</b>
+</pre><p>
+</p><p>
+Without an argument, <b>pselect</b> prints the current processor:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>pselect</b>
+"board.mb.cpu0.core[0][0]"
+</pre><p>
+</p><p>
+</p></div>Physical memory breakpoints are handled by memory space objects. A
+memory space represents a physical address space; they sit between the
+processor and the actual hardware devices, for example RAM, that can be
+accessed with read and write instructions. Breakpoints are created
+with the memory space's <b>break</b> command:
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>board.mb.cpu0.core[0][0]-&gt;physical_memory</b>
+"board.mb.cpu0.mem[0][0]"
+simics&gt; <b>board.mb.cpu0.mem[0][0].bp-break-memory address = 0x10000 length = 16 -w</b>
+Breakpoint 1 set on address 0x10000 in 'board.mb.cpu0.mem[0][0]', <img alt="Line break" src="nextline.png">
+length 16 with access mode 'w'
+</pre><p>
+</p><p>
+Virtual memory breakpoints are handled by context objects. A context
+represents a virtual address space; you can learn more about them in
+chapter <a class="reference" href="symbolic-debugging.html">12.2</a>. Essentially, they provide a level of
+indirection between processors and virtual memory breakpoints; a
+processor has a current context, which in turn has virtual
+breakpoints:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>board.mb.cpu0.core[0][0]-&gt;current_context</b>
+"board.cell_context"
+simics&gt; <b>board.cell_context.bp-break-memory 0x1ff00</b>
+Breakpoint 2 set on address 0x1ff00 in 'board.cell_context' with <img alt="Line break" src="nextline.png">
+access mode 'x'
+</pre><p>
+</p><p>
+Note that by default, all simulated processors in a cell
+share one context (<b>cell<em>n</em>_context</b>). If you want a virtual
+breakpoint to apply only to a subset of the processors, create a new
+context just for them:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>new-context foo</b>
+simics&gt; <b>board.mb.cpu0.core[0][0].set-context foo</b>
+simics&gt; <b>foo.bp-break-memory 0xffffffffbfc008b8</b>
+</pre><p>
+</p><p>
+When creating execution breakpoints, it is possible to specify filter
+rules to only trigger when instructions match certain syntactical
+criteria. This feature is mainly useful with breakpoints covering
+large areas of memory. The available parameters to the break command
+are <i>prefix</i> (to match the start of an
+instruction), <i>substr</i> (to match a particular substring),
+and <i>pattern</i> (to match the bit pattern of the
+instruction).
+</p><p>
+For example, to stop when an instruction with the name <code>add</code> is
+executed in a memory range from 0x10000 to 0x12000, use the following
+commands:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>bp.memory.break 0x10000 0x2000 -x prefix = "add"</b>
+Breakpoint 1 set on address 0x10000 in 'board.cell_context', <img alt="Line break" src="nextline.png">
+length 8192 with access mode 'x'
+</pre><p>
+</p><p>
+Simics will now break on the first add instruction encountered (or the
+last, if the simulation runs backward). For more information, see the
+<em>Simics Reference Manual</em> or use the <b>help bp.memory.break</b>
+command.
+</p><p>
+</p><h2 class="jdocu"><a name="Temporal-Breakpoints">12.1.2 Temporal Breakpoints</a></h2>
+<p>
+
+<a name="breakpointtemporal"></a>
+</p><p>
+Unlike an ordinary debugger, Simics can handle temporal breakpoints,
+i.e., breakpoints in time. Since the concept of time is based on steps
+and cycles, to be precise a temporal breakpoint refers to a specific
+step or a cycle count as measured by a given processor, but one can also specify breakpoints in seconds of virtual time:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>bp.cycle.break cpu0 100</b>
+simics&gt; <b>bp.step.break cpu0 100</b>
+simics&gt; <b>bp.time.break cpu0 1</b>
+</pre><p>
+</p><p>
+In the example above, the breakpoints are specified relative to the
+current time. It is also possible to give temporal breakpoints in
+absolute time (where 0 refers to the time when the original
+configuration was set up in Simics). 
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>board.mb.cpu0.core[0][0].bp-break-cycle -absolute 100</b>
+simics&gt; <b>board.mb.cpu0.core[0][0].bp-break-step -absolute 100</b>
+simics&gt; <b>board.mb.cpu0.core[0][0].bp-break-time -absolute 1</b>
+</pre><p>
+</p><p>
+The commands <b>bp.cycle.break</b>, <b>bp.step.break</b>
+and <b>bp.time.break</b>, can be given without providing the CPU
+ad argument. This will set a breakpoint for the current processor.
+</p><p>
+</p><h2 class="jdocu"><a name="control-reg-break">12.1.3 Control Register Breakpoints</a></h2>
+<p>
+
+<a name="breakpointcontrol-register-access"></a>
+</p><p>
+A control register breakpoint triggers when the selected control register is
+accessed. The access type is determined by the break command parameters used.
+</p><p>
+To break on a control register <i>write</i>, use <b>bp.control_register.break</b>.
+For example, to break when the register <code>cr0</code> is written to:
+</p><pre class="jdocu_small">simics&gt; <b>bp.control_register.break name = cr0</b>
+</pre><p>
+</p><p>
+To break on a control register <i>read</i>, use <b>bp.control_register.break -r</b>.
+For example, to break when the register <code>cr0</code> is read:
+</p><pre class="jdocu_small">simics&gt; <b>bp.control_register.break name = cr0 -r</b>
+</pre><p>
+</p><p>
+A list of available control registers can be obtained by
+tab-completing the <i>name</i> argument. See the documentation
+for <b>bp.control_register.break</b> in the <em>Simics
+Reference Manual</em> for more information.
+</p><h2 class="jdocu"><a name="io-break">12.1.4 I/O Breakpoints</a></h2>
+<p>
+
+<a name="breakpointIO"></a>
+</p><p>
+An I/O breakpoint is always connected to a specific device object. The
+breakpoint is triggered when that device is accessed. The breakpoint
+is set using the <b>break-io</b> command, which take the device
+name as a parameter. For example, to break on accesses to a device
+called <b>dma</b>, we would use the following syntax:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>break-io device = board.mb.sb.dma</b>
+</pre><p>
+</p><p>
+A list of devices can be obtained by tab-completing the
+<i>device</i> argument.
+</p><p>
+</p><h2 class="jdocu"><a name="text-output-breakpoints">12.1.5 Text Output Breakpoints</a></h2>
+<p>
+
+<a name="breakpointtext-output"></a>
+</p><p>
+Many simulated machines have a <em><a name="textconsole">text
+console</a></em>—a terminal window hooked up to a serial port
+on the target machine, so that you can type commands to the target and
+get replies. In particular x86 systems also often have
+a <em><a name="graphics-console">graphics console</a></em>—a window acting as a
+monitor to the machine, hooked up to a graphics device on the target
+machine, and usually also to keyboard and mouse devices.
+</p><p>
+A text console can halt the simulation on the occurrence of a given
+character sequence in the output; this is called a <em><a name="textoutput-breakpoint">text
+output breakpoint</a></em>. This is also possible on a graphics
+console when it is running in text mode graphics, assuming that the
+graphics device implements this.
+</p><p>
+To set a breakpoint, use the
+command <b>bp.console_string.break <em>console</em> <em>string</em></b>,
+which returns a breakpoint id. Simics will stop when <em>string</em>
+appears in the output.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+To find out if a specific simulated machine uses these consoles,
+look for objects of class <b>textcon</b>
+or <b>graphcon</b> in the list provided
+by <b>list-objects</b> once the configuration is loaded.</div><h2 class="jdocu"><a name="graphics-breakpoints">12.1.6 Graphics Breakpoints</a></h2>
+<p><a name="graphics-breakpoints2"></a>
+<a name="breakpointgraphics"></a>
+</p><p>
+If your target machine has a graphical display (as opposed to just a
+text console), you can set graphical breakpoints on it. A graphical
+breakpoint is a (small or large) bitmap image and a pair of
+coordinates; when the pixels at those coordinates on the simulated
+display exactly match the breakpoint image, the simulation will halt.
+</p><p>
+Graphics breakpoints can be created from the console GUI window, but
+the following commands can also be used to save and set breakpoints for a
+graphics console:
+</p><p>
+</p><dl><dt id="dt:gfx-console-save-break-xy-filename-left-top-right-bottom"><b><b><em>gfx-console</em>.save-break-xy <em>filename</em> <em>left</em>
+<em>top</em> <em>right</em> <em>bottom</em></b></b></dt><dd>Let the user specify a rectangular area inside the graphics
+  console using the top left and bottom right corners coordinates. The
+  selected area will be saved as a binary graphical breakpoint file.</dd><dt id="dt:gfx-console-break-gfx-filename"><b><b><em>gfx-console</em>.break-gfx <em>filename</em></b></b></dt><dd>Activate a previously saved breakpoint and return a breakpoint
+  id. When a graphical breakpoint is reached, Simics halts execution
+  and returns to the command prompt.</dd><dt id="dt:gfx-console-unbreak-gfx-id"><b><b><em>gfx-console</em>.unbreak-gfx <em>id</em></b></b></dt><dd>Delete the breakpoint associated with <em>id</em>.</dd></dl><p></p><h2 class="jdocu"><a name="Magic-Breakpoints">12.1.7 Magic Instructions and Magic Breakpoints</a></h2>
+<p><a name="breakpointmagic-breakpoint"></a>
+<a name="magic-breakpoint"></a>
+<a name="magic-instruction"></a>
+</p><p>
+For each simulated processor architecture, a special nop
+(no-operation) instruction has been chosen to be a <b>magic
+instruction</b> for the simulator. When the simulator executes such an
+instruction, it triggers a <code>Core_Magic_Instruction</code> hap and
+calls all the callbacks functions registered on this hap.
+</p><p>
+Since magic instructions are just no-operation instructions on
+hardware, you can run code containing magic instructions on hardware
+as well as in the simulator, but you will not get any of the extra
+behavior Simics implements for the magic instruction.
+</p><p>
+If the architecture makes it possible, a magic instruction parameter is encoded
+as an immediate value in the magic instruction. When the hap is triggered, this
+value is passed as an argument to the hap handlers. This provides the user with
+a rudimentary way of passing information from the simulated system to
+the hap handler.
+</p><p>
+Magic instructions have to be compiled into the binary files that are
+executed on the target. The file <code>magic-instruction.h</code> in
+<code>[simics]/src/include/simics/</code> defines a
+<code>MAGIC(</code><i>n</i><code>)</code> macro that can be used to place
+magic instructions in your program, where <i>n</i> is the
+magic instruction parameter value to encode. Some parameter values are
+reserved for internal use; see figure <a class="reference" href="#magic_instruction_figure">28</a>
+and figure <a class="reference" href="#reserved_magic_numbers_figure">29</a>.
+</p><p>
+A complete list of magic instructions and the range of the parameter
+<i>n</i> is provided in figure <a class="reference" href="#magic_instruction_figure">28</a>.
+</p><p>
+<a name="magic-instructionpassing-arguments"></a>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The declaration of the macros are heavily dependent on the
+compiler used, so you may get an error message telling you that your
+compiler is not supported. In that case, you will have to write the
+inline assembly corresponding to the magic instruction you want to
+use. The <a name="GCC">GCC</a><a name="C-compilerGCC"></a> compiler should
+always be supported.</div><div class="note">
+<b>Note:</b>
+The magic instruction macro is directly usable only from C and
+C++; if your program is written in another language, you will have to
+call a C function that uses the macro, or an assembly function that
+includes the magic instruction. (If the language supports inline
+assembly, that can of course be used as well.) For example, in Java it
+would be necessary to use the JNI interface. Check your compiler and
+language documentation for details.</div><div class="note">
+<b>Note:</b>
+(x86 specific) The magic instruction parameter is passed
+through the <code>eax</code> register on x86. The <code>eax</code> register
+contents is preserved when the magic instruction is emulated by Simics.
+Thus the <code>eax</code> register value can be used just after the magic
+instruction to extract the magic parameter value from it. The values of the
+<code>ebx</code>, <code>ecx</code> and <code>edx</code> registers are undefined
+after the magic instruction. Earlier Simics versions had
+different definitions of magic instructions for x86. The
+old magic instruction can still be used on x86 if
+the processor is not running in VMP mode.</div><div class="note">
+<b>Note:</b>
+(PowerPC specific) There are two different encodings of the
+<code>rlwimi</code>-based magic instruction on PowerPC. On 64-bit models,
+the new encoding is always used; it is also the one generated by
+the <code>MAGIC()</code> and <code>MAGIC_BREAKPOINT()</code> macros
+in <code>magic-instruction.h</code> when compiling 64-bit PowerPC
+code. The old encoding is used on 32-bit models when
+the <i>old_rlwimi_magic</i> attribute is set. When compiling
+32-bit PowerPC code, the macros will use the old encoding unless the
+preprocessor symbol <code>SIM_NEW_RLWIMI_MAGIC</code> has been defined.
+<p>
+It is recommended that the new encoding is used with 32-bit PowerPC
+models and code by setting the appropriate attribute and preprocessor
+symbol.</p></div><div class="figure" id="magic_instruction_figure">
+
+  <div style="text-align: center">
+  <table>
+
+    <tbody><tr>
+       <td class="jdocu_border"><b>Target</b></td>
+       <td class="jdocu_border"><b>Magic instruction</b></td>
+       <td class="jdocu_border"><b>Conditions on <i>n</i></b></td>
+       <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">ARC</td><td class="jdocu_border"><code>mov 0, n</code></td>
+                   <td class="jdocu_border">1 ≤ n &lt; 64</td>
+                   <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">ARM</td><td class="jdocu_border"><code>orr rn, rn, rn</code></td>
+                   <td class="jdocu_border">0 ≤ n ≤ 14</td>
+                   <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">ARMv8</td><td class="jdocu_border"><code>orr xn, xn, xn</code></td>
+                   <td class="jdocu_border">0 ≤ n ≤ 31</td>
+                   <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">ARM Thumb-2</td><td class="jdocu_border"><code>orr.w rn, rn, rn</code></td>
+                           <td class="jdocu_border">0 ≤ n ≤ 12</td>
+                           <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">H8300</td><td class="jdocu_border"><code>brn n</code></td>
+                     <td class="jdocu_border">−128 ≤ n ≤ 127</td>
+                     <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">M680x0</td><td class="jdocu_border"><code>dbt dx,y</code></td>
+                    <td class="jdocu_border">0 ≤ n &lt; 0x3ffff</td>
+                    <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"></td>
+      <td class="jdocu_border">x=n[17:15], y=n[14:0] * 2</td>
+      <td class="jdocu_border"></td>
+      <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">MIPS</td><td class="jdocu_border"><code>li %zero, n</code></td>
+                    <td class="jdocu_border">0 ≤ n &lt; 0x10000</td>
+                    <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">Nios II</td><td class="jdocu_border"><code>or rN, rN, rN,</code></td>
+                    <td class="jdocu_border">0 ≤ N &lt; 32</td>
+                    <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border">PowerPC</td><td class="jdocu_border"><code>rlwimi x,x,0,y,z</code></td>
+      <td class="jdocu_border">0 ≤ n &lt; 8192</td>
+      <td class="jdocu_border">new encoding</td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"></td>
+      <td class="jdocu_border">x=n[12:8], y=n[7:4], z=n[3:0]|16</td>
+      <td class="jdocu_border"></td>
+      <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border">PowerPC</td><td class="jdocu_border"><code>rlwimi x,x,0,y,z</code></td>
+      <td class="jdocu_border">0 ≤ n &lt; 32768</td>
+      <td class="jdocu_border">old encoding</td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"></td>
+      <td class="jdocu_border">x=n[14:10], y=n[9:5], z=n[4:0]</td>
+      <td class="jdocu_border"></td>
+      <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">RISC-V</td><td class="jdocu_border"><code>srai zero, zero, n</code></td>
+                   <td class="jdocu_border">0 ≤ n ≤ 31</td>
+                   <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">SH</td><td class="jdocu_border"><code>mov rn, rn</code></td>
+                        <td class="jdocu_border">0 ≤ n &lt; 16</td>
+                        <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+       <td class="jdocu_border">SPARC</td><td class="jdocu_border"><code>sethi n, %g0</code></td>
+               <td class="jdocu_border">1 ≤ n &lt; 0x400000</td>
+               <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border">x86</td>
+      <td class="jdocu_border"><code>cpuid</code></td>
+      <td class="jdocu_border">0 ≤ n &lt; 0x10000</td>
+      <td class="jdocu_border"></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"></td>
+      <td class="jdocu_border">with <code>eax</code> = 0x4711 + n * 2<sup>16</sup></td>
+      <td class="jdocu_border"></td>
+      <td class="jdocu_border"></td>
+    </tr>
+
+  </tbody></table>
+  </div>
+  <div class="caption">Figure 28. Magic instructions for different Simics Targets</div>
+  </div>
+
+  
+
+  <div class="figure" id="reserved_magic_numbers_figure">
+
+  <div style="text-align: center">
+  <table>
+
+    <tbody><tr><td class="jdocu_border"><b>Reserved Magic Numbers</b></td></tr>
+
+    <tr><td class="jdocu_border"><code>&nbsp;0</code></td></tr>
+
+    <tr><td class="jdocu_border"><code>12</code></td></tr>
+
+  </tbody></table>
+  </div>
+  <div class="caption">Figure 29. Reserved magic numbers, for internal use only.</div>
+  </div>
+
+  
+<p>
+Here is a simple example of how to use magic instructions:
+</p><p>
+</p><pre class="jdocu_small">#include "magic-instruction.h"
+
+int main(int argc, char **argv)
+{
+        initialize();
+        MAGIC(1);                     <i>// tell the simulator to start</i>
+                                      <i>// the cache simulation</i>
+        do_something_important();
+        MAGIC(2);                     <i>// tell the simulator to stop</i>
+                                      <i>// the cache simulation</i>
+        clean_up();
+}
+</pre><p>
+</p><p>
+This code needs to be coupled with a callback registered on the magic
+instruction hap to handle what happens when the simulator encounters a
+magic instruction with the arguments 1 or 2 (in this example, to start
+and stop the cache simulation).
+</p><p>
+Simics implements a special handling of magic instructions called
+<b>magic breakpoints</b>. A magic breakpoint occurs if magic
+breakpoints are enabled and if the parameter <i>n</i> of a
+magic instruction matches a special condition. When a magic breakpoint
+is triggered, the simulation stops and returns to the prompt.
+</p><p>
+Magic breakpoints can be enabled with the command
+<b>bp.magic.break</b> <a name="bp.magic.break"></a>. The
+condition on <i>n</i> for a magic instruction to be recognized
+as a magic breakpoint is the following:
+</p><p>
+</p><pre class="jdocu_small">n == 0 || (n &amp; 0x3f0000) == 0x40000
+</pre><p>
+</p><p>
+Note that the value 0 is included for architectures where no immediate
+can be specified. The file <code>magic-instruction.h</code> defines a
+macro called MAGIC_BREAKPOINT that places a magic instruction with a
+correct parameter value in your program.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="debug.html">12 Low-level Debugging with Simics</a>
+<a href="symbolic-debugging.html">12.2 Symbolic Debugging</a>
+</div>

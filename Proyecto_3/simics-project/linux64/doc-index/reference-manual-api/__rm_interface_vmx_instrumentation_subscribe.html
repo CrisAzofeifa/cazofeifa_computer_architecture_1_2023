@@ -1,0 +1,123 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>vmx_instrumentation_subscribe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_vmp.html">vmp</a>
+<a href="__rm_interface_x86.html">x86</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_vmx_instrumentation_subscribe">vmx_instrumentation_subscribe</a></h1>
+<p>
+
+<a name="vmx_instrumentation_subscribe"></a><a name="vmx_instrumentation_subscribe_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This x86 specific interface allows a user to keept track of VMX mode
+   switches in the processor.
+<p>
+   The <b><i>register_vmx_mode_leave_cb</i></b> registers a callback of type
+   <code>vmx_mode_switch_cb_t</code> that will be called before the processor
+   leaves a particular VMX mode.
+</p><p>
+   The <b><i>register_vmx_mode_enter_cb</i></b> registers a callback of type
+   <code>vmx_mode_switch_cb_t</code> that will be called after the processor
+   enters a particular VMX mode.
+</p><p>
+   The callback in both cases looks like this:
+   
+   This callback type is used by the
+   <code>vmx_instrumentation_subscribe</code> to implements VMX mode switch
+   instrumentation.
+   
+</p><pre class="jdocu_small">typedef void (*vmx_mode_switch_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        vmx_mode_t mode,
+        physical_address_t vmcs_address,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The <i>obj</i> argument is the user object that registered the
+   callback, or NULL if no such object exists.
+</p><p>
+   The <i>cpu</i> argument is the processor that switches VMX mode.
+</p><p>
+   The mode that will be left or entered is passed in the
+   <i>mode</i> argument in the callback.
+</p><p>
+   The different VMX modes are defined in the following type:
+    This enum is used to distinguish VMX modes. It is
+   used by the <code>vmx_mode_switch_cb_t</code>.
+   
+</p><pre class="jdocu_small">typedef enum {
+        Vmx_Off = 0,
+        Vmx_Root = 1,
+        Vmx_Non_Root = 2
+} vmx_mode_t;</pre><p>
+
+</p><p>
+   The <i>vmcs_address</i> argument specifies the Virtual Machine Control
+   Structure address that is currently being used. If not available, it will be
+   passed as (physical_address_t)(-1).
+</p><p>
+   When leaving a mode and then entering another mode, the mode can actually be
+   reported as to be the same in certain situations. This is not a bug, it is a
+   consequent of how Simics is implemented. It would require a lot of extra code
+   to filter those out.
+</p><p>
+   The <i>user_data</i> argument is the callback user data, passed to the
+   register methods.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(vmx_instrumentation_subscribe) {
+        cpu_cb_handle_t *(*register_vmx_mode_leave_cb)(
+                conf_object_t *cpu,
+                conf_object_t *connection,
+                vmx_mode_switch_cb_t cb,
+                lang_void *user_data);
+        cpu_cb_handle_t *(*register_vmx_mode_enter_cb)(
+                conf_object_t *cpu,
+                conf_object_t *connection,
+                vmx_mode_switch_cb_t cb,
+                lang_void *user_data);
+};
+
+#define VMX_INSTRUMENTATION_SUBSCRIBE_INTERFACE \
+        "vmx_instrumentation_subscribe"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_vmp.html">vmp</a>
+<a href="__rm_interface_x86.html">x86</a>
+</div>

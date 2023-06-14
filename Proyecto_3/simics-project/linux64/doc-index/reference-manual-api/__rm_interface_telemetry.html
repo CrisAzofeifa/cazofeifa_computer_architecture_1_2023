@@ -1,0 +1,146 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>telemetry</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_spr.html">spr</a>
+<a href="__rm_interface_transaction_translator.html">transaction_translator</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_telemetry">telemetry</a></h1>
+<p>
+
+<a name="telemetry"></a><a name="telemetry_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>telemetry</code> interface is used to fetch telemetry
+  data.
+<p>
+  A model implements one or more telemetry-classes.
+  These are identified by an identifier (class ID) and a name.
+  The telemetries also has a name and an identifier (telemetry ID).
+</p><p>
+  This layout forms a two level hierarchy with classes and their telemetries.
+  The class and telemetry ID's are represented as integers and must be part of a
+  contiguous range starting from zero, i.e., the hierarchy can be viewed as a table
+  with telemetries, where the row numbers (&gt;= 0), represents the class ID's, and the
+  column numbers (&gt;=0) represents the telemetry ID's.
+  For unknown ID's NULL should be returned.
+</p><p>
+  Both telemetry_class_id and telemetry_id can be enumerated using the functions
+  get_telemetry_class_name and get_telemetry_name by starting with an ID
+  of zero and go upp until NULL is returned.
+  A model should not log an error when an invalid ID is presented (but logging
+  info on level 3 makes sense for debug purposes).
+  Error handling for missing expected telemetry IDs should be handled in the model
+  requesting and retrieving the telemetry value.
+</p><p>
+  The <b><i>get_telemetry_class_id</i></b> function returns the telemetry_class_id
+  for the telemetry class with name <i>telemetry_class_name</i>.
+  If no telemetry class with that name is found or that telemetry class is not enabled
+  a negative number is returned.
+</p><p>
+  The <b><i>get_telemetry_class_name</i></b> returns the name of the corresponding
+  <i>telemetry_class_id</i>. If no telemetry class is found with that id the value
+  NULL is returned.
+</p><p>
+  The <b><i>get_telemetry_class_description</i></b> can return a description string for the
+  <i>telemetry_class_id</i>. If no telemetry class is found with that id the value
+  NULL is returned.
+</p><p>
+  The <b><i>get_telemetry_id</i></b> function returns the telemetry_id for the telemetry
+  with name <i>telemetry_name</i> belonging to <i>telemetry_class_id</i>.
+  If no telemetry with that name is found in the telemetry class a negative number is
+  returned.
+</p><p>
+  The <b><i>get_telemetry_name</i></b> returns the name of the corresponding
+  <i>telemetry_id</i> belonging to <i>telemetry_class_id</i>. If no telemetry
+  with that id is found in the telemetry class the value NULL is returned.
+</p><p>
+  The <b><i>get_telemetry_description</i></b> can return a description string for the
+  <i>telemetry_id</i> belonging to <i>telemetry_class_id</i>. If no telemetry
+  with that id the value is found NULL is returned.
+</p><p>
+  The <b><i>get_value</i></b> function returns the value for the <i>telemetry_id</i>
+  within <i>telemetry_class_id</i>.
+</p><p>
+  Note all known telemetry_classes are not always enabled in all models,
+  i.e. <b><i>get_telemetry_class_name</i></b> can return a valid name for some
+  <i>telemetry_class_id</i> but <b><i>get_telemetry_id</i></b> on that name may still
+  return an invalid identifier if that telemetry_class is not enabled in the model.
+</p><p>
+  Note that the identifiers may vary between invocations of the model and must not be
+  stored between runs.
+</p><p>
+  The command list-telemetry-classes can be helpful while developing with the
+  telemetry-interface. It can enabled with the following command
+  </p><pre class="jdocu_small">    enable-tech-preview feature=list-telemetry-classes
+  </pre><p>
+</p><p>
+   
+</p><pre class="jdocu_small">typedef int telemetry_class_id_t;</pre><p>
+
+   
+</p><pre class="jdocu_small">typedef int telemetry_id_t;</pre><p>
+
+  </p><pre class="jdocu_small">SIM_INTERFACE(telemetry) {
+        telemetry_class_id_t (*get_telemetry_class_id)(conf_object_t *obj,
+                                                       const char *telemetry_class_name);
+        const char *(*get_telemetry_class_name)(conf_object_t *obj,
+                                                telemetry_class_id_t telemetry_class_id);
+        const char *(*get_telemetry_class_description)(conf_object_t *obj,
+                                                      telemetry_class_id_t telemetry_class_id);
+        telemetry_id_t (*get_telemetry_id)(conf_object_t *obj,
+                                           telemetry_class_id_t telemetry_class_id,
+                                           const char *telemetry_name);
+        const char *(*get_telemetry_name)(conf_object_t *obj,
+                                          telemetry_class_id_t telemetry_class_id,
+                                          telemetry_id_t telemetry_id);
+        const char *(*get_telemetry_description)(conf_object_t *obj,
+                                                 telemetry_class_id_t telemetry_class_id,
+                                                 telemetry_id_t telemetry_id);
+        attr_value_t (*get_value)(conf_object_t *obj,
+                                  telemetry_class_id_t telemetry_class_id,
+                                  telemetry_id_t telemetry_id);
+};
+
+#define TELEMETRY_INTERFACE "telemetry"
+
+</pre><p>
+</p><p>
+
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_spr.html">spr</a>
+<a href="__rm_interface_transaction_translator.html">transaction_translator</a>
+</div>

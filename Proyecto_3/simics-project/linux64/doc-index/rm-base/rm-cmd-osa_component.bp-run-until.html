@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;osa_component&gt;.bp-run-until</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-osa_component.bp-break.html">&lt;osa_component&gt;.bp-break</a>
+<a href="rm-cmd-osa_component.bp-trace.html">&lt;osa_component&gt;.bp-trace</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="osa_component.bp-run-until"></a>
+<h1 id="osa_component.bp-run-until"><a href="#osa_component.bp-run-until">&lt;osa_component&gt;.bp-run-until</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;osa_component&gt;.bp-run-until</b> (<i>"node-pattern"</i>|<i>node-id</i>) (-active|-inactive) [-immediately] [<i>cpu</i>] [<i>timeout</i>] [<i>timeout-rt</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Run until one or more OS Awareness nodes that matches <i>node-pattern</i> or <i>node-id</i> becomes active (<tt>-active</tt>) or inactive (<tt>-inactive</tt>).
+<p>
+The nodes that are evaluated are specified in either in the <i>node-pattern</i> or in the <i>node-id</i>. The <i>node-pattern</i> parameter should contain string with a <em>node path pattern</em>. Node path patterns are described in the <cite>Analyzer User's Guide</cite>. The <i>node-id</i> parameter should contain a node-id.
+</p><p>
+If <tt>-immediately</tt> is specified, and the node condition is true when the command is issued, the command take action immediately, otherwise, the next time the node condition evaluates to true.
+</p><p>
+If a <i>cpu</i> is specified, this command will ignore events on all other processors. If <i>timeout</i> is a positive number, the command will run for at most that many seconds of virtual time.
+</p><p>
+If <i>timeout-rt</i> is a positive number, the command will run for at most that many seconds of real time.
+</p><p>
+A time-out will be signaled by throwing a CLI exception, which can be captured using try/except in order to take specific action, or to let it pass unhandled. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.bp-manager.html">bp-manager</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-osa_component.bp-break.html">&lt;osa_component&gt;.bp-break</a>
+<a href="rm-cmd-osa_component.bp-trace.html">&lt;osa_component&gt;.bp-trace</a>
+</div>

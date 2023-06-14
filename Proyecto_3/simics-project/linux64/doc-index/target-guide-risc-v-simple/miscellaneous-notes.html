@@ -1,0 +1,85 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5 Miscellaneous Notes</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="supported-components.html">4 Supported Components</a>
+<a href="limitations.html">6 Limitations</a>
+</div>
+<div class="path">
+<a href="index.html">RISC-V* Simple Board Target Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Miscellaneous-Notes">5 Miscellaneous Notes</a></h1>
+<p>
+
+</p><h2 class="jdocu"><a name="Changing-the-Processor-Clock-Frequency">5.1 Changing the Processor Clock Frequency</a></h2>
+<p>
+
+<a name="configurationtips"></a> 
+<a name="processor-clock-frequency"></a>
+<a name="interactive-use-of-simulated-machines"></a>
+</p><p>
+The clock frequency of a simulated processor can be set arbitrarily in
+Simics.  This will not affect the actual speed of simulation, but it
+will affect the number of instructions that need to be executed for a
+certain amount of simulated time to pass.  If your execution only
+depends on executing a certain number of instructions, increasing the clock frequency will take
+the same amount of host time (but a shorter amount of target
+time). However, if there are time based delays of some kind in the simulation,
+these will take  longer to execute. 
+</p><p>
+At a simulated 1 MHz, one million target instructions will correspond to a
+simulated second (assuming the simple default timing of one cycle per
+instruction). At 100 MHz, on the other hand, it will take 100 million
+target instructions to complete a simulated second. So with a higher clock
+frequency, less simulated target time is going to pass for a certain
+period of host execution time.
+</p><p>
+If Simics is used to emulate an interactive system (especially one
+with a graphical user interface) it is a good idea to set the clock
+frequency quite low.  Keyboard and mouse inputs events are handled by
+periodic interrupts in most operating systems, using a higher clock
+frequency will result in longer delays between invocations of periodic
+interrupts.  Thus, the simulated system will feel slower in its user
+response, and update the mouse cursor position etc. less frequently.
+If this is a problem, the best technique for running experiments at a
+high clock frequency is to first complete the configuration of the
+machine using a low clock frequency.  Save all configuration changes
+to a disk diff (like when installing operating systems).  Then change
+the configuration to use a higher a clock frequency and reboot the
+target machine.
+</p><p>
+Note that for a lightly-loaded machine (for example, working at an
+interactive prompt on a serial console to an embedded Linux system),
+Simics will often execute quickly enough at the real target clock
+frequency that there is no need to artificially lower it.
+</p><p>
+
+</p>
+<div class="chain">
+<a href="supported-components.html">4 Supported Components</a>
+<a href="limitations.html">6 Limitations</a>
+</div>

@@ -1,0 +1,102 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ISA</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-DS323x.html">DS323x</a>
+<a href="rm-class-M25Pxx.html">M25Pxx</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="ISA"><a href="#ISA">ISA</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The ISA device models the industry standard architecture bus present in most PCs. It is responsible for dispatching interrupts to the interrupt controllers (I/O-APIC and/or PIC). The operating system must make sure that interrupts are not handled by both interrupt controllers either by disabling one of the controllers or by masking interrupts in at least one of the controllers.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, simple_interrupt
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-ISA.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-ISA.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:pic">
+<i>pic</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>The programmable interrupt controller attached to. Must implement the <tt>simple_interrupt</tt> interface.</dd>
+<dt id="dt:ioapic">
+<i>ioapic</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The advanced programmable interrupt controller attached to. Must implement the <tt>ioapic</tt> interface.</dd>
+<dt id="dt:irq_to_pin">
+<i>irq_to_pin</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{32}]</code>
+<br><tt>(<i>i0</i>, <i>i1</i>, ..., <i>i31</i>)</tt> Entry <tt><i>i</i>n</tt> specifies which pin irq <tt><i>n</i></tt> is attached to.</dd>
+<dt id="dt:irq_status">
+<i>irq_status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{32}]</code>
+<br><tt>(<i>i0</i>, <i>i1</i>, ..., <i>i31</i>)</tt> Entry <tt><i>i</i>n</tt> specifies the current status for input interrupt pin <tt><i>i</i></tt>, 1 for active and 0 for inactive.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.isa.html">isa</a>
+</section>
+<div class="chain">
+<a href="rm-class-DS323x.html">DS323x</a>
+<a href="rm-class-M25Pxx.html">M25Pxx</a>
+</div>

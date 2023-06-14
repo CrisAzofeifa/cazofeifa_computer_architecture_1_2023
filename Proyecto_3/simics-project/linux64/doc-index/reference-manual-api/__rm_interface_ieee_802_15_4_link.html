@@ -1,0 +1,122 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ieee_802_15_4_link</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ieee_802_15_4_control.html">ieee_802_15_4_control</a>
+<a href="__rm_interface_ieee_802_15_4_probe.html">ieee_802_15_4_probe</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ieee_802_15_4_link">ieee_802_15_4_link</a></h1>
+<p>
+
+<a name="ieee_802_15_4_link"></a><a name="ieee_802_15_4_link_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(ieee_802_15_4_link) {
+        ieee_802_15_4_transmit_status_t (*transmit)(
+                                conf_object_t *NOTNULL obj,
+                                const frags_t *frame,
+                                uint16 channel_page,
+                                uint16 channel_number,
+                                ieee_802_15_4_frame_crc_status_t crc_status);
+};
+#define IEEE_802_15_4_LINK_INTERFACE "ieee_802_15_4_link"
+</pre><p>
+</p><p>
+
+   The <code>ieee_802_15_4_link</code> interface is implemented by the IEEE
+   802.15.4 link endpoint objects that provide an interface for frame traffic.
+</p><p>
+   Transceiver calls <b><i>transmit</i></b> to send out frames. The return value
+   is using one of the values in the
+   <code>ieee_802_15_4_transmit_status_t</code> enum:
+</p><p>
+   
+   </p><ul>
+     <li><code>IEEE_802_15_4_Transmit_No_Error</code> means that the frame was
+     sent out without error.</li>
+
+     <li><code>IEEE_802_15_4_Transmit_Channel_Contention</code> means that there
+     was collision and the frame was not sent out.</li>
+
+     <li><code>IEEE_802_15_4_Transmit_Data_Corruption</code> means that the
+     endpoint detected CRC mismatch and didn't send out the frame.</li>
+   </ul>
+   
+<pre class="jdocu_small">typedef enum {
+        IEEE_802_15_4_Transmit_No_Error = 0,
+        IEEE_802_15_4_Transmit_Channel_Contention,
+        IEEE_802_15_4_Transmit_Data_Corruption
+} ieee_802_15_4_transmit_status_t;</pre><p>
+
+</p><p>
+   The <i>crc_status</i> parameter provides out-of-band information on
+   the contents of the frame with regards to the CRC field using one of the
+   values in the <code>ieee_802_15_4_frame_crc_status_t</code> enum:
+</p><p>
+   
+   </p><ul>
+     <li><code>IEEE_802_15_4_Frame_CRC_Match</code> means that to the link that,
+     regardless of the actual contents of the CRC field in frame, the CRC is
+     considered matching the frame contents.</li>
+
+     <li><code>IEEE_802_15_4_Frame_CRC_Mismatch</code> means that the CRC field
+     and the frame contents do not agree. Just like the Ethernet links, the
+     endpoint does not really send out the packet in this case.</li>
+
+     <li><code>IEEE_802_15_4_Frame_CRC16_Unknown/IEEE_802_15_4_Frame_CRC32_Unknown
+     </code> means that the link to compute the CRC and compare it with
+     FCS (Frame Check Sequence) of the MAC frame. If the CRC field and frame
+     contents do not agree, the endpoint does not send out the packet.
+     <code>IEEE_802_15_4_Frame_CRC32_Unknown</code> is for 802.15.4g only.</li>
+   </ul>
+   
+<pre class="jdocu_small">typedef enum {
+        IEEE_802_15_4_Frame_CRC_Match = 0,
+        IEEE_802_15_4_Frame_CRC_Mismatch,
+        IEEE_802_15_4_Frame_CRC16_Unknown,
+        IEEE_802_15_4_Frame_CRC32_Unknown,
+} ieee_802_15_4_frame_crc_status_t;</pre><p>
+
+</p><p>
+   The frequency channels are defined through a combination of channel numbers
+   and channel pages. Channel page is a concept added to IEEE 802.15.4 in 2006
+   to distinguish between supported PHYs. Both channel page and channel number
+   must match on source and target sides for successful transmission.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ieee_802_15_4_control.html">ieee_802_15_4_control</a>
+<a href="__rm_interface_ieee_802_15_4_probe.html">ieee_802_15_4_probe</a>
+</div>

@@ -1,0 +1,563 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10.2 Command Line Interface</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simics-types-in-python.html">10.1 Simics Types in Python</a>
+<a href="configuration.html">10.3 Configuration</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="python-api.html">10 Python API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Command-Line-Interface">10.2 Command Line Interface</a></h1>
+<p>
+
+    </p><h2 class="jdocu"><a class="not-numbered" name="CLI-Arguments-Types">CLI Arguments Types</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="addr_t">addr_t</a></h3>
+<p>
+ 
+ Accepts a target machine address, optionally with an address space
+ prefix, such as <code>v:</code> for virtual addresses or <code>p:</code> for
+ physical.
+ </p><h3 class="jdocu"><a class="not-numbered" name="bool_ttrue_str-false_str">bool_t(true_str, false_str)</a></h3>
+<p>
+ 
+</p><p>
+ Generator function for boolean arguments. A boolean argument accepts
+ the strings "TRUE" and "FALSE", as well as boolean integers (that
+ is, the values 0 and 1). In addition, if the optional strings
+ <i>true_str</i> and <i>false_str</i> are given, the boolean
+ argument will accept them as well.  The argument passes True or
+ False to the command function depending on which string (or value)
+ was given.
+</p><p>
+ </p><h3 class="jdocu"><a class="not-numbered" name="filename_tdirsFalse-existFalse-simpathFalse-checkpointFalse">filename_t(dirs=False, exist=False, simpath=False, checkpoint=False)</a></h3>
+<p>
+ 
+ Generator function for filename arguments. If the <i>dirs</i>
+ argument is false (which is default), no directories will be
+ accepted. The <i>exist</i> flag, when set, forces the file to
+ actually exist. If <i>simpath</i> is true, files will be checked for
+ existence using <code>SIM_lookup_file()</code>, searching the Simics
+ search path. <i>simpath</i> implies <i>exist</i>. On Windows, if Cygwin path
+ conversion is performed (see <code>SIM_native_path()</code> for details), the
+ filename will be converted to host native format.
+ The <i>checkpoint</i> flag will constrain the argument to checkpoints,
+ and treat existing checkpoints as opaque entities.
+ </p><h3 class="jdocu"><a class="not-numbered" name="flag_t">flag_t</a></h3>
+<p>
+ 
+ Passes <code>True</code> to command function when flag is provided, <code>False</code>
+ when flag is not provided.
+ </p><h3 class="jdocu"><a class="not-numbered" name="float_t">float_t</a></h3>
+<p>
+ 
+ Accepts floating-point numbers.
+ </p><h3 class="jdocu"><a class="not-numbered" name="int16_t">int16_t</a></h3>
+<p>
+ 
+ Accepts any unsigned integer that fits in 16 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="int32_t">int32_t</a></h3>
+<p>
+ 
+ Accepts any unsigned integer that fits in 32 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="int64_t">int64_t</a></h3>
+<p>
+ 
+ Accepts any unsigned integer that fits in 64 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="int8_t">int8_t</a></h3>
+<p>
+ 
+ Accepts any unsigned integer that fits in 8 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="int_t">int_t</a></h3>
+<p>
+ 
+ Accepts any integer (regardless of size).
+ </p><h3 class="jdocu"><a class="not-numbered" name="integer_t">integer_t</a></h3>
+<p>
+ 
+ Accepts any unsigned integer that fits in 64 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="ip_port_t">ip_port_t</a></h3>
+<p>
+ 
+</p><p>
+ Accepts integers that are valid IP port numbers (that is, integers
+ between 0 and 65535 inclusive).</p><h3 class="jdocu"><a class="not-numbered" name="list_t">list_t</a></h3>
+<p>
+ 
+ Accepts a comma separated list of CLI types. Can also be given to
+ any CLI argument that accepts more than one value as input.
+ </p><h3 class="jdocu"><a class="not-numbered" name="nil_t">nil_t</a></h3>
+<p>
+ 
+</p><p>
+ Nil argument. Accepts NIL, zero or the empty string, and passes None to
+ the command function. Not so usable by itself, but see e.g.
+ <b><i>poly_t</i></b>.
+</p><p>
+ </p><h3 class="jdocu"><a class="not-numbered" name="obj_tdesc-kind--None-want_port--False">obj_t(desc, kind = None, want_port = False)</a></h3>
+<p>
+ 
+ Returns an argument which accepts any object.
+</p><p>
+ <i>desc</i> is the string returned as a description of the argument.
+ <i>kind</i> can be used to limit the accepted objects to only allow
+ objects of a certain kind.  This parameter can either be a class
+ name that the object should be an instance of, or the name of an
+ interface that the object must implement, or a tuple of
+ kinds. <i>want_port</i> indicates whether it should be allowed to
+ specify an object and a port name, separated with a colon.  If a
+ port is wanted, the argument will be a list [obj, port] instead of
+ only the object.  </p><h3 class="jdocu"><a class="not-numbered" name="poly_tdesc-type1-type2-...">poly_t(desc, type1, type2, ...)</a></h3>
+<p>
+ 
+</p><p>
+ Generates an argument with the given description that will match any
+ of the given types; they will be tried one by one, in the order
+ specified, and the first one that accepts the input will be used.
+</p><p>
+ </p><h3 class="jdocu"><a class="not-numbered" name="range_tmin-max-desc-moduloFalse">range_t(min, max, desc, modulo=False)</a></h3>
+<p>
+ 
+</p><p>
+ Returns an argument which accepts any integer <i>x</i> between
+ <i>min</i> and <i>max</i> inclusively. <i>desc</i> is the string
+ returned as a description of the argument.
+</p><p>
+ Values outside the interval cause an error to be signalled if
+ <i>modulo</i> is false, and a modulo-reduction to the specified
+ interval otherwise.
+ </p><h3 class="jdocu"><a class="not-numbered" name="sint16_t">sint16_t</a></h3>
+<p>
+ 
+ Accepts any signed integer that fits in 16 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="sint32_t">sint32_t</a></h3>
+<p>
+ 
+ Accepts any signed integer that fits in 32 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="sint64_t">sint64_t</a></h3>
+<p>
+ 
+ Accepts any signed integer that fits in 64 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="sint8_t">sint8_t</a></h3>
+<p>
+ 
+ Accepts any signed integer that fits in 8 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="str_t">str_t</a></h3>
+<p>
+ 
+ Accepts any one word or quoted string.
+ </p><h3 class="jdocu"><a class="not-numbered" name="string_set_tstrings">string_set_t(strings)</a></h3>
+<p>
+ 
+</p><p>
+ Accepts only strings from the given set. <i>strings</i> can be any
+ iterable, such as a tuple, list, or set, in which case the return
+ value is the exact string the user gave; or a dictionary mapping
+ acceptable user input strings to return values.
+</p><p>
+ The optional parameter <i>visible</i> is a list of strings. If
+ given, only strings in this list will be suggested by the expander.
+</p><p>
+ </p><h3 class="jdocu"><a class="not-numbered" name="uint16_t">uint16_t</a></h3>
+<p>
+ 
+ Accepts any unsigned integer that fits in 16 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="uint32_t">uint32_t</a></h3>
+<p>
+ 
+ Accepts any unsigned integer that fits in 32 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="uint64_t">uint64_t</a></h3>
+<p>
+ 
+ Accepts any unsigned integer that fits in 64 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="uint8_t">uint8_t</a></h3>
+<p>
+ 
+ Accepts any unsigned integer that fits in 8 bits, modulo-reducing values
+ outside into that range.
+ </p><h3 class="jdocu"><a class="not-numbered" name="uint_t">uint_t</a></h3>
+<p>
+ 
+ Accepts any unsigned (that is, non-negative) integer (regardless of
+ size).
+ 
+    </p><h2 class="jdocu"><a class="not-numbered" name="CLI-Classes-and-Functions">CLI Classes and Functions</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="cli.CliError">cli.CliError</a></h3>
+<p>
+  
+  <a name="CliError"></a> <a name="cli-Python-moduleCliError"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.CliError"></a><b>CliError</b> — error in CLI command</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">CliError(args)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+This exception can be raised whenever a command can
+not complete successfully.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.arg">cli.arg</a></h3>
+<p><a name="arg"></a> <a name="cli-Python-modulearg"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.arg"></a><b>arg</b> — class defining a command argument</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">            arg(handler, name = "", spec = "1", default = None,
+            data = None, doc = "", expander = None, pars = [])</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Define a CLI command argument when using <b><i>new_command</i></b>. A
+complete explanation of <b><i>new_command</i></b> and <b><i>arg</i></b> is
+available in <em>Simics Model Builder User's Guide</em>, in the
+<em>Adding New Commands</em> chapter.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.command_quiet_return">cli.command_quiet_return</a></h3>
+<p><a name="command_quiet_return"></a> <a name="cli-Python-modulecommand_quiet_return"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.command_quiet_return"></a><b>command_quiet_return</b> — suppress interactive messages from commands</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">command_quiet_return(value)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Use this class to return from a command that returns a value but should
+not print anything when used interactively.
+<p>
+<i>value</i> should either be the value returned, or a function
+taking no arguments that returns the actual value.
+</p><p>
+Note that <i>value</i> can only be of types directly supported by
+CLI.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_cli.command_return">cli.command_return</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.command_return">cli.command_return</a></h3>
+<p><a name="command_return"></a> <a name="cli-Python-modulecommand_return"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.command_return"></a><b>command_return</b> — return interactive messages from commands</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">            command_return(message = None, value = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Use this class to return from a command that returns one value
+(<i>value</i>) but (may) print something else
+(<i>message</i>) when run interactive.
+<p>
+<i>message</i> and <i>value</i> may both be functions that
+take no arguments and return the message (a string) or a value,
+respectively.
+</p><p>
+If it is a function, <i>message</i> is only evaluated if needed.
+</p><p>
+Note that <i>value</i> (or, when a function, its return value) can
+only be of types directly supported by CLI.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_cli.command_quiet_return">cli.command_quiet_return</a>, <a class="jdocu" href="#__jdocu_seealso_cli.command_verbose_return"> cli.command_verbose_return</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.command_verbose_return">cli.command_verbose_return</a></h3>
+<p><a name="command_verbose_return"></a> <a name="cli-Python-modulecommand_verbose_return"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.command_verbose_return"></a><b>command_verbose_return</b> — always print return messages from commands</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">command_verbose_return(message = None, value = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Use this class to return from a command that returns a value or message
+that should be printed even when used non-interactively, but not when used
+in an expression.
+<p>
+The <i>value</i> and <i>message</i> parameters are
+identical to the same as for <b>cli.command_return</b>.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_cli.command_return">cli.command_return</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.get_available_object_name">cli.get_available_object_name()</a></h3>
+<p><a name="get_available_object_name"></a> <a name="cli-Python-moduleget_available_object_name"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.get_available_object_name"></a><b>get_available_object_name</b> — return a non-allocated object name</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">get_available_object_name(prefix)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return an object name suitable for creating a new object (i.e., that has
+not been used yet) by adding a suffix to <i>prefix</i>.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.get_component_object">cli.get_component_object()</a></h3>
+<p><a name="get_component_object"></a> <a name="cli-Python-moduleget_component_object"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.get_component_object"></a><b>get_component_object</b> — return an object in a component</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">get_component_object(cmp_obj, slot)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return the object named <i>slot</i> inside the
+<i>cmp_obj</i> component. The <i>slot</i> parameter is
+the name by which the component knows the object, not the global name of
+the object.
+<p>
+The function will raise a <em>CliError</em> if the object can not be found
+in the component.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+object or pre-object</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.global_cmds">cli.global_cmds</a></h3>
+<p><a name="global_cmds"></a> <a name="cli-Python-moduleglobal_cmds"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.global_cmds"></a><b>global_cmds</b> — Namespace with functions to run global CLI commands</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">global_cmds.<i>wrapper_function(...)</i></pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The namespace provides wrapper Python functions to run global
+Simics CLI commands. A wrapper function name
+is usually the same as a name of the command it executes
+with hyphens replaced with underscores. The parameters of
+the wrapper functions are the same as of the corresponding command (again,
+with hyphens replaced with underscores). Command flags (the names of
+the corresponding function parameters start with an underscore)
+could be passes as Python Boolean values. In the rare cases that a wrapper
+function name or a wrapper function parameter name turns out to be
+a Python keyword, the <code>_cmd</code> suffix is added
+to the wrapper function name
+and the function parameter gets the <code>_</code> suffix.
+Wrapper functions return the value returned by the command
+which they execute.
+<p>
+Please consult the docstring
+of the wrapper function and the respective command documentation
+for the information about function arguments and the returned value.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.interactive_command">cli.interactive_command()</a></h3>
+<p><a name="interactive_command"></a> <a name="cli-Python-moduleinteractive_command"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.interactive_command"></a><b>interactive_command</b> — check if current command is run interactively</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">interactive_command()</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns true if the current command was run interactively by the user
+and false if run from a script. This function may only be called by CLI
+commands.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.new_command">cli.new_command()</a></h3>
+<p><a name="new_command"></a> <a name="cli-Python-modulenew_command"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.new_command"></a><b>new_command</b> — define a new CLI command</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">new_command(name, fun, args = [], **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Define a new CLI command. A complete explanation of
+<b><i>new_command</i></b> and its parameters is available in
+<em>Simics Model Builder User's Guide</em>, in the
+<em>Adding New Commands</em> chapter.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.new_info_command">cli.new_info_command()</a></h3>
+<p><a name="new_info_command"></a> <a name="cli-Python-modulenew_info_command"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.new_info_command"></a><b>new_info_command</b> — define a new info command</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">new_info_command(cls, get_info, ctype = None, doc = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Define a new <b>info</b> command for a given object.
+<i>cls</i> is the class for which the <b>info</b> command
+should be registered. <i>get_info</i> is a function returning the
+information to be printed. <i>get_info()</i> should return a data
+structure of the following kind:
+<pre class="jdocu_small">  [(SectionName1, [(DataName1.1, DataValue1.1),
+                   (DataName1.2, DataValue1.2), ...]),
+   (SectionName2, [(DataName2.1, DataValue2.1),
+                   (DataName2.2, DataValue2.2), ...]),
+   ...]</pre><p>
+</p><p>
+Each section will be printed separately. Each piece of data will be printed
+on one line. If no sections are necessary, just provide <code>None</code> as
+the only section's name, followed by the list of data.</p></dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_cli.new_status_command">cli.new_status_command</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.new_status_command">cli.new_status_command()</a></h3>
+<p><a name="new_status_command"></a> <a name="cli-Python-modulenew_status_command"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.new_status_command"></a><b>new_status_command</b> — define a new status command</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">new_status_command(cls, get_status, ctype = None, doc = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Define a new <b>status</b> command for a given object.
+<i>cls</i> is the class for which the <b>status</b> command
+should be registered. <i>get_status</i> is a function returning the
+information to be printed. <i>get_status()</i> should return a data
+structure of the same kind as in <b><i>new_info_command()</i></b>.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_cli.new_info_command">cli.new_info_command</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.new_tech_preview_command">cli.new_tech_preview_command()</a></h3>
+<p><a name="new_tech_preview_command"></a> <a name="cli-Python-modulenew_tech_preview_command"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.new_tech_preview_command"></a><b>new_tech_preview_command</b> — define a new CLI tech preview command</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">new_tech_preview_command(name, feature, fun, args=[], doc="", **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Define a new tech preview CLI command.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.new_unsupported_command">cli.new_unsupported_command()</a></h3>
+<p><a name="new_unsupported_command"></a> <a name="cli-Python-modulenew_unsupported_command"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.new_unsupported_command"></a><b>new_unsupported_command</b> — define a new unsupported CLI command</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">new_unsupported_command(name, feature, fun, args = [], doc = "", **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Define a new unsupported CLI command.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.number_str">cli.number_str()</a></h3>
+<p><a name="number_str"></a> <a name="cli-Python-modulenumber_str"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.number_str"></a><b>number_str</b> — return a ready-to-print representation of a number</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">number_str(val, radix = None, group = None, use_prefix = True,
+           precision = 1)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Return a ready-to-print representation of the number
+<i>val</i> in a given base (<i>radix</i>) or the
+current base by default, using the current settings for number
+representation as set by the <b>output-radix</b> and
+<b>digit-grouping</b> commands.
+<p>
+The default digit grouping can be overridden with the
+<i>group</i> parameter, where 0 means no grouping.
+The radix prefix can be removed
+by specifying <i>use_prefix</i> as <code>False</code>.
+</p><p>
+The minimum number of digits to be printed is specified by
+<i>precision</i>. If <i>precision</i> is negative,
+the precision is taken to be zero. Regardless of the radix, a
+value of zero with zero precision will always return the empty
+string.
+</p><p>
+Negative numbers that fit in a signed 64-bit integer are treated
+as such. Other negative numbers are prefixed with a minus
+("-").</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+A string representing the number.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_cli.str_number">cli.str_number</a></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.object_expander">cli.object_expander()</a></h3>
+<p><a name="object_expander"></a> <a name="cli-Python-moduleobject_expander"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.object_expander"></a><b>object_expander</b> — standard expander for an object argument</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">object_expander(kind)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+For command writing: standard expander that can be use to provide
+argument completion on all objects of a given class or matching a given
+interface (<i>kind</i>).
+<p>
+For example, to expand a string with the list of processor available in the
+machine, you would write:
+</p><pre class="jdocu_small">  arg(str_t, "cpu", expander =  object_expander("processor_info"))
+</pre><p>
+</p><p>
+To expand a string to all <b>gcache</b> objects:
+</p><pre class="jdocu_small">  arg(str_t, "cache", expander = object_expander("gcache"))
+</pre><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.quiet_run_command">cli.quiet_run_command()</a></h3>
+<p><a name="quiet_run_command"></a> <a name="cli-Python-modulequiet_run_command"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.quiet_run_command"></a><b>quiet_run_command</b> — run a CLI command and return output</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">quiet_run_command(text, output_mode = output_modes.formatted_text)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Runs a CLI command, or a CLI expression, as if it has been
+entered at the prompt. Errors are reported using CliError
+exception.
+<p>
+The <b><i>quiet_run_command</i></b> function is similar to
+<b><i>run_command</i></b> but returns a tuple with the command
+return value as first entry, and the command output text as the second.
+Please note that sometimes unrelated output might be included, e.g.,
+for commands that advance the virtual time or in some other way may allow
+other commands to run in parallel with them.
+</p><p>
+Set 'output_mode' to one of the output modes:
+</p><dl><dt id="dt:output_modes-regular"><b><b>output_modes.regular</b></b></dt><dd>formatted text with Simics-internal markup</dd><dt id="dt:output_modes-formatted_text"><b><b>output_modes.formatted_text</b></b></dt><dd>formatted text without markup</dd><dt id="dt:output_modes-unformatted_text"><b><b>output_modes.unformatted_text</b></b></dt><dd>unformatted text without markup</dd></dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.run_command">cli.run_command()</a></h3>
+<p><a name="run_command"></a> <a name="cli-Python-modulerun_command"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.run_command"></a><b>run_command</b> — run a CLI command</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">run_command(text)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Runs a CLI command, or a CLI expression, as if it has been entered at the
+prompt. Errors are reported using CliError exception, and any return value
+from the command is returned by this function to Python.
+<p>
+Use <b><i>quiet_run_command</i></b> if you need to suppress or catch
+messages printed.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.simenv">cli.simenv</a></h3>
+<p><a name="simenv"></a> <a name="cli-Python-modulesimenv"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.simenv"></a><b>simenv</b> — CLI variable namespace</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">simenv.<i>variable</i></pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+The <b>simenv</b> namespace provides access to the CLI variables
+in the Simics Python interpreter. If the variable <i>$foo</i> was
+defined in CLI, <i>simenv.foo</i> will represent the same variable in
+Python.
+<p>
+Running <code>del simenv.foo</code> will unset that variable. The return value
+from the <b><i>dir</i></b> function will also include defined variables. The
+<b><i>repr</i></b> function will return the dictionary of variable and value
+pairs as a string.</p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="cli.str_number">cli.str_number()</a></h3>
+<p><a name="str_number"></a> <a name="cli-Python-modulestr_number"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_cli.str_number"></a><b>str_number</b> — convert a string to a number</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">str_number(text)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Converts a string returned from <b><i>number_str</i></b> back to
+an integer.
+<p>
+Raises ValueError for invalid arguments.</p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+A number representing the string.</dd>
+<dt class="jdocu_descitem">SEE ALSO</dt><dd>
+<a class="jdocu" href="#__jdocu_seealso_cli.number_str">cli.number_str</a></dd>
+</dl><p>
+</p>
+<div class="chain">
+<a href="simics-types-in-python.html">10.1 Simics Types in Python</a>
+<a href="configuration.html">10.3 Configuration</a>
+</div>

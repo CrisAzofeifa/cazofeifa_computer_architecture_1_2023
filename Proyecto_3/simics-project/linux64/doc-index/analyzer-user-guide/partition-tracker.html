@@ -1,0 +1,108 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.15 Partition tracker</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="cpumode-tracker.html">2.14 CPU Mode Tracker</a>
+<a href="uefi-fw-trk.html">2.16 UEFI Firmware Tracker</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="partition-tracker">2.15 <a href="#partition-tracker">Partition tracker</a></h1>
+<p>The Partition tracker is used to add separate trackers for different processors in the system. This can be useful if different operating systems are run on different processors.</p>
+<p>The partition tracker is a stacked tracker where other trackers will be inserted as guests to the partition tracker.</p>
+<h2 id="node-tree">2.15.1 <a href="#node-tree">Node tree</a></h2>
+<p>This section describes how the partition tracker is represented in a node tree.</p>
+<p>The partition tracker will be at the root of the node tree. Then each guest of the partition tracker will be represented with that guests representation of a node tree rooted at a child node of the partition tracker root node. A partition can also be empty, meaning that it does not contain any guest tracker.</p>
+<p>Figure <a class="reference" href="#partition-tracker-tree">6</a> shows an example of how a node tree, containing a partition tracker with two cpu mode trackers and an empty partition as guests, could look like.</p>
+<figure id="partition-tracker-tree">
+<p><img alt="" src="partition-tracker-tree.png"></p><figcaption>Figure 6. Node tree of a Linux tracker</figcaption><p></p>
+</figure>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:guest-node">Guest node</span><br>
+(Nodes on level 1 in figure <a class="reference" href="#partition-tracker-tree">6</a>.) This node will contain the root node of the guest inserted under the partition tracker. Two extra properties will be added to this node besides the guest tracker's original root properties. </p>
+<div class="dl">
+<ul>
+<li><span class="term" id="dt:part_id">part_id</span><br>
+A unique identifier for each guest partition.</li>
+<li><span class="term" id="dt:cpus">cpus</span><br>
+A list of processors assigned to the partition.</li>
+</ul>
+</div>
+<p>By default the <code>name</code> property of the node will also be updated so that the name is prefixed with the partition name. This updating of the name can be removed by setting the <code>include_partition_name</code> attribute of the partition mapper to false. </p>
+</li>
+</ul>
+</div>
+<h2 id="commands">2.15.2 <a href="#commands">Commands</a></h2>
+<p>The partition tracker includes some commands to manage guest partitions and parameters. </p>
+<div class="dl">
+<ul>
+<li>
+<p><span class="term" id="dt:insert-empty-partition">insert-empty-partition</span><br>
+Inserts a new partition that is not associated with any tracker. Some processors, <em>cpus</em>, have to be set for this partition and a partition name, <em>partition</em>, will also have to be specified. This partition will show up in the node tree when the OS Awareness framework is enabled, but that node will not have any children or be active at any point. A guest tracker can later be added to this node with the <code>insert-tracker</code> command.</p>
+</li>
+<li>
+<p><span class="term" id="dt:insert-tracker">insert-tracker</span><br>
+Inserts a new partition associated with a tracker component either on an existing empty node or as a new guest partition.</p>
+<p>The component of the guest tracker is specified through the <em>tracker</em> argument of this command.</p>
+<p>If adding a new guest, some processors associated with the partition will have to be specified through the <em>cpus</em> argument and a partition name has to be specified through the <em>partition</em> argument.</p>
+<p>If a new tracker is added to an empty guest, the <em>node</em> argument is used to specify which guest node to insert the tracker on.</p>
+<p>Optionally parameters can be passed on to the guest component via the <em>parameters</em> argument.</p>
+<p>The component of the guest will end up in the component hierarchy under the partition tracker component, named either as the specified <em>name</em> argument or as the partition name prefixed with <code>guest</code>. </p>
+</li>
+<li>
+<p><span class="term" id="dt:remove-partition">remove-partition</span><br>
+Remove an existing partition by selecting either a <em>partition</em> name, a partition <em>node</em> or a partition <em>id</em>.</p>
+</li>
+<li>
+<p><span class="term" id="dt:load-parameters">load-parameters</span><br>
+Load configuration parameters for the partition tracker from a file.</p>
+</li>
+<li>
+<p><span class="term" id="dt:save-parameters">save-parameters</span><br>
+Save the current configuration parameters to a file. If the <em>no-children</em> argument is given the parameters of the guest trackers will not be included in the saved file, it will then just include the partition tracker and which type of guests it has. By default the guest trackers parameters are also saved in the configuration file.</p>
+</li>
+<li>
+<p><span class="term" id="dt:supports-parameters">supports-parameters</span><br>
+Check if parameters file is supported by the partition tracker.</p>
+</li>
+</ul>
+</div>
+<h2 id="limitations">2.15.3 <a href="#limitations">Limitations</a></h2>
+<ul>
+<li>Inserting a guest tracker and adding parameters to that guest at the same time might not work for all guest trackers as processors will not yet be available to the guest when the parameters are set. The Linux tracker for example requires to be able to get all processors from its parent when setting parameters and will fail if parameters are set directly when inserting it as a guest under a partition tracker. The workaround is to first add it as a guest tracker and then load parameters for that guest afterwards.</li>
+<li>If enabling or adding processors fails for some guest the partition tracker will not take care of disabling or removing processors for already enabled guests.</li>
+</ul>
+
+<div class="chain">
+<a href="cpumode-tracker.html">2.14 CPU Mode Tracker</a>
+<a href="uefi-fw-trk.html">2.16 UEFI Firmware Tracker</a>
+</div>

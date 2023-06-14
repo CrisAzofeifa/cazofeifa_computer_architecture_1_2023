@@ -1,0 +1,66 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>xed_access</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_vmp_control.html">x86_vmp_control</a>
+<a href="__rm_interface_xtensa_export_state.html">xtensa_export_state</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_xed_access">xed_access</a></h1>
+<p>
+
+<a name="xed_access"></a><a name="xed_access_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>xed_access</code> interface is implemented by a processor model.
+   The interface can be used to call Intel® X86 Encoder Decoder (Intel\reg;
+   XED) library built into the processor model.
+<p>
+   This interface is internal and may change at any time without notice.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(xed_access) {
+        int (*get_last)(conf_object_t *obj, xed_data_type_t type);
+        int (*decode)(conf_object_t *obj, xed_data_type_t type, bytes_t bytes);
+        const char *(*to_string)(conf_object_t *obj, xed_data_type_t type,
+                                 int value);
+};
+
+#define XED_ACCESS_INTERFACE "xed_access"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_vmp_control.html">x86_vmp_control</a>
+<a href="__rm_interface_xtensa_export_state.html">xtensa_export_state</a>
+</div>

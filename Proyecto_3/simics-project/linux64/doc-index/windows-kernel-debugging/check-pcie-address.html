@@ -1,0 +1,93 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.1.2 Check Network Device PCIe Address</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="supported-pcieid.html">2.1.1 Check for Supported Network Card PCIe ID</a>
+<a href="target-ip-address.html">2.2 Target System IP Address</a>
+</div>
+<div class="path">
+<a href="index.html">Windows Kernel Debugging</a>
+&nbsp;/&nbsp;
+<a href="network-debugging.html">2 Windows Kernel Debugging Over a Network</a>
+&nbsp;/&nbsp;
+<a href="target-network-card.html">2.1 Target System Network Card</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="check-pcie-address">2.1.2 Check Network Device PCIe Address</a></h1>
+<p>
+  
+</p><p>
+  If there are multiple network devices in the system, Windows requires that
+  you specify the card to use for debug. This is done using the PCI
+  <b>Bus:Device:Function</b> (BDF) address of the network card supported by
+  the Windows kernel debugger. To find out the BDF of the network card,
+  check the properties in the Windows Device Manager. The address is listed
+  as <b>'Location'</b> in the <b>'General'</b> tab.
+</p><p>
+  </p><div class="figure" id="pcie-address-in-windows">
+
+    <div style="text-align: center">
+      <img alt="" src="pcie-address-in-windows.png">
+      <div class="caption">Figure 3. Checking PCIe address of network device.</div>
+    </div>
+  </div>
+
+<p>
+  You can also use the <b>Get-NetAdapterHardwareInfo</b> Powershell command
+  to get BDF:
+</p><p>
+  </p><pre class="jdocu_small">&gt; <b>Get-NetAdapterHardwareInfo | fl</b>
+
+Name                        : Ethernet 2
+InterfaceDescription        : Intel(R) I210 Gigabit Network Connection
+DeviceType                  : PCI Express endpoint
+SegmentNumber               : 0
+BusNumber                   : 2
+DeviceNumber                : 0
+FunctionNumber              : 0
+SlotNumber                  : 12
+NumaNode                    : 0
+PciCurrentSpeedAndMode      :
+PciExpressCurrentLinkSpeed  : 2.5 GT/s
+PciExpressCurrentLinkWidth  : 4
+PciExpressMaxLinkSpeed      : 2.5 GT/s
+PciExpressMaxLinkWidth      : 4
+PciExpressVersion           : 1.1
+LineBasedInterruptSupported : True
+MsiInterruptSupported       : True
+MsiXInterruptSupported      : False
+  </pre><p>
+</p><p>
+  </p><div class="note">
+<b>Note:</b>
+It is a good idea to always specify the card to use for debug even if
+    target setup has a single network card. This will insure against any target
+    configuration changes that could introduce additional network cards.
+  </div>
+<div class="chain">
+<a href="supported-pcieid.html">2.1.1 Check for Supported Network Card PCIe ID</a>
+<a href="target-ip-address.html">2.2 Target System IP Address</a>
+</div>

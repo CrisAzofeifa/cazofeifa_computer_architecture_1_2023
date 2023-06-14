@@ -1,0 +1,387 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3.3 The Debugger API</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="talos-debugging-queries.html">3.2 Using Context Queries</a>
+<a href="talos-debugging-limitations.html">3.4 Debugger Limitations</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="debugging-target-code.html">3 Debugging Target Code</a>
+&nbsp;/&nbsp;</div>
+<h1 id="the-debugger-api">3.3 <a href="#the-debugger-api">The Debugger API</a></h1>
+<h2 id="introduction">3.3.1 <a href="#introduction">Introduction</a></h2>
+<p>The Simics debugger comes with a series of interfaces to allow scripting against the debugger. This allows adding symbol files, looking up symbols, notifying on debugger events, stepping and more.</p>
+<p>The API interfaces can be accessed from Python or C (also allowing C++ or DML).</p>
+<p>The debugger API interfaces and their functions are documented in <em>API Reference Manual</em>. All interfaces start with <code>debug_</code>.</p>
+<p>The debugger API is implemented by a Simics object, which you access through the <code>SIM_get_debugger</code> API function.</p>
+<h2 id="interfaces">3.3.2 <a href="#interfaces">Interfaces</a></h2>
+<p>Here is a short introduction to the debugger API interfaces available, more detailed documentation is available in the <em>API Reference Manual</em>.</p>
+<ul>
+<li><code>debug_setup</code> - Add symbol files and mappings to the debug configuration.</li>
+<li><code>debug_notification</code> - Get notification on debugger events. An event can for example be when a certain source line runs or when a context becomes activate.</li>
+<li><code>debug_query</code> - Used for finding contexts that match certain criteria or creating context queries.</li>
+<li><code>debug_step</code> - Perform source or instruction stepping.</li>
+<li><code>debug_symbol</code> - Look up symbol information and values. Can for example be translating between address and line, getting a symbol value, finding which functions exist or getting a stack trace.</li>
+<li><code>debug_symbol_file</code> - Open symbol files and get information, such as section or segment information, for that symbol file. The open symbol file can also be used to look up symbols using the <code>debug_symbol</code> interface.</li>
+</ul>
+<h2 id="examples">3.3.3 <a href="#examples">Examples</a></h2>
+<p>This section provides some examples on how the debugger API can be used. All these examples require an object <code>tcf</code> of the <code>tcf-agent</code> class to be present in Simics. The object can be created by running <code>new-tcf-agent</code> if it is not already present.</p>
+<p>All examples are in Python, they can be run in Simics <code>python-mode</code> or can be written to a file that then can be run with the <code>run-python-file</code> command.</p>
+<p></p><h3 id="symbol-file-information-example">3.3.3.1 <a href="#symbol-file-information-example">Symbol file information example</a></h3>
+<p>Shows how symbol information, such as sections, source files and functions for
+a symbol file can be obtained using the debugger API.</p>
+<p>
+</p><pre><code>import conf
+import simics
+import stest
+import pprint
+
+debugger = simics.SIM_get_debugger()
+
+(err, file_id) = debugger.iface.debug_symbol_file.open_symbol_file(
+    "%simics%/targets/qsp-x86/images/debug_example", 0, False)
+stest.expect_equal(err, simics.Debugger_No_Error, file_id)
+(err, info) = debugger.iface.debug_symbol_file.symbol_file_info(file_id)
+stest.expect_equal(err, simics.Debugger_No_Error, info)
+
+print("File info:")
+pprint.pprint(info)
+
+(err, sections_data) = debugger.iface.debug_symbol_file.sections_info(file_id)
+stest.expect_equal(err, simics.Debugger_No_Error, sections_data)
+stest.expect_equal(sections_data[0], "ELF", "Should be an ELF binary")
+
+sections = sections_data[1]
+
+print("\nExecutable sections:")
+for section in sections:
+    if section.get("executable"):
+        print("  0x%08x-0x%08x: %s" % (section["address"],
+                                       section["address"] + section["size"],
+                                       section.get("name", "")))
+
+(err, src_files) = debugger.iface.debug_symbol.list_source_files(file_id)
+stest.expect_equal(err, simics.Debugger_No_Error, src_files)
+
+print("\nSource files:")
+for src in src_files:
+    print("  '%s'" % src)
+
+(err, functions) = debugger.iface.debug_symbol.list_functions(file_id)
+stest.expect_equal(err, simics.Debugger_No_Error, functions)
+
+print("\nFunctions:")
+for function_data in functions:
+    if function_data["size"] == 0:
+        continue
+    addr = function_data["address"]
+    print("  0x%08x-0x%08x: %s" % (addr, addr + function_data["size"],
+                                   function_data["symbol"]))
+
+(err, err_str) = debugger.iface.debug_symbol_file.close_symbol_file(file_id)
+stest.expect_equal(err, simics.Debugger_No_Error, err_str)
+</code></pre>
+<p></p>
+<p>This example has showed how to:</p>
+<ul>
+<li>Open an symbol file as a context to be used with other debugger API 
+functions.</li>
+<li>Get file information.</li>
+<li>Get sections information.</li>
+<li>List the source files in the debug information of a binary.</li>
+</ul>
+<p></p>
+<p></p><h3 id="debug-example">3.3.3.2 <a href="#debug-example">Debug example</a></h3>
+<p>This example uses the <code>debug_example</code> file to demonstrate how
+debugger API usages. Various interfaces and functions
+in the debugger API will be used in this example.</p>
+<p>
+</p><pre><code>import cli
+import conf
+import simics
+import stest
+
+simics.SIM_run_command_file_params(
+    simics.SIM_lookup_file('%simics%/targets/qsp-x86/firststeps.simics'),
+    False,
+    # Parameters to make simulation more deterministic (NB: VMP is
+    # on so we still get some uncertainty.):
+    [["connect_real_network", "no"],
+     ["rtc_time", "2019-11-12 11:47:01"]])
+con = conf.board.serconsole.con
+prompt = "$ "
+con.iface.break_strings_v2.add_single(prompt, None, None)
+simics.SIM_continue(0)
+
+(am, _) = cli.quiet_run_command('start-agent-manager')
+(matic, _) = cli.quiet_run_command(f'{am}.connect-to-agent')
+cli.quiet_run_command(f'{matic}.upload -executable'
+                      r' "%simics%/targets/qsp-x86/images/debug_example"'
+                      ' "/home/simics"')
+cli.quiet_run_command(f'{matic}.run-until-job')
+
+cli.run_command('board.software.enable-tracker')
+
+def expect_no_error(api_result):
+    (err, res) = api_result
+    stest.expect_equal(err, simics.Debugger_No_Error, res)
+    return res
+
+# Get the debugger object
+debugger = simics.SIM_get_debugger()
+symbol_iface = debugger.iface.debug_symbol
+query_iface = debugger.iface.debug_query
+notify_iface = debugger.iface.debug_notification
+step_iface = debugger.iface.debug_step
+
+# Add a symbol file
+ctx_query = "debug_example"   # Match the target binary
+add_id = expect_no_error(debugger.iface.debug_setup.add_symbol_file(
+    ctx_query, "%simics%/targets/qsp-x86/images/debug_example", 0, False))
+
+local_src = simics.SIM_lookup_file("%simics%/targets/qsp-x86/debug_example.c")
+compiled_src = "/tmp/debug_example.c"  # nosec: /tmp is OK here
+
+# Path map entry only needed for debugger to be able to find source file and
+# display its contents. Not really needed for this example.
+pm_id = expect_no_error(debugger.iface.debug_setup.add_path_map_entry(
+    ctx_query, compiled_src, local_src))
+
+with open(local_src, "r") as f:
+    debug_example_contents = f.readlines()
+
+def get_pc(cpu):
+    return cpu.iface.processor_info_v2.get_program_counter()
+
+def context_name(ctx_id):
+    return expect_no_error(query_iface.context_name(ctx_id))
+
+def print_current_line(ctx_id):
+    cpu = expect_no_error(query_iface.get_active_processor(ctx_id))
+
+    def addr_src_cb(src_lines, code_area):
+        src_lines.append(code_area)
+
+    src_lines = []
+    expect_no_error(symbol_iface.address_source(ctx_id, get_pc(cpu), 1,
+                                                addr_src_cb, src_lines))
+    stest.expect_equal(len(src_lines), 1)
+    curr_area = src_lines[0]
+    filename = curr_area["filename"].split("/")[-1]
+    print(f"Line '{filename}:{curr_area['start-line']}':")
+    if filename == "debug_example.c":
+        print(debug_example_contents[curr_area["start-line"] - 1])
+    else:
+        print("  &lt;unknown contents&gt;")
+
+def ints_as_hex(value):
+    if isinstance(value, int):
+        return hex(value)
+    elif isinstance(value, list):
+        return f'[{", ".join(map(ints_as_hex, value))}]'
+    return value
+
+def print_local_variables(ctx_id):
+    local_vars = expect_no_error(symbol_iface.local_variables(ctx_id, 0))
+    print("Local variables:")
+    for var in local_vars:
+        value = expect_no_error(symbol_iface.expression_value(ctx_id, 0, 0,
+                                                              var))
+        print(f"  {var}: {ints_as_hex(value)}")
+
+def get_active_cpu(ctx_id):
+    (err, cpu) = query_iface.get_active_processor(ctx_id)
+    if err == simics.Debugger_Context_Is_Not_Active:
+        return None
+    expect_no_error((err, cpu))
+    return cpu
+
+def reverse_step_into_known_source_line(ctx_id):
+    def src_cb(found_areas, code_area):
+        found_areas.append(code_area)
+
+    cpu = get_active_cpu(ctx_id)
+    if cpu is None:
+        # Reversing into will reverse until the context becomes active.
+        expect_no_error(step_iface.reverse_instruction_into(ctx_id))
+        cpu = get_active_cpu(ctx_id)
+        stest.expect_different(cpu, None,
+                               f'Context {ctx_id} should have an active cpu')
+
+    while 1:
+        found_areas = []
+        (err, err_str) = debugger.iface.debug_symbol.address_source(
+             ctx_id, get_pc(cpu), 1, src_cb, found_areas)
+        if err == simics.Debugger_No_Error:
+            stest.expect_equal(len(found_areas), 1,
+                               f'Unexpected address sources: {found_areas}')
+            code_area = found_areas[0]
+            if get_pc(cpu) == code_area.get('start-address'):
+                break
+        else:
+            # If address_source fails allow source not found error.
+            stest.expect_equal(err, simics.Debugger_Source_Not_Found, err_str)
+        expect_no_error(step_iface.reverse_instruction_into(ctx_id))
+
+class CBData(object):
+    ctx_id = None
+    stop_reason = None
+
+print("Installing context creation callback")
+
+cbdata = CBData()
+installed_callback_ids = []
+
+def create_cb(cb_data, tcf_obj, ctx_id, updated):
+    event_type = "updated" if updated else "created"
+    print(f"Context '{context_name(ctx_id)}' {event_type}")
+    cb_data.ctx_id = ctx_id
+
+cid = expect_no_error(notify_iface.notify_context_creation(ctx_query, create_cb,
+                                                           cbdata))
+installed_callback_ids.append(cid)
+
+print("Installing context destruction callback")
+
+def destroy_cb(cb_data, tcf_obj, ctx_id):
+    print(f"Context 'context_name(ctx_id)' destroyed")
+    stest.expect_equal(ctx_id, cb_data.ctx_id,
+                       "Not the same context that was created")
+    simics.SIM_break_simulation("context destroyed")
+    cb_data.stop_reason = "destroy"
+
+cid = expect_no_error(notify_iface.notify_context_destruction(
+    ctx_query, destroy_cb, cbdata))
+installed_callback_ids.append(cid)
+
+conf.board.serconsole.con.iface.con_input.input_str("./debug_example\n")
+cli.run_command("enable-reverse-execution")
+
+# Should run until the context is destroyed. Context ID, ctx_id, should have
+# been updated at creation time.
+simics.SIM_continue(0)
+stest.expect_different(cbdata.ctx_id, None)
+stest.expect_equal(cbdata.stop_reason, "destroy")
+
+print("Reversing")
+
+# Reverse to where the program crashed (last known source line that ran).
+reverse_step_into_known_source_line(cbdata.ctx_id)
+
+print_current_line(cbdata.ctx_id)
+print_local_variables(cbdata.ctx_id)
+
+# A manual investigation of the variables will show that user.type seems bad.
+# Find why user.type contains an illegal value but getting the address of that
+# variable and planting a write breakpoint for that address. Then reverse back
+# to that breakpoint.
+investigated_symbol = "user.type"
+addr_list = expect_no_error(symbol_iface.symbol_address(cbdata.ctx_id, 0,
+                                                        investigated_symbol))
+stest.expect_equal(len(addr_list), 1, "One address expected")
+symbol_addr = addr_list[0]
+symbol_size = expect_no_error(symbol_iface.expression_value(
+    cbdata.ctx_id, 0, 0, f"sizeof {investigated_symbol}"))
+print(f"Address of {investigated_symbol}: 0x{symbol_addr:0{symbol_size * 2}x}")
+
+
+def addr_cb(cb_data, tcf_obj, ctx_id, cpu, insn_addr, data_addr, size):
+    print(f"Addresses 0x{data_addr:x}-0x{data_addr + size - 1:x} written by"
+          f" '{cpu.name}'@{cpu.steps}")
+    stest.expect_equal(cb_data.ctx_id, ctx_id,
+                       "Hit for a different context than created")
+    cb_data.stop_reason = "addr"
+    simics.SIM_break_simulation("address written")
+
+addr_cid = expect_no_error(notify_iface.notify_address(
+    ctx_query, symbol_addr, symbol_size, simics.Sim_Access_Write, False,
+    addr_cb, cbdata))
+
+# Should stop on the symbol address when reversing.
+cli.run_command("reverse")
+stest.expect_equal(cbdata.stop_reason, "addr")
+
+# Cancel the address notification so that it does not hit again.
+notify_iface.cancel(addr_cid)
+
+# Print the stack where the simulation stopped.
+stack = expect_no_error(symbol_iface.stack_frames(cbdata.ctx_id, 0, 10))
+print("Stack:")
+for (i, frame) in enumerate(stack):
+    func_name = frame.get("function-name") or "&lt;unknown&gt;"
+    print(f"{i}. 0x{frame['address']:016x}: {func_name}")
+
+# Reverse back to known source if needed.
+if len(stack) &gt; 0 and stack[0].get("source-line") is None:
+    # First frame is not a known source line, reverse step to last known
+    # source line.
+    reverse_step_into_known_source_line(cbdata.ctx_id)
+print_current_line(cbdata.ctx_id)
+
+# Manual investigation shows that this is the strcpy line.
+line_addrs = expect_no_error(symbol_iface.symbol_address(cbdata.ctx_id, 0,
+                                                         "line"))
+stest.expect_equal(len(line_addrs), 1, "One address should match 'line'")
+line_addr = line_addrs[0]
+
+# Read the data (plus one extra byte) that is copied to p-&gt;info and check if
+# the string is terminated or not.
+read_str = expect_no_error(symbol_iface.address_read(cbdata.ctx_id,
+                                                     line_addr, 21))
+terminated = False
+for byte in read_str:
+    if byte == 0:
+        terminated = True
+        break
+print(f"The copied string is {'' if terminated else 'not '}terminated")
+
+# Uninstall all installed notifications.
+while installed_callback_ids:
+    cid = installed_callback_ids.pop()
+    expect_no_error(notify_iface.cancel(cid))
+
+</code></pre>
+<p></p>
+<p>In this example the debugger API was used to:</p>
+<ul>
+<li>Add a symbol file.</li>
+<li>Plant notifications on when contexts are created and destroyed.</li>
+<li>Plant notifications on when a variable is modified.</li>
+<li>Get addresses for local variables.</li>
+<li>Get source line information.</li>
+<li>Get stack frames.</li>
+<li>Read memory for a context.</li>
+<li>Perform line stepping.</li>
+</ul>
+<p></p>
+
+<div class="chain">
+<a href="talos-debugging-queries.html">3.2 Using Context Queries</a>
+<a href="talos-debugging-limitations.html">3.4 Debugger Limitations</a>
+</div>

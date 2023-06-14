@@ -1,0 +1,68 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;textcon&gt;.telnet-setup</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-textcon.status.html">&lt;textcon&gt;.status</a>
+<a href="rm-cmd-textcon.telnet-status.html">&lt;textcon&gt;.telnet-status</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="textcon.telnet-setup"></a>
+<h1 id="textcon.telnet-setup"><a href="#textcon.telnet-setup">&lt;textcon&gt;.telnet-setup</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;textcon&gt;.telnet-setup</b> [<i>port</i>|<i>unix_socket</i>] [-ipv4] [-shutdown] [-raw] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Start telnet server on <i>port</i> or on UNIX socket <i>unix_socket</i>. If neither <i>port</i> or <i>unix_socket</i> is specified, or if <i>port</i> is set to 0, then an arbitrary port is used. If the port is busy, the command fails, unless the new_telnet_port_if_busy attribute has been set. The listening port is returned, or NIL on failure.
+<p>
+The given port must not be a privileged port, i.e. allowed range is [1024, 65535]. The command will fail if the <i>unix_socket</i> argument specifies an already existing file. UNIX sockets are not supported on Windows.
+</p><p>
+If <tt>-raw</tt> is specified, the telnet connections will use raw mode, where telnet control codes will not be interpreted.
+</p><p>
+If <tt>-shutdown</tt> is specified, any open telnet connections will be shutdown before starting a new server. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.textcon.html">textcon</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-textcon.telnet-status.html">&lt;textcon&gt;.telnet-status</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-textcon.status.html">&lt;textcon&gt;.status</a>
+<a href="rm-cmd-textcon.telnet-status.html">&lt;textcon&gt;.telnet-status</a>
+</div>

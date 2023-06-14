@@ -1,0 +1,211 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>1.3 API usage rules</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simics-api-information.html">1.2 Simics API Information</a>
+<a href="simics-api-syntax.html">1.4 Simics API Syntax</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="introduction.html">1 Introduction</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="API-usage-rules">1.3 API usage rules</a></h1>
+<p>
+  
+  </p><h2 class="jdocu"><a name="Simics-API-value-ownership-rules">1.3.1 Simics API value ownership rules</a></h2>
+<p>
+  
+  <a name="ownership"></a><a name="deallocation"></a>
+</p><p>
+  The <em>owner</em> of a value in memory is the code or object
+  responsible for freeing the value when it is no longer needed.
+  Failure to do so may cause excessive memory consumption
+  (a <em><a name="memory-leak">memory leak</a></em>). Deallocation of objects that
+  are not owned, or use of objects after they have been freed, will
+  likely result in a crash.
+  </p><p>
+  The ownership rules only apply to code written in C, C++ and DML.
+  In <a name="Python">Python</a>, <a name="memory-management">memory management</a> is entirely
+  automatic.
+  </p><p>
+  The general rules in Simics are:
+</p><p>
+  </p><ul>
+    <li>
+      <em>The caller of a function retains ownership of the arguments
+      it passes to that function.</em> Called functions do not assume
+      ownership of the arguments they receive.
+    </li>
+    <li>
+      <em>The caller of a function receives ownership of the value
+      returned from that function.</em> Called functions must relinquish
+      ownership of values they return.
+    </li>
+    <li>
+      A return type <code>const T *</code>, for some
+      type <code>T</code>, is taken to mean that ownership of the
+      returned value is <em>not</em> transferred to the caller,
+      overriding the previous rule.
+    </li>
+  </ul>
+      <p>
+  Exceptions to the rules above are documented for each interface or
+  API call.
+</p><p>
+  Each data type has its own way of deallocation. It is generally
+  documented where objects of that type are created; see below for
+  some specific examples.
+  </p><p>
+  </p><dl><dt id="dt:strings"><b>Strings</b></dt><dd>Null-terminated <a name="strings">strings</a> are freed using
+      <b><i><a name="MM_FREE">MM_FREE</a></i></b> in C/C++,
+      <code><a name="delete">delete</a></code> in DML. They are created using
+      <b><i><a name="MM_MALLOC">MM_MALLOC</a></i></b>, <b><i><a name="MM_STRDUP">MM_STRDUP</a></i></b>
+      or other functions that create heap-allocated strings.
+      (The standard C library functions <b><i><a name="malloc">malloc</a></i></b>,
+      <b><i><a name="free">free</a></i></b> etc should <em>not</em> be used.)
+<p>
+      The pointer-to-<code>const</code> rule applies: a string
+      returned as <code><a name="char-">char *</a></code> becomes owned by the
+      caller, but not one returned as
+      <code><a name="const-char-">const char *</a></code>.
+    </p></dd><dt id="dt:attribute-values"><b>Attribute values</b></dt><dd>Values of type <code><a name="attr_value_t">attr_value_t</a></code> are freed
+      using <b><i><a name="SIM_attr_free">SIM_attr_free</a></i></b>.
+<p>
+      Since the values may refer to heap-allocated data, they cannot
+      be copied by simple (shallow) assignment. To create a (deep)
+      copy of an <code>attr_value_t</code> that is safe to access
+      after the original has been freed,
+      use <b><i><a name="SIM_attr_copy">SIM_attr_copy</a></i></b>.
+</p><p>
+      The <code>attr_value_t</code> accessor functions return values
+      that borrow references to parts of the argument. Therefore, the
+      returned values cannot be altered, and cannot be used beyond
+      the life-time of the argument. (This obviously does not apply
+      to non-allocated values such as numbers or booleans.)
+    </p></dd><dt id="dt:simics-managed-types"><b>Simics-managed types</b></dt><dd>Values of some types are always owned and managed by Simics
+      itself and should never be freed by the user. Examples are
+      <code><a name="conf_object_t">conf_object_t</a></code>
+      and <code><a name="conf_class_t">conf_class_t</a></code>.
+    </dd></dl><p>
+  </p><h2 class="jdocu"><a name="api-execution-contexts">1.3.2 API Execution Contexts</a></h2>
+<p>
+  
+  </p><p>
+  The set of Simics API functions and interface methods that can be
+  called at a given point depends on the state of the execution thread
+  at the time of the call. The thread states are classified into
+  <em><a name="API-execution-contexts">API execution contexts</a></em>. Three distinct execution
+  contexts are defined, and they are inclusive, as illustrated in
+  the figure below:
+</p><p>
+  </p><div class="figure">
+
+    <div style="text-align: center">
+      <img alt="" src="execution-context.png">
+      <div class="caption">The execution context defines the part of the Simics API that
+	may be used</div>
+    </div>
+  </div>
+
+<p>
+  <br>Below is a description of the defined execution contexts:
+  </p><dl><dt id="dt:global-context"><b><a name="Global-Context">Global Context</a></b></dt><dd>Previously, this context was known as Outside Execution Context (OEC).
+<p>
+      The most permissive context. A thread running in
+      Global Context has exclusive access to all objects in the simulation.
+      </p><p>
+      In Global Context, either the simulation is not running or
+      all simulation activity
+      has temporarily been suspended. The front-end runs in this
+      context, as do the callbacks from <b><i><a name="SIM_run_alone">SIM_run_alone</a></i></b>,
+      <b><i><a name="SIM_thread_safe_callback">SIM_thread_safe_callback</a></i></b> and
+      <b><i><a name="SIM_notify_on_socket">SIM_notify_on_socket</a></i></b> with the
+      <i>run_in_thread</i> argument set to 0. Module initialisation,
+      object creation and object destruction are also performed in
+      this context.
+  </p><p>
+      The full API is available, including functions
+      and methods documented as callable in other contexts.
+    </p></dd><dt id="dt:cell-context-ec-ic"><b><a name="Cell-Context">Cell Context</a> (<a name="ECIC">EC/IC</a>)</b></dt><dd>This is a single context which was introduced in Simics 6 instead
+      of Execution Context (EC) and Instruction Context (IC) that were
+      around before.
+<p>
+      The context used for most device simulation. Typically used
+      when the simulation is running.
+</p><p>
+      Only functions and methods documented as callable in
+      Cell Context or Threaded Context are available in this context.
+</p><p>
+      Other objects in the simulation may be accessed or referenced,
+      but only objects belonging to the same <em>simulation cell</em>.
+      The cell concept is discussed in some detail in section
+      <a class="reference" href="multithreading-simulation-cells.html">2.3</a>, but basically
+      it is a partitioning of the simulation into groups of objects.
+      Cell Context is always tied to a specific cell.
+      </p><p>
+      Most device code run in this context, for instance when
+      a CPU accesses a device register, as do event callbacks
+      and many hap handlers.
+    </p></dd><dt id="dt:threaded-context"><b><a name="Threaded-Context">Threaded Context</a></b></dt><dd>Previously, this context was known as Foreign Thread Context (FTC).
+<p>
+      The most restrictive context, denoting a thread which is 
+      in neither Cell Context nor Global Context.
+</p><p>
+      Manually created threads and <b><i>SIM_run_in_thread</i></b> callbacks
+      are examples where this context is applicable.
+      Thread-aware models, like a CPU with support for multicore threading,
+      also perform most of its simulation in Threaded Context.
+      </p><p>
+      The available API is limited to functions explicitly
+      declared as being available in Threaded Context, but
+      a more permissive context can be entered when needed. For example,
+      <b><i><a name="SIM_thread_safe_callback2">SIM_thread_safe_callback</a></i></b> posts a
+      callback which is invoked in Global Context, and
+      Cell Context can be reached with
+      the <b><i>SIM_ACQUIRE_CELL</i></b> primitive.
+</p><p>
+      While objects can be accessed in this context, it is only permitted
+      after special primitives are used to ensure single-threaded access.
+      This usually amounts to entering Cell Context, but
+      thread-aware models can actually access their own object
+      state directly from Threaded Context. This is discussed in
+      chapter <a class="reference" href="rmapi-threading-model.html">2</a>.
+    </p></dd></dl><p>The reference manuals detail the permitted API execution context for
+  each API function and interface method. Calls are allowed in the
+  specified and more permissive contexts.
+  </p><p>
+  Violations of the API execution context rules have undefined
+  consequences. They may result in warnings or error messages, but this
+  is not guaranteed. In particular, a class implementing an interface
+  method is under no obligation to perform any such checks.
+
+</p>
+<div class="chain">
+<a href="simics-api-information.html">1.2 Simics API Information</a>
+<a href="simics-api-syntax.html">1.4 Simics API Syntax</a>
+</div>

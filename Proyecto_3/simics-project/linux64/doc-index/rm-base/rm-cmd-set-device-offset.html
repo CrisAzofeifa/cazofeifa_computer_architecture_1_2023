@@ -1,0 +1,73 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>set-device-offset</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-set-context.html">set-context</a>
+<a href="rm-cmd-set-device-reg.html">set-device-reg</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="set-device-offset"></a>
+<a name="write-device-offset"></a>
+<h1 id="set-device-offset"><a href="#set-device-offset">set-device-offset</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>set-device-offset</b> <i>"bank"</i> <i>offset</i> <i>data</i> <i>size</i> [-l|-b] <br><b>write-device-offset</b> <i>"bank"</i> <i>offset</i> <i>data</i> <i>size</i> [-l|-b] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Write <i>data</i> of <i>size</i> to the bank object <i>bank</i>, i.e. <tt>device.bank.&lt;bank-name&gt;</tt>, or to other object implementing the <tt>transaction</tt> or <tt>io_memory</tt> interface. The old way to specify register banks (<tt>device.&lt;bank-name&gt;</tt>) is supported but deprecated. The <i>offset</i> is the byte offset from the start of the bank/object. For devices that still use function numbers to identify memory mappings, the <i>bank</i> argument can be in the form <tt>device.&lt;function_number&gt;</tt>.
+<p>
+The <code>set-device-offset</code> command performs an inquiry write, typically not overwriting read-only data in the device, while <code>write-device-offset</code> does a standard write access. Note that not all device models support inquiry accesses.
+</p><p>
+Some devices, such as ones written in DML, provide a preferred byte endianness that data should be converted to. The command will convert to this endianness unless the <tt>-l</tt> or <tt>-b</tt> flags are used to select an alternate one.
+</p><p>
+Not all devices support accesses that span several registers or that accesses a register partially. (For DML 1.2 devices, such support must be enabled in the device when it is compiled. This limitation is planned to be removed in the next version of the language.)
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-get-device-reg.html">get-device-reg</a>, 
+<a href="rm-cmd-get-device-offset.html">get-device-offset</a>, 
+<a href="rm-cmd-set-device-reg.html">set-device-reg</a>, 
+<a href="rm-cmd-print-device-reg-info.html">print-device-reg-info</a>, 
+<a href="rm-cmd-print-device-regs.html">print-device-regs</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-set-context.html">set-context</a>
+<a href="rm-cmd-set-device-reg.html">set-device-reg</a>
+</div>

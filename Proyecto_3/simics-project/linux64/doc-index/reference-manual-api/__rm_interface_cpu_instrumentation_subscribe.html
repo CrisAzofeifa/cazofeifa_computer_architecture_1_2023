@@ -1,0 +1,617 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>cpu_instrumentation_subscribe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_cpu_instruction_query.html">cpu_instruction_query</a>
+<a href="__rm_interface_cpu_memory_query.html">cpu_memory_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_cpu_instrumentation_subscribe">cpu_instrumentation_subscribe</a></h1>
+<p>
+
+<a name="cpu_instrumentation_subscribe"></a><a name="cpu_instrumentation_subscribe_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>cpu_instrumentation_subscribe</code> interface is implemented by
+   processor classes that support CPU instrumentation. The interface can be
+   used to monitor and instrument various actions through callbacks. It is
+   designed for being more efficient than haps and will not synchronize any
+   threads. This means that any user of the interface must assume that
+   registered callbacks can be called in parallel by multiple threads if any of
+   the multi-threaded execution modes are used in Simics.
+<p>
+   A processor implementing the interface is regarded as a provider of
+   instrumentation and is typically used by an instrumentation tool object. The
+   tool object is supposed to register callbacks in this interface and act when
+   they are called. To handle different threads it is recommended that the
+   tools uses a connection object (a sub-object created by the tool) that
+   registers these callbacks for each processor that it monitors. Then, any
+   data collected can be stored in these connection objects and will thus not
+   be subject to concurrent access from different threads that hosts the
+   processors. The data can than be aggregated by the tool when
+   appropriate. This approach needs no synchronization locks and allows for
+   efficient simulation.
+</p><p>
+   See <code>instrumentation_order</code> interface for more details on the
+   callback order.
+</p><p>
+   The <i>cpu</i> argument in all methods below is the processor object
+   implementing this interface.
+</p><p>
+   The <i>connection</i> argument is the "user" object of this interface,
+   typically a connection object as described above. However, it can be any
+   object and even NULL if there is no suitable object to pass. For instance,
+   if the callback is registered by a Python script. In this case
+   synchronization will be handled by the Python layer.
+</p><p>
+   All registration methods in the interface install at least one callback, the
+   <i>cb</i> argument, that will be called at a particular instrumentation
+   point in the processor object. The Simics Cell Context API is
+   available for use in these callbacks. The callbacks have different
+   signatures depending on their use case. The <i>data</i>
+   argument is user defined data that can be associated with each
+   callback. Every time the callback is called this data will be passed as an
+   argument to the callback. The data can be unique for each registration, even
+   though the same callback pointer is used.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(cpu_instrumentation_subscribe) {
+        /* Callback specific methods */
+        void (*remove_callback)(
+                conf_object_t *NOTNULL cpu,
+                cpu_cb_handle_t *handle);
+        void (*enable_callback)(
+                conf_object_t *NOTNULL cpu,
+                cpu_cb_handle_t *handle);
+        void (*disable_callback)(
+                conf_object_t *NOTNULL cpu,
+                cpu_cb_handle_t *handle);
+
+        /* Callback groups methods, operating on several callbacks 
+           associated to a connection. */
+        void (*remove_connection_callbacks)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *NOTNULL connection);
+        void (*enable_connection_callbacks)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *NOTNULL connection);
+        void (*disable_connection_callbacks)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *NOTNULL connection);
+
+        /* Subscribe methods */
+        cpu_cb_handle_t *(*register_instruction_before_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_instruction_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_instruction_after_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_instruction_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_read_before_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_access_scope_t scope,
+                cpu_memory_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_read_after_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_access_scope_t scope,
+                cpu_memory_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_write_before_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_access_scope_t scope,
+                cpu_memory_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_write_after_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_access_scope_t scope,
+                cpu_memory_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_address_before_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_address_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_cached_instruction_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_cached_instruction_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_instruction_decoder_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_instruction_decoder_cb_t cb,
+                cpu_instruction_disassemble_cb_t disass_cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_exception_before_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                int exception_number,
+                cpu_exception_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_exception_after_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                int exception_number,
+                cpu_exception_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_exception_return_before_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_exception_return_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_exception_return_after_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_exception_return_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_mode_change_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_mode_change_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_control_register_read_before_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                int register_number,
+                cpu_control_register_read_cb_t cb,
+                lang_void *data);
+        cpu_cb_handle_t *(*register_control_register_write_before_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                int register_number,
+                cpu_control_register_write_cb_t cb,
+                lang_void *data);
+};
+        
+#define CPU_INSTRUMENTATION_SUBSCRIBE_INTERFACE \
+        "cpu_instrumentation_subscribe"
+</pre><p>
+ </p><p>
+
+   <b>Callback Related Methods</b>
+</p><p>
+   Every function in this interface that registers a callback returns a unique
+   handle of type <code>cpu_cb_handle_t</code>. The <b><i>remove_callback</i></b>
+   method removes the callback associated with the handle. The
+   <b><i>enable_callback</i></b> and <b><i>disable_callback</i></b> methods can be
+   used to temporarily enable and disable a callback. 
+</p><p>
+   The <b><i>remove_connection_callbacks</i></b> removes all callbacks associated
+   with a connection object, i.e., all the callbacks that was registered with
+   the same connection object. The <b><i>enable_connection_callbacks</i></b> and
+   <b><i>disable_connection_callbacks</i></b> enables and disables all callbacks
+   associated with a connection object. NULL cannot be passed to these methods
+   to handle callbacks installed without any connection object.
+</p><p>
+   The design philosophy is that registering and removing a callback can be
+   relatively expensive, whereas enable and disable a callback should be
+   cheap. On the other hand, a disabled callback can slow down the simulation
+   speed a bit more compared to running without callbacks.
+</p><p>
+   <b>Instruction Related Methods</b>
+</p><p>
+   The method <b><i>register_instruction_before_cb</i></b> installs a callback
+   that is called before an instruction is executed. The callback type is as
+   follows:
+   </p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_instruction_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        instruction_handle_t *handle,
+        lang_void *user_data);</pre><p>
+ 
+</p><p>
+   The object <i>obj</i> is the connection or the user object that
+   registers the callback (or NULL if there is no object) and <i>cpu</i> is
+   the processor object executing the instruction. If a dedicated connection
+   object associated with each processor is used, the object's private data can
+   store the interface pointers needed to access processor state.  This is a
+   useful trick to speed up the simulation speed. Otherwise such interface
+   pointers need to be acquired each time the callback is called. If no
+   connection object is used the pointers can be saved in the callback's user
+   data. The <i>handle</i> can be used to query more data about
+   the instruction, using the <code>cpu_instruction_query</code>
+   interface. The <i>user_data</i> is the user data associated with the
+   callback.
+</p><p>
+   The registered callback is called for every instruction type. Use the
+   <b><i>register_cached_instruction_cb</i></b> method to control which type
+   of instructions that should be instrumented.
+</p><p>
+   <b><i>register_instruction_after_cb</i></b> installs a callback that is called
+   after an instruction is executed. The callback is of the same type as for
+   the before variant and is called for every instruction type. Use the
+   <b><i>register_cached_instruction_cb</i></b> method to control which type
+   of instructions that should be instrumented. Reading the program counter
+   register for a control flow instruction in this callback will reflect the
+   new location, whereas using the <code>cpu_instruction_query</code> for
+   reading out the instruction address will still return the address of the
+   control flow instruction.
+</p><p>
+   None: When an exception occurs the instruction is aborted and any
+   installed callbacks by the <b><i>register_instruction_after_cb</i></b> method
+   are not called.
+</p><p>
+   <br>
+   <b>Memory Related Methods</b>
+</p><p>
+   <b><i>register_read_before_cb</i></b> installs a callback that is called before
+   a memory read operation is performed. The callback type is as follows:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_memory_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        memory_handle_t *handle,
+        lang_void *user_data);</pre><p>
+ 
+   </p><p>
+   As for instructions, <i>obj</i> is the object that registered the
+   callback and <i>cpu</i> is the processor doing the access.  The
+   <i>handle</i> can be used to further operate on the
+   access by using the <code>cpu_memory_query</code> interface. The interface
+   can for instance be used to read the data of the memory operation. For more
+   information, see the documentation for the <code>cpu_memory_query</code>
+   interface.
+</p><p>
+   The <i>scope</i> argument defines the access scope for the
+   callback. There are two defined scopes: <code>CPU_Access_Scope_Explicit</code>
+   and <code>CPU_Access_Scope_Implicit</code>. The explicit scope installs a
+   callback for every operation done explicitly by an instruction, such as
+   loading or storing a value. The implicit scope installs a callback for every
+   implicit access, such as table walks or memory accesses performed by
+   exception and interrupt handling. If all accesses are requested the same
+   callback function can be registered for both scopes by registering the
+   callback twice, one for each scope. 
+</p><p>
+   If a memory access crosses a page boundary the access will be split into two
+   separate calls, one for the first part covering the first page, and one for
+   the second part covering the second page. See the <b><i>get_page_crossing_info</i></b>
+   method in the <code>cpu_memory_query</code> interface for a way to
+   distinguish the different cases.
+</p><p>
+   The <i>user_data</i> is the data associated with the callback.
+</p><p>
+   Similar to <b><i>register_read_before_cb</i></b>, the following three methods
+   work in the same way:
+</p><p>
+   <b><i>register_read_after_cb</i></b> installs a callback that is called after
+   a memory read operation is performed. 
+</p><p>
+   <b><i>register_write_before_cb</i></b> installs a callback that is called before
+   a memory write operation is performed.
+</p><p>
+   <b><i>register_write_after_cb</i></b> installs a callback that is called after
+   a memory write operation is performed.
+</p><p>
+   Memory accesses of prefetch types or any other control operation calls the
+   read callbacks. To distinguish them from reads an architecture specific
+   interface can be used to lookup the access type. See the
+   <code>x86_memory_query</code> interface for example.
+</p><p>
+   None: When an exception occurs the instruction is aborted and any
+   installed memory callbacks after this point are not called.
+</p><p>
+   <br>
+   <b>Addresses</b>
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+Only available on x86 targets.</div><b><i>register_address_before_cb</i></b> can be used to register a callback
+   that will be called each time a logical address is generated by an
+   instruction for an explicit read or a write operation. This occurs before
+   the actual memory operation takes place. This allows a user to inspect and
+   change the target address for the operation. The callback has the following
+   signature:
+<p>
+   
+</p><pre class="jdocu_small">typedef logical_address_t (*cpu_address_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        logical_address_t address,
+        address_handle_t *handle,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The argument <i>obj</i> is the object installing the callback and the
+   <i>cpu</i> is the processor generating the logical
+   <i>address</i>. The <i>handle</i> can be used to
+   extract more information about the address by using an architecture specific
+   interface. See the <code>x86_address_query</code> for details.
+</p><p>
+   The new logical address should be returned by the callback.
+</p><p>
+   <br>
+   <b>Cached Instructions</b>
+</p><p>
+   <b><i>register_cached_instruction_cb</i></b> is used for installing a callback
+   that is called every time Simics inserts the instruction into an internal
+   instruction cache, i.e., executing from a specific address with a specific
+   execution mode for the first time. Executing the instruction again will
+   typically not invoke the callback since the instruction is already placed in
+   the instruction cache. However, if the cache is flushed and the instruction
+   is executed again the callback will once again be called. The callback has
+   the following signature:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_cached_instruction_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        cached_instruction_handle_t *ci_handle,
+        instruction_handle_t *iq_handle,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   From this callback one can use the <i>cpu_cached_instruction</i>
+   interface and <i>ci_handle</i> to register instrumentation callbacks for
+   this specific instruction alone. The installed callbacks will be called
+   every time the instruction is executed (even the first time just after the
+   <code>cpu_cached_instruction_cb_t</code> callback has returned).  
+   This means that the
+   user can filter out certain instructions of interest and instrument only
+   those. The <i>iq_handle</i> and the <code>cpu_instruction_query</code>
+   interface can be use to do the filtering by examining the instruction. The
+   <i>user_data</i> is the callback user data for the callback.
+</p><p>
+   For callbacks registered for memory operations only those in the explicit
+   scope issued by the instruction will be instrumented, e.g., hardware table
+   walks and exceptions will not be considered by this method. To instrument
+   these operations use the <b><i>register_(read/write)_(before/after)_cb</i></b>
+   with the implicit scope instead.
+</p><p>
+   If no callbacks are registered by calling the
+   <i>cpu_cached_instruction</i> interface, the instruction will not be
+   instrumented.
+</p><p>
+   <br>
+   <b>Instruction Set Augmentation</b>
+ </p><p>
+   <b><i>register_instruction_decoder_cb</i></b> lets the user redefine
+   instruction semantics in Simics, or implement new instructions. The
+   <i>cb</i> argument is a callback function that will be called every time
+   Simics decodes an instruction. From this callback the user can accept the
+   instruction or deny it. In most cases this only happens once per instruction
+   address since Simics usually caches decoding results in the internal
+   instruction cache. If the cache is flushed the callback may be called again.
+ </p><p>
+   The callback signature looks like this:
+   </p><p>
+   
+</p><pre class="jdocu_small">typedef int (*cpu_instruction_decoder_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        decoder_handle_t *decoder_handle,
+        instruction_handle_t *iq_handle,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The instruction bytes are read by using the <b><i>get_instruction_bytes</i></b>
+   method of the <code>cpu_instruction_query</code> interface together with
+   the <i>iq_handle</i>. The returned value is of a
+   <code>cpu_bytes_t</code> type. To access the bytes use the <code>data</code> and
+   the <code>size</code> members in the returned value.
+</p><p>
+   If the decoder requires more bytes (i.e., because the new instruction is
+   longer), a negative integer value should be returned by the <i>cb</i>
+   function, indicating the number of bytes needed. For example, if the
+   available bytes are 3 but the decoder need at least 4 bytes, -4 should be
+   returned. The callback will then be called again with more available bytes
+   (this can be repeated if the new instruction requires even more bytes at
+   this point). Note that requesting more data than actual needed can cause
+   spurious page faults if the data crosses a page boundary. 
+</p><p>
+   If the instruction is accepted by the callback a positive integer number
+   should be returned corresponding to the length of the instruction. In this
+   case the <b><i>register_emulation_cb</i></b> method of the
+   <code>cpu_instruction_decoder</code> interface should be called to set the
+   actual (user) function that Simics will call each time the instruction is
+   executed. 
+</p><p>
+   If the <i>cb</i> callback should ignore the instruction the number 0
+   should be returned. This means that any other registered decoder will have a
+   chance to decode the instruction. If no decoder accepts it, Simics' default
+   implementation will be used.
+</p><p>
+   The <b><i>register_emulation_cb</i></b> method also needs the
+   <i>decoder_handle</i> which is available in the dedoder callback. For
+   more information, see the documentation of the
+   <code>cpu_instruction_decoder</code> interface.
+</p><p>
+   A <i>disass_cb</i> argument should also be passed to the
+   <b><i>register_instruction_decoder_cb</i></b> method. This function is called
+   every time Simics wants to disassemble an instruction. For every accepted
+   instruction a corresponding disassembly string should be returned by this
+   function. It has the following signature:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef tuple_int_string_t (*cpu_instruction_disassemble_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        generic_address_t addr,
+        cpu_bytes_t bytes);</pre><p>
+
+</p><p>
+   <i>obj</i> is the object registering the
+   <b><i>register_instruction_decoder_cb</i></b> and <i>cpu</i> is the
+   processor disassembling the instruction. <b><i>addr</i></b> is the address of
+   the instruction in a generic form. This means that it is typically a
+   physical address or a logical address depending on the context of the
+   disassembling. The address can be used for offset calculations, i.e.,
+   displaying an absolute address instead of a relative one, for example in a
+   branch instruction. The <i>bytes</i> argument should be used to read
+   instruction bytes. The return value is of type
+   <code>tuple_int_string_t</code> and should be filled with the instruction
+   length and an allocated (e.g., malloc) string representing the disassembly
+   of the instruction. The ownership of the string is transferred to the
+   calling environment which will free it when it is no longer needed.
+</p><p>
+   If too few bytes are passed for the instruction to be disassembled a
+   negative value should be returned for the length indicating the needed
+   bytes. The <i>disass_cb</i> is then called again with more bytes. If the
+   instruction is rejected a length of 0 should be returned and the string
+   should be set to NULL. 
+</p><p>
+   <br>
+   <b>Exception Related Methods</b>
+</p><p>
+   <b><i>register_exception_before_cb</i></b> is used to register a callback that
+   will be called before an exception or interrupt is taken.  The
+   <i>exception_number</i> can be used to select a callback on a specific
+   exception, with the same number as used in the <code>exception</code>
+   interface. If all exceptions should be subscribed to, the
+   <code>CPU_Exception_All</code> constant can be used.
+   The callback signature looks like this:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_exception_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        exception_handle_t *exception_handle,
+        lang_void *user_data);</pre><p>
+
+   </p><p>
+   The <i>obj</i> is the object registering the callback and <i>cpu</i>
+   is the processor that takes the exception or receives the interrupt. The
+   handle is used to get more architectural information about the exception,
+   for example, see the <code>x86_exception_query</code> for details. The
+   <i>user_data</i> is the callback user data.
+</p><p>
+   No architectural state has been changed in this callback to reflect the
+   exception or interrupt, e.g., the program counter will still be at the
+   faulting instruction. Since an exception can occur while handling an
+   exception it is not always the case that this callback corresponds to the
+   final taken exception. Recursive exception will result in another call to
+   this callback.
+  </p><p>
+   <b><i>register_exception_after_cb</i></b> is used to register a callback that
+   will be called after an exception was taken. It takes the same arguments as
+   <b><i>register_exception_before_cb</i></b>. In this callback the architectural
+   state has been updated, e.g., the program counter points to the first
+   instruction of the exception handler. The callback is of the same type as
+   for the before variant.
+</p><p>
+   <b><i>register_exception_return_before_cb</i></b> is used to register a
+   callback that will be called just before an exception handler is done and
+   resumes execution of the normal program code.  The callback signature looks
+   like this:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_exception_return_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        exception_return_handle_t *exception_handle,
+        lang_void *user_data);</pre><p>
+
+   </p><p>
+   The <i>obj</i> is the object registering the callback and <i>cpu</i>
+   is the processor that takes the exception or receives an interrupt. The
+   handle is used to get more architectural information about the
+   exception. Currently there is no interface available for this.
+   </p><p>
+   <b><i>register_exception_return_after_cb</i></b> is used to register a callback
+   that will be called after an exception has been executed, e.g., the program
+   counter points to the normal program where execution will continue.
+</p><p>
+   <br>
+   <b>Execution Mode</b>
+</p><p>
+   <b><i>register_mode_change_cb</i></b> is used to register a callback that will
+   be called every time the processor changes mode. The supported modes are:
+   user, supervisor, and hypervisor.
+</p><p>
+   The callback signature looks lite this:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_mode_change_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        processor_mode_t old_mode, processor_mode_t new_mode,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The <i>obj</i> is the object registering the callback and <i>cpu</i>
+   is the processor that changes mode. The <i>old_mode</i> is the mode
+   before the change and new_mode is the mode after the change.
+</p><p>
+   <br>
+   <b>Control Registers</b>
+</p><p>
+   <b><i>register_control_register_read_before_cb</i></b> is used to register a
+   callback that will be called before every control register read. The
+   <i>register_number</i> is the control register number to install the
+   callback on. It is the same number which is used in the
+   <code>int_register</code> interface. The constant
+   <code>CPU_Control_Register_All</code> can be used to subscribe to all control
+   registers.
+</p><p>
+   The callback signature looks like this:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_control_register_read_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        int register_number,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The <i>obj</i> is the object registering the callback and <i>cpu</i>
+   is the processor that reads the control register <i>register_number</i>.
+   The <i>user_data</i> is the user data for the callback.
+</p><p>
+   <b><i>register_control_register_write_before_cb</i></b> is used to register a
+   callback that will be called before every control register write. The
+   <i>register_number</i> is the control register number to install the
+   callback on. It is the same number which is used in the
+   <code>int_register</code> interface. The constant
+   <code>CPU_Control_Register_All</code> can be used to subscribe to all control
+   registers. 
+</p><p>
+   The callback signature looks like this:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_control_register_write_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        int register_number,
+        uint64 value,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The <i>obj</i> is the object registering the callback and <i>cpu</i>
+   is the processor that writes to the control register
+   <i>register_number</i>.  The <i>value</i> is the value that will be
+   written.  The <i>user_data</i> is the user data for the callback.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_cpu_instruction_query.html">cpu_instruction_query</a>
+<a href="__rm_interface_cpu_memory_query.html">cpu_memory_query</a>
+</div>

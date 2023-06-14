@@ -1,0 +1,89 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>exec_trace</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_exception.html">exception</a>
+<a href="__rm_interface_execute.html">execute</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_exec_trace">exec_trace</a></h1>
+<p>
+
+<a name="exec_trace"></a><a name="exec_trace_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>exec_trace</code> interface is implemented by processor models
+  that support tracing. A trace listener registers itself with the
+  <b><i>register_tracer</i></b> call. The <i>tracer</i> callback will be
+  called by the processor model
+  when each instruction is just about to be executed, passing the
+  <i>tracer_data</i> as passed to the <b><i>register_tracer</i></b> function
+  in addition to information about the instruction that is executed.
+  Invoke <b><i>unregister_tracer</i></b> with the same two pointers to deregister
+  the listener.
+<p>
+  
+</p><pre class="jdocu_small">typedef void (*instruction_trace_callback_t)(lang_void *tracer_data,
+                                             conf_object_t *cpu,
+                                             linear_address_t la,
+                                             logical_address_t va,
+                                             physical_address_t pa,
+                                             byte_string_t opcode);</pre><p>
+
+</p><p>
+  The <i>pa</i> parameter to the callback will always be valid, but some
+  CPU architectures may not support <i>la</i> or <i>va</i>. The
+  <i>la</i> argument is typically only valid for x86 CPUs. Lastly, the
+  opcode of the instruction is passed in <i>opcode</i>. The
+  <i>opcode</i> is passed without endian conversion, meaning that byte X in
+  <i>opcode</i> corresponds to the byte at <i>pa</i> + X.
+</p><p>
+  </p><pre class="jdocu_small">SIM_INTERFACE(exec_trace) {
+        void (*register_tracer)(conf_object_t *NOTNULL cpu_obj,
+                                instruction_trace_callback_t tracer,
+                                lang_void *tracer_data);
+        void (*unregister_tracer)(conf_object_t *NOTNULL cpu_obj,
+                                  instruction_trace_callback_t tracer,
+                                  lang_void *tracer_data);
+};
+
+#define EXEC_TRACE_INTERFACE "exec_trace"
+</pre><p>
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for both methods.
+  Cell Context for the callback.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_exception.html">exception</a>
+<a href="__rm_interface_execute.html">execute</a>
+</div>

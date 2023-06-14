@@ -1,0 +1,217 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>CraffFS</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>CraffFS</h1>
+
+<p>
+  
+  
+  
+</p><p>
+</p><h2 class="jdocu"><a class="not-numbered" name="craff-fs">craff-fs</a></h2>
+<p>
+
+</p><p>
+Most large data files in Simics, such as disk images, are stored in
+the compressed random access file format (CRAFF). In order to
+manipulate the raw data in these files it is necessary to decompress
+the file using the <code>craff</code> tool. For disk images these files can be
+very large, so decompressing them is not always feasible. Therefore,
+we provide an alternative in the experimental CraffFS tool. With
+CraffFS you can "mount" the craff file and access it through the
+file system as if it is a normal raw file. The CraffFS tool is only
+available on Linux and is provided AS IS.
+</p><p>
+CraffFS requires <code>libfuse</code> version 2.x.x (tested with
+2.9.9) and <code>libvtutils</code>.
+</p><p>
+The synopsis of craff-fs is as follows:
+</p><pre class="jdocu_small"># ./bin/craff-fs 
+craff-fs file mountpt [fuse-opts]
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="Example">Example</a></h3>
+<p>
+
+</p><p>
+This examples shows how to "mount" a craff image of a disk image in
+order to expose it as raw data without decompressing it and then mount
+the resulting file via loop back in order to access the disk's file
+system. Mounting craff files as raw files does not require root
+privileges, but mounting loop back mounting the result usually
+does. In this example, there is a craff image of a disk containing an
+Ubuntu installation of Linux for the x86 based "Viper" target.
+</p><p>
+The first step is to mount the craff file with CraffFS to be able to
+access the raw data.
+</p><p>
+</p><pre class="jdocu_small"># <b>./bin/craff-fs targets/x86-x58-ich10/images/viper-ubuntu-10.10.craff craff-mnt</b>
+</pre><p>
+</p><p>
+The mount point will now be populated with two
+files: <code>data</code> and <code>info</code>.
+</p><p>
+Other users (including root or users with administrator privileges)
+cannot access the information mounted under craff-mnt mount point:
+</p><p>
+</p><pre class="jdocu_small">$ <b>ls craff-mnt</b>
+ls: cannot access 'craff-mnt': Permission denied
+</pre><p>
+</p><p>
+Details about the user, group and file permission cannot be accessed
+by other users (including root).
+</p><p>
+</p><pre class="jdocu_small">$ <b>ls -l</b>
+d????????? ? ?           ?               ?            ? mnt_point/
+</pre><p>
+</p><p>
+If other users should access the mount point, "allow_others" should be
+uncommented from <code>/etc/fuse.conf</code> file. This will enable all users
+(including root) to list/view the contents.
+</p><p>
+The <code>data</code>
+file contains the raw data that makes up the craff file,
+the <code>info</code> file contains additional information about the
+craff file in text format:
+</p><p>
+</p><pre class="jdocu_small"># <b>cat craff-mnt/info </b>
+Craff mount: 0.1.0
+
+Craff version: 1
+Compression: gzip
+Size: 20496236544
+Block bits: 13
+Sub bits: 4
+Directory bits: 10
+</pre><p>
+</p><p>
+</p><h4 class="jdocu"><a class="not-numbered" name="Use-of-parted-to-display-the-file-type-and-partitions">Use of parted to display the file type and partitions</a></h4>
+<p>
+
+</p><p>
+Since a disk image will have different partitions at different offsets
+it is not possible to mount the "disk image". It is necessary to mount
+the individual partitions. There is a tool called <code>parted</code>
+that can display this information.
+</p><p>
+</p><pre class="jdocu_small"># <b>parted craff-mnt/data</b>
+GNU Parted 2.3
+Using /disk1/aarno/simics-4.8/craff-mnt/data
+Welcome to GNU Parted! Type 'help' to view a list of commands.
+(parted) <b>unit</b>
+Unit?  [compact]? <b>b</b>
+(parted) <b>print</b>
+Model:  (file)
+Disk /disk1/aarno/simics-4.8/craff-mnt/data: 20496236544B
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+
+Number  Start         End           Size          Type      File system     Flags
+ 1      1048576B      19594739711B  19593691136B  primary   ext4            boot
+ 2      19595787264B  20495466495B  899679232B    extended
+ 5      19595788288B  20495466495B  899678208B    logical   linux-swap(v1)
+
+(parted) <b>q</b>
+</pre><p>
+</p><p>
+CraffFS allows mounting as read-write and read-only. File systems
+successfully tested: ext2, ext3, ext4, NTFS, FAT32.
+</p><p>
+It can be seen from the example above that the first partition has an
+ext4 file system and it starts at 1048576 bytes offset. This
+information will be required to mount that partition via the loop back
+device.
+</p><p>
+
+</p><h4 class="jdocu"><a class="not-numbered" name="Mounting-the-partitions">Mounting the partitions</a></h4>
+<p>
+
+</p><p>
+Mount as read-only:
+</p><p>
+</p><pre class="jdocu_small"># <b>mount -o ro,loop,offset=1048576 craff-mnt/data /mnt/</b>
+# <b>ls /mnt/</b>
+bin    dev   initrd.img  lost+found  opt   sbin     sys  var
+boot   etc   lib         media       proc  selinux  tmp  vmlinuz
+cdrom  home  lib64       mnt         root  srv      usr
+# 
+</pre><p>
+</p><p>
+Mount as read-write:
+</p><p>
+</p><pre class="jdocu_small"># <b>[sudo] mount -o rw,loop,offset=1048576 craff-mnt/data /mnt/</b>
+# <b>ls /mnt/</b>
+bin    dev   initrd.img  lost+found  opt   sbin     sys  var
+boot   etc   lib         media       proc  selinux  tmp  vmlinuz
+cdrom  home  lib64       mnt         root  srv      usr
+#
+</pre><p>
+</p><p>
+Mount command used with options (-o) requires administrator
+privileges. If the craffFS command is run without administrator
+privileges, even if mount command is run as root, mounting will
+fail. There are two options:
+</p><p>
+</p><ol>
+<li> Run both CraffFS and mount commands as root.</li>
+<li> Run CraffFS as normal user but edit <code>/etc/fuse.conf</code>
+and uncomment "allow_others". Root (and other users) can mount and
+access mounted files.</li>
+</ol>
+
+<h4 class="jdocu"><a class="not-numbered" name="Unmounting-the-partitions">Unmounting the partitions</a></h4>
+<p>
+
+</p><p>
+</p><pre class="jdocu_small"># <b>fusermount -u /mnt/</b>
+# <b>fusermount -u craff-mnt</b>
+</pre><p>
+</p><p>
+
+
+</p><h3 class="jdocu"><a class="not-numbered" name="Use-CRAFF-tool-to-reduce-the-size-of-CRAFF-files-if-needed">Use CRAFF tool to reduce the size of CRAFF files if needed</a></h3>
+<p>
+
+</p><p>
+Craff files will increase in size as files and information is written,
+but the file will not automatically decrease if same files or others
+are removed/deleted. To shrink the craff file size after delete,
+create an zero file (full of zeros) until the end of the partition and
+use the <code>craff</code> tool. This tool will ignore all zero blocks
+and will shrink the craff file.
+</p><p>
+
+
+</p><p>
+</p>
+<div class="chain">
+<span></span>
+</div>

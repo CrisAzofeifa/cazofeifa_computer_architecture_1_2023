@@ -1,0 +1,84 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>concurrency_group</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_component_connector.html">component_connector</a>
+<a href="__rm_interface_concurrency_mode.html">concurrency_mode</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_concurrency_group">concurrency_group</a></h1>
+<p>
+
+<a name="concurrency_group"></a><a name="concurrency_group_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>concurrency_group</code> interface is used to ensure
+   that groups of objects are placed in the same thread domain.
+<p>
+   The <b><i>serialized_memory_group</i></b> method returns a list with objects
+   that should be placed in the same thread domain when the models
+   run in <code>Sim_Concurrency_Mode_Serialized_Memory</code>.
+</p><p>
+   The <b><i>execution_group</i></b> method returns a list with objects that
+   should always be placed in the same thread domain.
+</p><p>
+   Both methods take a <i>group_index</i> argument, allowing
+   multiple lists to be returned. The index argument is 0-based,
+   and a nil attribute for the first unsupported index. Note that
+   returned lists do not necessarily contain the object implementing
+   the interface; the interface can be used to group other objects.
+</p><p>
+   When Simics forms the thread domain groups, all objects implementing the
+   <code>concurrency_group</code> are queried, and the constraints
+   are combined. For instance, the groups [A, B] and [A, C]
+   are combined into the group [A, B, C]. That is, the objects
+   A, B and C will be put in the same thread domain.
+</p><p>
+   Refer to the threading chapter in the <em>API Reference Manual</em>
+   for more details.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(concurrency_group) {
+        attr_value_t (*serialized_memory_group)(conf_object_t *NOTNULL obj,
+                                                unsigned group_index);
+        attr_value_t (*execution_group)(conf_object_t *NOTNULL obj,
+                                        unsigned group_index);
+};
+#define CONCURRENCY_GROUP_INTERFACE "concurrency_group"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_component_connector.html">component_connector</a>
+<a href="__rm_interface_concurrency_mode.html">concurrency_mode</a>
+</div>

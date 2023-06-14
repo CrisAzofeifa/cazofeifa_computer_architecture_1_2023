@@ -1,0 +1,98 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>B.4 Porting DML 1.2 to DML 1.4</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="changes.html">B Changes from DML 1.2 to DML 1.4</a>
+<a href="changes-auto.html">B.5 Language differences handled by the port-dml script</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="changes.html">B Changes from DML 1.2 to DML 1.4</a>
+&nbsp;/&nbsp;</div>
+<h1 id="porting-dml-1-2-to-dml-1-4">B.4 <a href="#porting-dml-1-2-to-dml-1-4">Porting DML 1.2 to DML 1.4</a></h1>
+<p>When porting a DML 1.2 file to DML 1.4, most differences can be taken
+care of by the automatic conversion script <code>port-dml</code>. The
+script relies on the <code>dmlc</code> compiler to produce information on
+what changes need to be applied.</p>
+<p>The easiest way to invoke <code>port-dml</code> is through a wrapper
+script <code>port-dml-module</code>. The script ports all devices in one
+SIMICS module, and all imported files it depends on. The scripts works by
+invoking <code>make</code> and <code>port-dml</code>, and prints how they are invoked, which
+is instructive for understanding how to use <code>port-dml</code>
+standalone.</p>
+<p>The <code>port-dml-module</code> script works well for converting most DML
+devices, but has some limitations when it comes to common code that is
+shared between many devices. In particular, if some parts of common
+code is unused, e.g. if a provided template is never instantiated,
+then it may skip some conversions. For this reason, it can be better
+to use <code>port-dml</code> directly for common code.</p>
+<h2 id="using-the-port-dml-script">B.4.1 <a href="#using-the-port-dml-script">Using the port-dml script</a></h2>
+<p>In order to port a DML 1.2 file to DML 1.4, first pass the <code>-P
+<em>tagfile</em></code> command-line argument to <code>dmlc</code> when compiling
+the file. This causes <code>dmlc</code> to output an analysis to the file
+<em>tagfile</em>. The file contains one message per line, with a
+machine-readable description of something that needs to be
+changed. You can run the <code>port-dml</code> script to interpret and apply the
+changes:</p>
+<pre>bin/port-dml --src <em>file</em>.dml --dest <em>file</em>-1.4.dml --tags <em>tagfile</em>
+</pre>
+<p>This will create a new DML 1.4 file
+<code><em>file</em>-1.4.dml</code>. This should normally be a correct
+DML 1.4 file, but the script has a number of <a href="changes-manual.html">known
+limitations</a> that can cause the file to be
+broken. In most cases, broken conversions should be detected as a
+compiler error when trying to compile the converted file.</p>
+<p>Note that if the tag file exists, then DMLC will <em>append</em>
+messages to the file, so if you need to re-run the analysis, you
+should normally remove the file first.</p>
+<p>If you build your device from a Simics project, you can use the variable
+<code>DMLC_PORTING_TAG_FILE</code> to create a tag file. The variable should
+be set to the absolute path of a file; <code>make</code> will pass that in the
+-P flag to <code>dmlc</code>. Note that if you want to re-run an analysis,
+then you need to first run <code>make clean-<em>module</em></code> to force
+DMLC to re-run on all devices in the SIMICS module.</p>
+<p>If parts of the device source code is unused, e.g. if a template is
+never instantiated within the device, then DMLC can not perform a full
+analysis on that code; only simple syntactical transformations will be
+applied. The <code>port-dml</code> will detect this and emit a warning.
+You can choose to either port the code manually, or perform an analysis of
+an additional device that does use the code, and append that to the tagfile.</p>
+<div class="note">
+<p><strong>Note:</strong> The <code>port-dml</code> script might fail because of a bug in the
+script. When this kind of bug is encountered, the script will normally
+print a traceback and point out a line in the tag file that it failed
+to apply; you can get further in your conversion by manually removing
+this line and re-running the script. After the script has succeeded,
+you can look up the failed tags in the <a href="changes-auto.html">list of porting
+tags</a> and apply the change manually.</p>
+</div>
+
+<div class="chain">
+<a href="changes.html">B Changes from DML 1.2 to DML 1.4</a>
+<a href="changes-auto.html">B.5 Language differences handled by the port-dml script</a>
+</div>

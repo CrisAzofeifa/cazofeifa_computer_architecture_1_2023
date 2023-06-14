@@ -1,0 +1,203 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.10 Code Coverage of Target Software</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="target-software-debugging.html">2.9 Debugging Target Software</a>
+<a href="next-steps.html">3 Next Steps</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="code-coverage-of-target-software">2.10 <a href="#code-coverage-of-target-software">Code Coverage of Target Software</a></h1>
+<p>Simics provides a tool for code coverage using binaries with debug information.</p>
+<p>This section will describe how to get started with Simics code coverage feature. It will start with an example of code coverage for a kernel module, then provide info about</p>
+<ul>
+<li>how to set up code coverage, </li>
+<li>collecting coverage, </li>
+<li>generating reports, and </li>
+<li>combining code coverage from multiple runs. </li>
+</ul>
+<h2 id="code-coverage-example">2.10.1 <a href="#code-coverage-example">Code Coverage Example</a></h2>
+<h3 id="setup">2.10.1.1 <a href="#setup">Setup</a></h3>
+<p>This section reuses the setup from <a class="reference" href="target-software-debugging.html#example-of-debugging-a-kernel-module">2.9.1</a> to demonstrate code coverage of a kernel module. The tracker parameters file, <code>cl.params</code>, from that example is needed to run this example.</p>
+<p>Start Simics with the same script as before:</p>
+<p><code>%simics%/targets/qsp-x86/qsp-clear-linux-pcie-demo.simics</code> </p>
+<p>Then run the following commands from the previous example:</p>
+<pre><code class="language-simics">simics&gt; <strong>machine.software.load-parameters cl.params</strong>
+simics&gt; <strong>machine.software.enable-tracker</strong>
+OSA control enabled.
+simics&gt; <strong>machine.software.tracker.set-kernel-modules-path path = "%simics%/targets/qsp-x86/target-source/simics-pcie-demo-driver"</strong>
+simics&gt; <strong>add-pathmap-entry "/root/swbuild" "%simics%/targets/qsp-x86/target-source"</strong>
+</code></pre>
+<h3 id="collecting-code-coverage">2.10.1.2 <a href="#collecting-code-coverage">Collecting Code Coverage</a></h3>
+<p>Before starting the simulation, start collecting coverage for all Linux tracker Kernel nodes:</p>
+<pre><code class="language-simics">simics&gt; <strong>collect-coverage context-query="/**/Kernel/**" name="kernel_module" -running</strong>
+coverage_kernelmodule_0 is collecting coverage for /**/Kernel/**
+</code></pre>
+<p>Start the simulation and run until the system is booted and the simulation stops. Note that the simulation is slower when the Linux tracker and code coverage is used.</p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+  ...
+  Autologin as "simics" was done on "machine.mb.sb.com[0] - serial console".
+  Setting new inspection object: machine.mb.cpu0.core[1][0]
+simics&gt; <strong></strong>
+</code></pre>
+<p>This script automatically runs <code>insmod</code> when the Linux shell is reached and then stops the simulation.</p>
+<p>The output from the serial console should be: </p>
+<pre><code>simics@cl-qsp ~ $ sudo insmod simics-pcie-demo-driver.ko
+simics@cl-qsp ~ $ 
+</code></pre>
+<p>At this point the driver should be loaded. Output a HTML report for collected coverage up to this point of time:</p>
+<pre><code class="language-simics">simics&gt; <strong>coverage_kernelmodule_0.html-report kernel-module-loaded-html report-name = "Kernel module loaded"</strong>
+Saving HTML report to: kernel-module-loaded-html
+Report contains 29 errors
+</code></pre>
+<div class="note">
+<p>The errors are because of missing binaries for other kernel modules that the tracker has found. More detailed information about errors can be found in the HTML report.</p>
+</div>
+<p>Before we examine the report we will input a string to the drivers character device to see how that changes coverage.</p>
+<p>Start the simulation: </p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+</code></pre>
+<p>Enter the following in the serial console and wait for the shell to return to prompt: </p>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>sudo bash -c 'echo 21 &gt; /dev/simics_pcie_demo_driver'</strong>
+</code></pre>
+<p>Stop the simulation again: </p>
+<pre><code class="language-simics">running&gt; <strong>stop</strong>
+</code></pre>
+<p>Then output another HTML report, using the same code coverage object:</p>
+<pre><code class="language-simics">simics&gt; <strong>coverage_kernelmodule_0.html-report kernel-module-after-input-html report-name="Kernel module after input"</strong>
+Saving HTML report to: kernel-module-after-input-html
+Report contains 29 errors
+</code></pre>
+<p>Before closing Simics we will also save a raw report for use in a later example: </p>
+<pre><code class="language-simics">simics&gt; <strong>coverage_kernelmodule_0.save kernel-module-after-input.raw</strong>
+</code></pre>
+<p>Now it is time to examine the two reports. We open the reports <code>kernel-module-loaded-html/index.html</code> and <code>kernel-module-after-input-html/index.html</code> using a web browser.</p>
+<p>We should see the following output in the first report:</p>
+<p><img alt="" src="cc-loaded-src-summary.png"></p>
+<p>In the second report we can see that the lines covered increased by <em>one</em> line, when the string <code>"21"</code> was written to the device.</p>
+<p><img alt="" src="cc-after-input-src-summary.png"></p>
+<p>The report shows the number of lines executed and the amount executable, for the whole binary and per source directory. The most interesting directory is <code>simics-pcie-demo-driver</code>. This contains the source of the driver. We can follow the link to see the source files under that directory.</p>
+<p><img alt="" src="cc-loaded-src-dir.png"></p>
+<p>We can follow the links per source file to get detailed information about coverage for a certain source file. That source file pages has the following color codings.</p>
+<ul>
+<li>Green - Executed line </li>
+<li>Red - Executable line, but not executed </li>
+<li>White - Non-executable line, such as comment or line that is optimized out. </li>
+</ul>
+<p>The left column shows the line number of the source file.</p>
+<p>In the first report we see for example that <code>hw_update_led_state</code>, on line <em>136</em>, executed and that the <em>led_no</em> values are inside the expected range. We can see that the assignment of <code>led_offsets</code> was optimized out. For the lines with the <code>pr_err</code> function call we see that only the first line is marked as executable. That is commonly how multi-line function calls will be displayed as only the first line is considered executable.</p>
+<p><img alt="" src="cc-hw-update-led-state.png"></p>
+<p>We can compare the two saved HTML reports to find what extra line was run when we wrote the string <code>"21"</code> to the device driver. The difference is in the <code>chari_write</code> function.</p>
+<p><img alt="" src="cc-loaded-switch-1.png"> <em>chari_write first switch statement, <strong>before</strong> writing 21 to device.</em> <img alt="" src="cc-loaded-switch-2.png"> <em>chari_write second switch statement, <strong>before</strong> writing 21 to device.</em> <img alt="" src="cc-after-input-switch-1.png"> <em>chari_write first switch statement, <strong>after</strong> writing 21 to device.</em></p>
+<p>We see that the the case <em>2</em> has run in the first switch statement. This matches the first character of the input. All other lines in the report are unchanged after the input.</p>
+<div class="note">
+<p>The driver had already received an input <code>"01"</code> in the first report. The script we use is written to test the driver by inputting that value to the device.</p>
+</div>
+<div class="note">
+<p>There are a lot of <em>unknown addresses</em> under a tab in the HTML report. These correspond to instructions that run where there is no mapping added. In this example every executed address that is not part of a kernel module, such as boot loader and main kernel code, will be unknown.</p>
+</div>
+<h2 id="setting-up-code-coverage">2.10.2 <a href="#setting-up-code-coverage">Setting up code coverage</a></h2>
+<p>In order for code coverage to work symbol files have to be added in the same way as for debugging, see <a class="reference" href="target-software-debugging.html#setting-up-and-enabling-the-debugger">2.9.2</a>. Either use the <code>add-symbol-file</code> command or configure a tracker to add symbol files for use with code coverage. In the example above the Linux tracker was configured to add symbol files for kernel modules.</p>
+<h2 id="collecting-coverage">2.10.3 <a href="#collecting-coverage">Collecting coverage</a></h2>
+<p>To start collecting code coverage use the following command:</p>
+<pre><code class="language-simics">simics&gt; <strong>collect-coverage context-query=&lt;query&gt; name=mycov</strong>
+</code></pre>
+<p>This will return a code coverage object which is used for outputting reports. Once collection is started, run the simulation for the desired time to collect code coverage for. Then output a report output. For information about the <em>context-query</em> argument see <a class="reference" href="target-software-debugging.html#debug-contexts">2.9.3</a>.</p>
+<h2 id="outputting-reports">2.10.4 <a href="#outputting-reports">Outputting reports</a></h2>
+<p>The code coverage object returned from collect-coverage has a few commands for outputting reports in different formats.</p>
+<ul>
+<li>
+<p><code>&lt;code_coverage&gt;.html-report</code> </p>
+<pre><code class="language-simics">simics&gt; <strong>coverage_mycov_0.html-report &lt;output dir&gt;</strong>
+</code></pre>
+<p>Outputs a HTML report with index under <code>&lt;output dir&gt;/index.html</code>. The main page contains source code coverage in total and for each directory that contains source files. Coverage of each source file is output with executable and executed lines, under the circumstance that the source files can be found on the host.</p>
+<p>There is also a <em>Disassembly</em> page that displays each symbol file and its instruction level coverage. Instruction coverage is also displayed per function in the module. We not go into details about the <em>Disassembly</em> page in this tutorial. </p>
+</li>
+<li>
+<p><code>&lt;code_coverage&gt;.lcov-output</code> </p>
+<pre><code class="language-simics">simics&gt; <strong>coverage_mycov_0.lcov-output &lt;output dir&gt;</strong>
+</code></pre>
+<p>Outputs the report in <em>LCOV</em> tracefile format, one per module, in the specified directory. The output is compatible with the format that is output by the <code>lcov</code> tool for <em>GNU GCOV</em> code coverage. For example HTML reports can then be generated using the <code>genhtml</code> tool. </p>
+</li>
+<li>
+<p><code>&lt;code_coverage&gt;.save</code> </p>
+<pre><code class="language-simics">simics&gt; <strong>coverage_mycov_0.save &lt;raw report&gt;</strong>
+</code></pre>
+<p>Outputs the report in a raw format. This can later be loaded using the <code>load-coverage</code> command or used for combining reports with the <code>&lt;code_coverage&gt;.add-report</code> command. We will not go into details about the raw format here. </p>
+</li>
+</ul>
+<h2 id="combining-code-coverage-reports">2.10.5 <a href="#combining-code-coverage-reports">Combining Code Coverage Reports</a></h2>
+<p>Simics code coverage allows combining two or more raw reports into one report. This allows running the same binaries, but with different code paths, to get a full picture of the combined coverage. For example combining code coverage of many tests in a suite.</p>
+<p>We will continue the earlier example (<a class="reference" href="#collecting-code-coverage">2.10.1.2</a>), were we saved a raw report named <code>kernel-module-after-input</code>.</p>
+<p>Restart Simics and repeat the same steps as in <a class="reference" href="#collecting-code-coverage">2.10.1.2</a>, with the exception that the string that is passed to the device this time should be <code>"a0"</code>.</p>
+<p>Run the simulation until the system is booted, the kernel module is inserted and the simulation stops. Then start the simulation again: </p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+</code></pre>
+<p>Enter the following in the serial console: </p>
+<pre><code class="language-simics">simics@cl-qsp ~ $ <strong>sudo bash -c 'echo a0 &gt; /dev/simics_pcie_demo_driver'\n</strong>
+</code></pre>
+<p>Once the Linux shell reaches prompt, stop the simulation: </p>
+<pre><code class="language-simics">running&gt; <strong>stop</strong>
+</code></pre>
+<p>Then add the previous report using the <code>add-report</code> command: </p>
+<pre><code class="language-simics">simics&gt; <strong>coverage_kernelmodule_0.add-report kernel-module-after-input.raw</strong>
+Adding report from input file: kernel-module-after-input.raw
+</code></pre>
+<p>Before outputting the combined report to HTML we should combine mappings that match the same symbol file, but are loaded at different addresses. Unless the simulation target is fully deterministic, it is likely that the kernel modules are loaded at a different addresses the second run. </p>
+<pre><code class="language-simics">simics&gt; <strong>coverage_kernelmodule_0.stop</strong>
+simics&gt; <strong>coverage_kernelmodule_0.combine-mappings</strong>
+26 mappings were removed
+</code></pre>
+<p>Output a new HTML report with the combined coverage. </p>
+<pre><code class="language-simics">simics&gt; <strong>coverage_kernelmodule_0.html-report kernel-module-combined-html report-name="Kernel module combined"</strong>
+Saving HTML report to: kernel-module-combined-html&lt;/pre&gt;
+</code></pre>
+<p>Check the summary in the report to see that coverage has increased by <em>two lines</em> from when only <code>"21"</code> had been input.</p>
+<p><img alt="" src="cc-combined-src-summary.png"></p>
+<p>Check the source code coverage of the <code>write_chari</code> function to see that the the two switch statements have one more executed line each.</p>
+<p><img alt="" src="cc-combined-switch-1.png"><br>
+<em>chari_write first switch statement, <strong>after</strong> combining reports.</em> <img alt="" src="cc-combined-switch-2.png"><br>
+<em>chari_write second switch statement, <strong>after</strong> combining reports.</em></p>
+<p>To increase coverage we can repeat the example with varied inputs.</p>
+<p>We can choose to start collecting coverage after the system had been booted to get faster boot time, as driver initialization should be the same between runs. A third option is to start Simics with a checkpoint with the booted system and driver loaded, then start collecting at that point.</p>
+<h2 id="code-coverage-summary">2.10.6 <a href="#code-coverage-summary">Code Coverage Summary</a></h2>
+<p>That concludes the code coverage tutorial, where we have learnt how to</p>
+<ul>
+<li>use the Linux tracker to provide symbol files to code coverage, </li>
+<li>start collecting coverage, </li>
+<li>output code coverage reports in different formats, </li>
+<li>interpret the HTML report, and </li>
+<li>combine reports from multiple runs. </li>
+</ul>
+
+<div class="chain">
+<a href="target-software-debugging.html">2.9 Debugging Target Software</a>
+<a href="next-steps.html">3 Next Steps</a>
+</div>

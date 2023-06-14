@@ -1,0 +1,173 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>describe_registers</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_decoder.html">decoder</a>
+<a href="__rm_interface_device_identification.html">device_identification</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_describe_registers">describe_registers</a></h1>
+<p>
+
+<a name="describe_registers"></a><a name="describe_registers_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is used by the Simics debugger to get certain information from
+  a processor.
+<p>
+  The <b><i>first_child</i></b> function returns the first description in the
+  sequence of child descriptions of parent or NULL if parent has no
+  children. Groups can have both registers and groups as children, registers
+  can only have fields as children and fields cannot have any children. If
+  parent is NULL, return the first description in the sequence of top-level
+  descriptions.
+</p><p>
+  Use <b><i>next_description</i></b> to deallocate the previous description and
+  return the next description in the sequence or NULL if there are no more
+  descriptions in the current sequence.
+</p><p>
+  The <b><i>free_description</i></b> function is used to free the description
+  without returning the next one in the sequence.
+</p><p>
+  The <b><i>first_named_value</i></b> function returns the first named value in
+  the sequence of named values for parent or NULL if there are no named values
+  for parent. Only fields and registers can have named values.
+</p><p>
+  Use <b><i>next_named_value</i></b> to deallocate the previous named value and
+  return the next named value or NULL if there are no more named values in this
+  sequence.
+</p><p>
+  Use <b><i>free_named_value</i></b> to free the named value without returning the
+  next one in the sequence.
+</p><p>
+  The <b><i>get</i></b> and <b><i>set</i></b> functions are used to get and set the
+  value of the register. To set the value pass in a bytes_t for the value. The
+  value passed in must be long enough to contain the full value of the
+  register. If the bytes_t is too long it will be truncated. To get the value
+  pass in a buffer_t which is long enough to contain the register's value. The
+  value is encoded in little endian byte order.
+</p><p>
+  <a name="description_type_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Description_Type_Group,
+
+        Description_Type_Int_Reg,
+        Description_Type_Float_Reg,
+        Description_Type_Fields_Reg,
+
+        Description_Type_Int_Field,
+        Description_Type_Float_Field,
+} description_type_t;</pre><p>
+
+  <a name="reg_role_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Reg_Role_None, /* No special role for the register. */
+        Reg_Role_Program_Counter /* The register is the program counter. */
+} reg_role_t;</pre><p>
+
+  <a name="reg_bitorder_t"></a>
+</p><pre class="jdocu_small">typedef enum {
+        Reg_Bitorder_Little_Endian,
+        Reg_Bitorder_Big_Endian
+} reg_bitorder_t;</pre><p>
+
+  <a name="named_value_t"></a>
+</p><pre class="jdocu_small">typedef struct {
+        const char *name;
+        const char *description;
+        const bytes_t value; /* Little endian byte order */
+} named_value_t;</pre><p>
+
+  <a name="description_t"></a>
+</p><pre class="jdocu_small">typedef struct {
+        /* Common fields */
+        description_type_t type;
+        const char *name;
+        const char *description;
+
+        /* Register and field fields */
+        int16 dwarf_id;            /* id used by dwarf for this register
+                                      or -1 if no such id is defined. This
+                                      is ABI specific, but the CPU will
+                                      give the ids for the most common ABI
+                                      for that architecture. */
+        reg_bitorder_t bitorder;   /* Bitorder convention used in the
+                                      documentation for this register or
+                                      field. */
+        reg_role_t role;           /* Role of this register in the ABI/HW. */
+        bool memory_mapped;        /* True if the register is memory mapped. */
+        uint64 offset;             /* Offset into the bank for memory mapped
+                                      registers. */
+        bool catchable;            /* True if Core_Control_Register_Write and
+                                      Core_Control_Register_Read are triggered
+                                      when this register is written or read. */
+        int msb, lsb;              /* Most and least significant bit of the
+                                      register or field. Always given in le
+                                      bitorder. For groups msb == -1 and
+                                      lsb == 0. */
+        int regsize;               /* Number of bits in the register, or the
+                                      register this field is a part of. */
+        int reg_id;                /* For registers and fields the id to pass
+                                      to the get and set methods to access the
+                                      register's value. Fields have the same
+                                      reg_id as the register they are a part
+                                      of. Not valid for groups.*/
+} description_t;</pre><p>
+
+  </p><pre class="jdocu_small">
+SIM_INTERFACE(describe_registers) {
+        const description_t *(*first_child)(
+                conf_object_t *NOTNULL obj, const description_t *parent);
+        const description_t *(*next_description)(
+                conf_object_t *NOTNULL obj, const description_t *prev);
+        void (*free_description)(conf_object_t *NOTNULL obj,
+                                 const description_t *desc);
+        const named_value_t *(*first_named_value)(
+                conf_object_t *NOTNULL obj, const description_t *parent);
+        const named_value_t *(*next_named_value)(
+                conf_object_t *NOTNULL obj, const named_value_t *prev);
+        void (*free_named_value)(conf_object_t *NOTNULL obj,
+                                 const named_value_t *nv);
+        void (*get)(conf_object_t *NOTNULL obj, int reg_id, buffer_t dest);
+        void (*set)(conf_object_t *NOTNULL obj, int reg_id, bytes_t value);
+};
+
+#define DESCRIBE_REGISTERS_INTERFACE "describe_registers"
+</pre><p>
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_decoder.html">decoder</a>
+<a href="__rm_interface_device_identification.html">device_identification</a>
+</div>

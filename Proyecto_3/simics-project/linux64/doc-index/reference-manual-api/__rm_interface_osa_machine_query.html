@@ -1,0 +1,132 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_machine_query</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_machine_notification.html">osa_machine_notification</a>
+<a href="__rm_interface_osa_mapper_admin.html">osa_mapper_admin</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_machine_query">osa_machine_query</a></h1>
+<p>
+
+<a name="osa_machine_query"></a><a name="osa_machine_query_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_machine_query_interface_t2"></a>
+<p>
+   <a name="read_registerosa_machine_query-interface-method"></a>
+   <b><i>read_register</i></b> reads the register with number <i>reg</i>
+   (number can be retrieved with <b><i>get_register_number</i></b>) from processor
+   <i>cpu</i> and returns the value of that register.
+</p><p>
+   <a name="get_register_numberosa_machine_query-interface-method"></a>
+   <b><i>get_register_number</i></b> returns the register number of the register
+   with name <i>reg</i> from processor <i>cpu</i> or -1 upon error.
+</p><p>
+   <a name="read_phys_memoryosa_machine_query-interface-method"></a>
+   <b><i>read_phys_memory</i></b> reads <i>len</i> bytes of memory from
+   physical address <i>addr</i> of processor <i>cpu</i>. The returned
+   value is an uint64 with the value if the read succeeded, otherwise nil. The
+   <i>len</i> argument should use one of the lengths declared in the
+   <code>osa_read_len_t</code> enum.
+</p><p>
+   <a name="read_phys_bytesosa_machine_query-interface-method"></a>
+   <b><i>read_phys_bytes</i></b> reads <i>len</i> bytes of memory from
+   physical address <i>addr</i>. The length to read can be up to 1024
+   bytes. The returned value is of data type containing the bytes read upon
+   success or nil otherwise.
+</p><p>
+   <a name="virtual_to_physicalosa_machine_query-interface-method"></a>
+   <b><i>virtual_to_physical</i></b> translates the virtual address
+   <i>vaddr</i> of processor <i>cpu</i> to a physical address as
+   translation would be for a data read. The returned value is the physical
+   address as an uint64 upon success, otherwise nil. For x86 this uses linear
+   to physical translation (as opposed to the logical to physical variant).
+</p><p>
+   <a name="cpu_modeosa_machine_query-interface-method"></a>
+   <b><i>cpu_mode</i></b> returns the current processor mode of <i>cpu</i>.
+</p><p>
+   <a name="get_all_processorsosa_machine_query-interface-method"></a>
+   <b><i>get_all_processors</i></b> returns all available processors. For example,
+   when detecting parameters, a tracker should use its known processors if the
+   system is enabled, otherwise it can get them via get_all_processors. For
+   hypervisor configurations, the tracker framework must be enabled in order to
+   detect parameters for a guest.
+</p><p>
+   <a name="get_exception_numberosa_machine_query-interface-method"></a>
+   <b><i>get_exception_number</i></b> returns the exception number of the
+   exception with name <i>name</i> from processor <i>cpu</i>.
+   Returns -1 if no exception with the given name exists.
+</p><p>
+   For all functions, the <i>tracker</i> argument should be the tracker
+   calling this interface. This makes it possible for a hypervisor tracker to
+   handle guests differently.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(osa_machine_query) {
+        uint64 (*read_register)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, int reg);
+        int (*get_register_number)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, const char *reg);
+        attr_value_t (*read_phys_memory)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, physical_address_t addr,
+                osa_read_len_t len);
+        attr_value_t (*read_phys_bytes)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, physical_address_t paddr,
+                unsigned len);
+        attr_value_t (*virtual_to_physical)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, uint64 vaddr);
+        processor_mode_t (*cpu_mode)(conf_object_t *NOTNULL obj,
+                                     conf_object_t *NOTNULL tracker,
+                                     conf_object_t *NOTNULL cpu);
+        attr_value_t (*get_all_processors)(conf_object_t *NOTNULL obj,
+                                           conf_object_t *NOTNULL tracker);
+        int (*get_exception_number)(
+                conf_object_t *NOTNULL obj, conf_object_t *NOTNULL tracker,
+                conf_object_t *NOTNULL cpu, const char *name);
+};
+
+#define OSA_MACHINE_QUERY_INTERFACE "osa_machine_query"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_machine_notification.html">osa_machine_notification</a>
+<a href="__rm_interface_osa_mapper_admin.html">osa_mapper_admin</a>
+</div>

@@ -1,0 +1,125 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ram</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pulse.html">pulse</a>
+<a href="__rm_interface_rapidio_v3.html">rapidio_v3</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ram">ram</a></h1>
+<p>
+
+<a name="ram"></a><a name="ram_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="ram_operation_flags_t"></a>
+<p>
+     The <code>ram</code> interface is implemented by classes that provide
+     random access read/write memory. The <code>rom</code> interface is
+     identical to <code>ram</code> but provides read only memory (writes are
+     dropped by the memory system).
+</p><p>
+     Both the ram and rom interfaces are Simics internal, and should not be used
+     by user-defined classes.
+</p><p>
+     The <b><i>get_page</i></b> method is obsolete and should not be implemented.
+</p><p>
+     The <b><i>fill</i></b> method fills a range with a specified byte value.
+</p><p>
+     The <b><i>read</i></b> method reads a number of bytes from address
+     <i>addr</i> into the buffer <i>data</i>. The number of
+     bytes read is given by the buffer size.
+</p><p>
+     The <b><i>write</i></b> method writes the bytes in <i>data</i> to
+     address <i>addr</i>.
+</p><p>
+     The <b><i>touch</i></b> method is similar to the <b><i>read</i></b> and
+     <b><i>write</i></b> methods, except that no data is actually transferred; the
+     method triggers side effects like revoking conflicting direct-memory
+     permissions from affected pages. The <i>rw</i> argument determines
+     whether the operation is a handled as a read or as a write.
+</p><p>
+     The <i>flags</i> argument is a bitmask which modify the behavior
+     of <b><i>read</i></b>, <b><i>write</i></b> and <b><i>touch</i></b> operations in
+     various ways.
+</p><p>
+     The <b><i>size</i></b> method returns the memory size in bytes; that is, the
+     highest usable address plus one.
+</p><p>
+     </p><pre class="jdocu_small">
+typedef enum {
+        Sim_Ram_Op_Fetch = 1,           /* Read is an instruction fetch. */
+        Sim_Ram_Op_Non_Coherent = 2,    /* Operation should not cause
+                                           atomic reservations to be lost. */
+} ram_operation_flags_t;
+
+SIM_INTERFACE(ram) {
+#ifndef PYWRAP
+        /* The get_page is method is obsolete and should be left
+           unimplemented. */
+        page_t *(*get_page)(conf_object_t *NOTNULL obj,
+                            physical_address_t addr);
+#endif
+        void (*fill)(conf_object_t *NOTNULL obj,
+                     physical_address_t start, uint64 length, uint8 value);
+
+        exception_type_t (*read)(conf_object_t *NOTNULL obj,
+                                 conf_object_t *initiator,
+                                 uint64 addr, buffer_t data,
+                                 ram_operation_flags_t flags);
+        
+        exception_type_t (*write)(conf_object_t *NOTNULL obj,
+                                  conf_object_t *initiator,
+                                  uint64 addr, bytes_t data,
+                                  ram_operation_flags_t flags);
+        
+        exception_type_t (*touch)(conf_object_t *NOTNULL obj,
+                                  conf_object_t *initiator,
+                                  uint64 addr, uint64 size,
+                                  read_or_write_t rw,
+                                  ram_operation_flags_t flags);
+
+        uint64 (*size)(conf_object_t *NOTNULL obj);
+};
+#define RAM_INTERFACE "ram"
+#define ROM_INTERFACE "rom"
+
+typedef ram_interface_t rom_interface_t;
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pulse.html">pulse</a>
+<a href="__rm_interface_rapidio_v3.html">rapidio_v3</a>
+</div>

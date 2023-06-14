@@ -1,0 +1,125 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_tlb</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_smm_state.html">x86_smm_state</a>
+<a href="__rm_interface_x86_tlb_v2.html">x86_tlb_v2</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_tlb">x86_tlb</a></h1>
+<p>
+
+<a name="x86_tlb"></a><a name="x86_tlb_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The x86 tlb interface is used for communication between an x86 cpu
+   and its TLB. The TLB is implemented as a separate class for greater
+   flexibility. The TLB object does no memory operations itself.
+<p>
+   <a name="tagged_physical_address_t"></a>
+   </p><pre class="jdocu_small">typedef struct {
+        int                  valid;
+        physical_address_t   paddr;
+} tagged_physical_address_t;
+
+SIM_INTERFACE(x86_tlb) {
+        void (*flush_all)(conf_object_t *obj,
+                            int keep_global_entries);
+        void (*flush_page)(conf_object_t *obj,
+                           linear_address_t laddr);
+        int (*lookup)(conf_object_t *obj,
+                      x86_memory_transaction_t *mem_tr);
+        void (*add)(conf_object_t *obj,
+                    processor_mode_t mode,
+                    read_or_write_t read_or_write,
+                    data_or_instr_t data_or_instr,
+                    int global_page,
+                    x86_memory_type_t pat_type,
+                    x86_memory_type_t mtrr_type,
+                    linear_address_t laddr,
+                    physical_address_t paddr,
+                    int page_size);
+        tagged_physical_address_t (*itlb_lookup)(conf_object_t *obj,
+                                                 linear_address_t laddr,
+                                                 processor_mode_t mode);
+        void (*set_pae_mode)(conf_object_t *obj, bool pae_mode);
+};
+
+#define X86_TLB_INTERFACE "x86_tlb"
+</pre><p>
+</p><p>
+
+   All functions in the interface get the <i>object</i> implementing
+   the interface as their first parameter.
+</p><p>
+   <b>flush_all</b> is called when all TLB entries should be
+   flushed. If <i>keep_global_entries</i> is set, then TLB entries
+   with their global bit set should not be flushed.
+</p><p>
+   <b>flush_page</b> is invoked when pages containing <i>laddr</i> are
+   to be removed from the TLB.
+</p><p>
+   <b>lookup</b> is used by the CPU when a memory access misses the
+   STC. It must return true (non-zero) if and only if the memory
+   operation specified by <i>mem_tr</i> hits the TLB and does not
+   raise an exception. The <i>mode</i>, <i>linear_address</i> are valid when
+   the method is invoked. The other fields passed through <i>mem_tr</i>
+   are undefined. If the method returns true, the
+   <i>s.physical_address</i>, <i>pat_type</i>, and <i>mtrr_type</i>
+   fields of <i>mem_tr</i> must be updated by <b>lookup</b>.
+</p><p>
+   An access that misses in <b>lookup</b> but does not raise a fault
+   is inserted into the TLB with <b>add</b>. The <i>page_size</i>
+   encoding is 0 for 4 kb pages, 1 for 2 Mb pages, and 2 for 4 Mb
+   pages.
+</p><p>
+   <b>itlb_lookup</b> is a simplified version of <b>lookup</b> used
+   only for instruction TLB lookups. If the lookup is successful
+   <i>valid</i> and <i>paddr</i> should be set, otherwise <i>valid</i>
+   should be cleared.
+</p><p>
+   <b>set_pae_mode</b> is invoked when the cpu changes the
+   PAE enable bit.
+</p><p>
+   It class implementing the interface must make sure that only
+   addresses mapped in the TLB are present in the STCs.
+</p><p>
+   This interface may be changed or replaced with an architecture
+   independent interface in future versions of Simics.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_smm_state.html">x86_smm_state</a>
+<a href="__rm_interface_x86_tlb_v2.html">x86_tlb_v2</a>
+</div>

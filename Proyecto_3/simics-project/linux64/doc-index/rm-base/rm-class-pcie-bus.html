@@ -1,0 +1,214 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pcie-bus</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-pci_proxy_mf.html">pci_proxy_mf</a>
+<a href="rm-class-pcie-downstream-port.html">pcie-downstream-port</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="pcie-bus"><a href="#pcie-bus">pcie-bus</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The pcie-bus device models a logical <i>PCI Express</i> switch that PCI Express devices can be connected to. The switch needs memory-space objects connected, representing the three PCI Express address spaces 'configuration', 'I/O' and 'memory'. The switch itself should be connected to a PCI Express bridge device.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, io_memory, pci_upstream, pci_downstream, pci_upstream_operation, pci_express, pci_bus
+<h3 id="port-objects">
+<a href="#port-objects">Port Objects</a>
+</h3>
+<dl>
+<dt id="dt:port-downstream">port.downstream</dt>
+<dd>
+<a href="rm-class-pcie-bus.html#downstream">pcie-bus.downstream</a>
+ – Downstream Transactions, used by RC's</dd>
+<dt id="dt:port-upstream">port.upstream</dt>
+<dd>
+<a href="rm-class-pcie-bus.html#upstream">pcie-bus.upstream</a>
+ – Upstream Transactions, used by endpoints</dd>
+</dl>
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-pcie-bus.info.html">info</a>
+ – print information about the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:conf_space">
+<i>conf_space</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Memory-space object representing the PCI configuration space.</dd>
+<dt id="dt:memory_space">
+<i>memory_space</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Memory-space object representing the PCI memory space.</dd>
+<dt id="dt:io_space">
+<i>io_space</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Memory-space object representing the PCI I/O space.</dd>
+<dt id="dt:bridge">
+<i>bridge</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n|[o*]</code>
+<br>Upstream PCI bridge object, which must implement the pci_bridge and the pci_express interface. It can also implement the optional pci_express_hotplug interface. For cPCI use-case, multiple bridges can be assigned and signals will be sent to all of them.</dd>
+<dt id="dt:interrupt">
+<i>interrupt</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n|[o*]</code>
+<br>One or more interrupt device objects that implements the pci_interrupt interface. This attribute only has to be set if the bridge does not handle PCI interrupts.</dd>
+<dt id="dt:bus_number">
+<i>bus_number</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>PCI bus number of this bus. In most cases this is 0, but some exceptions exist. This attribute is set by the bridge and should not be changed by the user.</dd>
+<dt id="dt:sub_bus_number">
+<i>sub_bus_number</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Subordinate PCI bus number for this bus. This attribute is set by the bridge and should not be changed by the user.</dd>
+<dt id="dt:send_interrupt_to_bridge">
+<i>send_interrupt_to_bridge</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>If non-zero (default), interrupt will be routed to the PCI bridge as well as the interrupt devices.</dd>
+<dt id="dt:upstream_target">
+<i>upstream_target</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o|[os]</code>
+<br>If non-NULL, all upstream transactions are forwarded to the specified object using the pci_upstream or transaction interface.</dd>
+<dt id="dt:pci_devices">
+<i>pci_devices</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iio]|[iioi]*]</code>
+<br>((<i>id</i>, <i>function</i>, <i>object</i>)*). <i>id</i> is the PCI device id. <i>function</i> is the PCI device logical function. <i>object</i> is the PCI device itself, which must implement the pci_device interface. The object can also optionally implement either or both of: the pci_express interface, a port-object named 'port.pcie_message' implementing the transaction interface.The tuple may also contain an additional integer that tells if the PCI device is enabled or not. As default the PCI device is enabled.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.pcie-bus.html">pcie-bus</a>
+</section>
+<h2 id="downstream"><a href="#downstream">pcie-bus.downstream</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-2">
+<a href="#description-2">Description</a>
+</h3>
+Downstream Transactions, used by RC's
+<h3 id="interfaces-implemented-2">
+<a href="#interfaces-implemented-2">Interfaces Implemented</a>
+</h3>conf_object, log_object, transaction
+<h3 id="commands-for-interface-transaction">
+<a href="#commands-for-interface-transaction">Commands for interface transaction</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-transaction.wait-for-get.html">wait-for-get</a>
+ – issue an inquiry read transaction and wait for it to complete</li>
+<li>
+<a href="rm-cmd-transaction.wait-for-read.html">wait-for-read</a>
+ – issue a read transaction and wait for it to complete</li>
+<li>
+<a href="rm-cmd-transaction.wait-for-set.html">wait-for-set</a>
+ – issue an inquiry write transaction and wait for it to complete</li>
+<li>
+<a href="rm-cmd-transaction.wait-for-write.html">wait-for-write</a>
+ – issue a write transaction and wait for it to complete</li>
+</ul>
+</section>
+<h2 id="upstream"><a href="#upstream">pcie-bus.upstream</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-3">
+<a href="#description-3">Description</a>
+</h3>
+Upstream Transactions, used by endpoints
+<h3 id="interfaces-implemented-3">
+<a href="#interfaces-implemented-3">Interfaces Implemented</a>
+</h3>conf_object, log_object, transaction
+<h3 id="commands-for-interface-transaction-2">
+<a href="#commands-for-interface-transaction-2">Commands for interface transaction</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-transaction.wait-for-get.html">wait-for-get</a>
+ – issue an inquiry read transaction and wait for it to complete</li>
+<li>
+<a href="rm-cmd-transaction.wait-for-read.html">wait-for-read</a>
+ – issue a read transaction and wait for it to complete</li>
+<li>
+<a href="rm-cmd-transaction.wait-for-set.html">wait-for-set</a>
+ – issue an inquiry write transaction and wait for it to complete</li>
+<li>
+<a href="rm-cmd-transaction.wait-for-write.html">wait-for-write</a>
+ – issue a write transaction and wait for it to complete</li>
+</ul>
+</section>
+<div class="chain">
+<a href="rm-class-pci_proxy_mf.html">pci_proxy_mf</a>
+<a href="rm-class-pcie-downstream-port.html">pcie-downstream-port</a>
+</div>

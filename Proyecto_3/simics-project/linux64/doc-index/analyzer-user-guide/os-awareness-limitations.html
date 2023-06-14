@@ -1,0 +1,52 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.12 Limitations</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="multiple-oss.html">2.11 Multiple Operating Systems on a Single Machine</a>
+<a href="linux-tracker.html">2.13 Linux Tracker</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="limitations">2.12 <a href="#limitations">Limitations</a></h1>
+<p>Some common limitations for most trackers are that they rely on monitoring OS data structures, registers and processor state. If the behavior of any of these are changed, for example between kernel versions or due to different configuration options when compiling the kernel, the tracker may require an update in order to work with that specific kernel.</p>
+<ul>
+<li>The Simics debugger has special requirements on trackers in order to be compatible so all trackers may not work with it. The Linux tracker, for example, does work.</li>
+<li>OS Awareness will impact the simulation performance, especially on hypervisor systems, large target systems and in combination with reverse execution. Commands such as <code>&lt;bp-manager.os-awareness&gt;.break</code> or <code>&lt;osa_component&gt;.bp-break</code> will also impact the performance negatively. Registering notification callbacks, especially from Python, can also have an impact on performance.</li>
+<li>OS Awareness does not work together with VMP. VMP will be disabled automatically when OS awareness is started.</li>
+<li>OS Awareness will set a reverse execution barrier when the framework becomes enabled, disabled or when new parameters are loaded.</li>
+<li>The gdb-remote extension has not been tested together with OS Awareness and may not work.</li>
+<li>The <code>unbreak</code> command lacks tab completion for installed breakpoints.</li>
+<li>See respective tracker's documentation for a list of limitations for that tracker.</li>
+</ul>
+
+<div class="chain">
+<a href="multiple-oss.html">2.11 Multiple Operating Systems on a Single Machine</a>
+<a href="linux-tracker.html">2.13 Linux Tracker</a>
+</div>

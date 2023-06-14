@@ -1,0 +1,365 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Target parameters reference</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>Target parameters reference</h1>
+
+<p>
+  
+  
+  
+</p><p>
+</p><h2 class="jdocu"><a name="Target-parameters">1 Target parameters</a></h2>
+<p>
+
+</p><p>
+The is a reference for the core logic and format of the target
+parameter framework.
+</p><p>
+</p><h3 class="jdocu"><a name="File-format">1.1 File format</a></h3>
+<p>
+
+  </p><p>
+A Simics script file can either be a YAML file containing parameter
+and/or argument declarations, with a pointer to a separate file
+containing code, or have a parameter declaration section in YAML
+format placed at the top of a file with Simics CLI or Python code.
+</p><p>
+In the former case, the file format has the following specifications:
+</p><p>
+</p><ul>
+  <li>It must start with the YAML 1.2 directive, <i>i.e.</i> <code>%YAML
+  1.2</code></li>
+  <li>The whole file must be valid YAML.</li>
+  <li>It must contain exactly one YAML document.</li>
+  <li>The YAML document must have document start marker immediately
+    after the YAML 1.2 directive. The document must contain
+    the parameters, arguments and any other meta-data. This is
+    specified in Section <a class="reference" href="#parameter-section">1.3</a></li>
+  <li>The document must have a document end marker.</li>
+</ul>
+<p>
+In the latter case, the file format has the following specifications:
+</p><p>
+</p><ul>
+  <li>The file may start with any number of blank lines or comment
+  lines (starting with <code>#</code>), and must be followed by the
+  parameter start marker, which is a line <code>'''</code> followed by a
+  line <code>%YAML 1.2</code> (in Python code) or <code>@'''</code> followed
+  by <code>%YAML 1.2</code> (in Simics CLI code), followed by a
+  line <code>---</code></li>
+  <li>Some subsequent line must be <code>'''</code>, which marks the end
+  of the parameter block.</li>
+  <li>The text between these lines must be valid YAML and must contain
+    the parameters, arguments and any other meta-data. This is
+    specified in Section <a class="reference" href="#parameter-section">1.3</a></li>
+  <li>Any text on lines following the <code>'''</code> line must be code.</li>
+</ul>
+<p>
+
+</p><h3 class="jdocu"><a name="Semantics">1.2 Semantics</a></h3>
+<p>
+
+The parameters definitions form a tree. The leaves in this
+tree are the individual parameters, which have types and other
+meta-data. The contents of an inner node can either be defined in the
+same script, or it can contain a parameter tree imported from
+another script.
+</p><p>
+The run-time value for a parameter can be specified in multiple
+places, either in the script itself or by callers, recursively, since
+callers have access to parameters of scripts that they call, via
+imports. The actual value is the one from the first (outermost)
+specification. In effect, parameters are write-once, or
+equivalently parameter values are not set, only parameter default
+values.
+</p><p>
+When a script runs another script that it has imported parameters
+from, the corresponding sub-tree with arguments must be provided by
+the caller, using the <i>namespace</i> parameter to
+the <b>load-target</b> or <b>run-script</b> commands.
+
+</p><h3 class="jdocu"><a name="parameter-section">1.3 Parameter section</a></h3>
+<p>
+
+At the top level, the parameter section must be a YAML mapping. The
+script parameter framework define the following keys at the top level:
+</p><p>
+</p><ul>
+  <li><code>params</code> - whose value must be a mapping. This defines
+    the tree of parameter definitions available in the script. The
+    keys in the mapping are the parameter names and the values are
+    parameter definitions. See Section <a class="reference" href="#parameter-definition">1.3.1</a>
+    for the format of each parameter definition.</li>
+  <li><code>args</code> - whose value must be a mapping. This defines the
+  tree of arguments (parameter default values) used when the script is
+  run. A script that only has an <code>args</code>, no <code>params</code>
+  section (either directly or via imports from other scripts) and no code, is
+    known as a <i>preset</i>. See Section <a class="reference" href="#argument-definition">1.3.2</a>
+    for the format arguments.</li>
+  <li><code>description</code> - the description of the script, shown by
+  help, when listing parameters, GUI views, and other user interfaces.</li>
+  <li><code>target</code> - the file name of the script where
+  parameter definitions and script code are taken from when the
+  current script is run. This is typically used in presets. If this
+  key is provided, then it is illegal to also have associated code for
+  the current script. Note that the referred script can also be a preset.</li>
+  <li><code>script</code> - the file name of the associated code for the
+  current script, that is run after any mentioned blueprints are
+  instantiated. If this key is provided, it is illegal to also have
+  code inlined in the same file or as a YAML string.</li>
+  <li><code>cmd</code> - code given as a YAML string. If this key is
+    provided, it is illegal to also have code inlined in the same
+    file or to also specify the <code>script</code> key.</li>
+  <li><code>pre-init</code> - the file name of associated
+  pre-instantiation code for the current script, that is run before any
+  mentioned blueprints are expanded.</li>
+  <li><code>code-type</code> - the type of the associated code. The
+  allowed values are <code>simics</code> for Simics CLI scripts,
+  or <code>py</code> for Python code. This key defaults to <code>simics</code>
+  if the file has extension <code>.simics</code> or <code>.include</code> and
+  it defaults to <code>py</code> if the file has extension <code>.py</code>
+  or <code>.yml</code>. Otherwise this key is mandatory if the script has
+  associated code.</li>
+</ul>        
+<p>
+Typically one either has a <code>params</code> section and associated
+code, either inlined or in a separate file referenced by
+the <code>script</code> key, or one has an <code>args</code> section and
+reference another script via the <code>target</code> key.
+</p><p>
+Note that one can have a <code>params</code> section when
+the <code>target</code> key is specified, but those parameters cannot be
+used by the script since it has no code. However they can be used by
+scripts that include the current script. It is illegal to have a
+parameter in <code>params</code> that is also present in the script
+specified by <code>targets</code>.
+</p><p>
+</p><h4 class="jdocu"><a name="parameter-definition">1.3.1 Parameter tree nodes</a></h4>
+<p>
+
+</p><p>
+Each parameter definition must be a YAML mapping. It either defines an
+inner node (a namespace) in the parameter tree, or an actual parameter.
+</p><p>
+Parameters are defined by including the <code>type</code> key. In that
+case the following keys are defined:
+</p><ul>
+  <li><code>type</code> - the type of values this parameter accepts. The
+  allowed types are:
+    <ol>
+      <li><code>str</code> - for string values.</li>
+      <li><code>int</code> - for unbounded integer values.</li>
+      <li><code>float</code> - for floating point values.</li>
+      <li><code>bool</code> - for boolean values.</li>
+      <li><code>i8</code>, <code>u8</code> up to <code>i256</code>, <code>u256</code> -
+      for integers values with specified bit size.</li>
+      <li><code>list</code> or <code>list[&lt;type&gt;]</code> - for list values,
+        optionally specifying the element type (which can itself be a
+        list type).</li>
+      <li><code>file</code> - for file names. These are string values
+      where <code>%simics%</code> and <code>%script%</code> are evaluated in
+      the usual manner. The files must exist when the target is run.</li>
+  </ol></li>
+  <li><code>required</code> - specifies if the parameter must have an
+    assigned value when the script is run. The default
+    is <code>false</code>.</li>
+  <li><code>default</code> - the parameter default value. See Section
+  <a class="reference" href="#evaluation-order">1.4</a> for how arguments are set. The
+  default is to have no default value, resulting in an unassigned
+  parameter.</li>
+  <li><code>description</code> - a description of the parameter.</li>
+  <li><code>values</code> - a list of allowed parameter values. If this
+  key is included, it is illegal to set the parameter to a value not
+  in this list.</li>
+  <li><code>output</code> - specifies if the parameter is an output
+  parameter, default is <code>false</code>. Output parameters are meant to
+  denote computed values that are defined as parameters for
+  convenience. They are not included in the output
+    of <code>params.save</code>.</li>
+  <li><code>advanced</code> - specifies the advance level of the
+  parameter. The default is 1. Specifying a higher level results in
+  the parameter being hidden by default when
+  using <b>params.help</b> and similar places.</li>
+</ul>
+<p>
+An inner node may be an <i>import node</i>, defined by having
+the <code>import</code> key, or a <i>blueprint import node</i>, defined by having the <code>blueprint</code> key. In the import case the following keys are defined:
+</p><ul>
+  <li><code>import</code> - the file name where parameters should be
+  imported from.</li>
+  <li><code>provides</code> - whose value must be a list. The list must
+  contain names of imported parameters, and it specifies that these
+  parameters are not required when running the current script, whether
+  or not they were required in the imported script. This is typically
+  used when the current script sets default values of the parameters
+    before running the imported script.</li>
+  <li><code>defaults</code> - whose value must be a mapping. The format of
+  the mapping is the same as the <code>args</code> mapping: the keys in
+  must be names of imported parameters and the values are the new
+  default values, overriding the defaults specified in the imported
+    scripts.</li>
+</ul>
+<p>
+In the blueprint import case, the following keys are defined:
+</p><ul>
+  <li><code>blueprint</code> - the name of the blueprint whose parameters
+  should be imported. This must be the name specified in
+  the <code>blueprint</code> Python decorator.</li>
+  <li><code>module</code> - the Python module where the blueprint is
+    defined. It must be possible to import this module.</li>
+  <li><code>namespace</code> - the top level namespace name that should be used
+  when expanding the blueprint.</li>  
+  <li><code>defaults</code> - whose value must be a mapping. The format of
+  the mapping is the same as the <code>args</code> mapping: the keys in
+  must be names of imported parameters and the values are the new
+  default values, overriding the defaults specified in the blueprint.</li>
+</ul>
+<p>
+Every blueprint that is imported is put on the list of blueprints that
+is expanded between the pre-instantiation code and regular script code
+is run.
+</p><p>
+If neither the <code>import</code>, <code>blueprint</code> nor the <code>type</code> key are
+specified, then the parameter definition is a regular inner node in the
+parameter tree, ands its keys are parameter names whose values must be
+parameter definitions, as defined above.
+</p><p>
+</p><h5 class="jdocu"><a name="Array-parameters">1.3.1.1 Array parameters</a></h5>
+<p>
+
+</p><p>
+Import nodes in the parameter tree may be of array type, whose size
+depends on another parameter, which must be a required parameter of
+integer type. An array node is specified by having a node name of the
+form <code>&lt;name&gt;[&lt;size&gt;]</code>.
+</p><p>
+At run-time, assuming the <code>&lt;size&gt;</code> parameter is
+assigned <code>&lt;value&gt;</code>, the argument tree will contain
+nodes <code>&lt;name&gt;[0]</code>, <code>&lt;name&gt;[1]</code>,
+..., <code>&lt;name&gt;[&lt;value&gt;-1]</code>.
+</p><p>
+
+
+</p><h4 class="jdocu"><a name="argument-definition">1.3.2 Argument specifications</a></h4>
+<p>
+ 
+The argument tree specified by <code>args</code> must match the tree of
+parameters: the keys are parameter names or names of inner nodes, and
+the values are the (default) values, or a mapping in the case of inner
+nodes.
+</p><p>
+At any node in the argument tree, one can import an argument tree from
+another script. This is specified by having the <code>import</code>, whose
+value must be the file name where arguments should be imported
+from. Additional arguments can be specified in the same mapping as the
+import.
+</p><p>
+
+</p><h4 class="jdocu"><a name="parameter-references">1.3.3 Parameter references</a></h4>
+<p>
+  
+</p><p>
+Any parameter can be turned into a reference to another parameter, by
+specifying a parameter name prefixed with <code>^</code> as the parameter
+value. This is primarily useful when parameters in different
+sub-scripts should have the same value, and copying the values
+using <b>params.setdefault</b> is impractical.
+</p><p>
+Only parameters in the same script can be referenced, specified from
+the root of the script, using <code>:</code> as separator when
+referring to nested parameters. Reading from a reference has the
+same effect as reading from the referred parameter.
+</p><p>
+It is illegal to set a parameter default to be a reference to an
+unassigned parameter, unless this is done
+using <b>params.setdefault</b>, in which case it is illegal to
+read from the reference until the referred parameter is assigned.
+
+
+</p><h3 class="jdocu"><a name="evaluation-order">1.4 Runtime evaluation order</a></h3>
+<p>
+
+</p><p>
+Running a script can be done in several ways:
+</p><ul>
+  <li>Using the <b>load-target</b> or <b>run-script</b> commands.</li>
+  <li>Specifying the target name or script file name on the Simics command line,</li>
+  <li>Using <code>targets</code> key in the script parameter section,
+  since that effectively runs the specified script from the current
+  script.</li>
+</ul>
+<p>
+In the first two cases, one can also provide arguments on the command
+line. In the last case, the <code>args</code> section in the current
+script is used as input.
+</p><p>
+When running a script, the following happens:
+</p><ol>
+  <li>The script and all its imports are parsed, recursively, to
+    construct its parameter tree and argument (default value) tree.</li>
+  <li>If the script is not the top level script to run, then all
+    arguments have been assigned already. If it is the top level script,
+    then the arguments are assigned as follows:
+    <ol>
+      <li>The argument tree is taken from the <code>args</code> section in
+      the script, then it is overridden using any arguments on the
+      command line, or using the <code>args</code> section in the script
+      containing the <code>targets</code> key.</li>
+      <li>Assign parameters using the default values specified in the
+      parameter definitions.</li>
+      <li>Assign parameters from the argument tree, overwriting any
+      assignments from default values.</li>
+      <li>Check that all required parameters have been assigned.</li>
+      <li>Check that everything in argument tree has been used to
+      assign parameters.</li>
+    </ol>
+  </li>
+  <li>Any associated pre-init code is run. It can
+  use <code>params.setdefault</code> to assign parameters. If the
+    parameter is already assigned this statement has no effect.</li>
+  <li>All mentioned blueprints are expanded, using the same blueprint builder (unless the blueprints are included via a script inside an array namespace, in which case each one has its own builder). All blueprints are then instantiated.</li>
+  <li>The associated code is run. It can
+  use <code>params.setdefault</code> to assign parameters. If the
+  parameter is already assigned this statement has no effect.</li>
+</ol>
+<p>
+Note that a script containing a <code>targets</code> key may itself be
+called by another script using the <code>targets</code> key. It follows
+from the above that the arguments from the caller script overrides the
+callee, and by induction, in a series of caller script the arguments
+from the outermost script are used.
+
+
+</p><p>
+</p>
+<div class="chain">
+<span></span>
+</div>

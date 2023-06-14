@@ -1,0 +1,93 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.5 Using Simple Cache</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="workload-positioning-and-cache-models.html">5.4 Workload Positioning and Cache Models</a>
+<a href="understanding-the-statistics-of-simple-cache.html">5.6 Understanding the Statistics of Simple Cache</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="caches.html">5 Cache Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 id="using-simple-cache">5.5 <a href="#using-simple-cache">Using Simple Cache</a></h1>
+<p>Let us have a more detailed look at <code>simple_cache</code>. It has the following features:</p>
+<ul>
+<li>Configurable cache line size, number of sets and associativity. Note that the line size must be a power of 2, and that the number of sets (indices) also must be a power of two.</li>
+<li>Physical index and tag (no support for virtual address tags).</li>
+<li>Configurable write allocate/write back policy.</li>
+<li>LRU replacement policy.</li>
+<li>Sample MESI protocol.</li>
+<li>Support for several processors connected to one cache and any number of cache levels.</li>
+<li>Configurable penalties for read/write accesses to the cache, and read/write accesses initiated by the cache to the next level cache. Also the snoop penalty can be configured.</li>
+<li>Some prefetching algorithms implemented</li>
+<li>Cache statistics.</li>
+</ul>
+<p>Transactions are handled one at a time; all operations are done in order, at once, and a total stall time is returned. The transaction is not reissued afterwards. Here is a short description of the way <code>simple_cache</code> handles a transaction:</p>
+<ul>
+<li>
+<p>If the transaction is an instruction fetch the connection object will send the transaction to the instruction cache, unless the connection has been configured not to send any instruction fetches.</p>
+</li>
+<li>
+<p>If the transaction is data the connection objects will send the transaction to the data cache.</p>
+</li>
+<li>
+<p>If the transaction is a prefetch (instruction) a prefetch transaction will be sent to the data cache.</p>
+</li>
+<li>
+<p>If the transaction is uncacheable, the connection object will ignore it and not send the transaction to the cache.</p>
+</li>
+<li>
+<p>If the transaction is a read hit, <code>simple_cache</code> returns <code>read_penalty</code> cycles of penalty.</p>
+</li>
+<li>
+<p>If the transaction is a read miss, <code>simple_cache</code> will use the LRU algorithm to determine the cache line to allocate.</p>
+<p>If the replacement cache line needs to be emptied with modified data, a write-back transaction is initiated to the next level cache. In this case, a <code>write_penalty</code> from the next level cache is added.</p>
+<p>The new data is fetched from the next level, incurring <code>read_penalty</code> cycles penalty added to the penalty returned by the next level. The <code>read_miss_penalty</code> is also added to the stall time.</p>
+</li>
+<li>
+<p>The snoop_penalty is added when sending snoop transactions to the other caches (modeled by the directory objects). If the other cache needs to empty a line that penalty is also added.</p>
+</li>
+<li>
+<p>The total penalty returned is the sum of <code>penalty_read</code>, plus the penalties associated with the copy-back (if any), plus the penalties associated with the line fetch, plus the read_miss_penalty, and then the snooping penalty.</p>
+</li>
+<li>
+<p>If the transaction is a write hit, <code>simple_cache</code> returns <code>write_penalty</code> cycles of penalty.</p>
+</li>
+<li>
+<p>If the transaction is a write miss, the write penalty is added, then it depends on if the cache is a write allocate (add penalties for reading the cache line first) or a write through where the transaction is sent to the next level (and write_miss penalty is added).</p>
+</li>
+<li>
+<p>Instruction fetches and prefeches are handles as the read transactions except that prefetches are not added to the stall penalty.</p>
+</li>
+</ul>
+<p>Note the use of the <code>(read/write)_penalty</code> and the <code>(read/write)_miss_penalty</code>, where the first ones are added regardless if it is a hit or a miss (the time to reach the cache) and the second ones are the cost of having an additional miss. Usually, the write penalties may be set to zero to model (unlimited) store buffers.</p>
+
+<div class="chain">
+<a href="workload-positioning-and-cache-models.html">5.4 Workload Positioning and Cache Models</a>
+<a href="understanding-the-statistics-of-simple-cache.html">5.6 Understanding the Statistics of Simple Cache</a>
+</div>

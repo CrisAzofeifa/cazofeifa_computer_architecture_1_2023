@@ -1,0 +1,66 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;bp-manager.log&gt;.run-until</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-bp-manager.log.break.html">&lt;bp-manager.log&gt;.break</a>
+<a href="rm-cmd-bp-manager.log.trace.html">&lt;bp-manager.log&gt;.trace</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="bp-manager.log.run-until"></a>
+<h1 id="bp-manager.log.run-until"><a href="#bp-manager.log.run-until">&lt;bp-manager.log&gt;.run-until</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;bp-manager.log&gt;.run-until</b> [<i>object</i>] [-regexp] [-re] [<i>"substr"</i>] [<i>"substring"</i>] [<i>type</i>] [-recursive] [<i>timeout</i>] [<i>timeout-rt</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Run the simulation until a specified log message is emitted. The <i>type</i>, and <i>substr</i> arguments can be used to run until log messages matching certain conditions are emitted. The <i>object</i> argument of the command can be used to only consider log messages on a certain object. The <i>substr</i> argument is a string to look for. It is interpreted as a regular expression, as defined by the <tt>re</tt> module in Python, if the <tt>-regexp</tt> flag is specified.
+<p>
+When used in an expression, the commands returns a list with the following information: [&lt;clock-object&gt;, &lt;seconds&gt;, &lt;cycles&gt;, &lt;log-level&gt;, &lt;log-type&gt;, &lt;log-group&gt;, &lt;object&gt;, &lt;message&gt;]. The first three entries form a time stamp for when the log entry was generated.
+</p><p>
+Note that the log level must be set high enough for the message to be generated or it will not be found. If <tt>-recursive</tt> is used, not only the object, but the objects hierarchically below the object will be considered when adding the breakpoint. If <i>timeout</i> is a positive number, the command will run for at most that many seconds of virtual time.
+</p><p>
+If <i>timeout-rt</i> is a positive number, the command will run for at most that many seconds of real time.
+</p><p>
+A time-out will be signaled by throwing a CLI exception, which can be captured using try/except in order to take specific action, or to let it pass unhandled. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.bp-manager.html">bp-manager</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-bp-manager.log.break.html">&lt;bp-manager.log&gt;.break</a>
+<a href="rm-cmd-bp-manager.log.trace.html">&lt;bp-manager.log&gt;.trace</a>
+</div>

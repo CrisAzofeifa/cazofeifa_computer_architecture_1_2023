@@ -1,0 +1,430 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>g-cache</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-ftp-service.html">ftp-service</a>
+<a href="rm-class-gdb-remote.html">gdb-remote</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="g-cache"><a href="#g-cache">g-cache</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+<tt>g-cache</tt> is an in-order 'flat' cache model with the following features: configurable number of lines, line size, associativity; indexing/tagging on physical/virtual addresses; configurable policies for write-allocate and write-back; random, cyclic and lru replacement policies; several caches can be chained; a single cache can be connected to several processors; support for a simple MESI protocol between caches.
+<p>
+It is imperative to start Simics with the <i>-stall</i> flag to get correct cache statistics. It is possible to start Simics without it, but no transactions will then be stalled, and all transaction may not be visible to the cache.
+</p><p>
+Note that the sample MESI protocol was written to handle simple cases such as several L1 write-through caches with L2 caches synchronizing via MESI. To model more complex protocols, you will need to modify <tt>g-cache</tt>.
+</p><p>
+See <cite>Simics Analyzer User's Guide</cite> for more information.
+</p><h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, mesi_listen_interface, timing_model, cache_control
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-g-cache.add-profiler.html">add-profiler</a>
+ – add a profiler to the cache</li>
+<li>
+<a href="rm-cmd-g-cache.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-g-cache.line-status.html">line-status</a>
+ – print the cache lines status</li>
+<li>
+<a href="rm-cmd-g-cache.remove-profiler.html">remove-profiler</a>
+ – remove a profiler from the cache</li>
+<li>
+<a href="rm-cmd-g-cache.reset-cache-lines.html">reset-cache-lines</a>
+ – reset all the cache lines</li>
+<li>
+<a href="rm-cmd-g-cache.reset-statistics.html">reset-statistics</a>
+ – reset the cache statistics</li>
+<li>
+<a href="rm-cmd-g-cache.statistics.html">statistics</a>
+ – print the cache statistics</li>
+<li>
+<a href="rm-cmd-g-cache.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:cpus">
+<i>cpus</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o|[o*]</code>
+<br>cpus that can send transactions to the cache.</dd>
+<dt id="dt:config_line_number">
+<i>config_line_number</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of lines in the cache (default is 128)</dd>
+<dt id="dt:config_line_size">
+<i>config_line_size</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Cache line size (must be a power of 2, default is 32). If you plan to use the STC in combination to improve the cache performance, this value must be greater or equal to the instruction_profile_line_size.</dd>
+<dt id="dt:config_assoc">
+<i>config_assoc</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Cache associativity. Note that the total number of lines divided by the associativity must be a power of 2. (default is 4).</dd>
+<dt id="dt:config_virtual_index">
+<i>config_virtual_index</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Address used to compute the set in the cache (0: physical, 1: virtual; default is 0).</dd>
+<dt id="dt:config_virtual_tag">
+<i>config_virtual_tag</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Address used to compute the tag of the cache line (0: physical, 1: virtual; default is 0).</dd>
+<dt id="dt:config_write_allocate">
+<i>config_write_allocate</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Write allocation policy (0: non-write allocate, 1: write-allocate, default is 0).</dd>
+<dt id="dt:config_write_back">
+<i>config_write_back</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Write policy (0: write-through, 1: write-back, default is 0).</dd>
+<dt id="dt:config_replacement_policy">
+<i>config_replacement_policy</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>Replacement policy ("random", "lru" or "cyclic", default is "random").</dd>
+<dt id="dt:penalty_read">
+<i>penalty_read</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Stall penalty (in cycles) for any incoming read transaction. A cache-hit on read will only suffer a 'read' penalty (default is 0). Note that if you set this to a non-zero value, the simulation won't be able to use the STCs.</dd>
+<dt id="dt:penalty_write">
+<i>penalty_write</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Stall penalty (in cycles) for any incoming write transaction. A cache-hit on write (in a write-back cache) will only suffer a 'write' penalty (default is 0). Note that if you set this to a non-zero value, the simulation won't be able to use the STCs.</dd>
+<dt id="dt:stat_transaction">
+<i>stat_transaction</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Total number of transactions seen by the cache.</dd>
+<dt id="dt:stat_dev_data_read">
+<i>stat_dev_data_read</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of device data read transactions (DMA).</dd>
+<dt id="dt:stat_dev_data_write">
+<i>stat_dev_data_write</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of device data write transactions (DMA).</dd>
+<dt id="dt:stat_c_dev_data_read">
+<i>stat_c_dev_data_read</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of cached device data read transactions (DMA).</dd>
+<dt id="dt:stat_c_dev_data_write">
+<i>stat_c_dev_data_write</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of cached device data write transactions (DMA).</dd>
+<dt id="dt:stat_uc_data_read">
+<i>stat_uc_data_read</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of uncacheable data read transactions.</dd>
+<dt id="dt:stat_uc_data_write">
+<i>stat_uc_data_write</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of uncacheable data write transactions.</dd>
+<dt id="dt:stat_uc_inst_fetch">
+<i>stat_uc_inst_fetch</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of uncacheable inst fetch transactions.</dd>
+<dt id="dt:stat_data_read">
+<i>stat_data_read</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of cacheable data read transactions (may be underestimated if the STCs are used, see Simics Analyzer Guide for more information).</dd>
+<dt id="dt:stat_data_read_miss">
+<i>stat_data_read_miss</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of cacheable data read transactions that missed in the cache.</dd>
+<dt id="dt:stat_data_write">
+<i>stat_data_write</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of cacheable data write transactions (may be underestimated if the STCs are used, see Simics Analyzer Guide for more information).</dd>
+<dt id="dt:stat_data_write_miss">
+<i>stat_data_write_miss</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of cacheable data write transactions that missed in the cache (write-through caches report a correct miss value but all writes are sent to the next level).</dd>
+<dt id="dt:stat_inst_fetch">
+<i>stat_inst_fetch</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of cacheable instruction fetches (may be underestimated if the STCs are used, see Simics Analyzer Guide for more information).</dd>
+<dt id="dt:stat_inst_fetch_miss">
+<i>stat_inst_fetch_miss</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of cacheable instruction fetches that missed in the cache.</dd>
+<dt id="dt:stat_copy_back">
+<i>stat_copy_back</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of copy-back transactions initiated by the cache.</dd>
+<dt id="dt:timing_model">
+<i>timing_model</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Object listening on transactions coming from the cache (line fetch, copy-back).</dd>
+<dt id="dt:profilers">
+<i>profilers</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[o|n*]</code>
+<br>Profilers connected to the cache.</dd>
+<dt id="dt:config_block_stc">
+<i>config_block_STC</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Prevent the cache from using the STCs. Read the 'Cache Simulation' chapter in Simics Analyzer Guide for more information (0: STC usage allowed, 1: STC usage blocked; default is 0).</dd>
+<dt id="dt:penalty_read_next">
+<i>penalty_read_next</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Stall penalty (in cycles) for a read transaction issued by the cache to the next level cache. A cache miss on read will have a penalty for 'read' (incoming transaction) + 'read-next' (line fetch transaction) + any penalty set by the next caches. (default is 0)</dd>
+<dt id="dt:penalty_write_next">
+<i>penalty_write_next</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Stall penalty (in cycles) for a write transactions issued by the cache to the next level cache. In a write-back cache, a cache miss on read triggering a copy-back transaction will have a penalty for 'read', 'write-next' (copy-back transaction) and 'read-next' (line fetch transaction). In write-through cache, a write transaction will always have at least a penalty for 'write' and 'write-next' (write-through transaction). (default is 0).</dd>
+<dt id="dt:lines">
+<i>lines</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iiii]*]</code>
+<br>Content of the cache lines</dd>
+<dt id="dt:cacheable_devices">
+<i>cacheable_devices</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|[o*]</code>
+<br>List of devices that can be cached.</dd>
+<dt id="dt:snoopers">
+<i>snoopers</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|[o*]</code>
+<br>Caches listening on the bus (MESI protocol).</dd>
+<dt id="dt:higher_level_caches">
+<i>higher_level_caches</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|[o*]</code>
+<br>Higher level caches that need to receive invalidates during MESI snooping (MESI protocol).</dd>
+<dt id="dt:stat_mesi_exclusive_to_shared">
+<i>stat_mesi_exclusive_to_shared</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of Exclusive to Shared transitions in MESI protocol.</dd>
+<dt id="dt:stat_mesi_modified_to_shared">
+<i>stat_mesi_modified_to_shared</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of Modified to Shared transitions in MESI protocol.</dd>
+<dt id="dt:stat_mesi_invalidate">
+<i>stat_mesi_invalidate</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Number of lines invalidated in MESI protocol.</dd>
+<dt id="dt:stat_lost_stall_cycles">
+<i>stat_lost_stall_cycles</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Stall cycles lost due to non-stallable transactions.</dd>
+<dt id="dt:config_seed">
+<i>config_seed</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Seed for random replacement policy, default is 0).</dd>
+<dt id="dt:lines_last_used">
+<i>lines_last_used</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>Last used timestamp for the cache lines</dd>
+<dt id="dt:next_line_in_set">
+<i>next_line_in_set</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>Next line used for replacement in a given set.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.g-cache.html">g-cache</a>
+</section>
+<div class="chain">
+<a href="rm-class-ftp-service.html">ftp-service</a>
+<a href="rm-class-gdb-remote.html">gdb-remote</a>
+</div>

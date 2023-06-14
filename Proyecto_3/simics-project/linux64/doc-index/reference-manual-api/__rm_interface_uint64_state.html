@@ -1,0 +1,84 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>uint64_state</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_tsc_update.html">tsc_update</a>
+<a href="__rm_interface_vga_text_info.html">vga_text_info</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_uint64_state">uint64_state</a></h1>
+<p>
+
+<a name="uint64_state"></a><a name="uint64_state_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Interface to transfer a state representable in an uint64 from one device to
+   another.  Examples of what the state might represent includes:
+<p>
+   </p><dl><li>a fixed-point value representing the level of an analog signal</li>
+     <li>an integer representing a counter</li>
+     <li>an integer representing an enum value</li>
+   </dl><p>The initiator should call <b><i>set</i></b> when the value changes, and after a
+   new target is connected.  The object implementing
+   <code>uint64_state</code> should accept multiple calls to <b><i>set</i></b>
+   with the same level, and may let this trigger side-effects. Therefore, any
+   repeated calls must be deterministic; in particular, <b><i>set</i></b> must not
+   be called while restoring a checkpoint.
+</p><p>
+   A device implementing this interface may choose to only accept a certain set
+   of integer values; it is then an error to send any other values to the
+   <b><i>set</i></b> method.  A user must therefore be careful to read the
+   documentation of both the source and destination object to make sure they
+   are compatible.
+</p><p>
+   No interface call needs to be done after disconnecting a target; the target
+   needs to be notified of this through some other channel (typically via a
+   connector)
+</p><p>
+   </p><div class="note">
+<b>Note:</b>
+The <code>uint64_state</code> interface should be used instead of
+   the deprecated <code>multi_level_signal</code> interface when writing new
+   models.</div><pre class="jdocu_small">SIM_INTERFACE(uint64_state) {
+        void (*set)(conf_object_t *NOTNULL obj, uint64 level);
+};
+#define UINT64_STATE_INTERFACE "uint64_state"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_tsc_update.html">tsc_update</a>
+<a href="__rm_interface_vga_text_info.html">vga_text_info</a>
+</div>

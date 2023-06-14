@@ -1,0 +1,100 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_instrumentation_subscribe_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_instrumentation_subscribe.html">x86_instrumentation_subscribe</a>
+<a href="__rm_interface_x86_memory_access.html">x86_memory_access</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_instrumentation_subscribe_v2">x86_instrumentation_subscribe_v2</a></h1>
+<p>
+
+<a name="x86_instrumentation_subscribe_v2"></a><a name="x86_instrumentation_subscribe_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>x86_instrumentation_subscribe_v2</code> interface is an x86
+   specific complement to the <code>cpu_instrumentation_subscribe</code>
+   interface. It is implemented by x86 processor objects that support
+   instrumentation. It works in the same way as the
+   <code>cpu_instrumentation_subscribe</code> interface, and the methods
+   <b><i>remove/enabled/disable_callback</i></b> and
+   <b><i>remove/enabled/disable_connection_callbacks</i></b> in that interface
+   should be used to operate on callbacks in this interface as well, using the
+   <code>cpu_cb_handle_t</code> handle.
+<p>
+   The v2 variant fixes some problems with the
+   <code>x86_instrumentation_subscribe</code>. In that interface, the
+   <b><i>register_mode_switch_cb</i></b> method was invoked when the new mode had
+   already been set up. This means that if you need to do some bookkeeping
+   when leaving a mode, that mode had already been switched out in the callback.
+   For instance, descriptor registers has already been changed.
+</p><p>
+   This interface adds two methods to handle this,
+   <b><i>register_mode_leave_cb</i></b> and <b><i>register_mode_enter_cb</i></b>. The
+   leave variant is called when the processor still is located in the previous
+   mode, but about to enter a new mode, and the enter variant is called when
+   the processor has switched to the new mode (corresponds to the
+   <b><i>register_mode_switch_cb</i></b> in the old
+   <code>x86_instrumentation_subscribe</code> interface).
+</p><p>
+   The <b><i>register_illegal_instruction_cb</i></b> works as in the
+   <code>x86_instrumentation_subscribe</code> interface.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(x86_instrumentation_subscribe_v2) {
+        cpu_cb_handle_t *(*register_mode_enter_cb)(
+                conf_object_t *cpu, conf_object_t *connection,
+                x86_mode_switch_cb_t cb,
+                lang_void *user_data);
+        cpu_cb_handle_t *(*register_mode_leave_cb)(
+                conf_object_t *cpu, conf_object_t *connection,
+                x86_mode_switch_cb_t cb,
+                lang_void *user_data);
+        cpu_cb_handle_t *(*register_illegal_instruction_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_instruction_decoder_cb_t cb,
+                cpu_instruction_disassemble_cb_t disass_cb,
+                lang_void *data);
+};
+
+#define X86_INSTRUMENTATION_SUBSCRIBE_V2_INTERFACE \
+        "x86_instrumentation_subscribe_v2"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_instrumentation_subscribe.html">x86_instrumentation_subscribe</a>
+<a href="__rm_interface_x86_memory_access.html">x86_memory_access</a>
+</div>

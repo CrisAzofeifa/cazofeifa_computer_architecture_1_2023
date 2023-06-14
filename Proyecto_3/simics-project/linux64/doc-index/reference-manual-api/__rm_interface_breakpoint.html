@@ -1,0 +1,87 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>breakpoint</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_branch_recorder_handler.html">branch_recorder_handler</a>
+<a href="__rm_interface_breakpoint_change.html">breakpoint_change</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_breakpoint">breakpoint</a></h1>
+<p>
+
+<a name="breakpoint"></a><a name="breakpoint_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The breakpoint interface is implemented by any object that supports breaking
+   on an address range.
+<p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(breakpoint) {
+        void (*insert_breakpoint)(conf_object_t *object,
+                                  conf_object_t *caller,
+                                  breakpoint_handle_t handle,
+                                  access_t access,
+                                  generic_address_t start,
+                                  generic_address_t end);
+        void (*remove_breakpoint)(conf_object_t *object,
+                                  breakpoint_handle_t handle);
+        breakpoint_info_t (*get_breakpoint)(conf_object_t *obj,
+                                            breakpoint_handle_t handle);
+};
+
+#define BREAKPOINT_INTERFACE "breakpoint"
+</pre><p>
+</p><p>
+
+   The <b><i>insert_breakpoint</i></b> function is called when adding a
+   breakpoint on <i>object</i>. The <i>handle</i> identified the
+   breakpoint and is to be used when triggering the breakpoint and when
+   breakpoints are removed. The <i>access</i> parameter specifies the types
+   of accesses that the breakpoint is set for. The breakpoint range is from
+   <i>start</i> to <i>end</i> and includes both ends.
+</p><p>
+   The implementer of this interface should call <i>caller</i> through the
+   <code>breakpoint_trigger</code> interface to trigger the breakpoint.
+</p><p>
+   <b>remove_breakpoint</b> should remove the breakpoint and further accesses
+   to the address range should not trigger that breakpoint.
+</p><p>
+   This interface is only to be used by the Simics core. Other uses of
+   breakpoints should go through the available breakpoint API calls such as
+   <b><i>SIM_breakpoint</i></b>.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_branch_recorder_handler.html">branch_recorder_handler</a>
+<a href="__rm_interface_breakpoint_change.html">breakpoint_change</a>
+</div>

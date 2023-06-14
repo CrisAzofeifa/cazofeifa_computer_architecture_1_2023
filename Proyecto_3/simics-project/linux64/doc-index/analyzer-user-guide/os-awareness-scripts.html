@@ -1,0 +1,66 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.9 Adding Tracker Support to Target Scripts</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="os-awareness-configuration.html">2.8 Tracker Configuration</a>
+<a href="os-awareness-domains.html">2.10 Multiple Software Domains</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="target-software-tracking.html">2 OS Awareness</a>
+&nbsp;/&nbsp;</div>
+<h1 id="adding-tracker-support-to-target-scripts">2.9 <a href="#adding-tracker-support-to-target-scripts">Adding Tracker Support to Target Scripts</a></h1>
+<p>Every system configuration script that creates a system on which software can run, should add an <code>os_awareness</code> object to the <code>software</code> slot of each top-level object. For further details on how to configure the OSA framework see section <a class="reference" href="os-awareness-configuration.html">2.8</a>. This is done by running the <code>new-os-awareness</code> command and naming the new object by appending <code>.software</code> to the system top object name. This is how it's done in the standard configuration files (usually called <code>something-system.include</code>). </p>
+<pre><code class="language-simics">simics&gt; <strong>new-os-awareness name = $system.software</strong>
+Created OS awareness framework 'test_board.software'
+</code></pre>
+<p>If a target script starts a specific kernel version, it is convenient to make it include pre-defined parameters for the tracker. For example, if we have linux-3.1.4.simics, we could also provide a linux-3.1.4.params file with parameters matching the target OS. This makes it possible to run the system without having to configure the tracker each time. However, not everyone may have access to a specific tracker module, so care needs to be taken in order to add support to the target script so it works even without a tracker. Below is an example on how a target script can be written so that the system can be brought up even if the user does not have access to the tracker. The tracker itself, will not work if the parameters are not supported.</p>
+<pre><code>
+if not defined tracker_params = {$tracker_params = "linux-3.1.4.params"}
+
+$sw = $system.software
+
+# First check if any parameters should be loaded at all.
+if $tracker_params != "" {
+  if $sw.supports-parameters $tracker_params {
+    $sw.load-parameters file = $tracker_params
+  } else {
+      echo ("No tracker module found that supports parameters file: "
+            + $tracker_params)
+  }
+}
+
+</code></pre>
+<p>The software object handles user interaction by providing a number of commands, see section <a class="reference" href="osa-commands.html">2.3</a> for further details. The object will contain interfaces for scripting against node trees. The software object will also contain a sub-object named <code>tracker</code> which will be added once a tracker has been configured. Configuration of the tracker can be done in two ways. The first way is by loading parameters with the <code>load-parameters</code> command, which will add a tracker composition object matching the tracker specified in the parameters file loaded, if a matching tracker module exists.</p>
+<p>The second way is by inserting a tracker composition object of a specific kind with the <code>insert-tracker</code> command. This way has to be used if no parameters exist. The tracker composition object can then provide ways to detect parameters for the target software. See section <a class="reference" href="tracker-parameters.html">2.7</a> for more information about parameters.</p>
+<p>Most <code>tracker</code> composition objects will contain two objects, one named <code>tracker_obj</code> which takes care of tracking the currently running software. The other object will be the <code>mapper</code> object which takes care of mapping the information given by the tracker into a node tree (see section <a class="reference" href="nodes.html">2.2</a>) which can be used when scripting or debugging. One tracker could potentially have several different mappers to represent the trackers information in different node trees.</p>
+
+<div class="chain">
+<a href="os-awareness-configuration.html">2.8 Tracker Configuration</a>
+<a href="os-awareness-domains.html">2.10 Multiple Software Domains</a>
+</div>

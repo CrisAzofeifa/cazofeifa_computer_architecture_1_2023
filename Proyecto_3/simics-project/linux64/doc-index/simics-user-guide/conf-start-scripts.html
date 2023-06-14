@@ -1,0 +1,201 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>6.6 Ready-to-run Configurations</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="conf-object-name.html">6.5 Object Name</a>
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="configuration.html">6 Configuration and Checkpointing</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="conf-start-scripts">6.6 Ready-to-run Configurations</a></h1>
+<p>
+
+</p><p>
+Simics includes many customizable ready-to-run configurations. Because
+checkpoint files are by definition static, these example configurations
+are not checkpoint-based, but rather built on <em>components</em> and
+<em>scripts</em> to generate a working simulated machine.
+</p><p>
+The example configurations are located in separate directories for each system
+<em>architecture</em>:
+<code>[simics]\targets\</code><em>architecture</em><code></code>. Each of
+these directories contains a number of Simics scripts (i.e., files containing
+Simics commands):
+</p><p>
+</p><dl><dt id="dt:machine-common-simics"><b><code>&lt;machine&gt;-common.simics</code></b></dt><dd>Scripts that define a complete simulated machine, i.e., both hardware and
+software, that can be run by Simics directly. Each <code>common</code> script
+uses the corresponding <code>-system.include</code> script to define the hardware, and the
+<code>-setup.include</code> script for software configuration. The
+<code>-common.simics</code> scripts may add additional hardware in some cases.
+<p>
+<em>These are the files you want to use to start the standard example machines
+in this directory.</em>
+</p><p>
+&lt;machine&gt; in the script name is either a Linux machine name, or a some
+other name that defines the hardware/software combination.
+</p></dd><dt id="dt:machine-feature-common-simics"><b><code>&lt;machine&gt;-&lt;feature&gt;-common.simics</code></b></dt><dd>A script that extends the <code>-common.simics</code> script with a new
+feature. Many minor features, such as the processor frequency, can be
+controlled using parameters to the <code>common</code> script, but features
+that are mutually exclusive are added as separate scripts. Typical examples
+are scripts that add different diff-files to the same disk image in the system
+setup.</dd><dt id="dt:architecture-variant-system-include"><b><code>&lt;architecture-variant&gt;-system.include</code></b></dt><dd>A script that defines the hardware of a machine. This script can be shared
+by several simulated machines that are based on the same hardware. The hardware
+setup is typically configurable using some standard parameters.
+</dd><dt id="dt:machine-setup-include"><b><code>&lt;machine&gt;-setup.include</code></b></dt><dd>A script that defines the software and possibly configures the machine to
+run the selected software, for example setting boot path, and scripting
+automatic login.
+</dd></dl><p>The example configurations are designed to work with the disk images
+distributed with Simics. The machines are described in the <em>Target
+Guide</em> corresponding to each architecture.
+</p><p>
+Several machines may be defined for a given architecture, and thus the
+corresponding architecture directory will contain several
+<code></code><i>machine</i><code>-common.simics</code> scripts.
+</p><p>
+</p><h2 class="jdocu"><a name="Customizing-the-Configurations">6.6.1 Customizing the Configurations</a></h2>
+<p>
+
+</p><p>
+There are several ways to customize the examples provided with Simics. They
+are listed below ordered by how simple they are to use.
+</p><p>
+</p><dl><dt id="dt:parameters"><b>Parameters</b></dt><dd>The machine scripts distributed with Simics can be
+modified by setting parameters (CLI variables) before the script is actually
+run. This is the easiest way to change the default configuration. Parameters
+can typically be used to change properties such as the amount of memory, the
+number of processors and the primary MAC address. The available parameters are
+listed in each <em>Target Guide</em>.  
+<p>
+Setting parameters before the script is run can be done in two fashions:
+</p><p>
+</p><ol>
+  <li>
+    Use the startup flag <code>-e</code>. The flag must be repeated for
+    each parameter to set.
+<p>
+    An example on Windows:
+</p><pre class="jdocu_small">$ <b>simics.bat -e '$freq_mhz = 2000' -e '$host_name = "target0"'<img alt="Line break" src="nextline.png">
+          targets/qsp-x86/firststeps.simics</b>
+</pre><p>
+</p><p>
+    An example on Linux:
+</p><pre class="jdocu_small">$ <b>./simics -e '$freq_mhz = 2000' -e '$host_name = "target0"'<img alt="Line break" src="nextline.png">
+          targets/qsp-x86/firststeps.simics</b>
+</pre><p>
+</p><p>
+  </p></li>
+
+  <li>
+    Launch Simics without any script, set the parameters at CLI, and
+    run the CLI command <b>run-command-file</b>.
+<p>
+    An example identical to the one above:
+</p><pre class="jdocu_small">$ <b>simics.bat </b>
+
+simics&gt; <b>$freq_mhz = 2000</b>
+simics&gt; <b>$host_name = "target0"</b>
+simics&gt; <b>run-command-file targets/qsp-x86/firststeps.simics</b>
+</pre><p>
+</p><p>
+  </p></li>
+</ol>
+<p>
+</p></dd><dt id="dt:scripts"><b>Scripts</b></dt><dd>A simulated machine is defined by several scripts, as
+described above. By replacing the <code>-common.simics</code> file with a user
+defined script, the system can be configured more in detail while keeping the
+machine definition provided by the <code>-system.include</code> file. Similarly
+the <code>-setup.include</code> can be replaced to configure different software
+on the same machine.</dd><dt id="dt:components"><b>Components</b></dt><dd>Components represents real hardware items such as PCI
+cards, motherboards, and disks. Using components to configure a machine
+provides freedom to set up the simulated machine in any way that is supported
+by the architecture. The <code>-system.include</code> files use components to
+create their machine definitions. A complete description of components is
+provided earlier in this chapter.</dd><dt id="dt:objects-and-attributes"><b>Objects and Attributes</b></dt><dd>A component is implemented by one or more
+configuration objects in Simics, and each object has several attributes
+describing it. Configuring machines on the object and attribute level is
+<em>not</em> supported in Simics, and such configurations may not work in
+future versions.  </dd></dl><p>Below is another example of a simple configuration based on
+<i>QSP-x86</i>, that uses parameters to configure
+two machines slightly differently that both run in the same Simics
+session.
+</p><p>
+</p><pre class="jdocu_small">$freq_mhz = 2000
+$host_name = "target0"
+run-command-file "%script%/firststeps.simics"
+
+$freq_mhz = 3000
+$host_name = "target1"
+run-command-file "%script%/firststeps.simics"
+</pre><p>
+</p><p>
+
+</p><h2 class="jdocu"><a name="Scripting-Configuration-Components">6.6.2 Adding Devices to Existing Configurations</a></h2>
+<p>
+
+</p><p>
+The parameters available for each predefined machine allows the user to do
+minor modifications. It is also possible to extend the ready-to-run
+configurations with additional components without creating new machine setups
+from scratch.
+</p><p>
+Since the machine setup scripts are located in the read-only master
+installation of Simics, they should not be modified. User files that add
+new components should instead be placed in the corresponding
+<code>[project]\targets\</code><em>architecture</em><code></code> directory.
+</p><p>
+Here is a short example of how to extend
+the <i>QSP-x86</i> to add a SATA disk:
+</p><pre class="jdocu_small"># Add disk2
+$disk2 = (create-sata-disk-comp $system.disk2 size = $disk2_size)
+connect $system.mb.sb.sata_slot[2] $disk2.sata_slot
+
+instantiate-components
+</pre><p>
+</p><p>
+Notice, that script requires you to provide a disk image and a valid
+disk size. Essentially the script will run
+another script, <code>firststeps.simics</code>, which will
+create an instantiated <i>QSP-x86</i> machine, then
+a SCSI disk is created and connected to that machine, and finally the
+new disk is instantiated.
+</p><p>
+It is possible to add many devices to an instantiated Simics machine
+in a similar manner. In the case a device must be added to the target
+machine before instantiation, write a script as described above.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="conf-object-name.html">6.5 Object Name</a>
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+</div>

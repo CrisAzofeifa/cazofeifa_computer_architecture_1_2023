@@ -1,0 +1,211 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i2c_slave_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_i2c_slave.html">i2c_slave</a>
+<a href="__rm_interface_i3c_daa_snoop.html">i3c_daa_snoop</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_i2c_slave_v2">i2c_slave_v2</a></h1>
+<p>
+
+<a name="i2c_slave_v2"></a><a name="i2c_slave_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(i2c_slave_v2) {
+        void (*start)(conf_object_t *device, uint8 address);
+        void (*read)(conf_object_t *device);
+        void (*write)(conf_object_t *device, uint8 value);
+        void (*stop)(conf_object_t *device);
+        attr_value_t (*addresses)(conf_object_t *device);
+};
+#define I2C_SLAVE_V2_INTERFACE "i2c_slave_v2"
+</pre><p>
+</p><p>
+
+   The <code>i2c_slave_v2</code> interface is used together with the <a class="jdocu" href="__rm_interface_i2c_master_v2.html"><code>i2c_master_v2</code></a>
+   interface to model communication over an I2C bus. Most calls to a method in
+   the <code>i2c_slave_v2</code> interface expect a response call to a method
+   in the <code>i2c_master_v2</code> interface. It is up to each device to
+   find the caller's interface; usually it is configured with an attribute in
+   both the master and slave device.
+</p><p>
+   The <code>i2c_slave_v2</code> and <code>i2c_master_v2</code> interfaces
+   replace the obsolete interfaces <code>i2c_master</code>,
+   <code>i2c_slave</code>, <code>i2c_link</code>, and
+   <code>i2c_bridge</code>.
+</p><p>
+   An I2C bus consists of a number of <em>master</em> devices and a number of
+   <em>slave</em> devices.  Each slave device listens to one or more <em>7-bit
+   addresses</em> or <em>10-bit addresses</em>.  It is an error to connect two
+   slave devices to the same bus if they listen to the same address. 
+   Communication over the bus is initiated by a master, which can communicate
+   with one slave device at a time.  Only one master on a bus can communicate
+   at a time.
+</p><p>
+   Two I2C devices can communicate directly if one implements the
+   <code>i2c_master_v2</code> interface and the other one implements the
+   <code>i2c_slave_v2</code> interface.  An I2C bus with multiple masters or
+   slaves is typically modeled using an <b>i2c-link-v2</b> object,
+   where each device is connected to an endpoint object.
+</p><p>
+   The <b><i>start</i></b> method starts a transfer.  The
+   <i>address</i> parameter is the address of the slave device, encoded
+   as an 8-bit number.  To communicate with 7-bit address slave device, using 
+   little-endian bit numbering, bit 0 is a read/write bit (0 → master
+   writes, 1 → master reads) and bits 1 to 7 is the 7-bit address of
+   the slave device.  The <i>address</i> parameter should normally
+   be in the (inclusive) range <code>0x10 - 0xef</code>; the ranges <code>0x00 -
+   0x0f</code> and <code>0xf0 - 0xff</code> are reserved for special addressing modes.
+   To communicate with 10-bit address slave device, using little-endian bit 
+   numbering, bit 0 is a read/write bit (same as 7-bit address), bits 1 to 2
+   is part of 10-bit address, and bits 3 to 7 is 10-bit address mode 0b11110.
+</p><p>
+   The slave responds to <b><i>start</i></b> using the
+   <b><i>acknowledge</i></b> method.  The <i>ack</i> parameter may be
+   <code>I2C_ack</code> or <code>I2C_noack</code> if the start is acked
+   or noacked, respectively. In a multi-master configuration, the slave may
+   instead respond by calling the <b><i>start</i></b> method in the
+   <code>i2c_slave_v2</code> interface of the master device; this signals
+   that the master lost the bus arbitration. This is discussed further below.
+</p><p>
+   If a start was acked by a slave device, read/write bit in the
+   <b><i>start</i></b> method was 1, the master proceeds with a sequence
+   of <b><i>read</i></b> calls.  Each call is followed by a
+   <b><i>read_response</i></b> call from the slave.  If the read/write bit in
+   the <b><i>start</i></b> was 0, the master instead proceeds with a
+   sequence of <b><i>write</i></b> calls, each one followed by an
+   <b><i>acknowledge</i></b> call. The <i>ack</i> parameter of the
+   <b><i>acknowledge</i></b> method may be either <code>I2C_ack</code> or
+   <code>I2C_noack</code>, representing ack and noack, respectively.
+</p><p>
+   After sending a number of reads or writes, the master may choose to
+   either call the <b><i>stop</i></b> method to issue a <em>stop condition</em>
+   which terminates the transfer, or to call the <b><i>start</i></b>
+   method again to issue a <em>repeated start condition</em>.  The repeated
+   start condition works like a normal start condition.
+</p><p>
+   When 0 is passed as the <i>address</i> parameter of the
+   <b><i>start</i></b> method, a <em>General Call</em> transfer is initiated. A
+   General Call transfer works like a normal write transfer, except that
+   multiple slave devices may acknowledge the start and write requests.  The
+   master will conceive a request as acknowledged if it was acknowledged by at
+   least one of the slaves.
+</p><p>
+   When 10-bit address pattern is passed as the <i>address</i>
+   parameter of the <b><i>start</i></b> method, a <em>10-bit address</em>
+   transaction is initiated. A 10-bit address transaction begins with write
+   status (read/write bit should be 0). As mentioned before, bits 1 to 2 are
+   the most significant bits of 10-bit address. Then following is a call
+   to the <b><i>write</i></b> method with the last 8 bits of 10-bit address.
+   If the transaction is slave-receiver, the next transfer works like a
+   normal write transfer. If the transaction is slave-transmitter, then
+   the <b><i>start</i></b> method is called again with the same address pattern
+   as before, but with bit 0 (the read/write bit) set to 1. This is followed
+   by calls to <b><i>read</i></b> like in a normal read transaction.
+</p><p>
+   The <b><i>addresses</i></b> method is used to retrieve the set of addresses a
+   device currently listens to.  The method is called by the
+   <b>i2c-link-v2</b> to provide an overview of the bus topology, and
+   to detect address collisions early.  The method may not have any
+   side-effects on the simulation.  The return value is a list containing all
+   the different values of the <i>address</i> parameter in a
+   <b><i>start</i></b> call that the slave would respond to with
+   <code>I2C_ack</code>.  The list may also contain an element
+   <code>Nil</code> to mark that the device might respond to other addresses as
+   well.  If a device is configured to listen to a specific address but is
+   currently disabled, then that address may still be included in the list.
+</p><p>
+   For example, if a slave device listens to the single 7-bit address
+   <code>0x55</code>, the return value of <b><i>addresses</i></b> would be
+   <code>[0xaa, 0xab]</code>, using Python list syntax.
+</p><p>
+   The specification of the return value may be extended in the future, to
+   allow other values than <code>Nil</code> and 8-bit integers. Therefore, callers
+   should not make any assumptions on how the elements are formatted in the
+   return value.
+</p><p>
+   For most I2C devices it is sufficient to implement only one of the
+   <code>i2c_slave_v2</code> and <code>i2c_master_v2</code> interfaces.  In
+   some cases it may be useful for a device to implement both interfaces,
+   either because the device can act both as a master and as a slave on the
+   bus, or because it needs to use the <b><i>start</i></b> and
+   <b><i>stop</i></b> methods to monitor start and stop conditions on the bus.
+   I2C link endpoints also implement both interfaces.
+</p><p>
+   If multiple master devices are connected to the same i2c link, then all
+   master devices need to implement the <code>i2c_slave_v2</code> interface
+   in addition to <code>i2c_master_v2</code>, in order to handle bus
+   arbitration correctly:
+</p><p>
+   </p><ul>
+     <li>A master device should monitor calls to the <b><i>start</i></b> and
+     <b><i>stop</i></b> functions: After a call to <b><i>start</i></b> in a master
+     device, the master should not call <b><i>start</i></b> in the slave until
+     after a subsequent call to <b><i>stop</i></b> in the master.</li>
+
+     <li>When a master calls <b><i>start</i></b> in a link endpoint device, the
+     endpoint may respond with a call to <b><i>start</i></b> instead of
+     <b><i>acknowledge</i></b>; this means that there was bus arbitration, which
+     the master lost to the given <b><i>start</i></b> request.  Note that this
+     case can not happen on a latency-free connection, since all arbitration is
+     handled by the master's monitoring of <b><i>start</i></b> and <b><i>stop</i></b>
+     calls. Note also that user-written slave devices are required to respond
+     with <b><i>acknowledge</i></b> to a <b><i>start</i></b> call; only the i2c link
+     endpoint (and other i2c infrastructure objects from the Simics-Base
+     package) are allowed to respond with a <b><i>start</i></b> call.</li>
+   </ul>
+<p>
+   Note that there is no need for a master device to implement the
+   <code>i2c_slave_v2</code> interface if the device only will be used in
+   single-master configurations.
+</p><p>
+   The <b><i>start</i></b>, <b><i>write</i></b> and <b><i>read</i></b> methods in the
+   <code>i2c_slave_v2</code> interface are allowed to respond synchronously;
+   i.e., the <b><i>acknowledge</i></b> or <b><i>read_response</i></b> method may be
+   called before the corresponding method in the slave interface has returned.
+   A master that needs to connect directly to a slave device needs to take this
+   into consideration; however, when communicating via an
+   <b>i2c-link-v2</b> object, the link guarantees that all responses
+   are asynchronous.  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><code>addresses</code></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder">All other methods</td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_i2c_slave.html">i2c_slave</a>
+<a href="__rm_interface_i3c_daa_snoop.html">i3c_daa_snoop</a>
+</div>

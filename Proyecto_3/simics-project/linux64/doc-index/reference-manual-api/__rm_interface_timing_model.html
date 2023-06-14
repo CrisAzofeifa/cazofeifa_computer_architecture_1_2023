@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>timing_model</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_temporal_state.html">temporal_state</a>
+<a href="__rm_interface_transaction.html">transaction</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_timing_model">timing_model</a></h1>
+<p>
+
+<a name="timing_model"></a><a name="timing_model_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>timing_model</code> interface is used to communicate
+   stall times for memory accesses. It is typically exported by cache
+   models. The <b><i>operate()</i></b> function is then called on every
+   memory access that misses in the STC, and the return value from the
+   call is the number of cycles to stall.
+<p>
+   The <code>snoop_memory</code> interface has the exact same layout
+   as the <code>timing_model</code> interface, but its
+   <b><i>operate()</i></b> function is called after the memory access has
+   been performed. The return value from the <b><i>operate()</i></b>
+   function of a <code>snoop_memory</code> interface is ignored.
+</p><p>
+   The <b><i>operate</i></b> function is invoked via the <i>timing_model</i>
+   attribute of the <b>memory-space</b> where the STC miss happens.
+</p><p>
+   See the <em>Model Builder User's Guide</em> for more information on
+   how to use these interfaces.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(timing_model) {
+        cycles_t (*operate)(conf_object_t *NOTNULL mem_hier,
+                            conf_object_t *NOTNULL space,
+                            map_list_t *map_list,
+                            generic_transaction_t *NOTNULL mem_op);
+};
+
+#define TIMING_MODEL_INTERFACE "timing_model"
+
+SIM_INTERFACE(snoop_memory) {
+        cycles_t (*operate)(conf_object_t *NOTNULL mem_hier,
+                            conf_object_t *NOTNULL space,
+                            map_list_t *map_list,
+                            generic_transaction_t *NOTNULL mem_op);
+};
+
+#define SNOOP_MEMORY_INTERFACE "snoop_memory"
+        
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_temporal_state.html">temporal_state</a>
+<a href="__rm_interface_transaction.html">transaction</a>
+</div>

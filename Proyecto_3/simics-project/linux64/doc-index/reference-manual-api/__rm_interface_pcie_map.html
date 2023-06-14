@@ -1,0 +1,91 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pcie_map</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pcie_device.html">pcie_device</a>
+<a href="__rm_interface_pcie_port_control.html">pcie_port_control</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pcie_map">pcie_map</a></h1>
+<p>
+
+<a name="pcie_map"></a><a name="pcie_map_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is used to claim ranges in PCIe address spaces and to manage
+   virtual functions.
+<p>
+   Functions <b><i>add_map</i></b> and <b><i>del_map</i></b> are used to add and
+   remove maps, <i>map_obj</i> will be mapped in the address space
+   indicated by <i>type</i> according to the information in <i>nfo</i>.
+</p><p>
+   Functions <b><i>add_function</i></b>, <b><i>del_function</i></b>,
+   <b><i>enable_function</i></b> and <b><i>disable_function</i></b> are used to add,
+   delete, enable and disable functions, both virtual and physical. The
+   supplied <i>map_obj</i> must be a valid map-target, it will receive both
+   Config and Message transactions. For Message transactions, the device id (not
+   including bus number) will be in bits 55:48 of the 64-bit address. For
+   Config transactions, the device id is not part of the address.
+</p><p>
+   The function <b><i>get_device_id</i></b> returns the current device id of
+   <i>dev_obj</i>, as a 16 bit number. Note that the bus number part is
+   saved immediately after the RC/Switch sets it, even if no successful
+   Config-Write has been made.
+</p><p>
+   Note: This interface is considered tech-preview and may change without
+   notice.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(pcie_map) {
+        void (*add_map)(conf_object_t *obj, conf_object_t *map_obj,
+                       map_info_t nfo, pcie_type_t type);
+        void (*del_map)(conf_object_t *obj, conf_object_t *map_obj,
+                       physical_address_t base, pcie_type_t type);
+        void (*add_function)(conf_object_t *obj, conf_object_t *map_obj,
+                             uint16 function_id);
+        void (*del_function)(conf_object_t *obj, conf_object_t *map_obj,
+                             uint16 function_id);
+        void (*enable_function)(conf_object_t *obj, uint16 function_id);
+        void (*disable_function)(conf_object_t *obj, uint16 function_id);
+        uint16 (*get_device_id)(conf_object_t *obj, conf_object_t *dev_obj);
+};
+
+#define PCIE_MAP_INTERFACE "pcie_map"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pcie_device.html">pcie_device</a>
+<a href="__rm_interface_pcie_port_control.html">pcie_port_control</a>
+</div>

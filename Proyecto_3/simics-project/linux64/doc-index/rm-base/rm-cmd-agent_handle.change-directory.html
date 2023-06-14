@@ -1,0 +1,69 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;agent_handle&gt;.change-directory</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-agent_handle.agent-restart.html">&lt;agent_handle&gt;.agent-restart</a>
+<a href="rm-cmd-agent_handle.delete-handle.html">&lt;agent_handle&gt;.delete-handle</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="agent_handle.change-directory"></a>
+<a name="agent_handle.cd"></a>
+<h1 id="agent_handle.change-directory"><a href="#agent_handle.change-directory">&lt;agent_handle&gt;.change-directory</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;agent_handle&gt;.change-directory</b> [<i>"target-path"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Change the current working directory for this <tt>agent_handle</tt> object.
+<p>
+This command immediately takes effect since it only sets the path property of <i>this</i> agent handle. Hence, the Simics Agent for this handle is not notified, and no other handles for the same agent are affected. Any following commands posted on a handle will run relative to its working directory, unless they specify an absolute path.
+</p><p>
+The <i>target-path</i> argument is an <i>absolute</i> path, or a path <i>relative</i> to this handle's current working directory. Without argument, on Linux the directory is changed to "/", and on other systems to its equivalent.
+</p><p>
+The target-path must exist on the target system but no effort is made to validate the path. Hence, an invalid path may cause following commands to fail.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.matic.html">matic</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-agent_handle.print-working-directory.html">&lt;agent_handle&gt;.print-working-directory</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-agent_handle.agent-restart.html">&lt;agent_handle&gt;.agent-restart</a>
+<a href="rm-cmd-agent_handle.delete-handle.html">&lt;agent_handle&gt;.delete-handle</a>
+</div>

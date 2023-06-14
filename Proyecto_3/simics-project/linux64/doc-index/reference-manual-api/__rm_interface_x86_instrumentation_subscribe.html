@@ -1,0 +1,202 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_instrumentation_subscribe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_instruction_query.html">x86_instruction_query</a>
+<a href="__rm_interface_x86_instrumentation_subscribe_v2.html">x86_instrumentation_subscribe_v2</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_instrumentation_subscribe">x86_instrumentation_subscribe</a></h1>
+<p>
+
+<a name="x86_instrumentation_subscribe"></a><a name="x86_instrumentation_subscribe_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>x86_instrumentation_subscribe</code> interface is an x86
+   specific complement to the <code>cpu_instrumentation_subscribe</code>
+   interface. It is implemented by processor objects that support
+   instrumentation. It has the same requirements as the
+   <code>cpu_instrumentation_subscribe</code> interface.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(x86_instrumentation_subscribe) {
+        cpu_cb_handle_t *(*register_mode_switch_cb)(
+                conf_object_t *cpu, conf_object_t *connection,
+                x86_mode_switch_cb_t cb,
+                lang_void *user_data);
+        cpu_cb_handle_t *(*register_illegal_instruction_cb)(
+                conf_object_t *NOTNULL cpu,
+                conf_object_t *connection,
+                cpu_instruction_decoder_cb_t cb,
+                cpu_instruction_disassemble_cb_t disass_cb,
+                lang_void *data);
+};
+#define X86_INSTRUMENTATION_SUBSCRIBE_INTERFACE \
+        "x86_instrumentation_subscribe"
+</pre><p>
+</p><p>
+
+   The <b><i>register_mode_switch_cb</i></b> method is used to register a callback
+   that is called whenever the processor <i>cpu</i> changes execution
+   mode. The <i>connection</i> argument is the user object that
+   registers the callback. This object will be passed to the callback when it
+   is called. <i>cb</i> is the callback and <i>user_data</i> is user data
+   for the callback. The signature of the callback looks like this:
+   </p><p>
+   
+</p><pre class="jdocu_small">typedef void (*x86_mode_switch_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        x86_detailed_exec_mode_t mode,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The <i>obj</i> is the connection object that registered the
+   callback. <i>new_mode</i> argument contains the new mode. The possible
+   modes available are captured in the <code>x86_detailed_exec_mode_t</code>
+   type:
+</p><p>
+    
+</p><pre class="jdocu_small">typedef enum {
+        X86_Detailed_Exec_Mode_Real_16,
+        X86_Detailed_Exec_Mode_Real_32,
+        X86_Detailed_Exec_Mode_V86,
+        X86_Detailed_Exec_Mode_Protected_16,
+        X86_Detailed_Exec_Mode_Protected_32,
+        X86_Detailed_Exec_Mode_Protected_64,
+        X86_Detailed_Exec_Mode_Compatibility_16,
+        X86_Detailed_Exec_Mode_Compatibility_32,
+} x86_detailed_exec_mode_t;</pre><p>
+
+</p><p>
+   The <i>user_data</i> is the user data associated with the callback.
+</p><p>
+   <b><i>register_illegal_instruction_cb</i></b> lets a user to implement new
+   instructions. The <i>cb</i> argument is a callback function that will be
+   called every time Simics does not decode an instruction. Allows new x86
+   instructions to be implemented which otherwise cause illegal instruction
+   exception. Compared to <b><i>register_instruction_decoder_cb</i></b> method of
+   <code>cpu_instrumentation_subscribe</code> interface this interface cannot
+   change any instruction that correctly decodes according to the existing
+   instruction set architecture. From this callback the user can accept the
+   instruction or deny it. In most cases this only happens once per instruction
+   address since Simics usually caches decoding results in the internal
+   instruction cache. If the cache is flushed the callback may be called again.
+   This instrumentation feature (if used alone) does not prevent VMP execution
+   since illegal instructions cause exit while running inside VMP mode.
+</p><p>
+   The callback signature looks like this:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef int (*cpu_instruction_decoder_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        decoder_handle_t *decoder_handle,
+        instruction_handle_t *iq_handle,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   The instruction bytes are read by using the <b><i>get_instruction_bytes</i></b>
+   method of the <code>cpu_instruction_query</code> interface together with
+   the <i>iq_handle</i>. The returned value is of a
+   <code>cpu_bytes_t</code> type. To access the bytes use the <code>data</code> and
+   the <code>size</code> members in the returned value.
+</p><p>
+   If the decoder requires more bytes (i.e., because the new instruction is
+   longer), a negative integer value should be returned by the <i>cb</i>
+   function, indicating the number of bytes needed. For example, if the
+   available bytes are 3 but the decoder need at least 4 bytes, -4 should be
+   returned. The callback will then be called again with more available bytes
+   (this can be repeated if the new instruction requires even more bytes at
+   this point). Note that requesting more data than actual needed can cause
+   spurious page faults if the data crosses a page boundary.
+</p><p>
+   If the instruction is accepted by the callback a positive integer number
+   should be returned corresponding to the length of the instruction. In this
+   case the <b><i>register_emulation_cb</i></b> method of the
+   <code>cpu_instruction_decoder</code> interface should be called to set the
+   actual (user) function that Simics will call each time the instruction is
+   executed.
+</p><p>
+   If the <i>cb</i> callback should ignore the instruction the number 0
+   should be returned. This means that any other registered decoder will have a
+   chance to decode the instruction. If no decoder accepts it, Simics will
+   generate illegal instruction exception.
+</p><p>
+   The <b><i>register_emulation_cb</i></b> method also needs the
+   <i>decoder_handle</i> which is available in the dedoder callback. For
+   more information, see the documentation of the
+   <code>cpu_instruction_decoder</code> interface.
+</p><p>
+   A <i>disass_cb</i> argument should also be passed to the
+   <b><i>register_illegal_instruction_cb</i></b> method. This function is called
+   every time Simics wants to disassemble an instruction. For every accepted
+   instruction a corresponding disassembly string should be returned by this
+   function. It has the following signature:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef tuple_int_string_t (*cpu_instruction_disassemble_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        generic_address_t addr,
+        cpu_bytes_t bytes);</pre><p>
+
+</p><p>
+   <i>obj</i> is the object registering the
+   <b><i>register_illegal_instruction_cb</i></b> and <i>cpu</i> is the
+   processor disassembling the instruction. <b><i>addr</i></b> is the address of
+   the instruction in a generic form. This means that it is typically a
+   physical address or a logical address depending on the context of the
+   disassembling. The address can be used for offset calculations, i.e.,
+   displaying an absolute address instead of a relative one, for example in a
+   branch instruction. The <i>bytes</i> argument should be used to read
+   instruction bytes. The return value is of type
+   <code>tuple_int_string_t</code> and should be filled with the instruction
+   length and an allocated (e.g., malloc) string representing the disassembly
+   of the instruction. The ownership of the string is transferred to the
+   calling environment which will free it when it is no longer needed.
+</p><p>
+   If too few bytes are passed for the instruction to be disassembled a
+   negative value should be returned for the length indicating the needed
+   bytes. The <i>disass_cb</i> is then called again with more bytes. If the
+   instruction is rejected a length of 0 should be returned and the string
+   should be set to NULL.
+</p><p>
+   To remove the callback used one of the methods <b><i>remove_callback</i></b> or
+   <b><i>remove_connection_callbacks</i></b> in the
+   <code>cpu_instrumentation_subscribe</code> interface.
+</p><p>
+   The callback can also be enabled and disabled with the corresponding methods
+   in the <code>cpu_instrumentation_subscribe</code> interface.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_instruction_query.html">x86_instruction_query</a>
+<a href="__rm_interface_x86_instrumentation_subscribe_v2.html">x86_instrumentation_subscribe_v2</a>
+</div>

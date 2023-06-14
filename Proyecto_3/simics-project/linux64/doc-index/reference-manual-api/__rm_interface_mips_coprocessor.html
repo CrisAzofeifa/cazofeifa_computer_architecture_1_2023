@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>mips_coprocessor</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_mips_cache_instruction.html">mips_cache_instruction</a>
+<a href="__rm_interface_mips_eic.html">mips_eic</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_mips_coprocessor">mips_coprocessor</a></h1>
+<p>
+
+<a name="mips_coprocessor"></a><a name="mips_coprocessor_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This <code>mips_coprocessor</code> interface is implemented by
+   MIPS coprocessors. The MIPS processor cores use this interface to
+   access coprocessor registers.
+<p>
+   The <b><i>read_register</i></b> function returns a 64-bit value from a
+   coprocessor register. The return value should be zero extended if
+   the coprocessor register is less than 64-bits.
+</p><p>
+   The <b><i>write_register</i></b> function writes a 64-bit value to a
+   coprocessor register. The target register can be smaller than
+   64-bits.
+</p><p>
+   The <i>thread_id</i> is the thread id for the calling
+   processor core. The <i>reg</i> and <i>sel</i>
+   selects the coprocessor register to read or write. For instructions
+   that make use of the whole implementation-defined bits 15:0, that
+   field is passed as <i>reg</i> and <i>sel</i> is zero.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(mips_coprocessor) {
+        uint64 (*read_register)(conf_object_t *NOTNULL obj,
+                                uint32 thread_id,
+                                uint32 reg,
+                                uint32 sel);
+        void (*write_register)(conf_object_t *NOTNULL obj,
+                               uint32 thread_id,
+                               uint64 value,
+                               uint32 reg,
+                               uint32 sel);
+};
+#define MIPS_COPROCESSOR_INTERFACE "mips_coprocessor"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_mips_cache_instruction.html">mips_cache_instruction</a>
+<a href="__rm_interface_mips_eic.html">mips_eic</a>
+</div>

@@ -1,0 +1,183 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>bank_instrumentation_subscribe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_bank_before_write.html">bank_before_write</a>
+<a href="__rm_interface_branch_recorder_handler.html">branch_recorder_handler</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_bank_instrumentation_subscribe">bank_instrumentation_subscribe</a></h1>
+<p>
+
+<a name="bank_instrumentation_subscribe"></a><a name="bank_instrumentation_subscribe_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>bank_instrumentation_subscribe</code> interface is implemented
+   by non-anonymous register banks. The interface may be used to monitor and
+   modify register accesses using callbacks.
+<p>
+   Similar to the CPU instrumentation framework, a bank that implements the
+   interface is considered an instrumentation provider and is typically used by
+   an instrumentation tool. The tool registers callbacks using this interface
+   and performs its actions once they are called. Using this interface, tools
+   may also group registered callbacks using connection objects. This can be
+   useful to enforce a certain evaluation order of grouped callbacks.
+</p><p>
+   The <i>bank</i> argument in all methods is the register bank object
+   implementing this interface.
+</p><p>
+   The <i>connection</i> can be used to group registered callbacks
+   together, so that their order may be changed or their registered
+   callbacks be enabled, disabled, or removed collectively. If
+   <i>connection</i> is NULL when registering a callback, the callback is
+   considered anonymous. Anonymous callbacks are evaluated before any other
+   callbacks in the order of creation. See <code>instrumentation_order</code>
+   interface for more details on the callback order.
+</p><p>
+   Each registration method installs a callback which is called at a
+   particular time, before or after, read and write register
+   accesses. Callbacks are not invoked during inquiry accesses. Using
+   the <i>offset</i> and <i>size</i> arguments, a user may
+   install the callback only for a particular range. If
+   <i>offset</i> and <i>size</i> are 0 the callback is
+   installed for the entire bank.
+</p><p>
+   The <i>user_data</i> is used to associate user defined data with every
+   callback. Every time the callback is invoked the data is provided as an
+   argument to the callback.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(bank_instrumentation_subscribe) {
+        bank_callback_handle_t (*register_before_read)(
+                conf_object_t *NOTNULL bank,
+                conf_object_t *connection,
+                uint64 offset,
+                uint64 size,
+                before_read_callback_t before_read,
+                lang_void *user_data);
+        bank_callback_handle_t (*register_after_read)(
+                conf_object_t *NOTNULL bank,
+                conf_object_t *connection,
+                uint64 offset,
+                uint64 size,
+                after_read_callback_t after_read,
+                lang_void *user_data);
+
+        bank_callback_handle_t (*register_before_write)(
+                conf_object_t *NOTNULL bank,
+                conf_object_t *connection,
+                uint64 offset,
+                uint64 size,
+                before_write_callback_t before_write,
+                lang_void *user_data);
+        bank_callback_handle_t (*register_after_write)(
+                conf_object_t *NOTNULL bank,
+                conf_object_t *connection,
+                uint64 offset,
+                uint64 size,
+                after_write_callback_t after_write,
+                lang_void *user_data);
+
+        void (*remove_callback)(conf_object_t *NOTNULL bank,
+                                bank_callback_handle_t callback);
+
+        void (*remove_connection_callbacks)(conf_object_t *NOTNULL bank,
+                                            conf_object_t *NOTNULL connection);
+        void (*enable_connection_callbacks)(conf_object_t *NOTNULL bank,
+                                            conf_object_t *NOTNULL connection);
+        void (*disable_connection_callbacks)(conf_object_t *NOTNULL bank,
+                                             conf_object_t *NOTNULL connection);
+
+};
+#define BANK_INSTRUMENTATION_SUBSCRIBE_INTERFACE \
+        "bank_instrumentation_subscribe"
+</pre><p>
+</p><p>
+
+   Every function that registers a callback returns a unique handle of type
+   <code>bank_callback_handle_t</code>. The <b><i>remove_callback</i></b> method
+   uninstalls the callback associated with the handle.  The
+   <b><i>remove_connection_callbacks</i></b> uninstalls all callbacks associated
+   with a connection object. Similarly, the
+   <b><i>enable_connection_callbacks</i></b> and
+   <b><i>disable_connection_callbacks</i></b> methods are used to temporarily
+   enable or disable a group of callbacks.
+</p><p>
+   Callback functions registered through the
+   <code>bank_instrumentation_subscribe</code> interface are called before or
+   after read and write accesses, like so:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*before_read_callback_t)(conf_object_t *connection,
+                                       bank_before_read_interface_t *access,
+                                       bank_access_t *handle,
+                                       lang_void *user_data);</pre><p>
+
+   
+</p><pre class="jdocu_small">typedef void (*after_read_callback_t)(conf_object_t *connection,
+                                      bank_after_read_interface_t *access,
+                                      bank_access_t *handle,
+                                      lang_void *user_data);</pre><p>
+
+   
+</p><pre class="jdocu_small">typedef void (*before_write_callback_t)(conf_object_t *connection,
+                                        bank_before_write_interface_t *access,
+                                        bank_access_t *handle,
+                                        lang_void *user_data);</pre><p>
+
+   
+</p><pre class="jdocu_small">typedef void (*after_write_callback_t)(conf_object_t *connection,
+                                       bank_after_write_interface_t *access,
+                                       bank_access_t *handle,
+                                       lang_void *user_data);</pre><p>
+
+</p><p>
+   The <i>connection</i> is the object used to group the callback with
+   any other callbacks, which may be NULL. The <i>access</i> object
+   provides a number of methods which may be used along with the
+   <i>handle</i> to perform a certain set of actions at the particular
+   point of the access. The <i>user_data</i> is the custom data
+   which was associated with the callback at registration.
+</p><p>
+   For every callback, additional information may be accessed using a specific
+   interface which is passed as a parameter to the callback. See
+   <code>bank_before_read_interface_t</code>,
+   <code>bank_after_read_interface_t</code>,
+   <code>bank_before_write_interface_t</code>, and
+   <code>bank_after_write_interface_t</code> for details.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_bank_before_write.html">bank_before_write</a>
+<a href="__rm_interface_branch_recorder_handler.html">branch_recorder_handler</a>
+</div>

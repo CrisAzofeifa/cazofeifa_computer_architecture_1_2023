@@ -1,0 +1,73 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>keyboard</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_int_register.html">int_register</a>
+<a href="__rm_interface_keyboard_console.html">keyboard_console</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_keyboard">keyboard</a></h1>
+<p>
+
+<a name="keyboard"></a><a name="keyboard_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Interface implemented by keyboard controllers. Used by consoles to send
+   keyboard events to the controller.
+<p>
+   The function <b><i>keyboard_event()</i></b> takes the keyboard controller as
+   its first argument <i>obj</i>. The <i>key_up</i> argument specifies
+   whether the event is a key release (1) or a key press (0). The
+   <i>key</i> argument is the Simics internal keycode, as defined in
+   the <code>sim_key_t</code> enum.
+</p><p>
+   If the return value is 1 the keyboard controller accepted the event. If
+   return value is 0 the keyboard controller did not accept the event, and the
+   console should buffer the event until it gets a <b><i>keyboard_ready()</i></b>
+   call from the keyboard controller.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(keyboard) {
+        int (*keyboard_event)(conf_object_t *obj, int key_up, uint8 key);
+};
+
+#define KEYBOARD_INTERFACE "keyboard"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_int_register.html">int_register</a>
+<a href="__rm_interface_keyboard_console.html">keyboard_console</a>
+</div>

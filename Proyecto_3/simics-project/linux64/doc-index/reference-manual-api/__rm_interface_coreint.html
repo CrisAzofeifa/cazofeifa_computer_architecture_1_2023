@@ -1,0 +1,84 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>coreint</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_can_link.html">can_link</a>
+<a href="__rm_interface_datagram_link.html">datagram_link</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_coreint">coreint</a></h1>
+<p>
+
+<a name="coreint"></a><a name="coreint_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Interface between CoreInt capable processor and interrupt controller.
+<p>
+   This interface is implemented by CoreInt capable interrupt controllers and
+   allows the processor to automatically acknowledge external interrupts
+   without software intervention.
+</p><p>
+   The <b><i>acknowledge</i></b> function is called by the processor when an
+   external interrupt is taken. If coreint is enabled in the interrupt
+   controller, the interrupt controller should lower the interrupt signal
+   towards the processor and return the interrupt source
+   vector. This way the software doesn't have to go and query the
+   interrupt controller for the source. If coreint is not enabled, the
+   interrupt should not do anything and the vector value in the reply is
+   undefined.
+</p><p>
+   </p><pre class="jdocu_small">#include &lt;simics/pywrap.h&gt;
+#include &lt;simics/base/types.h&gt;
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+typedef struct {
+        bool enabled;
+        uint64 vector;
+} coreint_reply_t;
+
+#define COREINT_INTERFACE "coreint"
+SIM_INTERFACE(coreint) {
+        coreint_reply_t (*acknowledge)(conf_object_t *obj, conf_object_t *core);
+};
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_can_link.html">can_link</a>
+<a href="__rm_interface_datagram_link.html">datagram_link</a>
+</div>

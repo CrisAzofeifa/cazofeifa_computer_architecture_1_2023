@@ -1,0 +1,123 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>17.2 Multicore Accelerator</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="multimachine-accelerator.html">17.1 Multimachine Accelerator</a>
+<a href="distributed-simulation.html">17.3 Distributed Simulation</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="scaling-simics.html">17 Scaling Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Multicore-Accelerator">17.2 Multicore Accelerator</a></h1>
+<p>
+
+<a name="multicore-accelerator"></a> <a name="multiprocessor"></a> 
+<a name="thread"></a>
+</p><p>
+With <em>Multicore Accelerator</em>, multiple host threads can be used
+to simulate multiple processors and clocks within each cell
+concurrently. This requires that all the processors and clocks
+supports this execution model. Multicore Accelerator is compatible
+with Multimachine Accelerator meaning that both can be enabled at the
+same time, utilizing the <a name="dynamic-load-balancing">dynamic load balancing</a> (see
+<a class="reference" href="multimachine-accelerator.html#accelerator-mt">17.1.5</a>).
+</p><p>
+When developing models to be used in the Multicore Accelerator
+execution mode there are a couple of considerations to take into
+account. See the chapter <em>Considerations for Multicore
+Accelerator</em> in the <em>API Reference Manual</em> for more
+information.
+</p><p>
+</p><h2 class="jdocu"><a name="Enabling-and-Disabling-Multicore-Accelerator">17.2.1 Enabling and Disabling Multicore Accelerator</a></h2>
+<p>
+
+<a name="multicore-acceleratorenable"></a> <a name="multicore-acceleratordisable"></a>
+<a name="enable-multicore-accelerator"></a> <a name="disable-multicore-accelerator"></a>
+</p><p>
+Unlike Simics® Multimachine Accelerator, Multicore Accelerator is disabled by
+default. The reason for Multicore Accelerator being disabled
+is that it changes the timing model of simulation, notably no longer
+supporting deterministic simulation. In the Multicore Accelerator
+mode the modeled CPUs are run concurrently by host threads, which
+means that the interleaving of memory accesses to a shared memory is
+not guaranteed to occur in the same order between simulation
+sessions. This implementation was chosen to be able to leverage
+maximum simulation performance.
+</p><p>
+Multicore Accelerator is enabled with
+</p><p>
+
+</p><pre class="jdocu_small">simics&gt; <b>enable-multicore-accelerator</b></pre><p>
+</p><p>
+and can be disabled with
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>disable-multicore-accelerator</b></pre><p>
+</p><p>
+The optional argument <i>max-time-span</i>
+to <b>enable-multicore-accelerator</b> controls how far the time
+is allowed to drift apart between CPUs/clocks in each cell where
+Multicore Accelerator is enabled (cf. <em>min latency</em> for cells,
+<a class="reference" href="multimachine-accelerator.html#thread-sync-control">17.1.3</a>). For more information, consult the
+documentation for the <b>enable-multicore-accelerator</b> command.
+</p><p>
+Since Multicore Accelerator is not a deterministic execution
+mode, reverse execution is not supported with Multicore Accelerator
+enabled.
+</p><h2 class="jdocu"><a name="When-is-Multicore-Accelerator-beneficial">17.2.2 When is Multicore Accelerator beneficial</a></h2>
+<p>
+
+</p><p>
+Multicore Accelerator works best for parallel compute intensive
+applications with little interaction between the CPUs.  On the other
+hand, a system with a large amount of I/O operations will not be a
+good candidate. Such workloads, for example Operating System boot, can
+perform worse when Multicore Accelerator is enabled.
+</p><p>
+Remember that although there are parallel workloads occupying all CPUs
+in the system, the amount of actual parallelism that Multicore
+Accelerator can extract may be much lower. This is mainly because of
+serial sections, communication, synchronization, and poor load
+balancing in the target system.
+</p><p>
+For more information about performance of Multicore Accelerator and
+how to measure how much parallelism there is in the modeled system,
+see the <em>Performance</em> part in the <em>Simics User's
+Guide</em>.
+</p><p>
+
+
+
+</p><p>
+</p>
+<div class="chain">
+<a href="multimachine-accelerator.html">17.1 Multimachine Accelerator</a>
+<a href="distributed-simulation.html">17.3 Distributed Simulation</a>
+</div>

@@ -1,0 +1,117 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>9 Migration Guide Simics 5 to Simics 6</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="building-required-libraries.html">8 Building Required Libraries</a>
+<a href="migration-guide-systemc-2.3.1-to-2.3.3.html">10 Migration Guide SystemC 2.3.1 to 2.3.3</a>
+</div>
+<div class="path">
+<a href="index.html">SystemC* Library</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Migration-Guide-Simics-5-to-Simics-6">9 Migration Guide Simics 5 to Simics 6</a></h1>
+<p>
+
+<a name="buildingerror"></a>
+</p><p>
+SystemC Library has been upgraded between Simics 5 and Simics 6 to support
+new features and make the product more robust and future proof. See the release
+notes for a list of all new features.
+</p><p>
+Most changes are internal and do not affect the end-user. In addition the
+deprecated API has been kept, whenever possible, to maintain backwards
+compatibility.
+</p><p>
+One major change that affects the end-user is how the SystemC scheduler is
+integrated with Simics. In Simics 5 the SystemC time was forwarded by events
+posted on an external clock, therefore creating and connecting this clock was a
+required step.  In Simics 6 the adapter is directly scheduled by Simics and so
+no external clock is required. This affects the configuration, and some
+migration is required as described below.
+</p><p>
+Here is the list of things one has to do when migrating from 5 to 6:
+</p><ul>
+  <li>Adapter <em>always</em> creates an internal clock, so any explicitly
+    created external clocks in components or test benches should be removed.</li>
+  <li>For the same reason, the adapter's <code>queue</code> attribute must not be
+    set explicitly by components or test benches. If set, it will result in an
+    error with the following message:
+    <em>"VT_set_object_clock() called twice for the object &lt;object name&gt;.
+      The function may only be called once for each configuration
+      object."</em>.</li>
+  <li>In a configuration with other clocks, aside from the one now provided by
+    the adapter, extra care must be taken to make sure the adapter ends up in
+    the correct cell. Please run <b>check-cell-partitioning</b> to validate
+    the configuration.</li>
+  <li>Test-benches that run Simics for a specified amount of cycles based on
+    the frequency of the external clock, must be updated to run the
+    corresponding time in picoseconds instead.</li>
+  <li>Custom gaskets must be updated: <b>CatchUp</b> class has been
+  removed, and must be removed from the gasket to avoid compilation error.</li>
+  <li>Custom adapters calling SimulationInterface directly must be updated to
+  avoid compilation error.</li>
+  <li>All conf-classes provided by SystemC Library and Tools now use underscore
+    instead of deprecated hyphens. Updates may be required depending on
+    use-case.</li>
+  <li><code>time_quantum</code> attribute removed from Adapter. Updates may be
+    required depending on use-case.</li>
+  <li>SystemC tools have moved inside SystemC Library and are built as part of
+  the Simics module, with tool classes prefixed with the module's name. This in
+  order to improve isolation between different Simics modules to avoid problems
+  with incompatible C++ ABIs. Updates may be required depending on
+  use-case.</li>
+  <li>The default tools created by the <b>[trace,break]-sc</b> commands
+  have been moved into the internal namespace of the adapter. Please don't use
+  this tool directly.</li>
+  <li>The <code>systemc2simics::Signal</code> gasket can no longer be bound
+  directly to the SystemC sc_out via operator overloading. Instead, calling
+  the <code>set_pin</code> method is required. This makes the Signal gasket
+  consistent with the other gaskets.</li>
+</ul>
+<p>
+Please also consider the following optional changes:
+</p><ul>
+  <li>Remove calls to <code>ExtensionSender::set_payload()</code> if not
+    required. This is only required when the payload is modified before calling
+    methods of the interface-specific <b>Extension</b> class</li>
+  <li>Remove calls to <code>Extension::init(sender, payload)</code> with calls to
+  <code>Extension::init(sender)</code>.</li>
+  <li>In simics2tlm gaskets, replace calls to <code>Gasket::payload()</code> with
+  <code>TransactionPool::acquire()</code> and calls
+  to <code>Gasket::trigger_transaction()</code> with
+  <code>Gasket::trigger(Transaction*)</code>. This will make the gasket re-entry
+  safe. See any of the standard gaskets for reference.</li>
+  <li>In simics2tlm gaskets, replace calls
+  to <code>Gasket::set_inquiry(bool)</code> with
+  <code>TransactionExtension::set_transport_debug(bool)</code>. See <b>IoMemory</b>
+    gasket for reference.</li>
+  <li>Remember to change SIMICS_API from 5 to 6 in the module's Makefile.</li>
+</ul>
+
+<div class="chain">
+<a href="building-required-libraries.html">8 Building Required Libraries</a>
+<a href="migration-guide-systemc-2.3.1-to-2.3.3.html">10 Migration Guide SystemC 2.3.1 to 2.3.3</a>
+</div>

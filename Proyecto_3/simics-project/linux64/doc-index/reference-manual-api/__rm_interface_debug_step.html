@@ -1,0 +1,147 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>debug_step</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_debug_setup.html">debug_setup</a>
+<a href="__rm_interface_debug_symbol.html">debug_symbol</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_debug_step">debug_step</a></h1>
+<p>
+
+<a name="debug_step"></a><a name="debug_step_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="debug_step_interface_t2"></a>
+<p>
+   This interface is used to perform stepping with the debugger, on a specified
+   debug context.
+</p><p>
+   
+</p><p>
+   For all functions that return an <code>attr_value_t</code>, that return value
+   will consists of a list with two elements. The first element is an error code
+   of <code>debugger_error_t</code> type (see <code>debug_query</code>
+   interface documentation for definition). The second element depends on the
+   first. If the first element is <code>Debugger_No_Error</code>, meaning that
+   the function went well, then the second element will contain the expected
+   return value that is specified per function below. If the first element is
+   another error code, then the second element will be a string describing the
+   error that occurred.
+</p><p>
+   
+</p><p>
+   <a name="instruction_intodebug_step-interface-method"></a>
+   <a name="instruction_overdebug_step-interface-method"></a>
+   <b><i>instruction_into</i></b> and <b><i>instruction_over</i></b> runs one step
+   forward for the specified context. <b><i>instruction_into</i></b> will enter
+   subroutine calls while <b><i>instruction_over</i></b> will step over subroutine
+   calls.
+</p><p>
+   <a name="intodebug_step-interface-method"></a>
+   <a name="overdebug_step-interface-method"></a>
+   <b><i>into</i></b> and <b><i>over</i></b> will run one
+   source line forward for the specified context. <b><i>into</i></b> will enter
+   function calls while <b><i>over</i></b> will skip over functions.
+</p><p>
+   <a name="outdebug_step-interface-method"></a>
+   <b><i>out</i></b> will run until the currently active function returns.
+</p><p>
+   <a name="reverse_instruction_intodebug_step-interface-method"></a>
+   <a name="reverse_instruction_overdebug_step-interface-method"></a>
+   <b><i>reverse_instruction_into</i></b> and <b><i>reverse_instruction_over</i></b>
+   are the reverse versions of <b><i>instruction_into</i></b> and
+   <b><i>instruction_over</i></b> respectively. They will take the simulation one
+   step backwards. <b><i>reverse_instruction_into</i></b> will enter subroutine
+   calls while <b><i>reverse_instruction_over</i></b> will step past subroutine
+   calls.
+</p><p>
+   <a name="reverse_intodebug_step-interface-method"></a>
+   <a name="reverse_overdebug_step-interface-method"></a>
+   <b><i>reverse_into</i></b> and <b><i>reverse_over</i></b> are the reverse versions
+   of <b><i>into</i></b> and <b><i>over</i></b> respectively. They will take the
+   simulation on source line backwards. <b><i>reverse_into</i></b> will enter
+   functions while <b><i>reverse_over</i></b> will not.
+</p><p>
+   <a name="reverse_outdebug_step-interface-method"></a> <b><i>reverse_out</i></b>
+   will run in reverse until before the currently active function was called.
+</p><p>
+   All function take a context ID, <i>ctx_id</i>, as argument. This context
+   ID is passed as an argument to callbacks for functions in the
+   <code>debug_notification</code> interface. The context, that is passed to
+   functions in this interface, has to have state (see
+   <b><i>context_has_state</i></b> in the <code>debug_query</code> interface)
+   otherwise a <code>Debugger_Context_Does_Not_Have_State</code> error will be
+   returned.
+</p><p>
+   Calling functions in this interface can only be done when simulation is
+   stopped, otherwise a <code>Debugger_Already_Running</code> error will be
+   returned.
+</p><p>
+   For all functions in this interface, if another stop reason occurs before a
+   function finishes the simulation will stop at that point instead.
+</p><p>
+   Stepping for a context that is not active will run until that context
+   becomes active and then take the step.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(debug_step) {
+        attr_value_t (*instruction_into)(conf_object_t *NOTNULL obj,
+                                         const char *NOTNULL ctx_id);
+        attr_value_t (*into)(conf_object_t *NOTNULL obj,
+                             const char *NOTNULL ctx_id);
+        attr_value_t (*instruction_over)(conf_object_t *NOTNULL obj,
+                                         const char *NOTNULL ctx_id);
+        attr_value_t (*over)(conf_object_t *NOTNULL obj,
+                             const char *NOTNULL ctx_id);
+        attr_value_t (*out)(conf_object_t *NOTNULL obj,
+                            const char *NOTNULL ctx_id);
+        attr_value_t (*reverse_instruction_into)(conf_object_t *NOTNULL obj,
+                                                 const char *NOTNULL ctx_id);
+        attr_value_t (*reverse_into)(conf_object_t *NOTNULL obj,
+                                     const char *NOTNULL ctx_id);
+        attr_value_t (*reverse_instruction_over)(conf_object_t *NOTNULL obj,
+                                                 const char *NOTNULL ctx_id);
+        attr_value_t (*reverse_over)(conf_object_t *NOTNULL obj,
+                                     const char *NOTNULL ctx_id);
+        attr_value_t (*reverse_out)(conf_object_t *NOTNULL obj,
+                                    const char *NOTNULL ctx_id);
+};
+#define DEBUG_STEP_INTERFACE "debug_step"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_debug_setup.html">debug_setup</a>
+<a href="__rm_interface_debug_symbol.html">debug_symbol</a>
+</div>

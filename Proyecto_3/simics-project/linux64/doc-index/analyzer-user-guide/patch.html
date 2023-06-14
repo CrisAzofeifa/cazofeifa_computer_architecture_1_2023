@@ -1,0 +1,64 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>B.4 Patch</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="step-3-add-custom-trigger-read-cr3-.html">B.3 Step 3 - Add Custom Trigger (Read CR3)</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="uefi-fw-trk-uefi-notification-update.html">B Update UEFI For Notification Tracking</a>
+&nbsp;/&nbsp;</div>
+<h1 id="patch">B.4 <a href="#patch">Patch</a></h1>
+<p>If these instructions were difficult to understand, copy the below patch to a text editor, preferably one with a patch move and read the patch to understand the changes. The patch is <em>unlikely to apply cleanly</em> on your specific platform description file, but reading the patch should make it possibly to apply the changes to a different platform description file.</p>
+<pre><code>
+diff --git a/SimicsX58Pkg/SimicsX58PkgIa32.dsc b/SimicsX58Pkg/SimicsX58PkgIa32.dsc
+index fc969fe..9154743 100644
+--- a/SimicsX58Pkg/SimicsX58PkgIa32.dsc
++++ b/SimicsX58Pkg/SimicsX58PkgIa32.dsc
+@@ -103,7 +103,7 @@
+   PeCoffExtraActionLib|SourceLevelDebugPkg/Library/PeCoffExtraActionLibDebug/PeCoffExtraActionLibDebug.inf
+   DebugCommunicationLib|SourceLevelDebugPkg/Library/DebugCommunicationLibSerialPort/DebugCommunicationLibSerialPort.inf
+ !else
+-  PeCoffExtraActionLib|MdePkg/Library/BasePeCoffExtraActionLibNull/BasePeCoffExtraActionLibNull.inf
++  PeCoffExtraActionLib|SourceLevelDebugPkg/Library/PeCoffExtraActionLibDebug/PeCoffExtraActionLibDebug.inf
+   DebugAgentLib|MdeModulePkg/Library/DebugAgentLibNull/DebugAgentLibNull.inf
+ !endif
+   CpuExceptionHandlerLib|MdeModulePkg/Library/CpuExceptionHandlerLibNull/CpuExceptionHandlerLibNull.inf
+@@ -252,6 +252,8 @@
+
+ !ifdef $(SOURCE_DEBUG_ENABLE)
+   gEfiSourceLevelDebugPkgTokenSpaceGuid.PcdDebugLoadImageMethod|0x2
++!else
++  gEfiSourceLevelDebugPkgTokenSpaceGuid.PcdDebugLoadImageMethod|0x0
+ !endif
+  
+</code></pre>
+
+<div class="chain">
+<a href="step-3-add-custom-trigger-read-cr3-.html">B.3 Step 3 - Add Custom Trigger (Read CR3)</a>
+</div>

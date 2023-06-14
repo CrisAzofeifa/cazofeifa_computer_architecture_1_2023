@@ -1,0 +1,168 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>14.1 Remote GDB and Shared Libraries</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="gdb.html">14 Using Simics with GDB</a>
+<a href="others.html">15 Using Simics with Other IDEs</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="low-level-debugging.html">III Low-Level Debugging</a>
+&nbsp;/&nbsp;
+<a href="gdb.html">14 Using Simics with GDB</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Using-GDB-with-Simics">14.1 Remote GDB and Shared Libraries</a></h1>
+<p><a name="debuggingshared-libraries"></a>
+</p><p>
+It takes some work to figure out how to load symbol tables at the
+correct offsets for relocatable object modules in GDB. This is done
+automatically for normal (non-remote) targets, but for the remote
+target, you have to do it yourself. You need to find out the actual
+address at which the shared module is mapped in the current context on
+the simulated machine, and then calculate the offset to use for GDB's
+<b>add-symbol-file</b> command.
+</p><p>
+To find the addresses of the shared libraries mapped into a process'
+memory space under Solaris, use the <b>/usr/proc/bin/pmap
+<em>pid</em></b> command. The start address of the text segment can be
+obtained from the <code>Addr</code> field in the <code>.text</code> line of
+the output from <b>dump -h <i>file</i></b>.
+</p><p>
+Under Linux, the list of <a name="memory-mappings">memory mappings</a> can be found in
+the file <code>/proc/</code><em>pid</em><code>/maps</code> (plain text format). The
+<code>VMA</code> column of the <code>.text</code> line of the output from
+<b>objdump -h <i>file</i></b> contains the start address of the
+text segment.
+</p><p>
+Using these two values, <i>map address</i> and <i>text address</i>,
+you should use <i>map address</i> + <i>text address</i> as the offset
+to <b>add-symbol-file</b> (it has to be done this way to
+compensate for how GDB handles symbol loading).
+</p><p>
+To show you how it works, we will work through a simple example. The
+example uses a simple program with a simple shared
+library. The program can be found
+in <code></code><em>[qsp-x86]</em><code>/targets/qsp-x86/images/hello</code>
+and the shared library is the <code>libgreeter.so</code> file in the
+same directory. Here and in the rest of this
+section <em>[qsp-x86]</em> refers to the location where the
+QSP-x86 package is installed.
+</p><p>
+Start by booting the firststeps machine. Then mount the host file
+system and copy the program and shared library onto the machine. This
+should be done on the target:
+</p><p>
+</p><pre class="jdocu_small">~ # <b>mount /host</b>
+~ # <b>cp /host/<em>[qsp-x86]</em>/targets/qsp-x86/images/hello .</b>
+~ # <b>cp /host/<em>[qsp-x86]</em>/targets/qsp-x86/images/libgreeter.so .</b>
+</pre><p>
+</p><p>
+Then run the program in the background. The program will enter the
+infinite loop in the shared library.
+</p><p>
+Now we need the <i>map address</i> and the <i>text address</i> of the
+shared library. To get the map address, look in the process file system 
+to see where it has mapped the shared library:
+</p><p>
+</p><pre class="jdocu_small">~ # <b>./hello &amp;</b>
+[1] 13104
+~ # <b>cat /proc/13104/maps</b>
+00400000-00401000 r-xp 00000000 08:02 9442              /home/root/hello
+00600000-00601000 r--p 00000000 08:02 9442              /home/root/hello
+00601000-00602000 rw-p 00001000 08:02 9442              /home/root/hello
+7f686c5ed000-7f686c786000 r-xp 00000000 08:02 10049     /lib/libc-2.21.so
+7f686c786000-7f686c986000 ---p 00199000 08:02 10049     /lib/libc-2.21.so
+7f686c986000-7f686c98a000 r--p 00199000 08:02 10049     /lib/libc-2.21.so
+7f686c98a000-7f686c98c000 rw-p 0019d000 08:02 10049     /lib/libc-2.21.so
+7f686c98c000-7f686c990000 rw-p 00000000 00:00 0 
+7f686c990000-7f686c991000 r-xp 00000000 08:02 10247     /home/root/libgreeter.so
+7f686c991000-7f686cb90000 ---p 00001000 08:02 10247     /home/root/libgreeter.so
+7f686cb90000-7f686cb91000 r--p 00000000 08:02 10247     /home/root/libgreeter.so
+7f686cb91000-7f686cb92000 rw-p 00001000 08:02 10247     /home/root/libgreeter.so
+7f686cb92000-7f686cbb4000 r-xp 00000000 08:02 9919      /lib/ld-2.21.so
+7f686cdad000-7f686cdb0000 rw-p 00000000 00:00 0 
+7f686cdb2000-7f686cdb3000 rw-p 00000000 00:00 0 
+7f686cdb3000-7f686cdb4000 r--p 00021000 08:02 9919      /lib/ld-2.21.so
+7f686cdb4000-7f686cdb5000 rw-p 00022000 08:02 9919      /lib/ld-2.21.so
+7f686cdb5000-7f686cdb6000 rw-p 00000000 00:00 0 
+7fffde6a7000-7fffde6c8000 rw-p 00000000 00:00 0         [stack]
+7fffde7ff000-7fffde800000 r-xp 00000000 00:00 0         [vdso]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0 [vsyscall]
+</pre><p>
+</p><p>
+From this output you can see that the program is running with PID 13104
+and that the map address is 0x7f686c990000. The exact PID may differ, adapt
+the commands accordingly.
+</p><p>
+To get the <i>text address</i> we use objdump. This should be run on a
+host computer with objdump installed:
+</p><p>
+</p><pre class="jdocu_small">&gt; <b>objdump -h <em>[qsp-x86]</em>/targets/qsp-x86/images/libgreeter.so</b>
+libgreeter.so:     file format elf64-x86-64
+
+Sections:
+Idx Name          Size      VMA               LMA               File off  Algn
+    :
+ 10 .text         00000134  00000000000005e0  00000000000005e0  000005e0  2**4
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+    :
+</pre><p>
+</p><p>
+The <code>.text</code> symbols starts at address
+<code>0x5e0</code> and this is what we call the <i>text address</i>, so if
+we connect GDB to Simics we have to add the symbols with an offset of 
+<code>0x7f686c990000 + 0x5e0 = 0x7f686c9905e0</code>.
+</p><p>
+Now we can set up GDB, connect it to Simics, and debug the program:
+</p><p>
+</p><pre class="jdocu_small">(gdb) <b>dir <em>[qsp-x86]</em>/targets/qsp-x86/</b>
+Source directories searched: <em>[qsp-x86]</em>/targets/qsp-x86:$cdir:$cwd
+(gdb) <b>add-symbol-file <em>[qsp-x86]</em>/targets/qsp-x86/images/libgreeter.so 0x7f686c9905e0</b>
+add symbol table from file "<em>[qsp-x86]</em>/targets/qsp-x86/images/libgreeter.so" at
+	.text_addr = 0x6c9905e0
+(y or n) <b>y</b>
+Reading symbols from <em>[qsp-x86]</em>/targets/qsp-x86/images/libgreeter.so...done.
+(gdb) <b>set endian little</b>
+The target is assumed to be little endian
+(gdb) <b>target remote localhost:9123</b>
+Remote debugging using localhost:9123
+greet (name=0x4008eb "World") at ../greeter.c:12
+14	        while (loop); /* Loop until the loop variable is reset by gdb */
+(gdb)
+</pre><p>
+</p><p>
+This is just a toy program written to make it possible to debug it
+without any OS awareness. Normally you would use the OS awareness
+functionality described in <em>Simics Analyzer User's Guide</em>
+to debug user space programs.
+</p><p>
+</p>
+<div class="chain">
+<a href="gdb.html">14 Using Simics with GDB</a>
+<a href="others.html">15 Using Simics with Other IDEs</a>
+</div>

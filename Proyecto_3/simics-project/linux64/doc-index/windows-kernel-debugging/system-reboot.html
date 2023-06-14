@@ -1,0 +1,66 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.3.3 Shutdown, Save State, and Reboot</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="configure-debug.html">2.3.2 Configure Debug</a>
+<a href="connect-windbg.html">2.4 Connect Windows Kernel Debugger to the Target</a>
+</div>
+<div class="path">
+<a href="index.html">Windows Kernel Debugging</a>
+&nbsp;/&nbsp;
+<a href="network-debugging.html">2 Windows Kernel Debugging Over a Network</a>
+&nbsp;/&nbsp;
+<a href="setup-windows-debug.html">2.3 Setting up Windows Target for Debug</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="system-reboot">2.3.3 Shutdown, Save State, and Reboot</a></h1>
+<p>
+  
+</p><p>
+  These changes do not take effect until the target system is rebooted. To make
+  it easy to get into debug:
+</p><p>
+  </p><ul>
+    <li>Shutdown the target system,</li>
+    <li>When the shutdown is complete (it is not given that Simics stops at
+      this point, since power-off is an allowed operation in a virtual
+      platform), stop Simics.</li>
+    <li>Save the complete disk state to use this as your base disk, or save a
+      diff to apply in the reboot.</li>
+  </ul>
+<p>
+  For the <i>QSP-x86</i> system, a complete image save is done in
+  a way like this:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>board.disk0.hd_image.save -save-craff win10-debug.craff</b>
+</pre><p>
+</p><p>
+  Start a new Simics session using this new disk image as the boot image.
+</p>
+<div class="chain">
+<a href="configure-debug.html">2.3.2 Configure Debug</a>
+<a href="connect-windbg.html">2.4 Connect Windows Kernel Debugger to the Target</a>
+</div>

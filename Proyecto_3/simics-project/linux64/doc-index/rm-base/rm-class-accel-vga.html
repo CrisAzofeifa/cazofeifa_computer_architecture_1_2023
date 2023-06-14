@@ -1,0 +1,456 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>accel-vga</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-TSB12LV26.html">TSB12LV26</a>
+<a href="rm-class-agent_handle.html">agent_handle</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="accel-vga"><a href="#accel-vga">accel-vga</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Accelerated Super VGA device implementing the Bochs VBE protocol. Supports all reasonable VBE modes that fit into the 16 MiB display memory, the largest being 2560x1600x32. Modes outside of the configured display resolution, changeable with the display-resolution command, will not be reported by the VGA BIOS when queried for available modes.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, video, image_snoop, pci_device, io_memory, vga_text, vga_update, vga_text_info
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-accel-vga.display-resolution.html">display-resolution</a>
+ – display resolution</li>
+<li>
+<a href="rm-cmd-accel-vga.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-accel-vga.print-pci-config-regs.html">print-pci-config-regs</a>
+ – <i>deprecated</i> print PCI configuration registers</li>
+<li>
+<a href="rm-cmd-accel-vga.redraw.html">redraw</a>
+ – redraw display</li>
+<li>
+<a href="rm-cmd-accel-vga.refresh-rate.html">refresh-rate</a>
+ – set refresh rate for the display</li>
+<li>
+<a href="rm-cmd-accel-vga.status.html">status</a>
+ – print status of the object</li>
+<li>
+<a href="rm-cmd-accel-vga.text-dump.html">text-dump</a>
+ – print text contents of display</li>
+<li>
+<a href="rm-cmd-accel-vga.wait-for-string.html">wait-for-string</a>
+ – wait for substring in text mode</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:pci_bus">
+<i>pci_bus</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The PCI bus this device is connected to, implementing the <tt>pci-bus</tt> interface.</dd>
+<dt id="dt:interrupt_pin">
+<i>interrupt_pin</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iiii]</code>
+<br>State of the interrupt pin.</dd>
+<dt id="dt:config_registers">
+<i>config_registers</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i{64}]</code>
+<br>The 64 PCI configuration registers, each 32 bits in size.</dd>
+<dt id="dt:write_masks">
+<i>write_masks</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[ii]*]</code>
+<br>Write masks for all registered configuration registers. The format for each entry is (offset, mask).</dd>
+<dt id="dt:mappings">
+<i>mappings</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[i{5:8}]|[iiiiiiiio|nii]*]</code>
+<br>List of all current PCI IO and memory mappings.</dd>
+<dt id="dt:expansion_rom">
+<i>expansion_rom</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|[oii]</code>
+<br>ROM object, map size, and map function number for the Expansion ROM.</dd>
+<dt id="dt:config_register_info">
+<i>config_register_info</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[isii]*]</code>
+<br>Register info for all registered configuration registers. The format for each entry is (offset, name, size, write-mask).</dd>
+<dt id="dt:memory_space">
+<i>memory_space</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Memory space to which the device is mapped. Needed for dynamic remapping.</dd>
+<dt id="dt:console">
+<i>console</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Console object that must implement either gfx_con or gfx_console or both the serial_device and extended_serial interfaces.</dd>
+<dt id="dt:crtc_regs">
+<i>crtc_regs</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>(<i>Register-0</i> ... <i>Register-24</i>) is a list of CRTC registers.</dd>
+<dt id="dt:crtc_next">
+<i>crtc_next</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Integer register representing the next CRTC address.</dd>
+<dt id="dt:attrib_regs">
+<i>attrib_regs</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>(<i>Register-0</i> ... <i>Register-20</i>) is a list of attribute registers.</dd>
+<dt id="dt:attrib_next_index">
+<i>attrib_next_index</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Decides whether the next access to an attribute controller register (through port 0x3C0) will contain an address or data.</dd>
+<dt id="dt:attrib_next_reg">
+<i>attrib_next_reg</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The address of the attribute controller register designated for the next access.</dd>
+<dt id="dt:attrib_video_enable">
+<i>attrib_video_enable</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Decides whether video is enabled or not.</dd>
+<dt id="dt:seq_regs">
+<i>seq_regs</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>(<i>Register-0</i> ... <i>Register-4</i>) is a list of sequence registers found in the VGA adapter.</dd>
+<dt id="dt:seq_next">
+<i>seq_next</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Represents the address of the sequence register designated for the next read/write access.</dd>
+<dt id="dt:gfx_regs">
+<i>gfx_regs</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>(<i>Register-0</i> ... <i>Register-8</i>) is a list of the nine graphics controller registers found in an VGA adapter.</dd>
+<dt id="dt:gfx_next">
+<i>gfx_next</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Represents the address of the graphics controller register designated for the next read/write access.</dd>
+<dt id="dt:gfx_latch">
+<i>gfx_latch</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iiii]</code>
+<br>(<i>Latch-0</i> ... <i>Latch-4</i>) List of four graphics data controller latches.</dd>
+<dt id="dt:pel_mask">
+<i>pel_mask</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>PEL mask register.</dd>
+<dt id="dt:ramdac_rw_state">
+<i>ramdac_rw_state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>RAMDAC read/write state.</dd>
+<dt id="dt:pel_addr">
+<i>pel_addr</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>PEL address register.</dd>
+<dt id="dt:pel_next_color">
+<i>pel_next_color</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Next color in access to PEL data register (read, green, or blue).</dd>
+<dt id="dt:pel_pal">
+<i>pel_pal</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[[iii]{256}]</code>
+<br>((<i>red</i>, <i>green</i>, <i>blue</i>) ... (<i>red</i>, <i>green</i>, <i>blue</i>)) List of 256 colors, each a tuple of red, green, and blue.</dd>
+<dt id="dt:misc_reg">
+<i>misc_reg</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Miscellaneous output register.</dd>
+<dt id="dt:h_cnt">
+<i>h_cnt</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Horizontal counter (used for generating retrace signals).</dd>
+<dt id="dt:v_cnt">
+<i>v_cnt</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Vertical counter (used for generating retrace signals).</dd>
+<dt id="dt:refresh_rate">
+<i>refresh_rate</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Refresh rate (in hertz). Set to 0 to disable screen refresh</dd>
+<dt id="dt:text_refresh_rate">
+<i>text_refresh_rate</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Rate (in hertz) of virtual time that VGA text data is sent to the console. Set to 0 to disable text refresh</dd>
+<dt id="dt:refresh_based_on_virtual_time">
+<i>refresh_based_on_virtual_time</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, then the refresh rate will refresh the screen based on virtual time, otherwise the refresh will be based on real time. Real time is the default.</dd>
+<dt id="dt:image">
+<i>image</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Image object containing the VRAM.</dd>
+<dt id="dt:redraw">
+<i>redraw</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>a</code>
+<br>Forces a complete update when set.</dd>
+<dt id="dt:text_page">
+<i>text_page</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>n|[s*]</code>
+<br>A list representation (one line per element) of the text mode contents.</dd>
+<dt id="dt:view_size_x">
+<i>view_size_x</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>With of the internal cache.</dd>
+<dt id="dt:view_size_y">
+<i>view_size_y</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>Height of the internal cache.</dd>
+<dt id="dt:dump_charset">
+<i>dump_charset</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Write-only pseudo attribute. A write operation will print the current character map to the console if the vga device is in alpha-numeric mode.</dd>
+<dt id="dt:vga_memory">
+<i>vga_memory</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>d</code>
+<br>Contains the VGA memory (256 KB of data).</dd>
+<dt id="dt:lfb_size">
+<i>lfb_size</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Linear frame buffer memory size.</dd>
+<dt id="dt:direct_map_ram">
+<i>direct_map_ram</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>LFB memory object.</dd>
+<dt id="dt:vbe_regs">
+<i>vbe_regs</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iiiiiiiiiii]</code>
+<br>VBE registers.</dd>
+<dt id="dt:display_max_xres">
+<i>display_max_xres</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Max display horizontal resolution. Default 1280.</dd>
+<dt id="dt:display_max_yres">
+<i>display_max_yres</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Max display vertical resolution. Default 1024.</dd>
+<dt id="dt:lfb_uses_bar">
+<i>lfb_uses_bar</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If true, the LFB is controlled through the first base address register.</dd>
+<dt id="dt:bochs_wrkrnd_enab">
+<i>bochs_wrkrnd_enab</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>This attribute enables workaround for bochs driver bug found in rhel 7.1</dd>
+<dt id="dt:vbe_default">
+<i>vbe_default</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iiib]</code>
+<br>VBE configuration after reset [Width, Height, Depth, Enable]</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.accel-vga.html">accel-vga</a>
+</section>
+<div class="chain">
+<a href="rm-class-TSB12LV26.html">TSB12LV26</a>
+<a href="rm-class-agent_handle.html">agent_handle</a>
+</div>

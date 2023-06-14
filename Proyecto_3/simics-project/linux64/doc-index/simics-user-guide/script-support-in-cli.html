@@ -1,0 +1,303 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.1 Script Support in CLI</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="script-support-in-simics.html">5 Simics Scripting Environment</a>
+<a href="script-branches.html">5.2 Script Branches</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="script-support-in-simics.html">5 Simics Scripting Environment</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Script-Support-in-CLI">5.1 Script Support in CLI</a></h1>
+<p><a name="CLI"></a>
+</p><h2 class="jdocu"><a name="Why-Use-CLI-Scripting-Instead-of-Python">5.1.1 Why Use CLI Scripting Instead of Python</a></h2>
+<p>
+
+There are a number of situations where it may make sense to use the scripting
+support in CLI due to its advantages over Python. Still, if the script starts
+to grow in size and complexity, or if more complete and detail control of the
+simulation is needed, then Python is the obvious choice.
+</p><p>
+</p><dl><dt id="dt:same-environment-as-on-the-command-line"><b>Same environment as on the command line</b></dt><dd>CLI is suitable for interactive use with its simple syntax and features
+    such as context sensitive tab completion. Being able to script using the
+    same set of command simplifies script writing.
+  </dd><dt id="dt:cli-hides-simics-api-restrictions"><b>CLI hides Simics API restrictions</b></dt><dd>The Simics API has restrictions on when certain API functions may
+    be called. For example, some functions can not be used while an
+    instruction is executing. The CLI script environment will only run
+    commands in a context where the full API is available, greatly
+    simplifying scripting.
+  </dd><dt id="dt:easy-to-write-sequential-code-that-waits-for-events-to-occur"><b>Easy to write sequential code that waits for events to occur</b></dt><dd>By using script branches, it is easy to write sequential code that can
+    wait for various events in the system, postponing the rest of the script
+    until they occur.
+  </dd></dl><p>
+</p><h2 class="jdocu"><a name="Variables">5.1.2 Variables</a></h2>
+<p>
+
+<a name="variable"></a>
+<a name="CLIvariable"></a>
+The Simics command line has support for string, integer, floating point, list
+and Boolean variables. Variables are always prefixed with the <code>$</code>
+character. A variable has to be created by assigning a value to it, before it
+can be used.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>$foo = "some text"</b>
+simics&gt; <b>$foo</b>
+"some text"
+simics&gt; <b>echo $not_used_before</b>
+No CLI variable "not_used_before"
+</pre><p>
+</p><p>
+The <b>defined</b> expression can be used to test if a variable
+has been defined. Note that this command takes the name of the variable only,
+i.e. without the <code>$</code>.
+</p><pre class="jdocu_small">simics&gt; <b>$foo = 4711</b>
+simics&gt; <b>if defined foo { echo "foo is defined"}</b>
+foo is defined
+</pre><p>
+</p><p>
+List variables can be indexed, something that is useful in loops for example.
+</p><pre class="jdocu_small">simics&gt; <b>$foo = []</b>
+simics&gt; <b>$foo[0] = 10</b>
+simics&gt; <b>$foo[1] = 20</b>
+simics&gt; <b>echo $foo[0] + $foo[1]</b>
+30
+simics&gt; <b>$foo</b>
+[10, 20]
+simics&gt; <b>$foo += ["abc"]</b>
+[10, 20, "abc"]
+simics&gt; <b>list-length $foo</b>
+3</pre><p>
+</p><p>
+CLI also has support for local variables, described later in this chapter.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Command-Return-Values">5.1.3 Command Return Values</a></h2>
+<p>
+
+The return value of a command is printed on the console, unless it is used as
+argument to some other command. Parenthesis <code>()</code> are used to group a
+command with arguments together, allowing the return value to be used as
+argument. The return value can also be used as namespace in another command.
+Variables can be used in the same way.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>$address = 0x7ff00000</b>
+simics&gt; <b>set $address 20</b>
+simics&gt; <b>echo "The Value at address " + $address + " is " + (get $address)</b>
+The Value at address 2146435072 is 20
+
+simics&gt; <b>$id = 0</b>
+simics&gt; <b>("board.mb.cpu0.core[" + $id + "][" + $id + "]").print-time</b>
+processor                   steps  cycles  time [s]
+board.mb.cpu0.core[0][0]        0       0     0.000
+</pre><p>
+Although in this particular case it is simpler to write:
+</p><pre class="jdocu_small">simics&gt; <b>board.mb.cpu0.core[$id][$id].print-time</b>
+processor                   steps  cycles  time [s]
+board.mb.cpu0.core[0][0]        0       0     0.000
+simics&gt; <b>$cpu = board.mb.cpu0.core[0][0]</b>
+simics&gt; <b>$cpu.print-time</b>
+processor                   steps  cycles  time [s]
+board.mb.cpu0.core[0][0]        0       0     0.000
+</pre><p>
+</p><p>
+Parenthesis can also be used to break a command with its arguments across
+multiple lines, making it easier to read scripts with expressions and nested
+command invocations.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Control-Flow-Commands">5.1.4 Control Flow Commands</a></h2>
+<p>
+<a name="CLIif-else-statement"></a>
+<a name="CLIwhile-statement"></a>
+<a name="CLIforeach-statement"></a>
+<a name="if"></a>
+<a name="while"></a> 
+<a name="foreach"></a> 
+
+The script support in CLI has support for common flow control commands such as
+<b>if</b>, <b>else</b>, <b>while</b> as well as <b>foreach</b>.
+</p><pre class="jdocu_small">simics&gt; <b>$value = 10</b>
+simics&gt; <b>if $value &gt; 5 { echo "Larger than five!" }</b>
+Larger than five!
+</pre><p>
+The <b>if</b> statement has a return value:
+</p><pre class="jdocu_small">simics&gt; <b>$num_cpus = 2</b>
+simics&gt; <b>(if $num_cpus &gt; 1 { "multi" } else { "single" }) + "-pro"</b>
+multi-pro
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Multi-line <b>if-else</b> statements must have <code>} else {</code> on
+the same line.</div>It is also possible to have <b>else</b> followed by another <b>if</b> statement.
+<pre class="jdocu_small">simics&gt; <b>$b = 0</b>
+simics&gt; <b>if $b == 1 {</b>
+....... <b>    echo 10</b>
+....... <b>} else if $b == 0 {</b>
+....... <b>    echo 20</b>
+....... <b>} else {</b>
+....... <b>    echo 30</b>
+....... <b>}</b>
+20
+</pre><p>
+</p><p>
+Loops can be written with the <b>while</b> command.
+</p><pre class="jdocu_small">simics&gt; <b>$loop = 3</b>
+simics&gt; <b>while $loop {</b>
+....... <b>    echo $loop</b>
+....... <b>    $loop -= 1</b>
+....... <b>}</b>
+3
+2
+1
+</pre><p>
+They can also be written using the <b>foreach</b> list iteration
+command. The <b>range</b> commands in the example returns a list of
+integers from 0 up to, but not including, 3.
+</p><pre class="jdocu_small">simics&gt; <b>foreach $loop in (range 3) {</b>
+....... <b>    echo $loop</b>
+....... <b>}</b>
+0
+1
+2
+</pre><p>
+Here is another example that shows how <b>foreach</b> can be used. The
+<b>get-object-list</b> commands return a list of all objects that implement
+the processor_internal interface in Simics:
+</p><pre class="jdocu_small">simics&gt; <b>foreach $cpu in (list-objects -all processor_internal) {</b>
+....... <b>    echo "Cycles on " + ($cpu-&gt;name) + ": " + ($cpu.print-time -c)</b>
+....... <b>}</b>
+Cycles on board.mb.cpu0.core[0][0]: 0
+</pre><p>
+Lists can also be written directly, for example:
+</p><pre class="jdocu_small">simics&gt; <b>foreach $loop in [1, 2, 3] {</b>
+....... <b>    echo $loop</b>
+....... <b>}</b>
+1
+2
+3
+</pre><p>
+</p><p>
+<a name="local"></a>
+<a name="CLIlocal-variable"></a>
+</p><p>
+Within command blocks, it can be useful to have variables that are local to the
+scope and thus do not collide with the names of global variables. By adding
+<b>local</b> before the first assignment of a variable, the variable is
+made local.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>$global = 10</b>
+simics&gt; <b>if TRUE {</b>
+....... <b>    local $global = 20</b>
+....... <b>    echo $global</b>
+....... <b>}</b>
+20
+simics&gt; <b>echo $global</b>
+10
+</pre><p>
+
+</p><h2 class="jdocu"><a name="Integer-Conversion">5.1.5 Integer Conversion</a></h2>
+<p>
+
+In some cases it is useful to interpret an integer as a signed value of a
+specific bit size, for example when reading four bytes from memory that should
+be interpreted as a signed 32 bit integer. The <b>signed</b>,
+<b>signed8</b>, ..., <b>signed64</b> commands can be used to
+perform the conversion.
+</p><pre class="jdocu_small">simics&gt; <b>board.mb.phys_mem.set 0x7fe00000 0xffffffff 4</b>
+simics&gt; <b>board.mb.phys_mem.get 0x7fe00000 4</b>
+4294967295 (LE)
+simics&gt; <b>signed32 (board.mb.phys_mem.get 0x7fe00000 4)</b>
+-1
+</pre><p>
+</p><p>
+Other useful and related commands are <b>atoi</b>, <b>bits</b>,
+<b>int-to-*-float</b>, <b>bin</b>, <b>dec</b>, <b>hex</b>,
+and <b>oct</b>.
+
+</p><h2 class="jdocu"><a name="Accessing-Configuration-Attributes">5.1.6 Accessing Configuration Attributes</a></h2>
+<p>
+
+<a name="CLIattributes"></a>
+<a name="CLI--operator"></a>
+Simics configuration attributes that are of string, integer, floating
+point, Boolean, nil, and list types can be accessed directly from CLI using the
+<b><code>-&gt;</code></b> operator.
+</p><pre class="jdocu_small">simics&gt; <b>echo "Current project: " + (sim-&gt;project)</b>
+Current project: C:\Users\joe\Desktop\project
+</pre><p>
+An object referenced with this operator returns the object's name as a string.
+</p><p>
+A nil attribute value is represented by <code>NIL</code> in CLI.
+</p><p>
+To access attributes that use other data types than the ones listed
+above, you need to use Python:
+</p><pre class="jdocu_small">simics&gt; <b>@conf.myobject.attr.dictionary_attribute = { 1 : "abc" }</b>
+</pre><p>
+See chapter <a class="reference" href="userguide-scripting-python.html#python-and-conf-access">5.4.3.1</a> for more information
+about accessing attributes from Python.
+
+</p><h2 class="jdocu"><a name="Error-Handling-in-Scripts">5.1.7 Error Handling in Scripts</a></h2>
+<p>
+
+<a name="error-handling"></a><a name="try"></a><a name="except"></a>
+</p><p>
+When a Simics command encounters an error, an error message is
+typically printed, and the script execution is interrupted. In some cases the
+script itself want to handle the error, in order to try some alternative approach, or to present the error message with more context. The <b>try-except</b>
+statement can be used for this purpose.
+</p><pre class="jdocu_small">try {
+    load-module my-own-components
+} except {
+    echo "Simics failed to import my-own components. Perhaps you forgot to "
+    echo "install the latest modules from the development team? See the "
+    echo "project web-site for more info.\n"
+
+    interrupt-script "Cannot continue"
+}
+</pre><p>
+Without the <b>try-except</b> statement, the example above would print an
+error message like <code>Error loading module</code> and the script execution
+would be interrupted with an error.
+</p><p>
+The error message from the failing command can be obtained inside the
+<b>except</b> block by calling the <b>get-error-message</b> CLI command.
+The <b>get-error-line</b> command returns the line of the error in the
+script file and <b>get-error-file</b> the file name. The
+<b>get-error-command</b> returns the command name if the error occurred
+within a command.
+
+</p><p>
+</p>
+<div class="chain">
+<a href="script-support-in-simics.html">5 Simics Scripting Environment</a>
+<a href="script-branches.html">5.2 Script Branches</a>
+</div>

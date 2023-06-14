@@ -1,0 +1,65 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;cycle&gt;.print-time</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-cycle.bp-wait-for-time.html">&lt;cycle&gt;.bp-wait-for-time</a>
+<a href="rm-cmd-cycle.wait-for-cycle.html">&lt;cycle&gt;.wait-for-cycle – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="cycle.print-time"></a>
+<a name="cycle.ptime"></a>
+<h1 id="cycle.print-time"><a href="#cycle.print-time">&lt;cycle&gt;.print-time</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;cycle&gt;.print-time</b> [-s] [-c] [-t] [-pico-seconds] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Prints the number of steps and cycles that a processor has executed. The cycle count is also displayed as simulated time in seconds.
+<p>
+If called from an object namespace (e.g., <code>cpu0.print-time</code>), the time for that object is printed. The object can also be supplied using the <i>cpu-name</i> argument. Otherwise, the time for the current frontend processor is printed, or, if the <tt>-all</tt> flag is given, the time for all processors is printed.
+</p><p>
+The <tt>-c</tt>, <tt>-s</tt>, <tt>-t</tt>, or <tt>-pico-seconds</tt> flags can be used to limit the output to include only the cycle count for the processor, the step count, the time in seconds, or the number of picoseconds respectively. This may be especially useful when the command's return value is used, for example, like this: "$num_steps = (<tt>cpu-object</tt>.print-time -s)".
+</p><p>
+A step is a completed instruction or an exception. An instruction that fails to complete because of an exception will count as a single step, including the exception.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-cycle.bp-wait-for-time.html">&lt;cycle&gt;.bp-wait-for-time</a>
+<a href="rm-cmd-cycle.wait-for-cycle.html">&lt;cycle&gt;.wait-for-cycle – deprecated</a>
+</div>

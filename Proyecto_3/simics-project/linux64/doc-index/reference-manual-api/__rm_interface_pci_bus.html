@@ -1,0 +1,101 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pci_bus</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pci_bridge.html">pci_bridge</a>
+<a href="__rm_interface_pci_device.html">pci_device</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pci_bus">pci_bus</a></h1>
+<p>
+
+<a name="pci_bus"></a><a name="pci_bus_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is implemented by all PCI buses and its functions are
+   accessed by PCI devices. For further details, see <em>Model Builder
+   User's Guide</em>, chapter "Modeling PCI Devices".
+<p>
+   </p><div class="note">
+<b>Note:</b>
+The <i>memory_access</i> function is deprecated and must not be
+   called (as it is not implemented by Simics pci-bus object). The
+   <i>interrupt_acknowledge</i>, <i>special_cycle</i>,
+   <i>add_default</i> and <i>remove_default</i> functions are also
+   deprecated, but they are still implemented by Simics pci-bus and thus
+   callable.</div><pre class="jdocu_small">SIM_INTERFACE(pci_bus) {
+        /* Deprecated; memory_access */
+        exception_type_t (*memory_access)(
+                conf_object_t *obj, generic_transaction_t *NOTNULL mem_op);
+        void (*raise_interrupt)(conf_object_t *obj, conf_object_t *NOTNULL dev,
+                                int pin);
+        void (*lower_interrupt)(conf_object_t *obj, conf_object_t *NOTNULL dev,
+                                int pin);
+        /* Deprecated; interrupt_acknowledge */
+        int (*interrupt_acknowledge)(conf_object_t *obj);
+        int (*add_map)(conf_object_t *obj, conf_object_t *dev,
+                       addr_space_t space, conf_object_t *target,
+                       map_info_t info);
+        int (*remove_map)(conf_object_t *obj, conf_object_t *dev,
+                          addr_space_t space, int function);
+	void (*set_bus_number)(conf_object_t *obj, int bus_id);
+	void (*set_sub_bus_number)(conf_object_t *obj, int bus_id);
+        /* Deprecated; add_default, remove_default */
+        void (*add_default)(conf_object_t *obj, conf_object_t *dev,
+                            addr_space_t space, conf_object_t *target,
+                            map_info_t info);
+        void (*remove_default)(conf_object_t *obj, addr_space_t space);
+        void (*bus_reset)(conf_object_t *obj);
+        /* Deprecated; special_cycle */
+        void (*special_cycle)(conf_object_t *obj, uint32 value);
+        void (*system_error)(conf_object_t *obj);
+
+        int (*get_bus_address)(conf_object_t *obj, conf_object_t *NOTNULL dev);
+
+        void (*set_device_status)(conf_object_t *obj, int device, int function,
+                                  int enabled);
+
+        /* Memory spaces */
+        conf_object_t *(*configuration_space)(conf_object_t *obj);
+        conf_object_t *(*io_space)(conf_object_t *obj);
+        conf_object_t *(*memory_space)(conf_object_t *obj);
+};
+#define PCI_BUS_INTERFACE		"pci_bus"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pci_bridge.html">pci_bridge</a>
+<a href="__rm_interface_pci_device.html">pci_device</a>
+</div>

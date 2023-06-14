@@ -1,0 +1,87 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>pci_express_hotplug</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_pci_express.html">pci_express</a>
+<a href="__rm_interface_pci_interrupt.html">pci_interrupt</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_pci_express_hotplug">pci_express_hotplug</a></h1>
+<p>
+
+<a name="pci_express_hotplug"></a><a name="pci_express_hotplug_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is intended for PCI Express switches that need to monitor the
+   status of their downports. The interface should be implemented by the bridge
+   object.
+<p>
+   <b><i>presence_change</i></b> is called from the pci-bus when an device is
+   added or removed from the bus. <i>is_present</i> is set to 1 when
+   the device is added, and 0 when it is removed.
+</p><p>
+   <b><i>inject_power_fault</i></b> can be used to simulate a power fault on
+   the downport. It is never called automatically.
+</p><p>
+   <b><i>press_attention_button</i></b> can be called to simulate the attention
+   button being pressed. The switch can respond to this by e.g. raising
+   an interrupt and setting appropriate status bits. It is never called
+   automatically.
+</p><p>
+   <b><i>set_mrl_state</i></b> is similar to <b><i>attention_button_press</i></b>
+   but controls the Manually operated Retention Latch. Set
+   <i>locked</i> to 1 to simulate it being locked/closed, and 0 to
+   simulate it being unlocked/opened.
+</p><p>
+   Finally, <b><i>get_mrl_state</i></b> returns the state of the Manually
+   operated Retention Latch.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(pci_express_hotplug) {
+        /* This is sent when a device is added or removed from the bus. */
+        void (*presence_change)(conf_object_t *dst, conf_object_t *NOTNULL src,
+                                int is_present);
+        void (*inject_power_fault)(conf_object_t *obj);
+        void (*press_attention_button)(conf_object_t *obj);
+        void (*set_mrl_state)(conf_object_t *obj, int locked);
+        int  (*get_mrl_state)(conf_object_t *obj);
+};
+#define PCI_EXPRESS_HOTPLUG_INTERFACE "pci_express_hotplug"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_pci_express.html">pci_express</a>
+<a href="__rm_interface_pci_interrupt.html">pci_interrupt</a>
+</div>

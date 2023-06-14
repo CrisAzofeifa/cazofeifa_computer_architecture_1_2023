@@ -1,0 +1,84 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>list-failed-modules</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-list-directories.html">list-directories</a>
+<a href="rm-cmd-list-hap-callbacks.html">list-hap-callbacks</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="list-failed-modules"></a>
+<a name="module-list-failed"></a>
+<h1 id="list-failed-modules"><a href="#list-failed-modules">list-failed-modules</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>list-failed-modules</b> [<i>"substr"</i>] [-v] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Lists the modules (Simics extensions) that are not loadable, optionally only those matching <i>substr</i>.
+<p>
+Similar to <code>list-modules</code> but shows modules that will not load into Simics, and the reason why Simics refuses to load them (e.g., missing symbol, wrong version, ...).
+</p><p>
+If the <tt>-v</tt> flag is specified, show verbose information, with the full path to the module file and any library loader error message.
+</p><p>
+The <tt>MODULE</tt> column contains the name of the module or the filename of the shared library file if the module name could not be established.
+</p><p>
+If the module has the same name as another module, an <tt>X</tt> will be printed in the <tt>DUP</tt> column.
+</p><p>
+If the module could not be loaded since it was compiled or written for a different version of Simics, the version it was built for will be printed in the <tt>VERSION</tt> column.
+</p><p>
+The <tt>USR_VERS</tt> will contain the user version string, if provided.
+</p><p>
+The <tt>LINK</tt> column contains any linker error (cf. the <tt>dlerror(3)</tt> manpage).
+</p><p>
+When the <tt>-v</tt> flag is provided, the <tt>PATH</tt> column will contain linker information for the module.
+</p><p>
+When this command is used in an expression a list of the errors is returned. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-list-modules.html">list-modules</a>, 
+<a href="rm-cmd-module-list-refresh.html">module-list-refresh</a>, 
+<a href="rm-cmd-load-module.html">load-module</a>, 
+<a href="rm-cmd-add-module-directory.html">add-module-directory</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-list-directories.html">list-directories</a>
+<a href="rm-cmd-list-hap-callbacks.html">list-hap-callbacks</a>
+</div>

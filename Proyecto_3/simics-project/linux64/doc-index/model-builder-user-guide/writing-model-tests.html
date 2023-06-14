@@ -1,0 +1,522 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>16 Writing Model Tests</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="writing-module-with-pyobj.html">15 Modeling with Python</a>
+<a href="part-common-hardware-components.html">III Modeling Common Hardware Components</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="writing-model-tests">16 Writing Model Tests</a></h1>
+<p>
+
+</p><p>
+This chapter describes how to write functional tests for
+device models using the test framework in Simics Model Builder. The
+test framework supports device model testing as well as testing entire
+target systems, but this chapter focuses on the former.
+</p><p>
+Tests are written in Python and can be run as part of building your
+devices, or as a separate step. The basics of writing and running
+tests are described in the <em>Overview</em> chapter. This chapter goes
+into more detail, but assumes that you know the basics described in
+that chapter.
+</p><p>
+The <em>Simics Reference Manual</em> contains more detailed
+information about the testing framework in Simics, including the API of
+the libraries used in this chapter, as well as the command line
+program <i>test-runner</i> that allows the user to run tests in a project
+in a flexible way.
+</p><p>
+Functional tests of a device model should only test the model under
+test. This means that they should depend on as little as possible of
+the surrounding system. The test framework includes a Python library
+called <b>dev_util</b> which helps you achieve this goal. It
+provides ways to interact with the device model and to fake the parts
+of the system the device model interacts with.
+</p><p>
+Testing should be an integrated part of normal device model
+development, preferably written before the implementation. Beyond the
+basic regression testing that automated tests give you, writing tests
+first helps you catch errors quickly, and helps you focus the
+implementation effort and design.
+</p><p>
+This chapter starts with an overview of the testing process. Then it
+shows you where to find some example models which include tests.
+Finally it goes into more detail about how to write tests.
+</p><p>
+</p><h2 class="jdocu"><a name="Overview">16.1 Overview</a></h2>
+<p>
+
+</p><p>
+The basics of a functional test of a device model is to write Python
+code which interacts with the device in a way that other parts of a
+real system would and to check that the device behaves as expected.
+</p><p>
+The most basic form of interaction with a device is reading and
+writing its registers. You can also interact with a device by calling
+methods in interfaces it implements. To check that the device behaves
+as expected, you check that the register accesses and interface calls
+have the expected results. A device may also perform its own interface
+calls as a side effect of register accesses or interface calls, for
+example to access memory, raise interrupt signals, or send network
+packets. To verify this, add fake objects implementing the interfaces
+and check that the device performs the expected calls.
+The <b>dev_util</b> library helps with this interfacing with
+the model. The <b>stest</b> is used to check that the
+results are as expected.
+</p><p>
+Some Simics objects that a device model collaborates with cannot be
+easily faked. Models depending on timing, for example models which
+implement timers, or models timing when performing DMA, need a clock
+to keep track of the time and handle events. This is easier to do with
+an instance of the <b>clock</b> class instead of trying to
+fake it.
+</p><p>
+If a model uses an <b>image</b> object to store large data
+structures, it is easiest to consider this an internal implementation
+detail and provide a real <b>image</b> image in the test.
+</p><p>
+</p><h2 class="jdocu"><a name="Sample-Tests">16.2 Sample Tests</a></h2>
+<p>
+
+</p><p>
+Simics Model Builder includes a couple of sample devices which include
+tests: <b>DS12887</b> and <b>DEC21140A-dml</b>. The
+tests do not cover all the functionality, but are provided as a
+demonstration of basic test techniques. To get access to the tests,
+run the following:
+</p><p>
+</p><pre class="jdocu_small">project$ <b>bin/project-setup --copy-module=DS12887</b></pre><p>
+and
+</p><pre class="jdocu_small">project$ <b>bin/project-setup --copy-module=DEC21140A-dml</b></pre><p>
+Now you can try running the tests:
+</p><pre class="jdocu_small">project$ <b>make test</b></pre><p>
+</p><p>
+After copying, the tests can be found in
+the <code>[project]/modules/DS12887/test</code>
+and <code>[project]/modules/DS12887/test</code> directories.
+</p><p>
+The <b>DS12887</b> suite consists of three tests, sharing some
+definitions from a common Python file (<code>common.py</code>). Each
+test sets up a simple configuration consisting of an instance of the
+device and a small number of other objects. No actual processor is
+used; a clock object is used to allow time to pass.
+</p><p>
+The <b>DEC21140A-dml</b> suite contains similar tests for the
+DEC21140A Ethernet controller. These tests are far from exhaustive,
+but they demonstrate more in depth the techniques of testing a device
+interacting with other objects; these objects are faked in the test.
+The suite also shows how to check that the interface calls performed
+by the model happen in the expected order.
+</p><p>
+</p><h2 class="jdocu"><a name="Writing-Tests">16.3 Writing Tests</a></h2>
+<p>
+
+</p><p>
+The key to useful functional tests of a device model is to test the
+<em>entire</em> model, but <em>only</em> the model. That is, the set-up
+for each test should not be bigger than needed.
+</p><p>
+When you use <code>project-setup</code> to create a new device
+skeleton, you also get a test template in the <code>test</code>
+directory of the device. You should extend this template with your
+functional tests for the model.
+</p><p>
+</p><h3 class="jdocu"><a name="Anatomy-of-a-Test-Suite">16.3.1 Anatomy of a Test Suite</a></h3>
+<p>
+
+</p><p>
+A test suite for a Simics module is placed in the <code>test</code>
+directory of the module's source. It has the following contents:
+</p><dl><dt id="dt:suiteinfo"><b><code>SUITEINFO</code></b></dt><dd>The existence of this file is what tells the test system that the
+  directory contains a test suite. It needs to exist, but can be
+  empty. It can optionally contain configuration parameters for the
+  test suite, but it is usually empty.
+</dd><dt id="dt:readme-or-readme-txt"><b><code>README</code> or <code>README.txt</code></b></dt><dd>An optional file, which is ignored by the test system. It should
+  contain a description of the suite, in human-readable format.
+</dd><dt id="dt:tests-py"><b><code>tests.py</code></b></dt><dd>An optional file which generates the set of tests in the suite. If
+  it does not exist, the test system will automatically generate a
+  test for every file named <code>s-*.py</code>, where <code>*</code> can
+  be any string. This is usually all that is needed for functional
+  tests of modules.
+</dd><dt id="dt:s-py"><b><code>s-*.py</code></b></dt><dd>Each file whose name matches this pattern is by default considered a
+  test by the test system, and will be run in its own Simics process.
+</dd></dl><p>This is just a high level description of the files in a test suite.  See
+the <em>Simics Reference Manual</em> for the details.
+</p><p>
+</p><h3 class="jdocu"><a name="Configuration">16.3.2 Configuration</a></h3>
+<p>
+
+</p><p>
+Ideally, only one instance of the model under test should be needed
+for each test. In this case, just create the instance
+using <b><i>SIM_add_configuration</i></b>.
+</p><p>
+</p><pre class="jdocu_small">my_dev = pre_conf_object('dev', 'my_dev_class_name')
+my_dev.attr1 = 'foo'
+my_dev.attr2 = 4711
+
+SIM_add_configuration([my_dev], None)
+
+# Replace our pre_conf_object reference with
+# a reference to the Simics obj
+my_dev = conf.my_dev
+</pre><p>
+</p><p>
+In practice the device model may require connections to other models.
+These models can frequently be <em>faked</em>. This means that instead
+of creating the objects that would normally be used, an extremely
+simple class that only implements the necessary interfaces is
+used. This can usually be done in Python.
+</p><p>
+For example, many devices need to be able to signal interrupts.
+Normally an actual interrupt controller object, implementing the
+<code>signal</code> interface, is used. When testing, it is
+advantageous to create a small class implementing the same interface
+using <b>dev_util</b>:
+</p><p>
+</p><pre class="jdocu_small">import stest
+import dev_util
+
+# Subclass the signal interface class
+class PicIface(dev_util.iface("signal")):
+    def signal_raise(self, sim_obj):
+        self.raised = True
+
+    def signal_lower(self, sim_obj):
+        self.raised = False
+        self.spikes = 0
+
+# Create a device instance implementing the PicIface interface
+fake_pic = dev_util.Dev([PicIface])
+</pre><p>
+</p><p>
+Create such fake objects before the model under test. Then you can
+configure the model under test to connect to the fake object. Please
+note that you must use the <code>obj</code> member of the fake object:
+</p><p>
+</p><pre class="jdocu_small"># Initialize the interrupt lines we will be checking later
+fake_pic.signal.raised = False
+fake_pic.signal.spikes = 0
+
+my_dev = pre_conf_object('dev', 'my_dev_class_name')
+my_dev.pic = fake_pic.obj
+
+SIM_add_configuration([my_dev], None)
+my_dev = conf.my_dev
+
+# Run test code
+...
+
+# Verify that interrupts were raised
+stest.expect_equal(fake_pic.signal.raised, True, 'signal not raised')
+stest.expect_equal(fake_pic.signal.spikes, 5,
+                   'not expected number of signal spikes')
+</pre><p>
+</p><p>
+The advantages of using fake objects compared to actual models are:
+</p><ul>
+ <li>
+  fake objects can be made to react to method calls to verify that the
+  interfaces are used in the expected way;
+ </li>
+ <li>
+  it reduces the code being tested to the device in question, without
+  relying on the correctness of other code; and
+ </li>
+ <li>
+  it simplifies the configuration, as a single fake object can often
+  replace several different objects by implementing all the needed
+  interfaces.
+ </li>
+</ul>
+<p>
+Objects that cannot be faked are those that cannot be implemented in
+Python because they use data types that cannot be translated from C.
+</p><p>
+For instance, some methods in the <code>memory_space</code>
+interface cannot be used from Python as they take <code>uint8 *</code>
+arguments. The <b>dev_util</b> library provides
+a <b>Memory</b> which can be used instead. This is described
+in section <a class="reference" href="#memory-accesses">16.3.4</a>.
+</p><p>
+If the device uses an internal interface (for example, devices communicating
+with other devices on the same SoC), it is often possible to wrap the interface
+to make it usable by Python. See chapter <em>Defining a New Interface Type</em>
+in this guide. Then you can use <b>dev_util</b> to wrap them as any
+other interface.
+</p><p>
+If you cannot wrap an interface in Python, you can write a simple
+device in DML which translates between pseudo attributes and interface
+calls instead, or translates between an unwrappable interface and a
+wrappable one.
+</p><h3 class="jdocu"><a name="Accessing-Device-Registers-from-Tests">16.3.3 Accessing Device Registers from Tests</a></h3>
+<p>
+
+</p><p>
+When a configuration has been created, it is time to perform the
+actual tests. This requires the device to be configured, usually
+through register writes.
+</p><p>
+Thus we need a way of writing to the device. Attributes are not
+recommended for this, and will in most cases not work anyway, as
+attribute setters have no side-effects. The <code>io_memory</code>
+interface, which is used for register accesses, cannot be accessed
+from Python. This means we must generate transactions through a memory
+space into which we have mapped the device.
+</p><p>
+The <b>dev_util</b> library handles this as well. It allows
+you to define Python registers that wrap the registers of the
+device. It even allows you to map a bit field on top of the register,
+making it possible to read or write a specific field without
+masking/shifting the entire register value.
+</p><p>
+</p><pre class="jdocu_small">import dev_util
+from stest import expect_equal
+
+my_device = pre_conf_object('dev', 'my_device_class')
+SIM_add_configuration([my_device], None)
+
+# Register 'foo' at offset 0x40 in bank 'pci_config'
+reg_foo = dev_util.Register_BE((conf.dev,     # object
+                                'pci_config', # bank
+                                0x40),        # offset in bank
+                               size=4)        # register size
+
+# Another register with a bit field
+reg_bar = dev_util.Register_BE(
+    (conf.dev, 'regs', 2), size=2,
+    bitfield = dev_util.Bitfield_LE(
+        {'ichi' : 15,        # Bit 15
+         'ni'   : 14,        # Bit 14
+         'san'  : 13,        # Bit 13
+         'yon'  : (12, 8),   # Bits 12-8
+         'go'   : (7, 0)}))  # Bits 7-0
+
+# Writing the entire register
+reg_foo.write(0xdeadbeef)
+expect_equal(reg_foo.read(), 0xdeadbeef)
+
+# Writing bit fields; only the specified fields will be updated,
+# the rest will keep their current values
+reg_bar.write(ichi = 1, ni = 0, go = 0x7)
+
+# Quick access to a single field
+reg_bar.san = 1
+reg_bar.yon = 0x6
+
+# Of course, we can read/write the entire register as well
+reg_bar.write(0x47)
+reg_bar.read()
+</pre><p>
+</p><p>
+As can be seen, registers can either have little- or big-endian byte
+order
+(<b>Register_LE</b>/<b>Register_BE</b>). Similarly,
+bitfields can either have little- or bit-endian bit-order
+(<b>Bitfield_LE</b>/<b>Bitfield_BE</b>). LE/BE
+registers can be freely mixed with LE/BE bit fields. This works
+analogously to registers and fields in DML. You can read more about
+byte order and bit order in <em>Byte Order and Byte Swapping in
+Simics</em>.
+</p><h3 class="jdocu"><a name="memory-accesses">16.3.4 Responding to Memory Accesses From Models</a></h3>
+<p>
+
+</p><p>
+It is quite common that a device performs DMA transfers. These
+transfers are often configured with descriptors, i.e., in-memory
+structures that tell the device how to perform the transfer (e.g.,
+size and location of the transfer). A network controller would be a
+typical example of such a device. Network controllers are usually
+configured with receive and transmit descriptors.
+</p><p>
+The <b>dev_util</b> library provides two classes that makes
+it easier to test DMA transfers: the <b>Memory</b> class and
+the <b>Layout</b> class.
+</p><p>
+The <b>Memory</b> class replaces a <b>memory-space</b>
+and <b>ram</b> configuration. The advantage of using
+the <b>Memory</b> class over regular Simics RAM is twofold:
+it is possible to track which addresses have been written to; and you
+will get an exception if test code, or a device, tries to read from
+uninitialized addresses.
+</p><p>
+</p><pre class="jdocu_small">import dev_util
+from stest import expect_equal, expect_different
+
+mem = dev_util.Memory()
+dma_dev = pre_conf_object('dev', 'my_dev_class')
+dma_dev.phys_mem = mem.obj
+SIM_add_configuration([dma_dev], None)
+
+# Create a layout at address 0x1234.
+# The descriptor looks like this:
+#
+#      --------------------
+#  0:  |  reg1   |  reg2  |
+#      --------------------
+#  4:  |       reg3       |
+#      --------------------
+#  8:  | f1 | f2 |////////|
+#      --------------------
+#
+# Total descriptor size is 10 bytes.
+
+desc = dev_util.Layout_LE(
+    mem, 0x1234,
+    {'reg1' : (0, 2),  # offset = 0, size = 2
+     'reg2' : (2, 2),  # offset = 2, size = 2
+     'reg3' : (4, 4),
+     'reg4' : (8, 2,
+               dev_util.Bitfield_BE({'f1' : (15, 8),
+                                     'f2' : (7, 0)})
+              )})
+
+# Initialize the descriptor
+desc.reg1 = 0xffff
+desc.reg2 = 0xabab
+desc.reg3 = 0xdeadbeef
+desc.reg4.write(0, f1=5, f2=27)
+
+# Fill memory with test data (this is the data the device
+# will read, in addition to the descriptor above).
+mem.write(0xabab, tuple(i for i in xrange(256)))
+
+# Run test
+...
+
+# If the device updates the descriptor with status information,
+# we should check that now
+expect_different(desc.reg4.f2, 29)
+
+# Check that data was copied from 0xabab to 0xffff
+expect_equal(mem.read(0xffff, 256), range(256)
+</pre><p>
+</p><p>
+One thing that should be noted is that it is not possible to access
+(read from or write to) a field in an uninitialized register. This is
+because the entire register must be loaded before altering a single
+field, and the <b>Memory</b> class will raise an exception
+when reading uninitialized memory. To handle this, either do a write
+to the entire register before setting the field, or set all the fields
+in a single write operation with a default value of, for example,
+zero:
+</p><p>
+</p><pre class="jdocu_small">layout.reg.write(0)
+layout.reg.field = 1
+</pre><p>
+or
+</p><pre class="jdocu_small">layout.reg.write(0, field=1)
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="Test-Coverage-and-Speed">16.3.5 Test Coverage and Speed</a></h3>
+<p>
+
+</p><p>
+Tests should obviously be as complete as possible, covering all the
+implemented functionality of a device model. Anything that is
+implemented but not tested risks to stop working at any moment due to
+later changes to the code.
+</p><p>
+On the other hand, it is important to make tests complete quickly.
+Ideally, a programmer should be able to re-run all tests for a device
+model even after small changes, without having to wait a long time for
+the tests to finish. If the tests take too long, they will not be run
+as often and will then be less effective in helping development.
+</p><p>
+As a rule of thumb, the time taken by a test should be dominated by
+the Simics start up time, and all tests of a single device model no
+more than half a minute, preferably even shorter. Most device tests
+should only take a few seconds on a modern machine. Exceptions should
+only be allowed if there are very good reasons for them.
+</p><p>
+This means that not everything can be tested, but clever testing can
+cover a lot of functionality in a short time.
+</p><p>
+</p><h3 class="jdocu"><a name="Documenting-Tests">16.3.6 Documenting Tests</a></h3>
+<p>
+
+</p><p>
+For tests to be useful and maintainable, you should document what is
+being tested, both for the entire test suite (in a <code>README</code>
+file) and each test (as comments in the respective files). Any
+omissions should be noted; this is important to assess coverage.
+</p><p>
+The test code itself is subject to the same commenting as any other
+program code; i.e., describe anything unusual and the reasoning behind
+the design, but do not over-comment the code itself.
+</p><p>
+When a test fails, it must be reasonably easy to find out exactly what
+has failed and why. This can be achieved by a combination of error
+messages when the failure occurs, logging done during the test run,
+and comments in the test code. Raising a Python exception at the point
+of error also helps locating it, since a complete traceback will be
+printed automatically. The checking functions
+in <b>stest</b> already raise exceptions if the check fails.
+</p><p>
+</p><h3 class="jdocu"><a name="Arranging-Test-Code">16.3.7 Arranging Test Code</a></h3>
+<p>
+
+</p><p>
+When dividing tests into subtests, the following should be taken into account:
+</p><p>
+</p><ul>
+ <li>
+  A subtest is in general the unit for reporting failures or successes.
+  It is often useful to put tests of independent features into separate
+  subtests, so they can fail and succeed independently of each other.
+ </li>
+
+ <li>
+   A subtest is run in its own Simics process which means that it is
+   started in a known state. This removes any dependencies on previous
+   tests.
+ </li>
+
+ <li>
+  It takes some time for Simics to start, so it often makes sense to
+  put many related small tests into the same subtest script, in order
+  to make the test run faster.
+ </li>
+</ul>
+<p>
+As with all programming, it is always a good idea to factor out common
+test code into separate Python files. This can include configuration,
+definition of fake objects, functions for register access and other
+helper functions. See the sample tests for how it can be done.
+</p><p>
+
+
+</p>
+<div class="chain">
+<a href="writing-module-with-pyobj.html">15 Modeling with Python</a>
+<a href="part-common-hardware-components.html">III Modeling Common Hardware Components</a>
+</div>

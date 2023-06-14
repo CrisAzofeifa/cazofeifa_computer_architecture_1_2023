@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>log-type</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-log-size.html">log-size</a>
+<a href="rm-cmd-logical-to-physical.html">logical-to-physical</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="log-type"></a>
+<a name="conf_object.log-type"></a>
+<h1 id="log-type"><a href="#log-type">log-type</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>log-type</b> [<i>object</i>] [-enable|-disable|-add|-sub] [<i>"log-type"</i>] [-r] <br><b>&lt;conf_object&gt;.log-type</b> [-enable|-disable|-add|-sub] [<i>"log-type"</i>] [-r] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Log messages are categorised into one of the several log types. By default, messages of all types are handled in the same way. This command can be used to select one or several types. Only messages of the selected types will be logged and displayed, as defined by the <code>log-level</code> command. The flags <tt>-enable</tt> and <tt>-disable</tt> can be used to add and remove a single log type. (The flags <tt>-add</tt>/<tt>-sub</tt> are deprecated aliases of <tt>-enable</tt>/<tt>-disable</tt>.)
+<p>
+The <i>object</i> argument can be used to apply the change just to a particular object. Please note that when <i>object</i> is specified the log type will be also recursively updated for all descendants of <i>object</i>, whose name matches <i>object</i>.bank[.*], <i>object</i>.port[.*] or <i>object</i>.impl[.*] pattern. The flag <tt>-r</tt> can be used to operate on all the descendants of the object <i>object</i>.
+</p><p>
+The log types are Info, Error, Critical, Spec_Violation and Unimplemented. The Info type is used for harmless info or debug messages. Error is used when an error prevents the simulation from running properly; this type does not have any log-level. Critical is used to signal serious errors that a model may not be able to resume from; the simulation is stopped. Spec_Violation is used when a target program runs a command that violates the device specification. And Unimplemented is used when a model does not implement a specific functionality, bit or register.
+</p><p>
+All types can be enabled by setting <i>log-type</i> to <tt>all</tt>. It is not possible to disable breaking on Critical. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-log.html">log</a>, 
+<a href="rm-cmd-log-group.html">&lt;conf_object&gt;.log-group</a>, 
+<a href="rm-cmd-log-level.html">log-level</a>, 
+<a href="rm-cmd-log-size.html">log-size</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-log-size.html">log-size</a>
+<a href="rm-cmd-logical-to-physical.html">logical-to-physical</a>
+</div>

@@ -1,0 +1,159 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i2c-bus</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-i21555-scnd.html">i21555-scnd</a>
+<a href="rm-class-i2c-link-endpoint.html">i2c-link-endpoint</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="i2c-bus"><a href="#i2c-bus">i2c-bus</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The i2c-bus class implements the functionality of an I2C bus, to which several I2C devices can connect.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, i2c_bus, i2c_slave, i2c_bridge, i2c_master
+<h3 id="port-objects">
+<a href="#port-objects">Port Objects</a>
+</h3>
+<dl>
+<dt id="dt:port-scl">port.SCL</dt>
+<dd>
+<a href="rm-class-i2c-bus.html#SCL">i2c-bus.SCL</a>
+ – SCL clock signal</dd>
+<dt id="dt:port-sda">port.SDA</dt>
+<dd>
+<a href="rm-class-i2c-bus.html#SDA">i2c-bus.SDA</a>
+ – SDA data signal</dd>
+</dl>
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-i2c-bus.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-i2c-bus.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:i2c_devices">
+<i>i2c_devices</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[si]*]</code>
+<br>Contains a list of the devices connected to the bus. Each list entry is a list of <i>(device, address)</i> for each address that has a device connected. Devices connect themselves using the <tt>i2c_bus</tt> interface.</dd>
+<dt id="dt:current_slave">
+<i>current_slave</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>The slave of the currently ongoing transaction, if any.</dd>
+<dt id="dt:current_state">
+<i>current_state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The current state of the bus, where 0 is idle, 1 is master transmit, 2 is master receive, 3 is slave transmit, and 4 is slave receive.</dd>
+<dt id="dt:i2c_link">
+<i>i2c_link</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>If set, the bus will try to share all communication with this i2c link object. This is useful when converting i2c devices to use the new interfaces i2c_link, i2c_slave and i2c_master, since it allows devices to be converted one by one. All connected slave devices are forwarded as slave devices in this i2c link object. Slave devices registered on the link will be accessible from master devices on this i2c bus, but only as long as all responses arrive immediately, i.e., as long as both the link and the slave device have zero latency.</dd>
+<dt id="dt:first_read_request">
+<i>first_read_request</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>When forwarding a connection to a slave device via an i2c_link object and in slave transmit mode, this attribute is true right after the start condition and before the first read request. Marks that the next read should not be preceded by an ack_read_request</dd>
+<dt id="dt:sda_target">
+<i>sda_target</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>n|o|[os]</code>
+<br>Describes where the outgoing SDA signal should be connected</dd>
+<dt id="dt:i2c_device_state">
+<i>i2c_device_state</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iiii]</code>
+<br>List representing data state in the device</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.i2c-bus.html">i2c-bus</a>
+</section>
+<h2 id="SCL"><a href="#SCL">i2c-bus.SCL</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-2">
+<a href="#description-2">Description</a>
+</h3>
+SCL clock signal
+<h3 id="interfaces-implemented-2">
+<a href="#interfaces-implemented-2">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<h2 id="SDA"><a href="#SDA">i2c-bus.SDA</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-3">
+<a href="#description-3">Description</a>
+</h3>
+SDA data signal
+<h3 id="interfaces-implemented-3">
+<a href="#interfaces-implemented-3">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<div class="chain">
+<a href="rm-class-i21555-scnd.html">i21555-scnd</a>
+<a href="rm-class-i2c-link-endpoint.html">i2c-link-endpoint</a>
+</div>

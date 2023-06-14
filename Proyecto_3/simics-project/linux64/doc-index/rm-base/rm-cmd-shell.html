@@ -1,0 +1,75 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>shell</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-setup-x86-timing.html">setup-x86-timing</a>
+<a href="rm-cmd-show-memorymap.html">show-memorymap</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="shell"></a>
+<a name="wait-for-shell"></a>
+<h1 id="shell"><a href="#shell">shell</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>shell</b> [-bg] <i>"exp"</i> <br><b>wait-for-shell</b> <i>"exp"</i> <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Executes the <i>exp</i> argument in the system command line interpreter. For Linux this is the default shell and for Windows it is <tt>cmd.exe</tt>.
+<p>
+The <tt>-bg</tt> flag launches the job in the background without any way to capture output or errors.
+</p><p>
+If the command returns a non-zero exit status and <tt>-bg</tt> is not used, a command line error will be signalled. The actual exit status is not available.
+</p><p>
+The <code>wait-for-shell</code> command is similar to <code>shell</code>. It can be used in a script branch, allowing other script branches to execute in parallel while waiting for the command to finish.
+</p><p>
+When used in an expression (without the <tt>-bg</tt> flag), any messages printed to standard output will be returned:<br>
+ <code>$today = (shell "date +%F")</code> on Linux; or<br>
+ <code>$today = (shell "date /t")</code> on Windows.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-_excl_.html">!</a>, 
+<a href="rm-cmd-pipe.html">pipe</a>, 
+<a href="rm-cmd-script-branch.html">script-branch</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-setup-x86-timing.html">setup-x86-timing</a>
+<a href="rm-cmd-show-memorymap.html">show-memorymap</a>
+</div>

@@ -1,0 +1,412 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>15 Modeling with Python</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="writing-module-with-c.html">14 Modeling with C</a>
+<a href="writing-model-tests.html">16 Writing Model Tests</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="writing-module-with-pyobj">15 Modeling with Python</a></h1>
+<p>
+
+</p><p>
+This section describes modeling devices in <b>pyobj</b> Python module.
+</p><p>
+</p><h2 class="jdocu"><a name="pyobj-new-device">15.1 Creating a New Python Device</a></h2>
+<p>
+
+</p><p>
+A new Python device module can be created using the <code>project-setup</code> 
+utility:
+</p><dl><dt id="dt:windows"><b>Windows</b></dt><dd><pre class="jdocu_small">project&gt; <b>bin\project-setup.bat --py-device my-py-device</b></pre><p>
+</p></dd><dt id="dt:linux"><b>Linux</b></dt><dd><pre class="jdocu_small">project$ <b>./bin/project-setup --py-device my-py-device</b></pre><p>
+</p></dd></dl><p>This will create skeleton code for a new device in the 
+<code></code><em>[project]</em><code>/modules/my-py-device/</code> directory, 
+with all files needed to build it as a Simics module. 
+</p><p>
+The entry point for a module written in Python is the file 
+<code>module_load.py</code>, which is executed when the Simics
+module is loaded. This file is normally small, containing something like:
+</p><pre class="jdocu_small">from . import my_py_device
+my_py_device.my_py_device.register()
+</pre><p>
+The rest of the implementation is given in another file, (in this
+case <code>my_py_device.py</code>).
+
+</p><h2 class="jdocu"><a name="pyobj-pyobj-module">15.2 The pyobj Python Module</a></h2>
+<p>
+
+</p><p>
+Simics includes the <b>pyobj</b> Python module that greatly 
+simplifies writing device in Python. The module contains all 
+functionality needed for creating a Python device.
+</p><p>
+The <b>pyobj</b> module contains 
+the <b>ConfObject</b> class that should be used as base 
+class when creating new device. The class contains a lot of useful 
+methods to define a new device.
+</p><p>
+Here is an example how to create a simple Python device:
+</p><p>
+</p><pre class="jdocu_small">import simics
+import pyobj
+class foo(pyobj.ConfObject):
+    """This is the long-winded documentation for this Simics class.
+    It can be as long as you want."""
+    _class_desc = 'a one-line description of the class'
+</pre><p>
+</p><p>
+In the example we create the device class <em>foo</em>. The first 
+string in the class is a long description of the device that can 
+be several sentences. The <em>_class_desc</em> is a short class 
+description beginning with lower case, without trailing dot, and at most 50
+characters long. The longer description is used in the help commands and
+reference manuals, while the shorter description is used for example in the
+GUI to describe the device.
+</p><p>
+Upon registration, the newly defined device registered itself as a 
+common Simics class which allows instances of it to be created like 
+any other Simics object. The device will automatically get 
+<b>info</b> and <b>status</b> commands.
+</p><p>
+Please see the chapter <em>pyobj Python Module</em> in 
+<em>API Reference Manual</em> for more detailed information about 
+the <b>pyobj</b> module.
+
+</p><h2 class="jdocu"><a name="pyobj-class-base-methods">15.3 ConfObject Class Basic Methods</a></h2>
+<p>
+
+</p><p>
+The <b>ConfObject</b> class is defined in 
+the <b>pyobj</b> Python module. This section describes 
+some of the basic methods in the <b>ConfObject</b> class.
+</p><p>
+The <b><i>_initialize</i></b> method is called when the class is 
+instantiated as a device object. This method is used to define 
+values that must be set before the device defines any attributes 
+or interfaces. This method is rarely defined as very few devices 
+require any values before object definition. A device class that 
+redefines this method must always call the <b><i>_initialize</i></b> 
+method in the parent class.
+</p><p>
+</p><pre class="jdocu_small">class foo(pyobj.ConfObject):
+    """The Foo Python device."""
+    _class_desc = 'a foo device'
+
+    def _initialize(self):
+        super()._initialize()
+        self.my_val = 4711
+</pre><p>
+</p><p>
+The <b><i>_finalize</i></b> method is called after all attributes of 
+a device object's have been set.
+</p><p>
+The <b><i>_initialize</i></b> and <b><i>_finalize</i></b> methods 
+corresponds to the <b><i>init</i></b> and 
+<b><i>finalize</i></b> fields in the <code>class_info_t</code> 
+struct that is passed to the <b><i>SIM_create_class</i></b> function, 
+as documented in the <em>Simics API Reference Manual</em>.
+
+</p><h2 class="jdocu"><a name="pyobj-class-parameters">15.4 ConfObject Class Parameters</a></h2>
+<p>
+
+</p><p>
+The <b>ConfObject</b> class in the <b>pyobj</b> 
+module includes parameters that can be set to control the device 
+behavior.
+</p><p>
+</p><dl><dt id="dt:_class_desc"><b>_class_desc</b></dt><dd>The device's short class description describes what the device does or
+is. The description is showed in help commands and in the GUI. This is the
+string passed as <em>short_desc</em> to <b><i>SIM_create_class</i></b>.</dd><dt id="dt:_do_not_init"><b>_do_not_init</b></dt><dd>Set it to <code>object()</code> to make sure the class is not 
+registered as a Simics class. Every class inheriting the 
+<b>ConfObject</b> class, either directly or indirectly, 
+will be registered as a Simics class. Sometimes it is useful to 
+create a base class that is not registered as a Simics class, 
+but is used only as a base class for classes with similar 
+functionality. This means that no object can be created of that 
+class.</dd></dl><p>
+</p><h2 class="jdocu"><a name="pyobj-attribute">15.5 Attributes</a></h2>
+<p>
+
+</p><p>
+Like all Simics objects, a Python device can have attributes for 
+parametrization or for saving its internal state in checkpoints. 
+This section describes how to create state attributes that store 
+the device state.
+</p><p>
+A device that inherits the <b>ConfObject</b> class creates 
+a new attribute by defining a new class in the device class that 
+inherits the <b>Attribute</b> class. The 
+<b>Attribute</b> class uses the 
+<b><i>SIM_register_attribute</i></b> API function to register
+the attribute to the class.
+</p><p>
+</p><pre class="jdocu_small">class wee(pyobj.Attribute):
+    """Documentation for the attribute goes here."""
+    attrattr = simics.Sim_Attr_Pseudo
+    attrtype = 'i'
+    def _initialize(self):
+        self.val = 4711
+    def getter(self):
+        self.val += 3
+        return self.val
+    def setter(self, val):
+        self.val = val
+</pre><p>
+</p><p>
+The <b>Attribute</b> has three standard methods; 
+<b><i>_initialize</i></b>, <b><i>getter</i></b>, and <b><i>setter</i></b>. 
+The <b><i>_initialize</i></b> method is similar to the 
+<b><i>_initialize</i></b> method in the <b>ConfObject</b> class; 
+it is used for setting default values for the attribute. The 
+<b><i>getter</i></b> method is called when someone reads the attribute. 
+The <b><i>setter</i></b> method is called when someone writes the attribute. 
+The class also has two parameters; <i>attrattr</i> and 
+<i>attrtype</i>. The <i>attrattr</i> parameter defines 
+if the attribute is optional, required, or pseudo, see the 
+<code>attr_attr_t</code> type. The default value of the 
+<i>attrattr</i> parameter is <code>Sim_Attr_Optional</code>. 
+The <i>attrtype</i> parameter defines the type of the attribute; 
+see the <i>type</i> argument to the 
+<b><i>SIM_register_attribute</i></b> function in the <em>API Reference
+Manual</em>.
+</p><p>
+In the example we choose to store the attribute value in the 
+<em>val</em> member.
+</p><p>
+Most attributes are simple attributes with uncomplicated functionality. 
+The <b><i>SimpleAttribute</i></b> function can be used when defining a 
+simple attribute. The function defines an <b>Attribute</b> class 
+instance and returns it. The first argument to the function is the default 
+value. The second argument, <i>attrtype</i>, is the type of 
+the attribute. The last argument, <i>attrattr</i>, defines if 
+the attribute is optional, required, or pseudo. As attributes 
+are optional by default, the last argument can be left out.
+</p><p>
+</p><pre class="jdocu_small">class woot(pyobj.SimpleAttribute(0, 'i|n')):
+    """A four-letter attribute"""
+</pre><p>
+</p><p>
+Note that the attribute value will be automatically stored in the 
+<em>val</em> parameter when using the <b><i>SimpleAttribute</i></b> function.
+
+</p><h2 class="jdocu"><a name="pyobj-class-attribute">15.6 Class Attributes</a></h2>
+<p>
+
+</p><p>
+The <b>pyobj.ClassAttribute</b> class defines an attribute that
+will be registered for the containing <b>ConfObject</b> class. The
+attribute will be registered with Simics using the
+<b><i>SIM_register_class_attribute</i></b> function. See documentation
+for <b><i>SIM_register_class_attribute</i></b> for detailed information
+about class attributes.
+</p><p>
+The value stored in the class should always be stored in the
+attribute named <code>val</code>. This is to avoid problems when a
+class that defines a <b>pyobj.Attribute</b> class is
+inherited by more than one class.
+</p><p>
+</p><pre class="jdocu_small">class wee(pyobj.ClassAttribute):
+    """Documentation for the attribute goes here."""
+    attrtype = 'i'
+    val = 4711
+    @classmethod
+    def getter(cls): return cls.val
+    @classmethod
+    def setter(cls, val): cls.val = val
+</pre><p>
+</p><p>
+The <b>pyobj.ClassAttribute</b> class is very similar to the
+<b>pyobj.Attribute</b> class. See the documentation for the
+<b>pyobj.Attribute</b> class for how to use this class.
+
+</p><h2 class="jdocu"><a name="pyobj-class-in-class">15.7 The _up Member</a></h2>
+<p>
+
+</p><p>
+The device class can implement attributes and interfaces. This is 
+done by adding class within the device class. For example an 
+<b>Attribute</b> class can be added to the device class.
+</p><p>
+</p><pre class="jdocu_small">class foo(pyobj.ConfObject):
+    """The Foo Python Device."""
+    _class_desc = 'a foo device'
+
+    def _initialize(self):
+        super()._initialize()
+        self.my_val = 4711
+
+    class lost(pyobj.Attribute):
+        """A pseudo attribute"""
+        attrattr = simics.Sim_Attr_Pseudo
+        def getter(self):
+            return self._up.my_val
+</pre><p>
+</p><p>
+The <b>foo</b> contains an attribute <i>lost</i>. 
+To access a class's value or containing class the <code>_up</code> 
+member is used. In the example the <code>_up</code> member makes it 
+possible to access the <code>my_val</code> field from within the 
+<i>lost</i> attribute.
+
+</p><h2 class="jdocu"><a name="pyobj-interface">15.8 Interfaces</a></h2>
+<p>
+
+</p><p>
+The <b>pyobj.Interface</b> class implements a Simics
+interface for the containing <b>ConfObject</b> class. The
+interface is registered using the <b><i>SIM_register_interface</i></b>
+function. The interface name is taken from the class name.
+</p><p>
+</p><pre class="jdocu_small">class signal(pyobj.Interface):
+    def signal_raise(self): self.val = True
+    def signal_lower(self): self.val = False
+    def _initialize(self): self.val = False
+</pre><p>
+</p><p>
+The <b><i>_initialize</i></b> method can be overridden if special
+initialization behavior is required.
+</p><p>
+To implement port interfaces instead of regular interfaces, place
+one or more <b>pyobj.Interface</b> subclasses inside a
+<b>pyobj.Port</b> class.
+</p><p>
+In Python, you can use the <i><a name="iface">iface</a></i> attribute of
+a configuration object to access the interface directly:
+</p><p>
+</p><pre class="jdocu_small">val = conf.phys_mem.iface.memory_space.read(conf.cpu0, 0x1234, 4, 0)
+</pre><p>
+
+</p><h2 class="jdocu"><a name="pyobj-port">15.9 Port Objects</a></h2>
+<p>
+
+</p><p>
+If your device needs to provide multiple implementations of the same interface
+it should use port objects. More general information about port objects can be
+found in <a class="reference" href="port-objects.html">34</a>.
+</p><p>
+Below is an example of how port objects are registered in Python using the
+<b>pyobj</b> framework:
+</p><p>
+
+ </p><pre class="jdocu_small">import pyobj, simics
+
+class myclass(pyobj.ConfObject):
+    # Define the port object 'myobj.port.RESET'
+    class RESET(pyobj.PortObject):
+        class signal(pyobj.Interface):
+            def signal_raise(self):
+                print("signal_raise")
+
+    # Define the port object 'myobj.bus_clock'
+    class bus_clock(pyobj.PortObject):
+        namespace = ""
+        classname = "cycle-counter"
+
+    def _initialize(self):
+        super()._initialize()
+        simics.SIM_set_attribute_default(
+            self.obj.bus_clock, "frequency", 1E6)
+</pre><p>
+</p><p>
+ 
+
+</p><h2 class="jdocu"><a name="pyobj-event">15.10 Events</a></h2>
+<p>
+
+</p><p>
+<b>pyobj.Event</b> defines an event that will be registered
+for the containing <b>ConfObject</b> class. Internally,
+registration is done with <b><i>SIM_register_event</i></b>; see the
+documentation for that API function for detailed information.
+</p><p>
+Events are posted with the <b><i>post(clock, data,
+&lt;duration&gt;)</i></b> method. <i>clock</i> determines which
+clock the event is posted on, and <i>data</i> is the event
+data. The duration is the number of <i>seconds</i>,
+<i>cycles</i>, or <i>steps</i> until the event triggers,
+specified with the appropriate keyword argument:
+</p><p>
+</p><pre class="jdocu_small">ev.post(a_clock, some_data, seconds = 4.711)
+ev.post(a_clock, some_data, cycles = 4711)
+ev.post(a_clock, some_data, steps = 4711)
+</pre><p>
+</p><p>
+Events can be cancelled before they trigger with either
+<b><i>cancel_time(clock, match_fun)</i></b> or <b><i>cancel_step(clock,
+match_fun)</i></b> (depending on whether the event duration was
+specified in steps or not). The <i>match_fun</i> argument is
+optional: if given, it should be a function that accepts an event
+data parameter, and returns true for the events that should be
+cancelled; if not given, all events are cancelled.
+</p><p>
+A subclass may define the following methods:
+</p><p>
+</p><dl><dt id="dt:callback-data"><b><b><i>callback(data)</i></b></b></dt><dd>Called when the event
+triggers. Overriding this method is not optional.</dd><dt id="dt:destroy-data"><b><b><i>destroy(data)</i></b></b></dt><dd>Called when the event is
+removed from the queue without being called. The method is not
+allowed to use any event API calls; it is mainly intended for
+freeing event data.</dd><dt id="dt:get_value-data-and-set_value-val"><b><b><i>get_value(data)</i></b> and <b><i>set_value(val)</i></b></b></dt><dd>Converts the given event data to an <code>attr_value_t</code> value,
+and the other way around. If the event carries no data that needs
+checkpointing, you may omit these methods.</dd><dt id="dt:describe-data"><b><b><i>describe(data)</i></b></b></dt><dd>Called to generate a
+human-readable description of the event to be used in the
+print-event-queue command. If you do not supply this method, the
+event's name will be used.</dd></dl><p>Additionally, it may set the <i>flags</i> parameter to
+<code>Sim_EC_Notsaved</code>, if the event should not be checkpointed.
+In this case, neither <b><i>get_value</i></b> nor <b><i>set_value</i></b>
+should be defined.
+</p><p>
+Here is an example for different kinds of events.
+</p><pre class="jdocu_small">class foo(pyobj.ConfObject):
+    class ev1(pyobj.Event):
+        def callback(self, data):
+            do_something(data)
+    class ev2(pyobj.Event):
+        def callback(self, data):
+            self.do_something_else(data)
+        def get_value(self, data):
+            return str(data)
+        def set_value(self, val):
+            return int(val)
+        def describe(self, data):
+            return 'ev2 with %s' % data
+    class ev3(pyobj.Event):
+        flags = simics.Sim_EC_Notsaved
+        def callback(self, data):
+            self._up.do_this_third_thing(data)
+</pre><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="writing-module-with-c.html">14 Modeling with C</a>
+<a href="writing-model-tests.html">16 Writing Model Tests</a>
+</div>

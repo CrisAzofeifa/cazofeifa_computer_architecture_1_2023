@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.3 Using Simics scripts</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simics-command-line-interface.html">2.2 Simics command line interface</a>
+<a href="checkpoints-snapshots-.html">2.4 Checkpoints (snapshots)</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="using-simics-scripts">2.3 <a href="#using-simics-scripts">Using Simics scripts</a></h1>
+<p>This section describes how to:</p>
+<ul>
+<li>pass arguments to Simics scripts </li>
+<li>discover which parameters are accepted by Simics scripts </li>
+</ul>
+<p>We assume that a user knows how to start Simics and how to get access to Simics CLI.</p>
+<p>Simics scripts can accept parameters. In section <a class="reference" href="running-simics-cli.html">2.1</a> we created a target machine in Simics by executing the <code>targets/qsp-x86/firststeps.simics</code> script with Simics <code>run-command-file</code> command. This Simics script is written in a way that it can accept certain parameters.</p>
+<p>There are a few ways to discover which parameters, if any, are accepted by the script:</p>
+<ul>
+<li>via command line completion </li>
+<li>via help system </li>
+</ul>
+<p>To discover available parameters via command line completion, press the tab key twice after entering the <strong>run-command-file targets\qsp-x86\firststeps.simics</strong> string on the Simics CLI:</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets\qsp-x86\firststeps.simics &lt;TAB&gt;&lt;TAB&gt;</strong>
+</code></pre>
+<p>As a result, Simics command line completion should show available parameters for the script:</p>
+<p><img alt="" src="using-simics-scripts-1.png"></p>
+<p>Simics <code>help</code> command also allows to find out which parameters are accepted by a Simics script as well as to see documentation for the parameters. To discover available parameters for the <code>targets\qsp-x86\firststeps.simics</code> script just run this command:</p>
+<pre><code class="language-simics">simics&gt; <strong>help targets\qsp-x86\firststeps.simics</strong>
+</code></pre>
+<p>As a result, script description will be printed together with a long list of accepted parameters. Here is the beginning of the output:</p>
+<p><img alt="" src="using-simics-scripts-2.png"></p>
+<p>Let’s create a target machine with 4 cores per physical processor by setting the num_cores parameter to 4. To do that please run the following command:</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets\qsp-x86\firststeps.simics num_cores = 4</strong>
+</code></pre>
+<p>Now, start simulation be entering the <code>run</code> command:</p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+</code></pre>
+<p><img alt="" src="using-simics-scripts-3.png"></p>
+<p>To check that the target machine indeed has 4 cores now, let’s check the number of processing units available on the target system. This can be done with the <code>nproc</code> command executed on the target system once Linux has booted:      <img alt="" src="using-simics-scripts-4.png"> </p>
+
+<div class="chain">
+<a href="simics-command-line-interface.html">2.2 Simics command line interface</a>
+<a href="checkpoints-snapshots-.html">2.4 Checkpoints (snapshots)</a>
+</div>

@@ -1,0 +1,73 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>arm_avic</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_arm.html">arm</a>
+<a href="__rm_interface_arm_coprocessor.html">arm_coprocessor</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_arm_avic">arm_avic</a></h1>
+<p>
+
+<a name="arm_avic"></a><a name="arm_avic_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>ARM AVIC</code> interface makes it possible for an ARM
+    processor to get the interrupt vector address from an AVIC device
+    connected to the processor core. Both processor and AVIC must
+    enable the AVIC interface to support this feature.
+<p>
+    The processor calls <b><i>get_interrupt_address</i></b> function to
+    get the interrupt vector address. The AVIC returns an
+    <em>arm_avic_t</em> struct with a <i>valid</i> field and an
+    <i>address</i> field, the <i>address</i> field is only valid when
+    the <i>valid</i> is not <code>0</code>.
+</p><p>
+   </p><pre class="jdocu_small">typedef struct arm_avic {
+        int valid;
+        uint32 address;
+} arm_avic_t;
+
+SIM_INTERFACE(arm_avic) {
+        arm_avic_t (*get_interrupt_address)(conf_object_t *obj);
+};
+
+#define ARM_AVIC_INTERFACE "arm_avic"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_arm.html">arm</a>
+<a href="__rm_interface_arm_coprocessor.html">arm_coprocessor</a>
+</div>

@@ -1,0 +1,80 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>image_snoop</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_image.html">image</a>
+<a href="__rm_interface_instruction_fetch.html">instruction_fetch</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_image_snoop">image_snoop</a></h1>
+<p>
+
+<a name="image_snoop"></a><a name="image_snoop_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The image snoop interface is used to get
+   information about when image pages are written to. Note that with the
+   addition of inhibit bits in the <code>direct_memory</code> interface, the
+   image snoop interface is rarely needed for model functionality.
+<p>
+   The <b><i>page_modified</i></b> function is always called the first time a page
+   is written to. It may also be called additional times even if a page has
+   already been written to. A user of the image snoop interface can at any time
+   reset this mechanism so that all pages are considered not written to and
+   therefore the <b><i>page_modified</i></b> function will be called again on
+   future writes. The reset can be accomplished either through the memory page
+   update interface or through the pool protect interface.
+</p><p>
+   The <code>image snoop</code> interface can, for example, be used by frame
+   buffer devices to efficiently keep track of areas of the frame buffer to
+   redraw, or for a CPU module that builds cached representations of code pages
+   to invalidate such caches when memory is modified.
+</p><p>
+   Listeners using this interface are installed with the
+   <i>image_snoop_devices</i> attribute in the
+   <b>image</b> class.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(image_snoop) {
+        void (*page_modified)(conf_object_t *obj, conf_object_t *img,
+                              uint64 offset, uint8 *page_data,
+                              image_spage_t *spage);
+};
+#define IMAGE_SNOOP_INTERFACE "image_snoop"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_image.html">image</a>
+<a href="__rm_interface_instruction_fetch.html">instruction_fetch</a>
+</div>

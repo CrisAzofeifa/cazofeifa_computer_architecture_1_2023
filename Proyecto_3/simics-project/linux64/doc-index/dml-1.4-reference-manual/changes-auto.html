@@ -1,0 +1,449 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>B.5 Language differences handled by the port-dml script</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="port-dml.html">B.4 Porting DML 1.2 to DML 1.4</a>
+<a href="changes-manual.html">B.6 Backward incompatible changes, not automatically converted</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="changes.html">B Changes from DML 1.2 to DML 1.4</a>
+&nbsp;/&nbsp;</div>
+<h1 id="language-differences-handled-by-the-port-dml-script">B.5 <a href="#language-differences-handled-by-the-port-dml-script">Language differences handled by the port-dml script</a></h1>
+<dl>
+  <dt id="dt:pabstract_template">PABSTRACT_TEMPLATE</dt>
+  <dd>
+<p>When implementing methods <code>read</code> or <code>write</code> in a
+field or register, or <code>hard_reset</code> or
+<code>soft_reset</code> in a bank, or <code>get</code>, <code>set</code>,
+<code>read_field</code>, <code>write_field</code> in a field, then this will
+have no effect unless a template named like the method is instantiated. The
+automatic converter will add e.g. <code>is read;</code> before an
+implementation of <code>read</code>.</p>
+</dd>
+  <dt id="dt:pafter">PAFTER</dt>
+  <dd>
+<p>The syntax of <code>after</code> statements changed: The delay should
+be followed by <code>s</code> to denote time unit; furthermore, the
+<code>call</code> keyword should no longer be used, and brackets
+around the delay are optional. Example:</p>
+<pre><code>after (1.3) call send_frame();  // DML 1.2 syntax
+after 1.3 s: send_frame();       // DML 1.4 syntax
+</code></pre>
+</dd>
+  <dt id="dt:pandor">PANDOR</dt>
+  <dd>
+<p>DML 1.2 permits the right operand of an <code>&amp;&amp;</code> or
+<code>||</code> expression to contain errors, as long as the left
+operand evaluates to a constant that makes the right operand
+dead. DML 1.4 does not permit this, so the expression <code>A &amp;&amp; B</code> must be converted to <code>A #? B #: false</code>.
+One common use case is expressions like
+<code>(defined X &amp;&amp; X.y == ...)</code>.</p>
+</dd>
+  <dt id="dt:parray">PARRAY</dt>
+  <dd>
+<p>The syntax for object arrays has changed: Instead of
+<code>register r[j in 0..size - 1]</code>, you write
+<code>register r[j &lt; size]</code></p>
+</dd>
+  <dt id="dt:parray_i">PARRAY_I</dt>
+  <dd>
+<p>The syntax for object arrays has changed: Instead of
+<code>register r[12]</code>, you write <code>register r[i &lt; 12]</code></p>
+</dd>
+  <dt id="dt:pattribute">PATTRIBUTE</dt>
+  <dd>
+<p>The <code>allocate_type</code> parameter is no longer valid for attributes.
+Integer, boolean and floating-point attributes instead use
+standard templates such as <code>uint64_attr</code>, <code>int64_attr</code>, <code>bool_attr</code> and
+<code>double_attr</code>.</p>
+<p>The porting rule will remove <code>allocate_type</code>, together with an
+explicit type parameter if present. All integer types will be
+changed to 64-bit types. Attributes with <code>allocate_type="string"</code>
+have to be manually rewritten.</p>
+</dd>
+  <dt id="dt:pauto">PAUTO</dt>
+  <dd>
+<p>The <code>auto</code> keyword is deprecated; use the equivalent
+<code>local</code> instead.</p>
+</dd>
+  <dt id="dt:pbefaft">PBEFAFT</dt>
+  <dd>
+<p>In objects of type attribute, register and connect, before/after
+methods (e.g. <code>before_write</code>, <code>after_read</code>,
+<code>after_set</code>), are no longer called. They are transformed
+into an override of the corresponding base function
+(<code>write_register</code>, <code>read_register</code>, <code>set</code>).
+Note that when a before/after method is implemented by a template,
+then an additional <code>is register</code> declaration may be needed in
+1.4; this is not automatically added.</p>
+</dd>
+  <dt id="dt:pbitneq">PBITNEQ</dt>
+  <dd>
+<p>DML 1.2 permits using 1-bit fields as boolean values. In DML 1.4,
+field values are 64 bit, and thus require an explicit <code>!= 0</code></p>
+</dd>
+  <dt id="dt:pchange_inargs">PCHANGE_INARGS</dt>
+  <dd>
+<p>Many overridable methods in the standard library have changed, and
+method overrides must be changed accordingly. A method in 1.2
+usually has a counterpart in 1.4, but its semantics may have
+changed slightly and quite often the set of arguments has changed
+as well.  The automatic converter will adjust the names and
+signatures of a number of methods. Invocations, including
+<code>default()</code>, are not updated and must be manually converted
+(compile errors). Some method arguments are removed by the
+converter; if these arguments are used, the implementation must be
+modified accordingly. In particular, the <code>memop</code> arg of
+various bank and register methods is no longer present. This has
+been replaced with an argument <code>void *aux</code>, which is
+normally NULL.  If some register in a bank needs a memop, then the
+<code>io_memory_access</code> method can be updated to pass down the
+memop in the <code>aux</code> argument (just call <code>default</code>
+with <code>memop</code> in the last arg). An explicit call to a bank
+method, e.g. a redirection of an access to a different bank,
+should normally be rewritten as a call to <code>read</code> or
+<code>write</code>, usually with NULL in the <code>aux</code>
+argument.</p>
+<p>Bank methods are converted as follows: <code>access</code> →
+<code>io_memory_access</code>; <code>read_access</code>,
+<code>read_access_memop</code> → <code>read</code>;
+<code>write_access</code>, <code>write_access_memop</code> →
+<code>write</code></p>
+<p>Register methods are converted like so: <code>read_access</code>
+→ <code>read_register</code>, <code>write_access</code> →
+<code>write_register</code></p>
+<p>Field methods are converted thusly: <code>read_access</code>
+→ <code>read_field</code>, <code>write_access</code> →
+<code>write_field</code></p>
+<p>In <code>register</code> and <code>field</code> objects, the
+<code>set</code> and
+<code>write_register</code>/<code>write_field</code> methods will get
+an explicit type <code>uint64</code>.</p>
+<p>The read and write methods on <code>bank</code>, <code>register</code>,
+and <code>field</code> objects all take a new <code>uint64</code> argument
+denoting enabled bytes or bits, depending on the context, which
+may mask an access.</p>
+<p>In <code>connect</code> objects, <code>validate_port</code> is converted
+to <code>validate</code>; named ports are deprecated in Simics 6, but
+the port name is available in the <code>port</code> session variable.</p>
+<p>In <code>attribute</code> objects, the <code>set</code> method will get
+an explicit argument type <code>attr_value_t</code>, and a
+<code>throws</code> annotation.</p>
+</dd>
+  <dt id="dt:pconstant">PCONSTANT</dt>
+  <dd>
+<p><code>constant</code> declarations are removed in 1.4 and should be
+replaced with <code>param</code> declarations. Both are accessible
+from the top-level scope of a device.</p>
+</dd>
+  <dt id="dt:pdollar_qualify">PDOLLAR_QUALIFY</dt>
+  <dd>
+<p>In DML 1.4, there is no separate scope for <code>$</code>, so local
+variables can shadow object references. This conversion rule
+attempts to detect this, and add <code>this.</code> or
+<tt>dev.<i>path</i>.</tt> where needed.</p>
+</dd>
+  <dt id="dt:pevent">PEVENT</dt>
+  <dd>
+<p>Event objects no longer have the <code>timebase</code> parameter;
+instead you must choose a standard template to instantiate. The
+conversion script will pick <code>custom_time_event</code> or
+<code>custom_cycle_event</code>.</p>
+</dd>
+  <dt id="dt:pfieldrange">PFIELDRANGE</dt>
+  <dd>
+<p>In a field declaration, the field range declaration must be
+preceded by <code>@</code>. In DML 1.4, the syntax <code>field f[4]</code>
+declares a field array of size 4, while in DML 1.2 it denotes a field
+occupying bit 4 in its parent register.</p>
+</dd>
+  <dt id="dt:phard_reset_value">PHARD_RESET_VALUE</dt>
+  <dd>
+<p>The <code>hard_reset_value</code> parameter is no longer
+recognized. The parameter is automatically renamed to
+<code>init_val</code>, which has roughly the same effect.</p>
+</dd>
+  <dt id="dt:phash">PHASH</dt>
+  <dd>
+<p><code>if</code> statements on top level must be prefixed with a <code>#</code>
+character. The same applies to <code>if</code> statement inside a method body
+if the condition is constant and the dead branch contains errors.</p>
+<p>Similarly, the conditional operator (<code>? :</code>) is updated to #? #:
+when needed, <code>select</code> is updated to <code>#select</code>, and
+<code>foreach</code> is updated to <code>#foreach</code>.</p>
+</dd>
+  <dt id="dt:phashelse">PHASHELSE</dt>
+  <dd>
+<p>If an <code>if</code> is updated to <code>#if</code>, and there is a
+corresponding <code>else</code> clause, then it must be updated to
+<code>#else</code>. The same applies to the <code>else</code> clause in
+<code>select</code> statements.</p>
+</dd>
+  <dt id="dt:pifand">PIFAND</dt>
+  <dd>
+<p>If statements on the form <code>if (defined(X) &amp;&amp; X.y) { ... }</code>
+are converted to a nested <code>#if</code> statement</p>
+</dd>
+  <dt id="dt:pimport_dml12compat">PIMPORT_DML12COMPAT</dt>
+  <dd>
+<p>The <code>PTRAMPOLINE</code> porting rule sometimes requires
+that <code>dml12-compatibility.dml</code> is imported.</p>
+</dd>
+  <dt id="dt:pinargtype">PINARGTYPE</dt>
+  <dd>
+<p>When overriding a method in DML 1.4, the overriding and default
+implementation must declare the same arguments as <code>inline</code>.
+If the override has untyped arguments that are typed in the default
+method, then the conversion script will add a type to the override's
+argument.</p>
+<p>Note: The inserted type declaration uses C syntax, which in most
+cases matches DML syntax; however, there are exceptions where the
+inserted declaration will be broken and needs to be fixed manually.</p>
+</dd>
+  <dt id="dt:pinlinedecl">PINLINEDECL</dt>
+  <dd>
+<p>Methods with untyped parameters must be explicitly marked 'inline'
+in DML 1.4, as in <code>inline method m(inline x) -&gt; (int y)</code></p>
+</dd>
+  <dt id="dt:pinparamlist">PINPARAMLIST</dt>
+  <dd>
+<p>If a method has no input arguments, the empty input parameter
+list <code>()</code> is now required in method declarations
+and <code>call</code>/<code>inline</code> statements.</p>
+</dd>
+  <dt id="dt:pint1">PINT1</dt>
+  <dd>
+<p>Integer types have different semantics in DML 1.2 and DML 1.4;
+the <code>int1</code> type in DML 1.2 is converted to <code>uint1</code> in DML 1.4
+because that is a better match for some common operations. In
+particular, if the value 1 is assigned to variables of these
+types, then the value of the variable becomes 1, whereas for
+<code>int1</code> in DML 1.4 the value is -1.</p>
+</dd>
+  <dt id="dt:pinvoke">PINVOKE</dt>
+  <dd>
+<p>Method invocation syntax changed. Replace</p>
+<pre><code>call m(x) -&gt; (a, b);
+inline n() -&gt; (c);
+call o();
+</code></pre>
+<p>with:</p>
+<pre><code>(a, b) = m(x);
+c = n();
+o();
+</code></pre>
+</dd>
+  <dt id="dt:plogkind">PLOGKIND</dt>
+  <dd>
+<p>In log statements, the old syntax where log type is denoted by a string
+has been removed. Use the new identifier-based syntax instead. E.g.,
+instead of:</p>
+<pre><code>log "info": "foo";
+log "spec_violation": "foo";
+</code></pre>
+<p>you must now write:</p>
+<pre><code>log info: "foo";
+log spec_viol: "foo";
+</code></pre>
+</dd>
+  <dt id="dt:pmiss_pattern">PMISS_PATTERN</dt>
+  <dd>
+<p>The <code>miss_pattern</code> parameter is no longer recognized by
+banks, unless the <code>miss_pattern_bank</code> template, from utility.dml, is
+instantiated.  An instantiation is automatically added.</p>
+</dd>
+  <dt id="dt:pnodollar">PNODOLLAR</dt>
+  <dd>
+<p>The <code>$</code> character is no longer needed when referencing objects.</p>
+</dd>
+  <dt id="dt:pnothrow">PNOTHROW</dt>
+  <dd>
+<p>In DML 1.4, it is assumed by default that a method may not throw an
+exception. Any <code>nothrow</code> annotations must be removed.</p>
+</dd>
+  <dt id="dt:pno_wunused">PNO_WUNUSED</dt>
+  <dd>
+<p>Used in conjunction with PWUNUSED to signal that a piece of
+conditional code was indeed used. If using multiple runs of DMLC
+as input to the porting script, and a piece of code was used in
+some runs and unused in others, then no warning is shown.</p>
+</dd>
+  <dt id="dt:poutargreturn">POUTARGRETURN</dt>
+  <dd>
+<p>An assignment to an output argument directly followed by a
+return statement is more concisely written as a single return
+statement, without an intermediate assignment. For instance,</p>
+<pre><code>dml 1.2;
+method four() -&gt; (int x) {
+   x = 4;
+   return;
+}
+</code></pre>
+<p>can be expressed as:</p>
+<pre><code>dml 1.4;
+method four() -&gt; (int) {
+   return 4;
+}
+</code></pre>
+</dd>
+  <dt id="dt:poverride">POVERRIDE</dt>
+  <dd>
+<p>If a method has exactly one default and one non-default
+declaration, and the non-default declaration resides in a
+template, then DML 1.4 requires that this template inherits from
+the template containing the default declaration. Conversion is done
+automatically for the most common case.</p>
+</dd>
+  <dt id="dt:poverride_import">POVERRIDE_IMPORT</dt>
+  <dd>
+<p>Similar to POVERRIDE, but if a default method does <em>not</em>
+reside in a template, then the file that instantiates the non-default
+declaration must import the file containing the default declaration.</p>
+</dd>
+  <dt id="dt:pparameter">PPARAMETER</dt>
+  <dd>
+<p>The <code>parameter</code> keyword has been renamed to <code>param</code>.</p>
+</dd>
+  <dt id="dt:prename_template">PRENAME_TEMPLATE</dt>
+  <dd>
+<p>Some templates in <code>utility.dml</code> have been renamed; in
+particular, <code>unimplemented</code> has been renamed to
+<code>unimpl</code>.</p>
+</dd>
+  <dt id="dt:preturnargs">PRETURNARGS</dt>
+  <dd>
+<p>In methods with return values, return statements now take arguments:</p>
+<pre><code>method m() -&gt; (int, int) {
+    return (1, 4);
+}
+method n() -&gt; (int) {
+    return 3;
+}
+</code></pre>
+</dd>
+  <dt id="dt:pretval">PRETVAL</dt>
+  <dd>
+<p>Method output parameters are not named in DML 1.4:</p>
+<pre><code>method m() -&gt; (int, int) {
+...
+}
+</code></pre>
+<p>See also <code>PRETURNARGS</code>.</p>
+</dd>
+  <dt id="dt:pretval_end">PRETVAL_END</dt>
+  <dd>
+<p>Methods with output arguments must end with an explicit return
+statement in DML 1.4; in DML 1.2, the method would return whatever
+value the output argument had upon exit. See also <code>PRETVAL</code>.</p>
+</dd>
+  <dt id="dt:psession">PSESSION</dt>
+  <dd>
+<p>The <code>data</code> and <code>static</code> keywords have both been replaced
+with <code>session</code>:</p>
+<pre><code>session uint32 x;
+</code></pre>
+</dd>
+  <dt id="dt:psha1">PSHA1</dt>
+  <dd>
+<p>The <code>port-dml</code> script requires that the DML file has not been
+changed since the tag file was generated. This is verified by a
+SHA1 checksum.</p>
+</dd>
+  <dt id="dt:psoft_reset_value">PSOFT_RESET_VALUE</dt>
+  <dd>
+<p>The <code>soft_reset_value</code> parameter is renamed to
+<code>soft_reset_val</code>, and requires the template
+<code>soft_reset_val</code> to be instantiated.</p>
+</dd>
+  <dt id="dt:pstringify">PSTRINGIFY</dt>
+  <dd>
+<p>In DML 1.4, <code>#</code> is changed to the
+<code>stringify</code> operator</p>
+</dd>
+  <dt id="dt:pstructdecl">PSTRUCTDECL</dt>
+  <dd>
+<p>Struct type definitions can no longer be declared using the
+labeled struct syntax. The equivalent typedef declaration should
+be used instead. For example, the following is now disallowed:</p>
+<pre>struct <var>xyz</var> { ... }
+</pre>
+<p>and should be replaced with the following:</p>
+<pre>typedef struct { ... } <var>xyz</var>;
+</pre>
+</dd>
+  <dt id="dt:pthrows">PTHROWS</dt>
+  <dd>
+<p>In DML 1.4, methods that can throw an exception must explicitly
+declare that with a 'throws' annotation. Such annotation is
+automatically added for methods that override a throwing method
+that was declared in a DML 1.4 file.</p>
+</dd>
+  <dt id="dt:ptrampoline">PTRAMPOLINE</dt>
+  <dd>
+<p>The methods <code>miss_read_access</code> and
+<code>miss_write_access</code> in <code>bank</code> objects have been
+renamed to <code>unmapped_read</code> and <code>unmapped_write</code>
+in 1.4. The converter creates methods with the new names, which
+call the existing unmodified methods.</p>
+</dd>
+  <dt id="dt:ptypedoutparam">PTYPEDOUTPARAM</dt>
+  <dd>
+<p>Method output parameters must have explicit types in DML 1.4. The
+automatic conversion script will convert untyped output parameters
+to <code>uint64</code>.</p>
+</dd>
+  <dt id="dt:pundefoffs">PUNDEFOFFS</dt>
+  <dd>
+<p><code>undefined</code> is no longer a valid offset for registers; <code>unmapped_offset</code>
+should be used instead.</p>
+</dd>
+  <dt id="dt:pval">PVAL</dt>
+  <dd>
+<p>The value of a <code>register</code>, <code>field</code> or <code>attribute</code>
+object, and the interface struct of a <code>interface</code> object, is now
+accessed through the <code>.val</code> member.</p>
+</dd>
+  <dt id="dt:pversion">PVERSION</dt>
+  <dd>
+<p>DML 1.4 files should start with <code>dml 1.4;</code> instead
+of <code>dml 1.2;</code></p>
+</dd>
+  <dt id="dt:pwunused">PWUNUSED</dt>
+  <dd>
+<p>This message is used to signal to the porting script that a piece
+of conditional code was not fully covered by the compile. Some
+portings are never applied on dead code. The porting script
+can signal a warning for this.</p>
+</dd>
+</dl>
+
+<div class="chain">
+<a href="port-dml.html">B.4 Porting DML 1.2 to DML 1.4</a>
+<a href="changes-manual.html">B.6 Backward incompatible changes, not automatically converted</a>
+</div>

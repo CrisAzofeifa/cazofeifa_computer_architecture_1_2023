@@ -1,0 +1,176 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>26 Software Domains</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="adding-flash-to-a-system.html">25 Adding Flash to a System</a>
+<a href="machine-creation.html">27 System Configurations</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-system-modeling.html">IV Creating Virtual Systems</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Software-Domains">26 Software Domains</a></h1>
+<p>
+
+<a name="software-domains"></a>
+</p><p>
+In large systems, there may be more than one subcomponent that is
+running software. For instance, there may be one main multicore
+processor that runs software in main memory, and in addition to that
+there is a plugin card that runs specialized software on specialized
+hardware, for instance for traffic processing on a line card. Another
+example is a frontend processor controlling the main system.
+</p><p>
+Each of these subsystems that run software separately from the others
+is said to form a <em><a name="software-domain">software domain</a></em>, which means
+that all the processor cores in the domain are of the same
+architecture, and that they share physical memory. Different software
+domains in the same large-scale system can be of different
+architectures and have separate physical memory for each domain.
+</p><p>
+Being a software domain is purely a property of the hardware, and does
+not say anything about what software is running on the system. In some
+cases, the software layer will create its own layer of virtual
+software domains, for instance by partitioning a multicore processor
+and running different operating systems on different cores, using
+separate parts of the shared memory. It is also possible to create
+distributed shared memory systems that unify several systems at the
+software level. These software configurations do not change how
+software domains are defined at the Simics level, the software domains
+are independent of what software is running in the system.
+</p><p>
+Software domains are determined by the hardware configuration, before
+it is known what software is going to be loaded onto the system.
+</p><p>
+</p><h2 class="jdocu"><a name="Domain-Definition-in-Simics">26.1 Domain Definition in Simics</a></h2>
+<p>
+
+</p><p>
+In Simics configurations, a software domain is represented by an
+<b>os_awareness</b> object that references a group of processors that
+form the domain. The physical memory used by the software is implicitly defined
+by the processors which are assumed to share memory, or at least the parts of
+memory where software resides.
+</p><p>
+In the object hierarchy, the software domain object
+(class <b>os_awareness</b>) is typically called
+<i>software</i> and is is placed below the top object that contains
+the processors. The name <i>'software'</i> is just a convention while
+the location in the object hierarchy may affect the set of processors
+that are part of the software domain. This is described in the
+next section (<a class="reference" href="#finding-the-processors">26.2</a>).
+</p><p>
+The software domain object contains all the mechanisms and information needed to
+track the software running in the software domain, including a tracker object
+that can be configured with different software tracker modules.
+</p><p>
+The hardware model does not itself define any software domains, and
+does not rely on any software domains configured to use its
+processors.
+</p><p>
+
+
+
+</p><h2 class="jdocu"><a name="finding-the-processors">26.2 Finding the Processors</a></h2>
+<p>
+
+</p><p>
+The software domain object needs to know which processors it tracks software
+for. This can often be determined more or less automatically with support from
+the hardware models, but it is also possible to make the configuration more
+explicit, either by using the <i>processors</i> in
+the <b>new-os-awareness</b> command, or by setting
+the <i>processors</i> attribute on the software domain object.
+</p><p>
+ The software domain object will use the following sources of processor
+information, in this order:
+</p><p>
+</p><ol>
+<li> An explicitly configured list of processor objects.</li>
+
+<li> If the software domain object has a parent object, and the
+   parent object has an attribute called <i>cpu_list</i>,
+   this is assumed to be a list of processors. If this list is not
+   empty, it is used as the list of processors in the software
+   domain.</li>
+
+<li> If the software domain object has a parent object, but there is no
+   <i>cpu_list</i> attribute, or if the attribute is empty, then
+   the object hierarchy below the parent object is searched for
+   processor objects, and all found processors are used in
+   the software domain. This search only uses the object hierarchy
+   and does not follow connectors.</li>
+</ol>
+<p>
+If no processors are found using the above rules, it is a
+misconfiguration of the software domain.
+</p><p>
+Most configuration can use the <i>cpu_list</i> attribute to
+configure the software domains.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Software-Trackers">26.3 Software Trackers</a></h2>
+<p>
+
+</p><p>
+A software domain can have a <em><a name="software-tracker">software tracker</a></em> associated
+with it. The tracker tracks what software is running on the system, limited to
+the software domain it is associated with. To perform this tracking, it is
+configured with one or more <em><a name="software-tracker-modules">software tracker modules</a></em> that
+implement the required logic to understand what the software is doing. Usually,
+there is a single tracker module that corresponds to the running operating
+system. For multi-layered software, such as a hypervisor running several guest
+operating systems, there can be one tracker module for the hypervisor and one
+tracker module for each guest.
+</p><p>
+The software domain object provides interfaces to access data collected by the
+tracker and listen to events from the tracker. This can be used by scripts and
+tools. See the <em>Analyzer User's Guide</em> for more details.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Cells-and-Software-Domains">26.4 Cells and Software Domains</a></h2>
+<p>
+
+</p><p>
+The software tracker talks to all the processors it handles, which
+means that they all need to belong to the same cell. In many cases,
+there will be a 1:1 mapping between cells and software domains, since
+the way Simics defines how the configuration can be divided into cells
+shares many properties with how software domains are defined.
+</p><p>
+However, in some cases there will be more than one software domain
+that is tightly connected in other ways than by sharing program
+memory, which means that they need to be in the same cell.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="adding-flash-to-a-system.html">25 Adding Flash to a System</a>
+<a href="machine-creation.html">27 System Configurations</a>
+</div>

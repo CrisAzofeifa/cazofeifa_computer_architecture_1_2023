@@ -1,0 +1,76 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>memory_profiler</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_magic_pipe_writer.html">magic_pipe_writer</a>
+<a href="__rm_interface_mmc.html">mmc</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_memory_profiler">memory_profiler</a></h1>
+<p>
+
+<a name="memory_profiler"></a><a name="memory_profiler_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>memory_profiler</code> interface is implemented by
+   processors that support memory profiling. The <b><i>get</i></b>
+   function returns the active profiler for the type of access
+   specified in the <i>access</i> argument. NULL or None is
+   returned if there is no active profiler for that type of access.
+<p>
+   The <b><i>set</i></b> function installs <i>prof</i> as a profiler
+   for the accesses of type <i>access</i>. The <b><i>set</i></b>
+   functions returns true if the setting was successful, and false
+   otherwise.
+</p><p>
+   The <b><i>get_granularity_log2</i></b> gets the 2 logarithm of the
+   profiling granularity in bytes, for example it returns 10 if the
+   granularity for profiling is 1 KiB.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(memory_profiler) {
+        conf_object_t *(*get)(conf_object_t *obj, read_or_write_t access);
+        bool (*set)(conf_object_t *obj, read_or_write_t access,
+                    conf_object_t *prof);
+        int (*get_granularity_log2)(conf_object_t *obj);
+};
+
+#define MEMORY_PROFILER_INTERFACE "memory_profiler"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_magic_pipe_writer.html">magic_pipe_writer</a>
+<a href="__rm_interface_mmc.html">mmc</a>
+</div>

@@ -1,0 +1,101 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>address_profiler</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+<a href="__rm_interface_branch_arc.html">branch_arc</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_address_profiler">address_profiler</a></h1>
+<p>
+
+<a name="address_profiler"></a><a name="address_profiler_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Interface for getting statistics out of profilers. The target is some kind
+   of profiler whose data can be meaningfully viewed as counts per address.
+<p>
+   The function <b><i>num_views</i></b> returns the number k of
+   different ways you can view the data of this object. The view selection
+   parameter <i>view</i> to all other functions in the interface
+   accepts values between 0 and k − 1.
+</p><p>
+   <b><i>description</i></b> returns a short string that explains what the data
+   means. <b><i>physical_addresses</i></b> returns true if the profiler works with
+   physical addresses, or false if it uses virtual addresses.
+   <b><i>address_bits</i></b> returns the number of bits in an address.
+</p><p>
+   <b><i>granularity_log2</i></b> returns the base 2 logarithm of the size, in
+   bytes, of the address intervals that the counters are associated to. For
+   example, if the data is instruction execution count and each instruction is
+   4 bytes long, one would expect the granularity to be at least 4 bytes since
+   that is the smallest interval containing a whole instruction (but it might
+   be more, if the profiler is less fine-grained for some reason). And for a
+   4-byte granularity, <b><i>granularity_log2</i></b> would return 2.
+</p><p>
+   <b><i>sum</i></b> returns the sum of all counters between <i>start</i>
+   and <i>stop</i>, inclusive. <b><i>max</i></b> returns the maximum value
+   of any counter in the range.
+</p><p>
+   <b><i>iter</i></b> returns an address profile iterator that will visit all
+   nonzero counters in the range precisely once, in some order. In C, you can
+   use the functions <b><i>SIM_iter_next</i></b>, <b><i>SIM_iter_addr</i></b> and
+   <b><i>SIM_iter_free</i></b> to operate the iterator. In Python, it works just
+   like any other iterator, and returns (count, address) pairs. Note that you
+   may not continue to use the iterator after the underlying address profiler
+   has been modified.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(address_profiler) {
+        addr_prof_iter_t *(*iter)(conf_object_t *prof_obj, unsigned view,
+                                  generic_address_t start,
+                                  generic_address_t stop);
+        uint64 (*sum)(conf_object_t *prof_obj, unsigned view,
+                      generic_address_t start, generic_address_t end);
+        uint64 (*max)(conf_object_t *prof_obj, unsigned view,
+                      generic_address_t start, generic_address_t end);
+        unsigned (*granularity_log2)(conf_object_t *prof_obj, unsigned view);
+        int (*address_bits)(conf_object_t *prof_obj, unsigned view);
+        int (*physical_addresses)(conf_object_t *prof_obj, unsigned view);
+        const char *(*description)(conf_object_t *prof_obj, unsigned view);
+        unsigned (*num_views)(conf_object_t *prof_obj);
+};
+
+#define ADDRESS_PROFILER_INTERFACE "address_profiler"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+<a href="__rm_interface_branch_arc.html">branch_arc</a>
+</div>

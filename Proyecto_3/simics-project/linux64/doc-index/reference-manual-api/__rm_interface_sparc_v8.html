@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>sparc_v8</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_smm_instrumentation_subscribe.html">smm_instrumentation_subscribe</a>
+<a href="__rm_interface_sparc_v8_ecc_fault_injection.html">sparc_v8_ecc_fault_injection</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_sparc_v8">sparc_v8</a></h1>
+<p>
+
+<a name="sparc_v8"></a><a name="sparc_v8_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(sparc_v8) {
+        uint64 (*read_window_register)(conf_object_t *cpu, int window, int reg);
+
+        void (*write_window_register)(conf_object_t *cpu,
+                                      int window, int reg, uint64 value);
+        void (*power_down)(conf_object_t *cpu);
+};
+#define SPARC_V8_INTERFACE "sparc_v8"
+</pre><p>
+</p><p>
+   SPARC V8 specific functions.
+   </p><p>
+   This interface is implemented by SPARC V8 processors to provide
+   various functionality that is specific for this class of processors.
+   </p><p>
+   The <b><i>read_window_register</i></b> and <b><i>write_window_register</i></b>
+   functions can be used to access registers in any register window.
+   </p><p>
+   The register number when accessing windowed registers is 0 - 7 for accesses
+   to the global registers, 8 - 15 for the out registers of the selected
+   window, 16 - 23 for the local registers, and 24 - 31 for the in registers.
+   </p><p>
+   The <b><i>power_down</i></b> function is used to command the processor to enter
+   power down mode. During power down mode, the processor will not execute any
+   instructions, it will instead fast forward the execution to the next event.
+   If the event is an external interrupt the power down mode is exited and
+   execution resumed, in other cases the event will be handled and the
+   processor will remain in power down mode and fast forward to the next event.
+   </p><p>
+   One use for the <b><i>power_down</i></b> function is for example to have an
+   external device such as an memory mapped PMU force the processor into power
+   down mode.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_smm_instrumentation_subscribe.html">smm_instrumentation_subscribe</a>
+<a href="__rm_interface_sparc_v8_ecc_fault_injection.html">sparc_v8_ecc_fault_injection</a>
+</div>

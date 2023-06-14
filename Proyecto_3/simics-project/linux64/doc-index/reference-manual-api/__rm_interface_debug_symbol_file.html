@@ -1,0 +1,260 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>debug_symbol_file</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_debug_symbol.html">debug_symbol</a>
+<a href="__rm_interface_disassemble.html">disassemble</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_debug_symbol_file">debug_symbol_file</a></h1>
+<p>
+
+<a name="debug_symbol_file"></a><a name="debug_symbol_file_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="debug_symbol_file_interface_t2"></a>
+<p>
+   This interface has functions for operating directly on symbol files, instead
+   of using contexts related to processes or processors. Files opened with this
+   interface can be used together with functions in the
+   <code>debug_symbol</code> interface that do not require any stack or
+   location information. There are also functions for getting information about
+   the symbol file, such as listing sections or segments.
+</p><p>
+   
+</p><p>
+   For all functions that return an <code>attr_value_t</code>, that return value
+   will consists of a list with two elements. The first element is an error code
+   of <code>debugger_error_t</code> type (see <code>debug_query</code>
+   interface documentation for definition). The second element depends on the
+   first. If the first element is <code>Debugger_No_Error</code>, meaning that
+   the function went well, then the second element will contain the expected
+   return value that is specified per function below. If the first element is
+   another error code, then the second element will be a string describing the
+   error that occurred.
+</p><p>
+   
+</p><p>
+   All function but <b><i>open_symbol_file</i></b> has to act on a context id,
+   <i>ctx_id</i>, that has been returned by <b><i>open_symbol_file</i></b>,
+   otherwise a <code>Debugger_Not_Supported_For_Context</code> error will be
+   returned.
+</p><p>
+   <a name="open_symbol_filedebug_symbol_file-interface-method"></a>
+   <b><i>open_symbol_file</i></b> opens a symbol file, specified by the
+   <i>filename</i> argument, as a context so that this can be used with
+   many of the symbol lookup functions in the <code>debug_symbol</code>
+   interface. The <i>address</i> is the offset for which to load the symbol
+   file if <i>absolute_address</i> is false. If <i>absolute_address</i>
+   is true, <i>address</i> will instead be the absolute address to load the
+   symbol file on. The returned value will be a context id that can be used as
+   argument where a <i>ctx_id</i> is required. Functions that take a stack
+   frame can only be accessed with no stack (value -1) when used with a symbol
+   file context. Files that read or write memory cannot be used.
+</p><p>
+   Errors specific to this function: </p><ul>
+
+   <li><em>Debugger_Unrecognized_File_Format</em> - The file format of the file
+   is not ELF or PE.</li>
+
+   <li><em>Debugger_Unsupported_For_File_Format</em> - If the symbol file is of
+   PE format then the <i>address</i> cannot be 0 as the internal handling
+   does not support that.</li>
+
+   </ul>
+<p>
+   <a name="open_symbol_sectiondebug_symbol_file-interface-method"></a>
+   <b><i>open_symbol_section</i></b> opens a symbol file in the same way as
+   <b><i>open_symbol_file</i></b>, but only adds symbols from the specified
+   <i>section</i>. Other arguments and return value are as for
+   <b><i>open_symbol_file</i></b>. The symbol section is closed using
+   <b><i>close_symbol_file</i></b>. This method can only handle ELF binaries. In
+   addition to errors reported by <b><i>open_symbol_file</i></b> this function can
+   report <em>Debugger_Section_Not_Found</em> if the <i>section</i> cannot
+   be found.
+</p><p>
+   <a name="close_symbol_filedebug_symbol_file-interface-method"></a>
+   <b><i>close_symbol_file</i></b> closes a symbol file that was opened with
+   <b><i>open_symbol_file</i></b>. The <i>ctx_id</i> should be the context id
+   returned from that function. The returned value will just be nil when this
+   goes well.
+</p><p>
+   <a name="symbol_file_infodebug_symbol_file-interface-method"></a>
+   <b><i>symbol_file_info</i></b> returns a list containing a string describing
+   the file format and a dictionary with information about the file. The
+   <i>ctx_id</i> argument should be the context id returned from the
+   <b><i>open_symbol_file</i></b>. The returned information depends on which file
+   format the file has. For ELF files the string is "ELF" and the returned
+   entries are:
+</p><p>
+   </p><ul>
+
+   <li><i>big-endian</i> <code>(uint64)</code> - Set to 1 if the binary is
+   built for big endian, otherwise 0.</li>
+
+   <li><i>elf-machine-id</i> <code>(uint64)</code> - The ELF machine
+   identifier number (<code>e_machine</code>) in the ELF header. This is usually
+   prefixed with <code>EM_</code> in headers. For example <code>EM_386 = 3</code> and
+   <code>EM_X86_64 = 62.</code> </li>
+
+   </ul>
+<p>
+   For PE files the string is "PE" and the returned entries are:
+</p><p>
+   </p><ul>
+
+   <li><i>image-size</i> <code>(uint64)</code> - The size of the PE image in
+   memory.</li>
+
+   <li><i>image-base</i> <code>(uint64)</code> - The recommended address for
+   the image to be loaded at.</li>
+
+   </ul>
+<p>
+   Both PE and ELF files will include the following entries:
+</p><p>
+   </p><ul>
+
+   <li><i>entry-address</i> <code>(uint64)</code> - The program counter for
+   where the execution in the file should begin.</li>
+
+   <li><i>file-size</i> <code>(uint64)</code> - The file size in bytes.</li>
+
+   <li><i>machine</i> <code>(string)</code> - The type of machine the binary
+   is built for, for example "X86-64", "X86" or "ARM".</li>
+
+   <li><i>address-width</i> <code>(uint64)</code> - The address width the
+   file was built for, should be 32 or 64, but 0 specifies unknown.</li>
+
+   </ul>
+<p>
+
+   <a name="sections_infodebug_symbol_file-interface-method"></a>
+   <b><i>sections_info</i></b> provides information about the sections in the
+   symbol file. The <i>ctx_id</i> must be an id for a file opened with
+   <b><i>open_symbol_file</i></b> or <b><i>open_symbol_section</i></b> in this
+   interface. The returned result is a list with two elements, the first a
+   string specifying the format of the file, "ELF" or "PE", and the second a
+   list of dictionaries where each dictionary contains information about the
+   section. If an id from <b><i>open_symbol_section</i></b> is used then only the
+   opened section will be included in the list. The following keys exist in the
+   dictionary:
+</p><p>
+   </p><ul>
+
+   <li><i>name</i> <code>(string)</code> - The name of the section. This key
+   could potentially be left out if the sections does not have a name.</li>
+
+   <li><i>address</i> <code>(uint64)</code> - The address in memory.</li>
+
+   <li><i>offset</i> <code>(uint64)</code> - The offset in the file.</li>
+
+   <li><i>size</i> <code>(uint64)</code> - The section size in the file
+   image.</li>
+
+   <li><i>executable</i> <code>(boolean)</code> - A boolean telling if the
+   section is executable or not.</li>
+
+   <li><i>index</i> <code>(uint64)</code> - Only available for ELF
+   files. The section index.</li>
+
+   <li><i>flags</i> <code>(uint64)</code> - Only available for ELF
+   files. The value of <code>sh_flags</code> in the ELF section header.</li>
+
+   <li><i>characteristics</i> <code>(uint64)</code> - Only available for PE
+   files. The value of <code>Characteristics</code> in the PE section
+   <code>IMAGE_SECTION_HEADER</code> structure.</li> </ul>
+<p>
+   <a name="segments_infodebug_symbol_file-interface-method"></a>
+   <b><i>segments_info</i></b> provides information about the segments in the
+   symbol file, this is only supported for ELF. The <i>ctx_id</i> must be
+   an id for a file opened with <b><i>open_symbol_file</i></b> in this
+   interface. The returned result is a list where each entry represent a
+   segment. Each entry is in turn a dictionary with the following keys:
+</p><p>
+   </p><ul>
+
+   <li><i>address</i> <code>(uint64)</code> - Virtual address in
+   memory.</li>
+
+   <li><i>size</i> <code>(uint64)</code> - The segment size in
+   memory, specified in bytes.</li>
+
+   <li><i>offset</i> <code>(uint64)</code> - Offset into the segment
+   location on file.</li>
+
+   <li><i>flags</i> <code>(uint64)</code> - Flags, depending on segment
+   type, corresponds to <code>p_flags</code> in the ELF program header table.</li>
+
+   <li><i>type</i> <code>(uint64)</code> - The type of the segment,
+   corresponds to <code>p_type</code> in the ELF program header table.</li>
+
+   <li><i>physical-address</i> <code>(uint64)</code> - Physical address in
+   memory, if applicable.</li>
+
+   <li><i>file-size</i> <code>(uint64)</code> - The size of the segment in
+   file.</li>
+
+   <li><i>sections</i> <code>([string,...])</code> - A list of sections
+   included in the segment, presented by the section name.</li>
+
+   </ul>
+<p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(debug_symbol_file) {
+        attr_value_t (*open_symbol_file)(conf_object_t *NOTNULL obj,
+                                         const char *NOTNULL filename,
+                                         uint64 address, bool absolute_address);
+        attr_value_t (*close_symbol_file)(conf_object_t *NOTNULL obj,
+                                         const char *NOTNULL ctx_id);
+        attr_value_t (*symbol_file_info)(conf_object_t *NOTNULL obj,
+                                         const char *NOTNULL ctx_id);
+        attr_value_t (*sections_info)(conf_object_t *NOTNULL obj,
+                                      const char *NOTNULL ctx_id);
+        attr_value_t (*segments_info)(conf_object_t *NOTNULL obj,
+                                      const char *NOTNULL ctx_id);
+        attr_value_t (*open_symbol_section)(conf_object_t *NOTNULL obj,
+                                            const char *NOTNULL filename,
+                                            const char *NOTNULL section,
+                                            uint64 address,
+                                            bool absolute_address);
+};
+#define DEBUG_SYMBOL_FILE_INTERFACE "debug_symbol_file"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_debug_symbol.html">debug_symbol</a>
+<a href="__rm_interface_disassemble.html">disassemble</a>
+</div>

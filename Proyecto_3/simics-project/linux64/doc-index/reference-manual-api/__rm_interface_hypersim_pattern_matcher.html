@@ -1,0 +1,232 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>hypersim_pattern_matcher</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_hypersim_pattern.html">hypersim_pattern</a>
+<a href="__rm_interface_image.html">image</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_hypersim_pattern_matcher">hypersim_pattern_matcher</a></h1>
+<p>
+
+<a name="hypersim_pattern_matcher"></a><a name="hypersim_pattern_matcher_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Interface provided by the hypersim-pattern-matcher.
+<p>
+   <b><i>install_pattern</i></b> and <b><i>install_pattern_be32</i></b>:
+</p><p>
+   Installs a pattern into the pattern-matcher (obj).
+   The object pointer to the hypersim object (owner) should be supplied
+   allowing the pattern matcher to locate the "pattern" interface for callbacks.
+</p><p>
+   Provide a unique name for the pattern, it can be any NUL terminated
+   string. The name is used in logging to identify the pattern if the class
+   installs several.
+</p><p>
+   The instruction pattern for variable-length instructions is a
+   NULL-terminated array of strings, each string corresponds to one
+   instruction. It consist of hex codes prefixed by "0x" or binary codes
+   prefixed by "0b". "+" instead of a digit matches any digit. Every group must
+   be an even number of bytes, and multi-byte groups are interpreted in big
+   endian order. Example:
+</p><p>
+</p><pre class="jdocu_small">   static const char * const pattern[] = {
+          "0xdead 0xbeef",
+          "0b010+++01_11++++++ 0x++ 0x++",
+          NULL,
+   };
+</pre><p>
+</p><p>
+   The <b><i>install_pattern_be32</i></b> function provides a simplified interface
+   for fixed instruction width architectures (Power, Sparc, MIPS). Here, the
+   pattern pointer indicates the pattern to be located together with the
+   pattern size. Pattern size is the number of instructions in the pattern.
+</p><p>
+   To reduce pattern reached callbacks when there are few possible steps that
+   can be fast-forwarded, the minimum_steps can be used. When the pattern is
+   reached the hypersim object will only get called if there are at least
+   this amount of steps possible to fast-forward currently.
+   </p><p>
+   An opaque pattern pointer is returned by this function, which will be
+   used in callbacks later to identify this actual pattern.
+</p><p>
+   <b><i>check_pattern</i></b> and <b><i>check_pattern_be32</i></b>:
+</p><p>
+   Request the pattern matcher to do an additional match of a pattern.
+   This can be used to check that subroutine calls in installed
+   patterns match expectations.
+  </p><p>
+   Returns true if success and the corresponding physical address is
+   updated. If either the pattern-matched failed or there was problem accessing
+   memory, false is returned.
+</p><p>
+   The fixed instruction width variant takes the pattern directly, and the
+   pattern_size attribute defines the number of instructions in the pattern.
+   The generic variant takes a pattern that have been registered with
+   <b><i>register_sub_pattern</i></b> first.
+</p><p>
+   <b><i>register_sub_pattern</i></b>:
+   </p><p>
+   Register a sub-pattern to the pattern-matcher. A sub-pattern is not checked
+   for by the pattern matcher itself, instead it is up to the user to confirm
+   that sub-patterns are correct in the examine_pattern() function by calling
+   check_pattern().
+   </p><p>
+   This function returns an opaque sub_pattern_t handle identifying the
+   sub-pattern and used in <b><i>check_pattern()</i></b>.
+   </p><p>
+   By associating the sub-pattern with a pattern, the allocated space for the
+   sub_pattern_t is automatically removed when the instance is removed.
+</p><p>
+   The format is the same as for <b><i>install_pattern()</i></b>. If the format
+   contains a syntax error, an error message is printed out and NULL is
+   returned.
+</p><p>
+   <b><i>protect_region</i></b>:
+</p><p>
+   Add additional write-protections to memory and associate this region with
+   the pattern which started at 'assoc_paddr'. If this regions is written to,
+   or any other associated regions for a found pattern, this pattern match will
+   be removed.
+</p><p>
+   <b><i>ffwd_time</i></b>:
+   </p><p>
+   Request simulator time to be fast-forwarded. The CPU that should be fast
+   forwarded is supplied together with how many steps that should be fast
+   forwarded. The minimum_steps typically defines the number of instructions
+   that are *executed* in a loop. If maximum_steps is set to zero, the amount
+   fast-forwarded steps will be as many as possible minimal_steps loops until
+   the next event occurs in Simics. In some cases a loop should be traversed at
+   least one time to update the register values or memory locations, then the
+   keep_steps can be used which will force execution to continue for this
+   amount of steps until the next event occurs. Finally the count_as_idle flag
+   indicates if the fast-forwarded steps should be viewed as the CPU is idle or
+   not.
+   </p><p>
+   The number of actually fast-forwarded steps is returned.
+</p><p>
+   <b><i>uninstall_pattern</i></b>:
+</p><p>
+   Remove an installed pattern and free all associated data.
+</p><p>
+   </p><pre class="jdocu_small">
+/* A pattern_t is an opaque type to identify an installed pattern */
+typedef struct pattern pattern_t;
+
+/* Instruction pattern for 32-bit fixed width instructions */
+typedef struct insn_pattern {
+        uint32 insn;
+        uint32 mask;
+} insn_pattern_t;
+
+/* Opaque type to identify a compiled subpattern */
+typedef struct sub_pattern sub_pattern_t;
+
+SIM_INTERFACE(hypersim_pattern_matcher) {
+        pattern_t *(*install_pattern)(conf_object_t *obj,
+                                      conf_object_t *owner,
+                                      const char *name,
+                                      const char * const pattern[],
+                                      int minimum_steps);
+
+        pattern_t *(*install_pattern_be32)(conf_object_t *obj,
+                                           conf_object_t *owner,
+                                           const char *name,
+                                           const insn_pattern_t *pattern,
+                                           int pattern_size,
+                                           int minimum_steps);
+
+        bool (*check_pattern)(conf_object_t *obj,
+                              conf_object_t *cpu,
+                              logical_address_t vaddr,
+                              sub_pattern_t *pattern,
+                              physical_address_t *paddr);
+
+        bool (*check_pattern_be32)(conf_object_t *obj,
+                                   conf_object_t *cpu,
+                                   logical_address_t vaddr,
+                                   const insn_pattern_t *pattern,
+                                   int pattern_size,
+                                   physical_address_t *paddr);
+
+        sub_pattern_t *(*register_sub_pattern)(conf_object_t *obj,
+                                  pattern_t *pattern,
+                                  const char * const sub_pattern[]);
+        
+        void (*protect_region)(conf_object_t *obj,
+                               pattern_t *pattern,
+                               physical_address_t assoc_paddr,
+                               physical_address_t start_paddr,
+                               int region_size);
+
+        pc_step_t (*ffwd_time)(conf_object_t *obj,
+                               pattern_t *pattern,
+                               conf_object_t *cpu,
+                               int minimal_steps,
+                               pc_step_t maximum_steps,
+                               int keep_steps,
+                               int count_as_idle);
+
+        void (*uninstall_pattern)(conf_object_t *obj,
+                                 pattern_t *pattern);
+};
+
+#define HYPERSIM_PATTERN_MATCHER_INTERFACE "hypersim_pattern_matcher"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>install_pattern</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>install_pattern_be32</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>check_pattern</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>check_pattern_be32</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>register_sub_pattern</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>protect_region</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>ffwd_time</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>uninstall_pattern</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_hypersim_pattern.html">hypersim_pattern</a>
+<a href="__rm_interface_image.html">image</a>
+</div>

@@ -1,0 +1,208 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.6 Virtual disks</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="bookmarks-in-memory-snapshots-.html">2.5 Bookmarks (in-memory snapshots)</a>
+<a href="getting-data-into-the-simulated-system.html">2.7 Getting data into the simulated system</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="virtual-disks">2.6 <a href="#virtual-disks">Virtual disks</a></h1>
+<p>This section gives some information about virtual storage devices in Simics. Particularly, a few strategies are described for preserving changes done during a simulation session to virtual hard disks and using these changes in other simulation sessions.</p>
+<p>Target machines created in Simics usually have emulated storage devices attached. A typical example of such storage device is a virtual hard disk.</p>
+<p>The software running on the target machines reads data from and writes data to virtual hard disks. The actual data is stored in dedicated files on the host system. Such files are usually called image files, disk image files, or, simply, images.</p>
+<p>Simics supports a few image files formats:</p>
+<ul>
+<li>files in Simics own format called craff (for Compressed Random-Access File Format) </li>
+<li>raw image files </li>
+<li>VHDX images files </li>
+</ul>
+<p>Normally, Simics opens disk image files in a read-only mode. All changes the guest software does to virtual disk's contents are accumulated in memory or in temporary files and are not written directly to disk image files. This means that any changes written to virtual hard disks during a simulation session are lost once a user quits Simics. There are a few benefits in using disk image files in a read-only mode:</p>
+<ul>
+<li>repeatability of simulation sessions: if a simulation session with a target machine is started again and again then the results during each run will be the same. This is very useful during debugging. </li>
+<li>possibility to run simultaneously many simulation sessions using the same disk image file. This is useful when running a batch of test jobs validating target software or device models. </li>
+<li>protection against accidental wiping out of the disk contents </li>
+</ul>
+<p>The main drawback, though, is that one needs to take additional steps to preserve changes done to virtual hard disks during a simulation session. Below we describe a few strategies how to preserve changes done to virtual hard disks during a simulation session and use them in other simulation sessions.</p>
+<h2 id="saving-virtual-disks-state-with-save-persistent-state-command">2.6.1 <a href="#saving-virtual-disks-state-with-save-persistent-state-command">Saving virtual disks’ state with save-persistent-state command</a></h2>
+<p>The changes done by target software to the contents of virtual hard disks can be saved for later use with the <code>save-persistent-state</code> command. Here is a sample session demonstrating the usage of the command:</p>
+<ol>
+<li>
+<p>start simulator and create a target machine from Simics CLI by executing the <code>targets/qsp-x86/firststeps.simics</code> script with Simics <code>run-command-file</code> command: </p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+</li>
+<li>
+<p>run the machine until Linux is booted:</p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+</code></pre>
+<p><img alt="" src="virtual-disks-1.png"></p>
+</li>
+<li>
+<p>create a file on the target system or do some other modification to the file system. As an example, the screenshot below shows how to create the <code>test.txt</code> file on the target system by running the <code>echo "Hello, world!" &gt; test.txt</code> command:  <img alt="" src="virtual-disks-2.png"> </p>
+</li>
+<li>
+<p>now, when a file was created, shutdown a target machine by running the <code>sudo shutdown now</code> command on the target machine. This is needed to ensure that a target operating system writes the file on the disk instead of, e.g., caching it in RAM of the simulated machine:  <img alt="" src="virtual-disks-3.png"> </p>
+</li>
+<li>
+<p>stop simulation by executing the <code>stop</code> command via Simics command-line interface. This step is needed because even though the target machine entered shutdown state, Simics still continues to advance virtual time: </p>
+<pre><code class="language-simics">running&gt; <strong>stop</strong>
+simics&gt;
+</code></pre>
+</li>
+<li>
+<p>save changes done to all virtual disks found in the target machine by running the <code>save-persistent-state</code> Simics command and specifying a destination where on the host system to keep the changes: </p>
+<pre><code class="language-simics">simics&gt; <strong>save-persistent-state test_file_created.ckpt</strong>
+</code></pre>
+</li>
+<li>
+<p>quit Simics: </p>
+<pre><code class="language-simics">simics&gt; <strong>quit</strong>
+</code></pre>
+</li>
+</ol>
+<p>The <code>test_file_created.ckpt</code> directory created on step 6 above contains all modifications done to all virtual hard disks of the target machine. The modifications are stored in so-called differencing images which are often referred to as diff files in Simics documentation. These images only hold the differences to another images. A differencing image is useless by itself; it must always be used together with another image.</p>
+<p>Let’s run a simulation now to see how the state saved previously can be used. Here is a sample simulation session:</p>
+<ol>
+<li>
+<p>start simulator and create a target machine from Simics CLI by executing the <code>targets/qsp-x86/firststeps.simics</code> script with Simics <code>run-command-file</code> command: </p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+</li>
+<li>
+<p>use the <code>load-persistent-state</code> command to load any state saved previously. We need to do this step at the very beginning, before the simulation was started, since otherwise the software running on the target will be presented with original state, not the updated one: </p>
+<pre><code class="language-simics">simics&gt; <strong>load-persistent-state test_file_created.ckpt</strong>
+</code></pre>
+</li>
+<li>
+<p>run the machine until Linux is booted:</p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+</code></pre>
+<p><img alt="" src="virtual-disks-4.png"></p>
+</li>
+<li>
+<p>check that the <code>test.txt</code> file created during the previous session is present:
+<img alt="" src="virtual-disks-5.png"> </p>
+</li>
+</ol>
+<p>Since the contents of Simics disk images is saved incrementally by default, care should be taken when deleting the state saved previously with the <code>save-persistent-state</code> command: such saved state may be referred to by the state saved later.</p>
+<p>To sum up, the typical usage scenario for the <code>save-persistent-state</code> and <code>load-persistent-state</code> commands is:</p>
+<ol>
+<li>create a target machine with the run-command-file command </li>
+<li>use the <code>load-persistent-state</code> command to load, if you already have it, the state saved previously with the <code>save-persistent-state</code> command </li>
+<li>start simulation to boot the machine </li>
+<li>do any modifications to the target machine </li>
+<li>shutdown the target machine </li>
+<li>stop simulation </li>
+<li>save the state of virtual disks with the <code>save-persistent-state</code> command </li>
+</ol>
+<p>Please note that even though the saved states are saved incrementally and thus depend on each other one needs to run the <code>load-persistent-state</code> command only once with the state one wants to load.</p>
+<p>Useful information about the <code>save-persistent-state</code> and <code>load-persistent-state</code> commands can be found in their documentation. The documentation can be obtained from Simics command-line interface by running the <code>help</code> command like this: <code>help save-persistent-state</code>.</p>
+<h2 id="saving-a-complete-disk-image">2.6.2 <a href="#saving-a-complete-disk-image">Saving a complete disk image</a></h2>
+<p>The approach described above may result in multiple saved incremental states which are hard to manage. Simics allows to dump the contents of a whole virtual disk to a new disk image file. This file can be later used as a new disk image for the target machine.</p>
+<p>There are several ways to dump a new disk image from a virtual disk in Simics. We will use the <code>save-persistent-state</code> command and its <code>-independent-state</code> flag.</p>
+<p>Sample session:</p>
+<ol>
+<li>
+<p>start simulator and create a target machine from Simics CLI by executing the <code>targets/qsp-x86/firststeps.simics</code> script with Simics <code>run-command-file</code> command: </p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+</li>
+<li>
+<p>(optional) if there is any state saved previously with the <code>save-persistent-state</code> command you want to load, load it with the <code>load-persistent-state</code> command. In this session we load the <code>test_file_created.ckpt</code> state saved in the previous section: </p>
+<pre><code class="language-simics">simics&gt; <strong>load-persistent-state test_file_created.ckpt</strong>
+</code></pre>
+</li>
+<li>
+<p>run the machine until Linux is booted:</p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+</code></pre>
+</li>
+<li>
+<p>create a file on the target system or do some other modification to the file system. Since we loaded the <code>test_file_created.ckpt</code> state at step 2 above there is already a <code>test.txt</code> on the target machine. As an example, let’s create one more file (<code>test2.txt</code>):              <img alt="" src="virtual-disks-6.png"> </p>
+</li>
+<li>
+<p>now, when we are done with all changes we wanted to do, shutdown a target machine by running the <code>sudo shutdown now</code> command on the target machine. This is needed to ensure that target operating system writes the file on the disk instead of, e.g., caching it in RAM of the simulated machine:  <img alt="" src="virtual-disks-7.png"> </p>
+</li>
+<li>
+<p>stop simulation by executing the <code>stop</code> command via Simics command-line interface. This step is needed because even though the target machine entered shutdown state, Simics still continues to advance virtual time: </p>
+<pre><code class="language-simics">running&gt; <strong>stop</strong>
+simics&gt;
+</code></pre>
+</li>
+<li>
+<p>save disks by running the <code>save-persistent-state</code> Simics command with the <code>-independent-state</code> flag and specifying a destination where on the host system to keep the files. This operation may take some time as disk images are quite large: </p>
+<pre><code class="language-simics">simics&gt; <strong>save-persistent-state -independent-state my_independent_state.ickpt</strong>
+</code></pre>
+</li>
+<li>
+<p>quit Simics: </p>
+<pre><code class="language-simics">simics&gt; <strong>quit</strong>
+</code></pre>
+</li>
+</ol>
+<p>The <code>my_independent_state.ickpt</code> directory created on step 7 above contains, among other things, disk images of all hard disks of the target machine. The <code>-independent-state</code> flag used with the command ensures that the disk image are not differencing images (or, in other words, diff files) but the complete images which contain the contents of the whole disk.</p>
+<p>By inspecting the contents of the <code>my_independent_state.ickpt</code> directory we can find there the <code>board.disk0.hd_image.craff</code> file. This file is the disk image containing the data from the <code>board.disk0</code> virtual disk object. The next section shows how one can start a target machine with this disk image.</p>
+<h2 id="using-own-disk-image">2.6.3 <a href="#using-own-disk-image">Using own disk image</a></h2>
+<p>Simics scripts creating target machines often accept parameters which can be used to specify a disk image for the target machine to use. The <code>targets/qsp-x86/firststeps.simics</code> script accepts the <code>disk0_image</code> and <code>disk1_image</code> parameters which can be used to specify disk images to use for the both disks created in the target machine. The description of the parameters can be obtained with the <code>help</code> Simics command: <code>help targets/qsp-x86/firststeps.simics</code>. Here is an extract from the command output:</p>
+<pre><code class="language-simics">simics&gt; <strong>help targets/qsp-x86/firststeps.simics</strong>
+…
+Disks:
+disk0_image  -  existing file or NIL
+Disk image file for the machine_name.disk0 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+default value: NIL
+…
+disk1_image  -  existing file or NIL
+Disk image file for the machine_name.disk1 virtual disk. Files
+in craff (Simics own file format), VHDX, and raw formats are supported.
+default value: NIL
+</code></pre>
+<p>Let’s run the <code>targets/qsp-x86/firststeps.simics</code> script using the <code>my_independent_state.ickpt/board.disk0.hd_image.craff</code> image created in the previous section:</p>
+<ol>
+<li>
+<p>start simulator and create a target machine from Simics CLI: </p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets/qsp-x86/firststeps.simics disk0_image =my_independent_state.ickpt/board.disk0.hd_image.craff</strong>
+</code></pre>
+</li>
+<li>
+<p>run the machine until Linux is booted:</p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+</code></pre>
+</li>
+<li>
+<p>check that both files are present:       <img alt="" src="virtual-disks-8.png"> </p>
+</li>
+</ol>
+
+<div class="chain">
+<a href="bookmarks-in-memory-snapshots-.html">2.5 Bookmarks (in-memory snapshots)</a>
+<a href="getting-data-into-the-simulated-system.html">2.7 Getting data into the simulated system</a>
+</div>

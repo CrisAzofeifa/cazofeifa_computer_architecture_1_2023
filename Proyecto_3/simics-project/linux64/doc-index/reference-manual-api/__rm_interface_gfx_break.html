@@ -1,0 +1,119 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>gfx_break</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_follower_agent.html">follower_agent</a>
+<a href="__rm_interface_host_serial.html">host_serial</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_gfx_break">gfx_break</a></h1>
+<p>
+
+<a name="gfx_break"></a><a name="gfx_break_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>gfx_break</code> interface facilitates management of graphical
+   breakpoints. It is implemented by the graphics console.
+<p>
+   A graphical breakpoint is defined by an image patch and a location on the
+   screen, stored in a file using a bespoke format. Such a file can be created
+   using the <b><i>store</i></b> method.
+</p><p>
+   A breakpoint can then be activated using the <b><i>add</i></b> method.
+   The console will check if the breakpoint matches the screen data
+   every <i>interval</i> seconds in virtual time, using the clock that
+   is associated to the console. Graphical breakpoints
+   are therefore deterministic.
+</p><p>
+   Note that the coordinates of the image patch is stored in the graphical
+   breakpoint, and the breakpoint will only match on those coordinates.
+</p><p>
+   The <b><i>store</i></b> method stores the specified rectangle on the screen in
+   the given file. It returns <code>false</code> if the rectangle is invalid or on
+   I/O error.
+</p><p>
+   The <b><i>add</i></b> method activates a previously stored graphical
+   breakpoint, and returns a breakpoint ID, which is also passed to
+   <i>cb</i> when the breakpoint matches. The parameter <i>name</i> is
+   the breakpoint name that will appear in log messages. If <i>name</i> is
+   <code>NULL</code> then the file name is used. If <i>oneshot</i> is true, the
+   breakpoint will be removed automatically after the first match. The
+   <i>interval</i> parameter specifies how often the breakpoint is tested,
+   in seconds of simulated time. If <i>cb</i> is not <code>NULL</code>, then
+   this function will be called on breakpoint match, otherwise a match stops
+   the simulation. If the breakpoint file cannot be loaded, the method returns
+   <code>-1</code>.
+</p><p>
+   The <b><i>remove</i></b> method deactivates a previously activated breakpoint.
+</p><p>
+   The <b><i>match</i></b> method determines if a stored graphical breakpoint
+   matches the current screen. It returns -1 if the breakpoint could not be
+   loaded, 1 on match or 0 otherwise.
+</p><p>
+   The <b><i>info</i></b> method returns the header of a stored graphical
+   breakpoint, including the image patch coordinates. If the given file cannot
+   be read or has invalid data, then a header containing all 0's is returned.
+</p><p>
+   The <b><i>export_png</i></b> method converts the image data in a graphical
+   breakpoint file to PNG format.
+</p><p>
+   The <b><i>add_bytes</i></b> method behaves as <b><i>add</i></b> but reads the
+   breakpoint data from memory instead of a file.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(gfx_break) {
+        bool (*store)(conf_object_t *NOTNULL obj,
+                      const char *file,
+                      int minx, int miny, int maxx, int maxy);
+        int64 (*add)(conf_object_t *NOTNULL obj,
+                     const char *file, const char *name,
+                     bool oneshot, double interval,
+                     gfx_break_cb_t cb, lang_void *arg);
+        bool (*remove)(conf_object_t *NOTNULL obj, int64 break_id);
+        int (*match)(conf_object_t *NOTNULL obj, const char *file);
+        gbp_header_t (*info)(conf_object_t *NOTNULL obj, const char *file);
+        bool (*export_png)(conf_object_t *NOTNULL obj, const char *file,
+                           const char *png_file);
+        int64 (*add_bytes)(conf_object_t *NOTNULL obj,
+                           bytes_t data, const char *name,
+                           bool oneshot, double interval,
+                           gfx_break_cb_t cb, lang_void *arg);
+};
+#define GFX_BREAK_INTERFACE "gfx_break"
+</pre><p>
+ 
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context
+   for all methods
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_follower_agent.html">follower_agent</a>
+<a href="__rm_interface_host_serial.html">host_serial</a>
+</div>

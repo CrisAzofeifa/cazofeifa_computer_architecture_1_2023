@@ -1,0 +1,294 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>telnet_console</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-telemetry_manager.html">telemetry_manager</a>
+<a href="rm-class-telnet_frontend.html">telnet_frontend</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="telnet_console"><a href="#telnet_console">telnet_console</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Class allowing telnet access to a simulated serial port.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, serial_device, recorded
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-telnet_console.break.html">break</a>
+ – set a string to break on</li>
+<li>
+<a href="rm-cmd-telnet_console.capture-start.html">capture-start</a>
+ – capture output to file</li>
+<li>
+<a href="rm-cmd-telnet_console.capture-stop.html">capture-stop</a>
+ – stop output capture to file</li>
+<li>
+<a href="rm-cmd-telnet_console.disconnect.html">disconnect</a>
+ – terminates the telnet session</li>
+<li>
+<a href="rm-cmd-telnet_console.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-telnet_console.input.html">input</a>
+ – send string to a console</li>
+<li>
+<a href="rm-cmd-telnet_console.input-file.html">input-file</a>
+ – input a file into a console</li>
+<li>
+<a href="rm-cmd-telnet_console.kbd-abort.html">kbd-abort</a>
+ – send a keyboard abort signal</li>
+<li>
+<a href="rm-cmd-telnet_console.list-break-strings.html">list-break-strings</a>
+ – list all active string breakpoints</li>
+<li>
+<a href="rm-cmd-telnet_console.playback-start.html">playback-start</a>
+ – start traffic generator</li>
+<li>
+<a href="rm-cmd-telnet_console.playback-stop.html">playback-stop</a>
+ – stop traffic generation</li>
+<li>
+<a href="rm-cmd-telnet_console.record-start.html">record-start</a>
+ – start recording of output on the console</li>
+<li>
+<a href="rm-cmd-telnet_console.record-stop.html">record-stop</a>
+ – stop recording of output on the console</li>
+<li>
+<a href="rm-cmd-telnet_console.status.html">status</a>
+ – print status of the object</li>
+<li>
+<a href="rm-cmd-telnet_console.unbreak.html">unbreak</a>
+ – stop breaking on string</li>
+<li>
+<a href="rm-cmd-telnet_console.unbreak-id.html">unbreak-id</a>
+ – remove a breakpoint</li>
+<li>
+<a href="rm-cmd-telnet_console.wait-for-string.html">wait-for-string</a>
+ – wait for a string in a script branch</li>
+<li>
+<a href="rm-cmd-telnet_console.wait-then-write.html">wait-then-write</a>
+ – wait for a string, then write an input string</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:device">
+<i>device</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Serial device the console is connected to.</dd>
+<dt id="dt:new_port_if_busy">
+<i>new_port_if_busy</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Determines if a new TCP port may be used when restoring from a checkpoint and the saved port is already busy. The default value is true. It may be set to false for setups that rely on the same port being used all the time.</dd>
+<dt id="dt:port">
+<i>port</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>TCP port for telnet console server.</dd>
+<dt id="dt:recorder">
+<i>recorder</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Recorder device for recording and playback of serial input.</dd>
+<dt id="dt:buffer_until_connection">
+<i>buffer_until_connection</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If TRUE, the console will buffer any output until a client connects. If FALSE, such output will be discarded.</dd>
+<dt id="dt:raw">
+<i>raw</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>If set to TRUE, will not interpret telnet escapes or otherwise change the bytes transmitted in either direction.</dd>
+<dt id="dt:data_in">
+<i>data_in</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>Characters received by the telnet console but not yet delivered to the simulated serial port.</dd>
+<dt id="dt:output_buffer">
+<i>output_buffer</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[i*]</code>
+<br>Characters transmitted by the simulated serial port, but not yet written out by the console. If <tt>buffer_until_connection</tt> is TRUE, then this attribute contains everything written to the simulated serial port.</dd>
+<dt id="dt:recording">
+<i>recording</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>When TRUE, all characters written to the console will be recorded. The record can be read from the attribute <tt>recorded-string</tt>.</dd>
+<dt id="dt:recorded_string">
+<i>recorded_string</i>
+</dt>
+<dd>
+<b>Session</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s</code>
+<br>The characters that have been recorded when the attribute <tt>recording</tt> is TRUE. Note that the recorded string will NOT be cleared when <tt>recording</tt> is reset.</dd>
+<dt id="dt:output_file">
+<i>output_file</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|n</code>
+<br>If given a file name, output will be directed to this file. Redirection is stopped by setting the attribute to NIL.</dd>
+<dt id="dt:disconnect">
+<i>disconnect</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>b</code>
+<br>Disconnects the telnet session if set to TRUE.</dd>
+<dt id="dt:remote_ip">
+<i>remote_ip</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>The remote IPv4 address.</dd>
+<dt id="dt:remote_port">
+<i>remote_port</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>i</code>
+<br>The remote TCP port number.</dd>
+<dt id="dt:input_delayed">
+<i>input_delayed</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>[sf]</code>
+<br>(string, seconds) This attribute appends characters to the input queue, after the specified simulated time have elapsed.</dd>
+<dt id="dt:input">
+<i>input</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s|[db]</code>
+<br>Keyboard input queue.</dd>
+<dt id="dt:break_string">
+<i>break_string</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s</code>
+<br>An output string causing Simics to trigger a Xterm_Break_String hap when the string is printed.</dd>
+<dt id="dt:break_string_once">
+<i>break_string_once</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s</code>
+<br>An output string causing Simics to trigger a Xterm_Break_String hap when the string is printed. The breakpoint is removed after the first occurrence.</dd>
+<dt id="dt:string_breakpoint_list">
+<i>string_breakpoint_list</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[[isi]*]</code>
+<br>List of all string breakpoints currently active. Each string breakpoint is a tuple of (id, string, trigger_once)</dd>
+<dt id="dt:unbreak_string">
+<i>unbreak_string</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>s</code>
+<br>Stop breaking on a specified string. Note that if a string is added several times, it also has to be removed the same number of times. I.e. if a hap callback is tied to a string and does not want to be called again, it should both remove the string and unregister the hap callback, since another hap callback may want to break on the same string again.</dd>
+<dt id="dt:unbreak_id">
+<i>unbreak_id</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>write-only</b> access; type: 
+<code>i</code>
+<br>Remove breakpoint based on breakpoint id.</dd>
+<dt id="dt:break_string_id">
+<i>break_string_id</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>Unknown</code>
+<br>Return an id for a string that is set to break on. The id can be used as index for the Xterm_Break_String hap.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.telnet-console.html">telnet-console</a>
+</section>
+<div class="chain">
+<a href="rm-class-telemetry_manager.html">telemetry_manager</a>
+<a href="rm-class-telnet_frontend.html">telnet_frontend</a>
+</div>

@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;textcon&gt;.wait-for-string – deprecated</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-textcon.unbreak.html">&lt;textcon&gt;.unbreak – deprecated</a>
+<a href="rm-cmd-textcon.wait-then-write.html">&lt;textcon&gt;.wait-then-write – deprecated</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="textcon.wait-for-string"></a>
+<h1 id="textcon.wait-for-string"><a href="#textcon.wait-for-string">&lt;textcon&gt;.wait-for-string – deprecated</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;textcon&gt;.wait-for-string</b> [-reverse] [-always] [-regexp] <i>"string"</i> <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Wait for the output of the text <i>string</i> on the console. This command can only be run from a script branch where it suspends the branch until the string has been found in the output. If <tt>-regexp</tt> is specified, the breakpoint string will be interpreted as a regular expression (regexp). The regexp syntax follows the common Perl style, as interpreted by the Hyperscan library <a href="https://hyperscan.io" rel="noopener noreferrer" target="_top">https://hyperscan.io</a>.
+<p>
+Note that the string is a Simics CLI string, and thus \ has to be escaped as \\ when writing the regexp.
+</p><p>
+Examples: </p><ul> <li>Wait for 3 digits: <pre><b>$con.wait-for-string -regexp "\\d{3}"</b>
+</pre> </li> <li>Wait for a '4' somewhere between square brackets (note that in regular expressions, [] have special meanings, so must be escaped): <pre><b>$con.wait-for-string -regexp "\\[.*4.*\\]"</b>
+</pre> </li> <li>Wait for a 3 characters or 6 curly braces: <pre><b>$con.wait-for-string -regexp "\\w{3}|[{}]{6}"</b>
+</pre> </li> </ul>
+<p>
+For more information about regular expression syntax, see <a href="https://perldoc.perl.org/re.html" rel="noopener noreferrer" target="_top">https://perldoc.perl.org/re.html</a>.
+</p><p>
+The command will by default only wait for events that occur when the simulation is running forward. To wait for events in the reverse direction use the <tt>-reverse</tt> flag. Similarly, the <tt>-always</tt> flag tells the command to wait for events in both simulation directions. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.textcon.html">textcon</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>bp.console_string.wait-for, 
+<a href="rm-cmd-break_strings_v2.bp-break-console-string.html">&lt;break_strings_v2&gt;.bp-break-console-string</a>, bp.console_string.wait-then-write, 
+<a href="rm-cmd-script-branch.html">script-branch</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-textcon.unbreak.html">&lt;textcon&gt;.unbreak – deprecated</a>
+<a href="rm-cmd-textcon.wait-then-write.html">&lt;textcon&gt;.wait-then-write – deprecated</a>
+</div>

@@ -1,0 +1,376 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Extended Capabilities templates</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="capabilities.html">Capabilities templates</a>
+</div>
+<div class="path">
+<a href="index.html">PCIe Modeling Library</a>
+&nbsp;/&nbsp;
+<a href="dml-template-reference.html">DML template reference</a>
+&nbsp;/&nbsp;</div>
+<h1>Extended Capabilities templates</h1>
+<p>These are templates for PCIe Extended Capabilities. They are designed to be
+applied on a <code>group</code>. For convenience there exists a template
+<code>defining_xyz_capability</code> for each capability <code>xyz</code> which defines a group
+<code>xyz</code> with the <code>xyz_capability</code> applied.  Most templates only define the
+registers with their standard access restrictions.  If additional behavior is
+needed, the user of the template must implement this manually.</p>
+<p>Each extended capability template uses the following parameters:</p>
+<ul>
+<li><code>base</code>: Base address of the capability header</li>
+<li><code>next_ptr</code>: Value of the next_ptr field in the capability header</li>
+</ul>
+<h2 id="advanced-error-reporting-aer-capability-registers"><a href="#advanced-error-reporting-aer-capability-registers">Advanced Error Reporting (AER) Capability registers</a></h2>
+<ul>
+<li>name: <code>aer_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="virtual-channel-vc-capability-registers"><a href="#virtual-channel-vc-capability-registers">Virtual Channel (VC) Capability registers</a></h2>
+<ul>
+<li>name: <code>vc_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="device-serial-number-dsn-capability-registers"><a href="#device-serial-number-dsn-capability-registers">Device Serial Number (DSN) Capability registers</a></h2>
+<ul>
+<li>name: <code>dsn_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="device-power-budgeting-dpb-capability-registers"><a href="#device-power-budgeting-dpb-capability-registers">Device Power Budgeting (DPB) Capability registers</a></h2>
+<ul>
+<li>name: <code>dpb_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="root-complex-link-declaration-rcld-capability-registers"><a href="#root-complex-link-declaration-rcld-capability-registers">Root Complex Link Declaration (RCLD) Capability registers</a></h2>
+<ul>
+<li>name: <code>rcld_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>num_links</code>: number of links.</li>
+</ul>
+<h2 id="root-complex-internal-link-control-rcilc-capability-registers"><a href="#root-complex-internal-link-control-rcilc-capability-registers">Root Complex Internal Link Control (RCILC) Capability registers</a></h2>
+<ul>
+<li>name: <code>rcilc_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="root-complex-event-collector-endpoint-association-rcecea-capability-registers"><a href="#root-complex-event-collector-endpoint-association-rcecea-capability-registers">Root Complex Event Collector Endpoint Association (RCECEA) Capability registers</a></h2>
+<ul>
+<li>name: <code>rcecea_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>version</code>: version number of this capability, default 2</li>
+</ul>
+<h2 id="multi-function-virtual-channel-mfvc-capability-registers"><a href="#multi-function-virtual-channel-mfvc-capability-registers">Multi-Function Virtual Channel (MFVC) Capability registers</a></h2>
+<ul>
+<li>name: <code>mfvc_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="rcrb-header-rcrb-capability-registers"><a href="#rcrb-header-rcrb-capability-registers">RCRB Header (RCRB) Capability registers</a></h2>
+<ul>
+<li>name: <code>rcrb_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="vendor-specific-extended-capability-vsec-registers"><a href="#vendor-specific-extended-capability-vsec-registers">Vendor-Specific Extended Capability (VSEC) registers</a></h2>
+<ul>
+<li>name: <code>vsec_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="access-control-services-acs-capability-registers"><a href="#access-control-services-acs-capability-registers">Access Control Services (ACS) Capability registers</a></h2>
+<ul>
+<li>name: <code>acs_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="alternate-routing-id-ari-capability-registers"><a href="#alternate-routing-id-ari-capability-registers">Alternate Routing ID (ARI) Capability registers</a></h2>
+<ul>
+<li>name: <code>ari_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="address-translation-service-ats-capability-registers"><a href="#address-translation-service-ats-capability-registers">Address Translation Service (ATS) Capability registers</a></h2>
+<ul>
+<li>name: <code>ats_capability</code></li>
+<li>implemented: functional</li>
+</ul>
+<p>This is a partially functional template; the user must implement the method
+<code>invalidate_received</code>.</p>
+<h3 id="methods"><a href="#methods">Methods</a></h3>
+<ul>
+<li>
+<p><code>invalidate_received(transaction_t *t, uint64 addr) -&gt; (bool)</code></p>
+<p>Called by the standard PCIe templates when an ATS Invalidate message
+is received. The default implementation logs an <code>unimpl</code> message and
+returns <code>false</code>, indicating a 'Completer Abort'.</p>
+</li>
+<li>
+<p><code>memory_read_buf(buffer_t buf, uint64 addr, pcie_at_t at) -&gt; (pcie_error_t, uint32)</code></p>
+<p>Performs a Memory Read with AT field of the TLP header as specified
+in the input argument <code>at</code>. Returns a pcie_error and the pcie
+byte-count. Requires that an <code>upstream_target</code> is defined.</p>
+</li>
+<li>
+<p><code>memory_write_bytes(bytes_t bytes, uint64 addr, pcie_at_t at) -&gt; (pcie_error_t)</code></p>
+<p>Performs a Memory Write with AT field of the TLP header as specified
+in the input argument <code>at</code>. Requires that an <code>upstream_target</code> is
+defined.</p>
+</li>
+</ul>
+<h2 id="multicast-mc-capability-registers"><a href="#multicast-mc-capability-registers">Multicast (MC) Capability registers</a></h2>
+<ul>
+<li>name: <code>mc_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="page-request-service-prs-capability-registers"><a href="#page-request-service-prs-capability-registers">Page Request Service (PRS) Capability registers</a></h2>
+<ul>
+<li>name: <code>prs_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h3 id="methods-2"><a href="#methods-2">Methods</a></h3>
+<ul>
+<li>
+<p><code>method page_request(uint64 addr) -&gt; (pcie_error_t)</code></p>
+<p>Sends a Page Request message. The caller is responsible for setting
+the Page Address, PRGI, L, W and R fields of the requested
+address. Requires that an <code>upstream_target</code> is defined.</p>
+</li>
+<li>
+<p><code>method page_response_received(transaction_t *t, uint64 addr) -&gt; (bool)</code></p>
+<p>Called by the standard PCIe templates when a Page Response message is
+received. The default implementation logs an <code>unimpl</code> message and
+returns <code>false</code>.</p>
+</li>
+</ul>
+<h2 id="resizable-bar-rbar-capability-registers"><a href="#resizable-bar-rbar-capability-registers">Resizable BAR (RBAR) Capability registers</a></h2>
+<ul>
+<li>name: <code>rbar_capability</code></li>
+<li>implemented: functional</li>
+</ul>
+<p>The standard PCIe templates for Base Address Registers automatically find
+and use the size configured in instances of this template, when enabled.</p>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>num_bars</code>: Number of resizable bars present in this capability.</li>
+<li><code>bar_indexes</code>: list of integers, setting <code>init_val</code> of <code>control.id</code> field for each RBAR</li>
+<li><code>bar_capabilities</code>: list of integers, setting <code>init_val</code> of <code>capability</code> register for each RBAR</li>
+</ul>
+<h2 id="vf-resizable-bar-vfrbar-capability-registers"><a href="#vf-resizable-bar-vfrbar-capability-registers">VF Resizable BAR (VFRBAR) Capability registers</a></h2>
+<ul>
+<li>name: <code>vf_rbar_capability</code></li>
+<li>implemented: functional</li>
+</ul>
+<p>This template works just like the Resizable Bar (RBAR) template, but is
+detected and used by the standard PCIe templates for Virtual Function Base
+Address Registers instead.</p>
+<h2 id="dynamic-power-allocation-dpa-capability-registers"><a href="#dynamic-power-allocation-dpa-capability-registers">Dynamic Power Allocation (DPA) Capability registers</a></h2>
+<ul>
+<li>name: <code>dpa_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>num_substates</code>: number of power allocation registers, default 1</li>
+</ul>
+<h2 id="transaction-processing-hints-tph-requester-extended-capability-registers"><a href="#transaction-processing-hints-tph-requester-extended-capability-registers">Transaction Processing Hints (TPH) Requester Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>tph_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>num_tables</code>: number of TPH ST Table registers, default 1</li>
+</ul>
+<h2 id="latency-tolerance-reporting-ltr-capability-registers"><a href="#latency-tolerance-reporting-ltr-capability-registers">Latency Tolerance Reporting (LTR) Capability registers</a></h2>
+<ul>
+<li>name: <code>ltr_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="secondary-pci-express-spe-capability-registers"><a href="#secondary-pci-express-spe-capability-registers">Secondary PCI Express (SPE) Capability registers</a></h2>
+<ul>
+<li>name: <code>spe_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>max_link_width</code>: number of Equalization Control registers, no default</li>
+</ul>
+<h2 id="pasid-extended-capability-structure-registers"><a href="#pasid-extended-capability-structure-registers">PASID Extended Capability Structure registers</a></h2>
+<ul>
+<li>name: <code>pasid_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="ln-requester-extended-capability-registers"><a href="#ln-requester-extended-capability-registers">LN Requester Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>lnr_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="downstream-port-containment-dpc-extended-capability-registers"><a href="#downstream-port-containment-dpc-extended-capability-registers">Downstream Port Containment (DPC) Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>dpc_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>root_port</code>: presence of PIO registers, default false</li>
+</ul>
+<h2 id="l1-pm-substates-extended-capability-registers"><a href="#l1-pm-substates-extended-capability-registers">L1 PM Substates Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>l1pms_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Fields to be added upon request.</p>
+<h2 id="precision-time-management-ptm-capability-registers"><a href="#precision-time-management-ptm-capability-registers">Precision Time Management (PTM) Capability registers</a></h2>
+<ul>
+<li>name: <code>ptm_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Fields to be added upon request</p>
+<h2 id="m-pcie-extended-capability-registers"><a href="#m-pcie-extended-capability-registers">M-PCIe Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>mpcie_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="frs-queueing-extended-capability-registers"><a href="#frs-queueing-extended-capability-registers">FRS Queueing Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>frsq_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Fields to be added upon request</p>
+<h2 id="readiness-time-reporting-extended-capability-registers"><a href="#readiness-time-reporting-extended-capability-registers">Readiness Time Reporting Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>rtr_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Fields to be added upon request</p>
+<h2 id="data-link-feature-extended-capability-registers"><a href="#data-link-feature-extended-capability-registers">Data Link Feature Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>dlf_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="physical-layer-16-0-gt-s-extended-capability-registers"><a href="#physical-layer-16-0-gt-s-extended-capability-registers">Physical Layer 16.0 GT/s Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>pl16g_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>max_link_width</code>: maximum link width, no default</li>
+<li><code>max_lanes</code>: maximum number of lanes, no default</li>
+</ul>
+<h2 id="lane-margining-at-the-receiver-extended-capability-registers"><a href="#lane-margining-at-the-receiver-extended-capability-registers">Lane Margining at the Receiver Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>lmar_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>max_lanes</code>: number of lane control and status registers, no default</li>
+</ul>
+<h2 id="physical-layer-32-0-gt-s-extended-capability-registers"><a href="#physical-layer-32-0-gt-s-extended-capability-registers">Physical Layer 32.0 GT/s Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>pl32g_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>max_link_width</code>: maximum link width, no default</li>
+<li><code>max_lanes</code>: maximum number of lanes, no default</li>
+</ul>
+<h2 id="designated-vendor-specific-extended-capability-dvsec-registers"><a href="#designated-vendor-specific-extended-capability-dvsec-registers">Designated Vendor-Specific Extended Capability (DVSEC) registers</a></h2>
+<ul>
+<li>name: <code>dvsec_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="hierarchy-id-extended-capability-registers"><a href="#hierarchy-id-extended-capability-registers">Hierarchy ID Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>hid_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="native-pcie-enclosure-management-npem-extended-capability-registers"><a href="#native-pcie-enclosure-management-npem-extended-capability-registers">Native PCIe Enclosure Management (NPEM) Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>npem_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<h2 id="alternate-protocol-extended-capability-registers"><a href="#alternate-protocol-extended-capability-registers">Alternate Protocol Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>ap_capability</code></li>
+<li>implemented: registers only</li>
+</ul>
+<p>Fields to be added upon request</p>
+<h2 id="system-firmware-intermediary-sfi-extended-capability-registers"><a href="#system-firmware-intermediary-sfi-extended-capability-registers">System Firmware Intermediary (SFI) Extended Capability registers</a></h2>
+<div class="register" id="sfi_capability">
+<p>Fields and access restrictions to be added upon request</p>
+<h2 id="single-root-i-o-virtualization-sr-iov-extended-capability-registers"><a href="#single-root-i-o-virtualization-sr-iov-extended-capability-registers">Single Root I/O Virtualization (SR-IOV) Extended Capability registers</a></h2>
+<ul>
+<li>name: <code>sriov_capability</code></li>
+<li>implemented: functional</li>
+</ul>
+<p>This is a partially functional template; users must implement the methods
+<code>get_offset</code> and <code>get_stride</code>, create an array of DML-objects that simulate
+the configuration header for each virtual function, and add instances of the
+<code>vf_base_address</code> template for each VF BAR that is implemented by the
+physical function.</p>
+<p>Uses the following parameters:</p>
+<ul>
+<li><code>virtual_functions</code>: array of objects simulating the virtual functions,
+typically a bank-array using the <code>vf_type_0_bank</code>
+template.</li>
+</ul>
+<h3 id="methods-3"><a href="#methods-3">Methods</a></h3>
+<ul>
+<li>
+<p><code>get_offset() -&gt; (uint16)</code></p>
+<p>Returns the offset to the first virtual function, must be implemented
+by the user.</p>
+</li>
+<li>
+<p><code>get_stride() -&gt; (uint16)</code></p>
+<p>Returns the stride between virtual functions, must be implemented by
+the user.</p>
+</li>
+</ul>
+<h2 id="virtual-function-type-0-bank"><a href="#virtual-function-type-0-bank">Virtual Function Type 0 Bank</a></h2>
+<ul>
+<li>name: <code>vf_type_0_bank</code></li>
+<li>implemented: functional</li>
+</ul>
+<p>Can be used to implement Virtual Functions, used by SR-IOV capability.
+Inherits the <code>config_bank</code> template. Note that this template must use the
+<code>vf_base_address</code> template to implement its Base Address Registers.</p>
+<h2 id="virtual-function-base-address"><a href="#virtual-function-base-address">Virtual Function Base Address</a></h2>
+<ul>
+<li>name: <code>vf_base_address</code></li>
+<li>implemented: functional</li>
+</ul>
+<p>Can be used to implement Base Address Registers in the SR-IOV capability
+header. Inherits the template <code>memory_base_address</code>. Expects the parameter
+<code>map_obj</code> to be an array of mappable objects, one for each Virtual Function.</p>
+</div>
+<div class="chain">
+<a href="capabilities.html">Capabilities templates</a>
+</div>

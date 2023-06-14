@@ -1,0 +1,85 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>13.2 Going Further</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="a-simple-example.html">13.1 A Simple Example</a>
+<a href="gdb.html">14 Using Simics with GDB</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="low-level-debugging.html">III Low-Level Debugging</a>
+&nbsp;/&nbsp;
+<a href="lowlevel-software.html">13 Using Simics for Hardware Bring-Up and Firmware Development</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Going-Further">13.2 Going Further</a></h1>
+<p>
+
+</p><p>
+The simple script in the last section can be extended in several
+directions:
+</p><p>
+</p><ul>
+
+  <li><b>load-file</b> simply writes the contents of a file
+  directly to memory. There are at least two other options:
+<p>
+  </p><ul>
+
+    <li>Using <b>set</b> to write values directly to memory. This
+    is useful if the test program is only a few instructions
+    long.</li>
+
+    <li>Using <b><a name="load-binary">load-binary</a></b> to load an executable
+    in one of the formats Simics recognizes, such as <a name="ELF">ELF</a>.
+    Unlike <b>load-file</b>, this command automatically loads the
+    executable at the right address, and returns the entry point
+    address.</li>
+
+  </ul></li>
+
+  <li>You can have more complicated stop conditions than simply "run
+  twelve instructions"; for example, you can use execution or data
+  breakpoints (section <a class="reference" href="breakpoints.html#membreak">12.1.1</a>), control register
+  breakpoints (section <a class="reference" href="breakpoints.html#control-reg-break">12.1.3</a>), device I/O
+  breakpoints (section <a class="reference" href="breakpoints.html#io-break">12.1.4</a>), or magic instruction
+  breakpoints (section <a class="reference" href="breakpoints.html#Magic-Breakpoints">12.1.7</a>).</li>
+
+  <li>Various conditions cause Simics to trigger
+  <em><a name="haps">haps</a></em>; for example breakpoints, privilege level
+  changes, magic instructions, and traps. You can easily write a small
+  hap callback function that is called whenever this happens; such a
+  callback could terminate the simulation (indicating success or
+  failure), or simply log or change some value.</li>
+
+</ul>
+<p>
+</p>
+<div class="chain">
+<a href="a-simple-example.html">13.1 A Simple Example</a>
+<a href="gdb.html">14 Using Simics with GDB</a>
+</div>

@@ -1,0 +1,84 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;breakpoint&gt;.bp-break-memory</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-break_strings_v2.bp-wait-for-console-string.html">&lt;break_strings_v2&gt;.bp-wait-for-console-string</a>
+<a href="rm-cmd-breakpoint.bp-run-until-memory.html">&lt;breakpoint&gt;.bp-run-until-memory</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="breakpoint.bp-break-memory"></a>
+<h1 id="breakpoint.bp-break-memory"><a href="#breakpoint.bp-break-memory">&lt;breakpoint&gt;.bp-break-memory</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;breakpoint&gt;.bp-break-memory</b> <i>address</i> [<i>length</i>] [-r] [-w] [-x] [<i>"prefix"</i>] [<i>"substr"</i>] [<i>"pattern"</i>] [<i>"mask"</i>] [-once] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Adds a breakpoint (read, write, or execute) on <i>address</i> for an object implementing the breakpoint interface. This is typically a memory space object such as physical memory; e.g., <code>phys_mem0.break 0xff3800</code>. Accesses intersecting the given range will trigger the breakpoint. By default the breakpoint will only trigger for instruction execution, but any subset of read, write, and execute accesses can be set to trigger using combinations of <tt>-r</tt>, <tt>-w</tt>, and <tt>-x</tt>.
+<p>
+<i>length</i> is the interval length in bytes (default is 1).
+</p><p>
+When an execution breakpoint is triggered, Simics will stop the simulation before the instructions is executed, while instructions triggering read or write breakpoints will complete before the simulation is stopped.
+</p><p>
+To break on a virtual address, use a context object:
+</p><p>
+<code>cpu0_context.break 0x1ff00</code>
+</p><p>
+Several breakpoints can be set on the same address and Simics will break on them in turn. If hap handlers (callback functions) are connected to the breakpoints they will also be executed in turn. Hap handlers are called before the access is performed, allowing the user to read a memory value that may be overwritten by the access. See the Simics Reference Manual for a description of hap handlers.
+</p><p>
+Each breakpoint is associated with an id (printed when the breakpoint is set or by the <code>list</code> command) which is used for further references to the breakpoint.
+</p><p>
+For convenience the <code>break</code> sets a breakpoint on memory connected to the current frontend processor (see <code>pselect</code>). Default is to break on virtual address accesses (in the current context). By prefixing the address with <tt>p:</tt> it is possible to break on physical accesses as well (cf. <code>phys_mem0.break</code>); e.g., <code>break p:0xffc0</code>.
+</p><p>
+Use <i>prefix</i> to only break on instructions with this prefix. For example, a prefix "add" will cause the breakpoint to only stop if the instruction begins with "add". The text to compare the prefix with for an instruction is the one which the instruction is disassembled to. The comparison is case insensitive.
+</p><p>
+Use <i>substr</i> to only break on instructions with a certain syntax substring. For example, specifying a substring "r31" will cause the breakpoint to stop only if the instruction contains the substring "r31". The match is case insensitive.
+</p><p>
+Use <i>pattern</i> to only break on instructions with a certain bit-pattern. First the <i>mask</i> will be applied to the instruction and then the result will be compared with the <i>pattern</i>. For example, a pattern "0x0100" and mask "0x0101" will cause the breakpoint to stop only on instructions whose first byte has the lowest bit set and the second not.
+</p><p>
+Note that pattern and mask are supplied as strings with string byte order (low address first).
+</p><p>
+Breakpoints can be removed using <code>delete</code>.
+</p><p>
+The <tt>-once</tt> flag causes the breakpoint to automatically be removed after it has triggered. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.bp-manager.html">bp-manager</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-break_strings_v2.bp-wait-for-console-string.html">&lt;break_strings_v2&gt;.bp-wait-for-console-string</a>
+<a href="rm-cmd-breakpoint.bp-run-until-memory.html">&lt;breakpoint&gt;.bp-run-until-memory</a>
+</div>

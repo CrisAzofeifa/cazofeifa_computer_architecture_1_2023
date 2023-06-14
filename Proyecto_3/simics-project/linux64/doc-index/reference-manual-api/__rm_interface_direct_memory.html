@@ -1,0 +1,203 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>direct_memory</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_device_identification.html">device_identification</a>
+<a href="__rm_interface_direct_memory_flush.html">direct_memory_flush</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_direct_memory">direct_memory</a></h1>
+<p>
+
+<a name="direct_memory"></a><a name="direct_memory_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="direct_memory_handle_t"></a>
+   <a name="direct_memory_ack_id_t"></a>
+   <a name="direct_memory_t"></a>
+<p>
+   The <code>direct_memory</code> interface is implemented by objects that
+   model memory, such as RAM and ROM objects. These are called direct-memory
+   objects. A user of the interface is called a memory user and is
+   typically a processor that wants to do fast accesses to memory. The
+   direct-memory object corresponding to a particular physical address
+   can be obtained using the <b><i>lookup</i></b> method of the
+   <code>direct_memory_lookup</code> interface.
+   See the documentation for the
+   <code>direct_memory_lookup</code> interface for more information.
+</p><p>
+   A memory user using the <code>direct_memory</code> interface 
+   must implement the <code>direct_memory_update</code> interface.
+</p><p>
+   The <b><i>get_handle</i></b> method is used by a memory user
+   to create or retrieve a handle to the memory region starting
+   at offset <i>offs</i> with size <i>size</i>.
+   The handle is typically used later on to request access permissions
+   and to retrieve a direct pointer to the region.
+   The handle returned by <b><i>get_handle</i></b> is private to the
+   memory user specified in the <i>requester</i> parameter.
+</p><p>
+   If <b><i>get_handle</i></b> is invoked multiple times for the same
+   range, and with identical <i>requester</i> and
+   <i>subsystem</i> arguments, then the same handle will
+   be returned each time, assuming the original handle is still valid.
+   Note that the original handle is only returned if the range
+   matches exactly. A single memory user can obtain multiple
+   distinct handles for the same memory range by using different values for the
+   <i>subsystem</i> parameter.
+</p><p>
+   For RAM and ROM, <i>offs</i> and <i>size</i> must
+   specify a region which does not intersect a naturally aligned
+   8192 byte boundary, or the request will fail with a NULL return
+   value. Other direct-memory objects might have different requirements.   
+</p><p>
+   The <b><i>request</i></b> method is used to request a host pointer to simulated
+   memory. This pointer can be used to carry out fast memory operations without
+   having to involve the Simics API. The <i>handle</i> argument is the
+   handle obtained using <b><i>get_handle</i></b>.
+</p><p>
+   Both the <i>permission</i> argument and the <i>inhibit</i> argument
+   are <code>access_t</code> type bit fields. The <i>permission</i>
+   argument is used to specify what kind of memory operations the memory user
+   will perform. For example, if a memory user wants to read memory, the
+   <i>permission</i> argument must include the Sim_Access_Read value.  The
+   <i>inhibit</i> argument specifies what other memory users are not
+   allowed to do. For example, if <i>inhibit</i> is set to Sim_Access_Write
+   other memory users are not allowed to write to the memory range.  This
+   protection mechanism can be used to create caches of simulated memory,
+   request exclusive permissions to a memory range in order to carry out atomic
+   operations, and similar.  When a memory user is requesting permission to a
+   memory range that another memory user has protected with conflicting inhibit
+   bits, the direct-memory object will inform the other memory user of
+   the lost permissions and protection through the
+   <code>direct_memory_update</code> interface.  A user can lose both the
+   permission and protection for a memory range in this way. When this happens,
+   a memory user may re-request permissions and inhibit protection.
+</p><p>
+   Note: if a memory user has multiple handles which overlaps, then
+   each handle is considered to be a distinct memory user. For example,
+   if a memory user holds two handles, and requests write inhibit on
+   one of them, then write permission will be revoked from the second
+   handle (if such permission had been granted).
+</p><p>
+   The <b><i>request</i></b> method returns a <code>direct_memory_t</code> value
+   with information about the retrieved permissions and inhibit bits. These
+   bits can be a super set of the bits that actually was requested. The
+   returned data pointer can be used to access the memory range. Accesses are
+   valid from the data pointer and up to the end of the range, i.e., addresses
+   up to data pointer + <i>size</i> - 1, where size is the size valid for
+   the handle. A call to <b><i>request</i></b> always succeeds and the
+   corresponding memory range is valid until the permissions or the handle are
+   revoked by the <code>direct_memory_update</code> interface.  Note that the
+   data pointer may change each time <b><i>request</i></b> is called (with the
+   same handle) since Simics may move simulated memory. If the pointer
+   changes, then the old pointer must not be used.
+</p><p>
+   With <b><i>set_user_data</i></b>, a memory user can associate 
+   a user-defined pointer with a specific handle. The pointer can
+   be retrieved using the <b><i>get_user_data</i></b> method, which takes
+   a <i>handle</i> as an argument.
+</p><p>
+   A memory user can use the <b><i>release</i></b> function to notify the
+   direct-memory object when it is no longer interested in the memory
+   region corresponding to <i>handle</i>. The handle is invalid
+   and must not be used for anything after being released.
+   </p><p>
+   The <b><i>ack</i></b> method is used by a memory user to inform the 
+   direct-memory object that it has given up the corresponding permission and
+   inhibit rights for a memory range when called by a method in the
+   <code>direct_memory_update</code> interface.
+</p><p>
+   Permissions can be revoked from all memory users by invoking the
+   <b><i>revoke</i></b> method. The <i>permission</i> parameter
+   specifies the permissions which will be revoked from all memory users.
+   Similarly, <i>inhibit</i> specifies the inhibit privileges which
+   will be revoked. For instance, calling <b><i>revoke</i></b> with
+   <i>permission</i>
+   set to <code>Sim_Access_Write</code> will ensure that nobody has
+   write permissions to the direct-memory object.
+</p><p>
+   
+</p><pre class="jdocu_small">typedef granted_mem_t *direct_memory_handle_t;</pre><p>
+
+   
+   <a name="direct_memory_t2"></a>
+   </p><pre class="jdocu_small">typedef struct {
+#ifndef PYWRAP
+        uint8                 *data;
+#endif
+        access_t               permission;
+        access_t               inhibit;
+} direct_memory_t;</pre><p>
+</p><p>
+   
+   
+</p><pre class="jdocu_small">typedef uint64 direct_memory_ack_id_t;</pre><p>
+
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(direct_memory) {
+        direct_memory_handle_t (*get_handle)(conf_object_t *NOTNULL obj,
+                                             conf_object_t *NOTNULL requester,
+                                             uint64 subsystem,
+                                             uint64 offs,
+                                             unsigned size);
+        direct_memory_t (*request)(conf_object_t *NOTNULL obj,
+                                   direct_memory_handle_t handle,
+                                   access_t permission,
+                                   access_t inhibit);
+        void (*revoke)(conf_object_t *NOTNULL obj,
+                       access_t access,
+                       access_t permission,
+                       access_t inhibit);
+#ifndef PYWRAP
+        void *(*get_user_data)(conf_object_t *NOTNULL obj,
+                                    direct_memory_handle_t handle);
+        void (*set_user_data)(conf_object_t *NOTNULL obj,
+                              direct_memory_handle_t handle,
+                              void *user_data);
+#endif
+        void (*release)(conf_object_t *NOTNULL obj,
+                        direct_memory_handle_t handle);
+        void (*ack)(conf_object_t *NOTNULL obj,
+                    direct_memory_ack_id_t id);
+};
+
+#define DIRECT_MEMORY_INTERFACE "direct_memory"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_device_identification.html">device_identification</a>
+<a href="__rm_interface_direct_memory_flush.html">direct_memory_flush</a>
+</div>

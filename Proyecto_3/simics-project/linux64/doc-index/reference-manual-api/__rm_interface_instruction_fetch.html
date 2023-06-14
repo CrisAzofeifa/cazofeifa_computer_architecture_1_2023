@@ -1,0 +1,97 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>instruction_fetch</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_image_snoop.html">image_snoop</a>
+<a href="__rm_interface_instrumentation_order.html">instrumentation_order</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_instruction_fetch">instruction_fetch</a></h1>
+<p>
+
+<a name="instruction_fetch"></a><a name="instruction_fetch_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>instruction_fetch</code> interface is implemented by
+   processors. The interface controls how instruction fetches should
+   be modeled.
+<p>
+   The <b><i>get_mode</i></b> and <b><i>set_mode</i></b> functions get and
+   set the instruction fetch mode. There are three available
+   modes. All modes are not supported by all processor types. The
+   <em>instruction_fetch_none</em> mode is the least accurate but the
+   fastest mode. The other modes are more accurate but slower.
+</p><p>
+   The <b><i>get_line_size</i></b> and <b><i>set_line_size</i></b> functions
+   get and set the fetch size on each instruction fetch. This is often
+   related to cache line size or similar. The line size must be power
+   of 2.
+</p><p>
+   </p><pre class="jdocu_small">typedef enum {
+        /* No instruction fetch sent to memory hierarchy */
+        Instruction_Fetch_None = 0,
+
+        /* Memory hierarchy gets fetch for each cache line access */
+        Instruction_Fetch_Cache_Access_Trace = 1,
+
+        /* Memory hierarchy gets fetch for each instruction fetch. Only
+           x86/x86-64 */
+        Instruction_Fetch_Trace = 2
+} instruction_fetch_mode_t;
+
+SIM_INTERFACE(instruction_fetch) {
+        instruction_fetch_mode_t (*get_mode)(conf_object_t *obj);
+        void (*set_mode)(conf_object_t *obj, instruction_fetch_mode_t mode);
+        int (*get_line_size)(conf_object_t *obj);
+        void (*set_line_size)(conf_object_t *obj, int size);
+};
+#define INSTRUCTION_FETCH_INTERFACE "instruction_fetch"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+   <tbody><tr><td class="jdocu_noborder"><b><i>get_mode</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>set_mode</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>get_line_size</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+   <tr><td class="jdocu_noborder"><b><i>set_line_size</i></b></td><td class="jdocu_noborder">Global Context</td></tr>
+
+   </tbody></table>
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_image_snoop.html">image_snoop</a>
+<a href="__rm_interface_instrumentation_order.html">instrumentation_order</a>
+</div>

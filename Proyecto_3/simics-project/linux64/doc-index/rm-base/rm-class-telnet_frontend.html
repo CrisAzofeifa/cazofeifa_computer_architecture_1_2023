@@ -1,0 +1,131 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>telnet_frontend</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-telnet_console.html">telnet_console</a>
+<a href="rm-class-terminal_frontend.html">terminal_frontend</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="telnet_frontend"><a href="#telnet_frontend">telnet_frontend</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Class implementing telnet access to the Simics command line. The <tt>telnet_frontend</tt> should only be used in a secure environment since the port is open for telnet access from any user.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, terminal_client, external_connection_events
+<h3 id="port-objects">
+<a href="#port-objects">Port Objects</a>
+</h3>
+<dl>
+<dt id="dt:tcp">tcp</dt>
+<dd>
+<a href="rm-class-tcp-server.html#tcp-server">tcp-server</a>
+ – telnet-frontend TCP server</dd>
+<dt id="dt:unix_socket">unix_socket</dt>
+<dd>
+<a href="rm-class-unix-socket-server.html#unix-socket-server">unix-socket-server</a>
+ – telnet-frontend Unix domain socket server</dd>
+</dl>
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-telnet_frontend.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-telnet_frontend.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:port">
+<i>port</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i|n</code>
+<br>TCP listening port for the telnet frontend or NIL if no port should be opened. The port must not be privileged, i.e. the allowed range is [1024, 65535]. A value of 0 means that a random free port will be used.</dd>
+<dt id="dt:unix_socket_name">
+<i>unix_socket_name</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>s|n</code>
+<br>UNIX domain socket for telnet frontend.</dd>
+<dt id="dt:max_connections">
+<i>max_connections</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The maximum number of allowed telnet connections. Once this number of connections have been created, no further ones are accepted until the <tt>num_connections</tt> attribute is reset. If the value is zero, no limit is set.</dd>
+<dt id="dt:interactive">
+<i>interactive</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Set to TRUE, default, if future telnet connections will be interactive and FALSE if not. Non-interactive connections are useful for scripted control of the command line since no formatting and color codes are used and the prompt is always synchronous.</dd>
+<dt id="dt:plain_text">
+<i>plain_text</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Set to TRUE if future telnet connections only should use plain text without any formatting and color codes in the output. Default is FALSE.</dd>
+<dt id="dt:num_connections">
+<i>num_connections</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>The number of connections done so far since the object was created or the count was reset by a write to this attribute.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.telnet-frontend.html">telnet-frontend</a>
+</section>
+<div class="chain">
+<a href="rm-class-telnet_console.html">telnet_console</a>
+<a href="rm-class-terminal_frontend.html">terminal_frontend</a>
+</div>

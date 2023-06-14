@@ -1,0 +1,127 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_memory_operation</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_memory_access.html">x86_memory_access</a>
+<a href="__rm_interface_x86_memory_query.html">x86_memory_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_memory_operation">x86_memory_operation</a></h1>
+<p>
+
+<a name="x86_memory_operation"></a><a name="x86_memory_operation_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>x86_memory_operation</code> interface is used to access memory
+   from a user instruction. See the
+   <code>cpu_instrumentation_subscribe</code> and
+   <code>cpu_instruction_decoder</code> for more information. It is designed
+   to be more efficient than the <code>x86_memory_access</code>. If an
+   exception condition occurs, a longjmp is taken. The interface methods may
+   only be invoked from user instruction.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(x86_memory_operation) {
+        uint64 (*read_logical)(
+                conf_object_t *cpu,
+                x86_seg_t seg,
+                logical_address_t offs,
+                unsigned size,
+                x86_processor_mode_t mode,
+                x86_access_type_t access_type);
+#if !defined(PYWRAP)
+        void (*read_logical_buf)(
+                conf_object_t *cpu,
+                uint8 *dst,
+                x86_seg_t seg,
+                logical_address_t offs,
+                unsigned size,
+                x86_processor_mode_t mode,
+                x86_access_type_t access_type);
+#endif
+        void (*write_logical)(
+                conf_object_t *cpu,
+                uint64 val,
+                x86_seg_t seg,
+                logical_address_t offs,
+                unsigned size,
+                x86_processor_mode_t mode,
+                x86_access_type_t access_type);
+#if !defined(PYWRAP)
+        void (*write_logical_buf)(
+                conf_object_t *cpu,
+                const uint8 *src,
+                x86_seg_t seg,
+                logical_address_t offs,
+                unsigned size,
+                x86_processor_mode_t mode,
+                x86_access_type_t access_type);
+#endif
+        x86_read_physical_ret_t (*read_physical)(
+                conf_object_t *cpu,
+                physical_address_t address,
+                unsigned size,
+                x86_access_type_t access_type);
+#if !defined(PYWRAP)
+        exception_type_t (*read_physical_buf)(
+                conf_object_t *cpu,
+                uint8 *dst,
+                physical_address_t address,
+                unsigned size,
+                x86_access_type_t access_type);
+#endif
+        exception_type_t (*write_physical)(
+                conf_object_t *cpu,
+                uint64 val,
+                physical_address_t address,
+                unsigned size,
+                x86_access_type_t access_type);
+#if !defined(PYWRAP)  
+        exception_type_t (*write_physical_buf)(
+                conf_object_t *cpu,
+                const uint8 *src,
+                physical_address_t address,
+                unsigned size,
+                x86_access_type_t access_type);
+#endif
+};
+
+#define X86_MEMORY_OPERATION_INTERFACE "x86_memory_operation"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods, but must be called from an invoke
+   function set by the <code>instrumentation_replace</code> interface.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_memory_access.html">x86_memory_access</a>
+<a href="__rm_interface_x86_memory_query.html">x86_memory_query</a>
+</div>

@@ -1,0 +1,79 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.4.2 Start WinDbg</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="port-forwarding.html">2.4.1 Configure Port Forwarding</a>
+</div>
+<div class="path">
+<a href="index.html">Windows Kernel Debugging</a>
+&nbsp;/&nbsp;
+<a href="network-debugging.html">2 Windows Kernel Debugging Over a Network</a>
+&nbsp;/&nbsp;
+<a href="connect-windbg.html">2.4 Connect Windows Kernel Debugger to the Target</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="start-windbg">2.4.2 Start WinDbg</a></h1>
+<p>
+  
+</p><p>
+  To start debugging, run WinDbg on the host system. To debug the early boot,
+  start WinDbg before you tell Simics to start running the simulation. To debug
+  once Windows has booted, start WinDbg once the Simics target shows the
+  Windows desktop. In either case:
+</p><p>
+  </p><ol>
+    <li>Set up outbound port-forwarding in Simics.</li>
+    <li>Start WinDbg, listening for a connection from Simics.</li>
+    <li>Run the simulation forward.</li>
+  </ol>
+<p>
+  To run WinDbg, go to a CMD shell, and start WinDbg from the command line
+  like the following:
+</p><p>
+  </p><pre class="jdocu_small">&gt; <b>windbg -k net:port=&lt;port-on-host&gt;,key=&lt;key&gt;</b>
+  </pre><p>
+</p><p>
+  where:
+</p><p>
+  </p><ul>
+    <li><b><code>&lt;port-on-host&gt;</code></b> is the port to use to connect on
+      the host side, as determined in section
+      <a class="reference" href="port-forwarding.html">2.4.1</a>.</li>
+    <li><b><code>&lt;key&gt;</code></b> is a value used to secure the connection,
+      as discussed in section <a class="reference" href="configure-communications.html">2.3.1</a>.</li>
+  </ul>
+<p>
+  For example:
+</p><p>
+  </p><pre class="jdocu_small">C:\WINDOWS\system32&gt;<b>cd C:\Program Files (x86)\Windows Kits\10\Debuggers\x64</b>
+C:\Program Files (x86)\Windows Kits\10\Debuggers\x64&gt;<b>windbg -k<img alt="Line break" src="nextline.png">
+net:port=50010,key=1.2.3.4</b>
+  </pre><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="port-forwarding.html">2.4.1 Configure Port Forwarding</a>
+</div>

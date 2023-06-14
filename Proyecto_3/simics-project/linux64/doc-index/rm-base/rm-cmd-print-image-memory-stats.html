@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>print-image-memory-stats</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-print-event-queue.html">print-event-queue</a>
+<a href="rm-cmd-print-object-lock-stats.html">print-object-lock-stats</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="print-image-memory-stats"></a>
+<a name="image.print-image-memory-stats"></a>
+<h1 id="print-image-memory-stats"><a href="#print-image-memory-stats">print-image-memory-stats</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>print-image-memory-stats</b> [<i>image</i>] [-all] [-h] <br><b>&lt;image&gt;.print-image-memory-stats</b> [-all] [-h] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Print statistics for memory usage of image objects, or for a single image, in the case of <code>show-image-memory-stats</code>, or by using <i>image</i>. Images without resident pages are omitted, unless <tt>-all</tt> is specified, or if there is a single image only.
+<p>
+By default, the unit is 8 KiB storage pages. By specifying the <tt>-h</tt> flag you get output in human readable units.
+</p><p>
+The <i>Pages</i> column shows the number of allocated pages, that can be either in memory or swapped out. The <i>In memory</i> column shows the number of pages that are resident in memory. The <i>Swap slot</i> column shows how many pages have, at some point, been swapped out. The number of swapped out pages can be derived from this info as <i>Pages</i> - <i>In memory</i>. <i>Dirty</i> is the number of pages that are modified in relation to the on-disk persistent (non-swap) image data.
+</p><p>
+<i>Uaread</i> is the number of read operations from a page that is not already cached in memory.
+</p><p>
+Additional statistics about swapping is also printed.
+</p><p>
+If the command is used in an expression, the statistics table is returned as a list of lists. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-system-info.html">system-info</a>, 
+<a href="rm-cmd-print-image-memory-stats.html">&lt;image&gt;.print-image-memory-stats</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-print-event-queue.html">print-event-queue</a>
+<a href="rm-cmd-print-object-lock-stats.html">print-object-lock-stats</a>
+</div>

@@ -1,0 +1,390 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5 Migrating from Simics 4.8</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="5.html">4 Migrating from Simics 5</a>
+<a href="consoles-migration.html">6 Target consoles</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Migration Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="4.8">5 Migrating from Simics 4.8</a></h1>
+<p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="4.8-sections">5.1 Introduction</a></h2>
+<p>
+  
+</p><p>
+  This chapter describes how to port device models, components, and scripts to
+  Simics 5 from Simics 4.8. For information about what is new in Simics 5,
+  read the product release notes.
+</p><h2 class="jdocu"><a name="Running-4.8-Modules-and-Scripts-in-5">5.2 Running 4.8 Modules and Scripts in 5</a></h2>
+<p>
+  
+  The first step when migrating from an older version of Simics is to get all
+  code and scripts to run using the legacy API support.
+  You should follow the checklist from chapter
+  <a class="reference" href="overview.html">3</a>, but you may skip the last two steps.
+</p><p>
+  If there are warnings about deprecated functionality, start Simics with
+  the <code>-no-wdeprecated</code> command line flag or set the
+  <i>sim→deprecation_level</i> attribute to 0.
+</p><p>
+  The following list shows the changes between 4.8 and 5 that may
+  affect the migration process.
+</p><p>
+  </p><ul>
+    <li>
+      When setting the <code>SIMICS_API</code> version to <code>5</code> or newer,
+      the module makefiles will no longer add directories specified in
+      neither <code>VPATH</code> nor <code>EXTRA_VPATH</code> to the include search
+      path for C, C++ or DMLC. Both <code>EXTRA_MODULE_VPATH</code> and
+      <code>EXTRA_VPATH_IN_SIMICS</code> work as before, and can be used
+      instead. Otherwise use <code>MODULE_CFLAGS</code>, or similar, to add the
+      paths to your include search paths with <code>-I</code>.
+    </li>
+    <li>
+      With <code>SIMICS_API</code> set to 5 or newer,
+      the <code>commands.py</code> and <code>gcommands.py</code> files are no
+      longer recognized as being run upon module or simics
+      initialization. These should be replaced
+      with <code>module_load.py</code> and <code>simics_start.py</code>. Note
+      that these need to be listed explicitly in the <code>PYTHON_FILES</code>
+      variable. This is further discussed in the <em>Using
+      Python in a Simics module</em> section of <em>Model Builder
+      User's Guide</em>.
+<p>
+      In order to help migration, the build system will detect any
+      lingering files named <code>commands.py</code>
+      or <code>gcommands.py</code>, and report these as build errors.
+    </p></li>
+    <li>
+      With <code>SIMICS_API</code> set to 5 or newer, the support for
+      <code>.py</code> files listed in the <code>SRC_FILES</code> variable
+      found in a Simics module Makefile was deprecated. Instead,
+      the <code>PYTHON_FILES</code> variable should be used to list
+      <code>.py</code> files which are present in a Simics module. Current
+      support for having Python files in Simics modules is further discussed
+      in the <em>Using Python in a Simics module</em> section of
+      <em>Model Builder User's Guide</em>. Generally, in order to migrate
+      a Simics module the following should be done:
+      <ul>
+        <li>
+          Move all <code>.py</code> files from <code>SRC_FILES</code> to
+          the <code>PYTHON_FILES</code> variable in the module Makefile.
+        </li>
+        <li>
+          Remove all "<code># MODULE: xyz-comp</code>" comments
+          from <code>.py</code> files with no replacement.
+          <div class="note">
+<b>Note:</b>
+The comments like "<code># MODULE: xyz-comp</code>" were previously
+            used to create a separate Simics module <code>xyz-comp</code> from
+            a single Python file located in a Simics module. Now
+            all <code>.py</code> files from a Simics module are considered
+            to be parts of that Simics module and can be accessed as Python
+            modules with the statement <code>import simmod.xxx.yyy</code> where
+            the <code>xxx</code> part is the Simics module name (hyphens
+            replaced with underscores) and the <code>yyy</code> part
+            corresponds to a particular Python file from that Simics
+            module.
+          </div></li>
+        <li>
+          Remove all "<code># CLASS: xyz</code>" and "<code># COMPONENT:
+          xyz</code>" comments from <code>.py</code> files replacing them
+          with generally used "<code>MODULE_CLASSES = xyz</code>" and
+          "<code>MODULE_COMPONENTS = xyz</code>" items in the module Makefile.
+        </li>
+        <li>
+          Generally, the <code>module_load.py</code> file is required for a
+          Simics module containing Python code. This file serves as an
+          entry point executed whenever the Simics module containing it is
+          loaded.  Once created, the <code>module_load.py</code> file
+          should be added to the <code>PYTHON_FILES</code> Makefile variable.
+          To have any Python code executed on module load (e.g., the code
+          registering Simics classes or components and located in
+          the <code>yyy.py</code> file), this code could be imported in the
+          <code>module_load.py</code> file with the statement
+          "<code>from . import yyy</code>".
+        </li>
+        <li>
+          Python files containing "<code># MODULE: xyz-comp</code>" lines can
+          no longer be imported with <code>import mod_xyz_comp</code>.
+          Use <code>import simmod.xxx.yyy</code> (where the
+          imported file is <code>yyy.py</code> in the module <code>xxx</code>)
+          instead.
+<p>
+          An import of <code>mod_xyz_comp</code> implicitly causes
+          the <code>xyz-comp</code> Simics module to be loaded,
+          while <code>import simmod.xxx.yyy</code> does not. If the import
+          of <code>yyy.py</code> causes a Simics class to be
+          registered, Simics will then attribute this class to the
+          currently loading module instead of <code>xxx</code>, which
+          causes warning messages in runtime.
+</p><p>
+          There are two ways to solve this problem:
+          </p><ul>
+            <li>
+              Load the module explicitly,
+              using <code>simics.SIM_load_module("xxx")</code>, before
+              importing <code>simmod.xxx.yyy</code>. This is a quick
+              solution, which preserves existing behaviour. However,
+              it may seem unnatural to have to load a module just to
+              access some shared Python code.
+            </li>
+            <li>
+              Restructure the <code>yyy.py</code> file so it can be
+              imported without side-effects. This is typically done by
+              moving any registration calls away from global scope into
+              functions, and letting <code>xxx/module_load.py</code>
+              call those functions.
+<p>
+              Note that components (and other classes based
+              on <code>pyobj</code>) are normally implicitly registered
+              when the Python file is imported. In order to make an
+              import side-effect free, this registration can be
+              suppressed by setting <code>_do_not_init = object()</code>
+              in all such class definitions in <code>yyy.py</code>. The
+              classes can then be registered by calling
+              their <b><i>register</i></b> methods from
+              <code>module_load.py</code>.
+</p><p>
+              In future versions of Simics, <code>pyobj</code>-based
+              classes will not be automatically registered, and an
+              explicit <b><i>register</i></b> call will be required for
+              all classes.
+            </p></li>
+          </ul>
+<p>
+          </p><div class="note">
+<b>Note:</b>
+Imports on the form <code>import mod_xyz_comp</code> should
+            not be confused with imports on the form
+            <code>import xyz_comp_[g]commands</code>. The latter is a
+            completely separate import mechanism, which is also
+            deprecated but handled differently, as described in a
+            separate note below.
+          </div></li>
+        <li>
+          Please note the build procedure now will generate different
+          files. This may affect users who (re)package compiled Simics
+          modules.
+<p>
+          Typically,
+          <code></code><i>host</i><code>/lib/python/mod_xyz_comp.pyc</code>
+          has been moved
+          to <code></code><i>host</i><code>/lib/python/simmod/xyz_comp/yyy.pyc</code>.
+          Also <code>$(HOST)/lib/module-name.so</code>, which may not have been
+          generated previously, should be added to packaging. <code>.pymod</code>
+          files are not generated any more.
+        </p></li>
+        <li>
+          Python files which do not adhere to Python module naming
+          conventions (e.g., contain hyphens in the file name) are
+          supported though discouraged. Such files have to be renamed
+          (e.g., by replacing hyphens with underscores) in order to be
+          imported from Python using the plain <code>import</code> statement.
+        </li>
+      </ul>
+    </li>
+    <li>
+      The special Python imports <code>import mod_XYZ_commands</code>
+      and <code>import mod_XYZ_gcommands</code> have been deprecated. The
+      corresponding module in <code>simmod</code>
+      (typically <code>simmod.XYZ.module_load</code>
+      and <code>simmod.XYZ.simics_start</code>, respectively) should be
+      used instead.
+    </li>
+    <li>
+      The device initialization functions generated by the DMLC
+      compiler are now called automatically when a module is
+      loaded. Previously, one had to manually call them from
+      the <b><i>init_local</i></b> function. Thus, any existing calls to
+      DMLC initialization functions (typically
+      named <code>initialize_</code><em>classname</em><code></code>) must be removed
+      from <b><i>init_local</i></b>, in order to prevent the same class
+      from being registered twice. For the same reason,
+      any invocations of <code>scripts/build/gen_init_local.py</code> must be
+      removed. For the same reason,
+      the <code>-m</code> switch to DMLC is redundant and can no longer be
+      used. This typically means that the line <code>DMLC_FLAGS =
+      -m</code> in module makefiles should be removed.
+<p>
+      This change only applies when <code>SIMICS_API</code> is <code>5</code>
+      or newer; the previous behaviour is preserved with lower values
+      of <code>SIMICS_API</code>.
+    </p></li>
+    <li>
+      The order in which <b><i>init</i></b> and <b><i>hard_reset</i></b> are called
+      during object instantiation has been reversed; <b><i>hard_reset</i></b> is
+      now called after <b><i>init</i></b>.
+<p>
+      The change may cause code to break; in particular, if <b><i>init</i></b>
+      initializes a register value, then the <b><i>hard_reset</i></b> call will
+      immediately restore the value to its <code>hard_reset_value</code>. If the
+      intent of such code is to provide different values on instantiation and
+      manual hard reset, then a better approach is to override the
+      register's <code>hard_reset</code> method, and use the condition
+      <code>SIM_object_is_configured($dev.obj)</code> to deduce whether the hard
+      reset was manual.
+    </p></li>
+    <li>
+      All objects of the <b>Ram</b> or <b>Rom</b>
+      class must have an associated clock/CPU object, i.e., the queue
+      attribute must be set. It is also possible to set the queue
+      attribute of the corresponding Image object instead.
+    </li>
+  </ul>
+  Once everything runs, Simics 5 is ready to be used instead of Simics 4.8.
+<h2 class="jdocu"><a name="Updating-4.8-Modules-and-Scripts-to-5">5.3 Updating 4.8 Modules and Scripts to 5</a></h2>
+<p>
+  
+  Enabling old code and scripts to work with Simics 5 is the first step in
+  the migration and all that is needed to start using the new Simics version.
+  But it is also a good idea to start removing the use of features and API
+  functions that have been deprecated in 4.8 and 5.
+</p><p>
+  </p><ol>
+    <li>
+      Remove the <code>-no-wdeprecated</code> flag when running Simics, or set the
+      <i>sim→deprecation_level</i> attribute to 1. Whenever
+      deprecation warnings are encountered, use the table in chapter
+      <a class="reference" href="deprecation-table.html">8</a> to find out what has been
+      deprecated in Simics 5 and what the recommended replacement
+      is.
+    </li>
+    <li>
+      Change the API in both C/C++ and Python modules to 5. Use the table in
+      chapter <a class="reference" href="deprecation-table.html">8</a> to find out what has been
+      deprecated in Simics 5 and what the recommended replacement is.
+    </li>
+  </ol>
+<p>
+</p><h2 class="jdocu"><a name="Updating-4.8-devices-to-5">5.4 Updating 4.8 devices to 5</a></h2>
+<p>
+  
+  Usage of the <code>translate</code> interface has changed compared
+  to Simics 4.8. In particular, implementors
+  of <code>translate</code> will need to handle large inquiry-type
+  accesses. See the documentation for the <code>translate</code>
+  interface for details.
+</p><p>
+  Several DML 1.2 files have been removed from the standard library. Most of them are redundant and do nothing else than import another file. Devices need to update import statements accordingly:
+    <span class="jdocu_smaller">
+  <table>
+
+    <tbody><tr>
+      <td class="jdocu_border"><b>4.8</b></td>
+      <td class="jdocu_border"><b>5</b></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "i2c.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/i2c.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "ieee-802-3.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/ieee_802_3.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "interrupt.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/interrupt.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "microwire.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/microwire.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "mii.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/mii.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "mips.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/arch/mips.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "nand-flash.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/nand-flash.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "ppc.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/arch/ppc.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "recorder.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/simulator-iface/recorder.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "sata-interface.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/sata-interface.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "serial-device.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/serial-device.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "serial-peripheral-device.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/serial-peripheral-device.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "usb.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/devs/usb.dml"</code></td>
+    </tr>
+
+    <tr>
+      <td class="jdocu_border"><code>import "x86.dml"</code></td>
+      <td class="jdocu_border"><code>import "simics/arch/x86.dml"</code></td>
+    </tr>
+
+  </tbody></table>
+  </span>
+</p><h2 class="jdocu"><a name="Updating-4.8-components-to-5">5.5 Updating 4.8 components to 5</a></h2>
+<p>
+  
+  In Simics 5, component implementation has changed. For details about
+  the new implementation, please refer to the Implementing
+  Components section in the <em>Model Builder User's Guide</em>.
+
+</p><p>
+</p>
+<div class="chain">
+<a href="5.html">4 Migrating from Simics 5</a>
+<a href="consoles-migration.html">6 Target consoles</a>
+</div>

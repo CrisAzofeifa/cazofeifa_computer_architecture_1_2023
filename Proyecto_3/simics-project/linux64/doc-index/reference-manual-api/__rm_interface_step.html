@@ -1,0 +1,123 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>step</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_stall.html">stall</a>
+<a href="__rm_interface_step_cycle_ratio.html">step_cycle_ratio</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_step">step</a></h1>
+<p>
+
+<a name="step"></a><a name="step_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>step</code> interface is typically implemented by
+  processors, but can be implemented by other objects as well. Its
+  purpose is to handle step events using a queue.
+<p>
+  The current number of steps for the <i>queue</i> is returned
+  when calling <b><i>get_step_count</i></b>.
+</p><p>
+  The <b><i>post_step</i></b> function will schedule an event that will
+  occur after <i>steps</i> (which must be nonnegative)
+  counted from local current step at
+  <i>queue</i>. An event previously posted can be removed by
+  calling <b><i>cancel_step</i></b>. The <b><i>cancel_step</i></b> function takes a
+  function <i>pred</i> as argument which is called when a matching
+  event is found. The event is only removed if <i>pred</i> returns
+  <code>1</code>. The <b><i>find_next_step</i></b> takes the same arguments
+  as <b><i>cancel_step</i></b> but only returns the number of cycles before
+  the event will occur. The <i>evclass</i> is the event class,
+  <i>obj</i> is the object posting the event, and
+  <i>user_data</i> is pointer to data used as a parameter when
+  calling the callback function defined in the <i>evclass</i>.
+  If no matching event was found, <b><i>find_next_step</i></b> returns
+  −1.
+</p><p>
+  The <b><i>events</i></b> method returns a list of all pending events in
+  expiration order. Each element is a four-element list containing the event
+  object, the event class name, the expiration time counted in steps as an
+  integer and the event description as given by the event class
+  <b><i>describe</i></b> method, or <em>nil</em> for events whose event class do
+  not define that method.
+</p><p>
+  The <b><i>advance</i></b> function will increment the number of steps
+  for the queue, decrementing the number of steps to the first event
+  to the value defined by <i>steps</i>. The number of steps remaining
+  to the next event is returned. It is an error to advance beyond the
+  next pending event, so the return value is never negative.
+</p><p>
+  The implementor of the <code>step</code> interface can use any
+  checkpoint representation. The <i>name</i> field in the
+  event class data structure is unique, and the attribute setter
+  function for checkpoint restore can use
+  <b><i>VT_get_event_class</i></b> to get the event class structure
+  corresponding to an event class name.
+</p><p>
+  </p><pre class="jdocu_small">
+SIM_INTERFACE(step) {
+        pc_step_t (*get_step_count)(conf_object_t *NOTNULL queue);
+        void (*post_step)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                pc_step_t steps,
+                lang_void *user_data);
+        void (*cancel_step)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+        pc_step_t (*find_next_step)(
+                conf_object_t *NOTNULL queue,
+                event_class_t *NOTNULL evclass,
+                conf_object_t *NOTNULL obj,
+                int (*pred)(lang_void *data, lang_void *match_data),
+                lang_void *match_data);
+
+        attr_value_t (*events)(conf_object_t *NOTNULL obj);
+
+        pc_step_t (*advance)(conf_object_t *queue, pc_step_t steps);
+};
+
+#define STEP_INTERFACE "step"
+</pre><p>
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_stall.html">stall</a>
+<a href="__rm_interface_step_cycle_ratio.html">step_cycle_ratio</a>
+</div>

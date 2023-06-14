@@ -1,0 +1,93 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>9.4 Exporting Instrumentation Data</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="instrumentation-filters.html">9.3 Instrumentation Filters</a>
+<a href="profiling-example.html">9.5 Profiling Example</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="instrumentation.html">9 Instrumentation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Exporting-Instrumentation-Data">9.4 Exporting Instrumentation Data</a></h1>
+<p>
+  
+  Some instrumentation tools supports printing out the gathered data
+  to a comma separated value (<code>.csv</code>) file. This makes it easy
+  to import the raw data with an external spreadsheet program, for
+  further analyses, calculations and visualizing the data as graphs.
+</p><p>
+  Any Simics object that implements the <code>table</code> interface
+  will automatically get the <b>export-table-csv</b> command and
+  it exist on either the tool for the total, the individual connection
+  objects, or both. See figure <a class="reference" href="#export-csv-example">11</a> for
+  an example.
+  </p><p>
+  </p><div class="figure" id="export-csv-example">
+
+<pre class="jdocu_small">$&gt; <b>./simics targets/qsp-x86/firststeps.simics num_cores=8</b>
+simics&gt; <b>new-instruction-histogram -connect-all</b>
+[board.mb.cpu0.core[0][0] info] VMP not engaged. Reason: instrumentation enabled.
+Created ihist0 (connected to 8 processors)
+simics&gt; <b>run 10 s</b>
+simics&gt; <b>ihist0.export-table-csv file = all-cpus-10seconds.csv</b>
+simics&gt; <b>ihist0.con0.export-table-csv file = first-cpu-10seconds.csv</b>
+simics&gt; <b>quit</b>
+$&gt; <b>head all-cpus-10seconds.csv</b>
+mnemonic,Count
+mov,919169650
+add,302311251
+cmp,206492934
+test,160303832
+adc,150848000
+jne,144637182
+je,133354184
+lea,120721026
+push,97795399
+$&gt; <b>head first-cpu-10seconds.csv</b>
+mnemonic,Count
+mov,414052451
+add,165503526
+cmp,100845317
+adc,88820557
+test,71309728
+jne,70008313
+lea,56315642
+movzx,54618965
+je,52189244
+</pre><p>
+</p><div class="caption">Figure 11. Exporting to CSV files</div>
+</div>
+
+
+<div class="chain">
+<a href="instrumentation-filters.html">9.3 Instrumentation Filters</a>
+<a href="profiling-example.html">9.5 Profiling Example</a>
+</div>

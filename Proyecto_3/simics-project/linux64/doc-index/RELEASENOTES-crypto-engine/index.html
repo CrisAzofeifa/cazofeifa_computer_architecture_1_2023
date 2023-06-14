@@ -1,0 +1,207 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Crypto Engine Release Notes</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<span></span>
+</div>
+<div class="path"></div>
+<h1>Crypto Engine Release Notes</h1>
+
+    
+    
+    
+    
+<h2 class="jdocu"><a name="Introduction">1 Introduction</a></h2>
+<p>
+
+</p><p>
+This document identifies important information for the Crypto Engine
+package for Simics 6. All users of this specific package
+should review this document carefully.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Minor-Changes-Since-Simics-6.0.0">2 Minor Changes Since Simics 6.0.0</a></h2>
+<p>
+
+The following is a list of changes since the initial Simics
+6.0.0 release.
+</p><p>
+</p><ul><li><p><a name="__rn_build_id_6203"></a>6.0.1 (build 6203)
+</p><ul><li><b>Cryptographic and secure hash library</b><ul><li> OpenSSL has been updated to
+  version 3.0.8. </li><li> The included OpenSSL libraries are
+  now stripped of debug symbols. </li><li>Added support for the SM3 digest
+  and HMAC in the <code>crypto_engine_openssl</code> device
+  (bug #14017737921).</li></ul></li></ul></li><li><p><a name="__rn_build_id_6200"></a>6.0.0 (build 6200)
+</p><ul><li><b>Common</b><ul><li>Simics no longer comes with documentation
+  in PDF format.</li><li>Documentation in HTML format has been added.
+  </li><li> Fixed a problem on Windows where the
+    installer still asked for
+    the Model Builder key (bug #SIMINT-1236). </li><li> Support for Python 2.7 has been removed.
+    Simics now only embeds
+    a Python 3 interpreter. </li><li> The separation of source code into separate
+    packages has been
+    removed. Source code is now included directly into
+    each package. </li><li> The installers for Linux and macOS have
+    been updated.
+    Support for fallback mode of decryption keys has
+    been removed. </li></ul></li><li><b>Cryptographic and secure hash library</b><ul><li>Fix ECC error handling (bug #13010148628). </li><li> OpenSSL has been updated to
+  version 3.0.7. </li><li> OpenSSL has been updated to
+  version 3.0.5. </li><li> The <code>rsa</code> interface
+  is deprecated, use the <code>rsa_v2</code> interface
+  instead. </li><li> Add ChaCha20-Poly1305 implementation (bug #22015079405). </li><li> Added new F8 and F9 interfaces which
+    accept raw IV (bug #18019345865). </li><li> Add new GCM interface that can
+    optionally accept pre-counter block (J0) in place of IV
+    in crypto-engine (bug #18019348100). </li><li> Fix AES-XTS failed if data not aligned
+  with sector size (bug #1308689141).</li><li> Added support for SHA-512/224 and
+  SHA-512/256 (bug #18015581865).</li><li> Added new RSA interface which
+      allows use of arbitrary public exponents
+      (bug #18014529484).</li><li> Fix AES-XTS decryption bug
+    (bug #16012293682). </li><li> Added support for the ZUC-256 algorithm
+    (bug #14012682216). </li><li> Fixed a problem where Simics crashed when
+    the <code>crypto-engine</code> module was loaded, on Ubuntu
+    18 (bug #16010803916). </li><li> Add new AES-XTS interface that supports
+    128-bit initialization
+    vectors (bug #18011028786). </li><li> Added support for SHA3-224 and SHA3-384
+    (bug #22010396610). </li><li> Updated ECDSA crypto to store the result
+    even in the case of a
+    failure.  This is required because some FW wants to check the
+    result itself.  The return code in this case is -2 instead of -1
+    on failures where the result is <i>not</i> reported. </li><li> Improved performance by allocating
+    log-strings only when necessary. </li><li> Reverted a fix from last build causing a
+    regression in AES-CBC crypto
+    when running encrypt/decrypt with zero length. This is now a NOP instead
+    of an ASSERT (bug #1306290968). </li><li> Implementation updated to address issues
+    flagged by Coverity static
+    analysis. </li></ul></li></ul></li></ul>
+<p>
+
+
+
+
+
+
+
+
+
+
+
+
+</p><h2 class="jdocu"><a name="Changes-in-Simics-6">3 Changes in Simics 6</a></h2>
+<p>
+
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Limitations">4 Limitations</a></h2>
+<p>
+
+</p><p>
+This section briefly describes the known limitations of the
+Crypto Engine package. Please refer to section
+<a class="reference" href="#Detailed-List-of-Limitations">5</a> for a more technical
+description.
+</p><p>
+For model oriented packages, additional limitations may be found in
+the model target guides.
+<br><br>
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Detailed-List-of-Limitations">5 Detailed List of Limitations</a></h2>
+<p>
+
+This section describes in detail the known limitations of the
+Crypto Engine package. Please refer to
+section <a class="reference" href="#Limitations">4</a> for a more general description.
+</p><p>
+A register or field marked as <i>Not implemented</i> is present with
+read-write semantics but has no side effects on simulation. A register
+marked as <i>Not implemented (design limitation)</i> has the same
+semantics as a "Not implemented" register and there is no
+plan to extend the model with this functionality. A register with
+<i>Lack of documentation</i> has not been implemented because there is
+no available documentation describing its semantics.
+</p><p>
+<br><br>
+</p><p>
+
+
+
+</p><p>
+</p><h2 class="jdocu"><a name="Notices-amp-Disclaimers">6 Notices &amp; Disclaimers</a></h2>
+<p>
+
+</p><p>
+</p><div class="jdocu_copyright">
+<p>
+No product or component can be absolutely secure.
+</p><p>
+Intel technologies may require enabled hardware, software or
+service activation.
+</p><p>
+Your costs and results may vary.
+</p><p>
+Intel does not control or audit third-party data. You should
+consult other sources to evaluate accuracy.
+</p><p>
+You may not use or facilitate the use of this document in
+connection with any infringement or other legal analysis concerning
+Intel products described herein. You agree to grant Intel a
+non-exclusive, royalty-free license to any patent claim thereafter
+drafted which includes subject matter disclosed herein.
+</p><p>
+No license (express or implied, by estoppel or otherwise) to any
+intellectual property rights is granted by this document.
+</p><p>
+All product plans and roadmaps are subject to change without
+notice.
+</p><p>
+The products described may contain design defects or errors known
+as errata which may cause the product to deviate from published
+specifications. Current characterized errata are available on
+request.
+</p><p>
+Intel disclaims all express and implied warranties, including
+without limitation, the implied warranties of merchantability, fitness
+for a particular purpose, and non-infringement, as well as any
+warranty arising from course of performance, course of dealing, or
+usage in trade.
+</p><p>
+© 2010–2023 Intel Corporation. Intel, the Intel logo,
+and other Intel marks are trademarks of Intel Corporation or its
+subsidiaries. Other names and brands may be claimed as the property of
+others.
+</p><p>
+
+
+</p></div>
+<p>
+
+</p>
+<div class="chain">
+<span></span>
+</div>

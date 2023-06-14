@@ -1,0 +1,89 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.8 Foreign Threads</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="multithreading-threaded-cpu.html">2.7 Threaded Device Model</a>
+<a href="multithreading-scheduler.html">2.9 Simics Scheduler</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rmapi-threading-model.html">2 Threading Model</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="multithreading-threads">2.8 Foreign Threads</a></h1>
+<p>
+
+Threads created explicitly by models are called <em>foreign threads</em>.
+Such threads run in Threaded Context. There are also
+various API functions that registers callbacks that are called in FTC, like
+<b><i>SIM_run_in_thread</i></b> and <b><i>SIM_notify_on_socket</i></b> with
+the <i>run_in_thread</i> argument set to 1.
+</p><p>
+Many of the things stated in the preceding section is also relevant to foreign
+threads. One difference, however, is that foreign threads can be created by
+models using the Standard Device Model.
+</p><p>
+</p><h2 class="jdocu"><a name="multithreading-threads-operations">2.8.1 Device Interactions</a></h2>
+<p>
+
+The following outlines how a foreign thread can interact with the
+rest of the simulation:
+</p><dl><dt id="dt:accessing-a-device-object"><b>Accessing a Device Object</b></dt><dd>A foreign thread can enter Cell Context using the
+    <b><i>SIM_ACQUIRE_CELL</i></b> function. Once in Cell Context, the thread
+    can interact with the object just like a normal device would do,
+    and without needing any additional locking.
+    <pre class="jdocu_small">      /* foreign thread */
+      SIM_ACQUIRE_CELL(obj, &amp;lock);
+      /* safe to access the device */
+      SIM_RELEASE_CELL(obj, &amp;lock);
+    </pre><p>
+  </p></dd><dt id="dt:entering-global-context"><b>Entering Global Context</b></dt><dd>A foreign thread can post callbacks that are run
+    in Global Context, and hence
+    allowed to access everything in the simulation. This
+    is done using <b><i>SIM_thread_safe_callback</i></b>
+    <pre class="jdocu_small">      static void
+      global_context_callback(void *data)
+      {
+          /* this code runs in Global Context */
+      }
+
+      {
+          /* ... Threaded Context ... */
+          SIM_thread_safe_callback(global_context_callback, data);
+      }
+    </pre><p>
+    It should be noted that the function posting the callback returns
+    immediately, usually before the callback has started executing. Also,
+    posting a Global Context callback is a relatively expensive operation
+    since it involves stopping all running CPUs.
+  </p></dd></dl><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="multithreading-threaded-cpu.html">2.7 Threaded Device Model</a>
+<a href="multithreading-scheduler.html">2.9 Simics Scheduler</a>
+</div>

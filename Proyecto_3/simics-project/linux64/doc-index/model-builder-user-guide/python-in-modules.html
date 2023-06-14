@@ -1,0 +1,226 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>12 Using Python in a Simics module</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="define-new-interface-type.html">11 Defining New Interface Types</a>
+<a href="new-commands.html">13 Adding New Commands</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-device-modeling.html">II Device Modeling</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="python-in-modules">12 Using Python in a Simics module</a></h1>
+<p>
+
+</p><p>
+Most Simics modules contain some code written in Python. The most
+common uses of Python are to extend Simics with new CLI commands, as
+discussed in chapter <a class="reference" href="new-commands.html">13</a>, and to write
+component modules, as discussed in chapter <a class="reference" href="device-modeling-overview.html#component-creation">4.4</a>.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Python and Simics use conflicting nomenclature around the module
+concept. A <em>Python module</em> is a single Python file, and
+a <em>Python package</em> is a directory that contains multiple
+related Python modules. A <em>Simics module</em> can contain multiple
+Python files; thereby, it roughly corresponds to a Python package. Furthermore,
+a Python package should not be confused with a <em>Simics add-on package</em>.
+</div>Python code is added to a Simics module by adding filenames to
+the <code><a name="PYTHON_FILES">PYTHON_FILES</a></code> variable in the
+module's <code>Makefile</code>. The listed files are compiled
+into <code>.pyc</code> files, placed in the directory
+<code></code><em>[host]</em><code>/lib/python/simmod/</code><em>simics_module_name</em><code></code>,
+where <em>simics_module_name</em> is the name of the Simics module, with
+hyphens replaced with underscores. The <code>.pyc</code> files are
+then available as submodules of
+the <code><a name="simmod">simmod</a>.</code><em>simics_module_name</em><code></code> Python
+package. As an example, consider a Simics module
+named <code>my-module</code>, which contains the following in
+its <code>Makefile</code>:
+<pre class="jdocu_small">  PYTHON_FILES = common.py module_load.py simics_start.py
+</pre><p>
+The Python module defined by common.py can then be imported from
+Simics as follows:
+</p><pre class="jdocu_small">  import simmod.my_module.common
+</pre><p>
+Two filenames in <code>PYTHON_FILES</code> have special meaning:
+</p><ul>
+  <li>A file named <code><a name="simics_start.py">simics_start.py</a></code> will be automatically
+    loaded when Simics starts.</li>
+  <li>A file named <code><a name="module_load.py">module_load.py</a></code> will be automatically
+    loaded when the Simics module is loaded.</li>
+</ul>
+In addition, the filename <code>checkpoint_update.py</code> is reserved
+for future use, and not permitted.
+<p>
+It is possible to create a nested directory structure in
+<code>PYTHON_FILES</code>. This works as in standard Python; i.e., each
+subdirectory must contain a file <code>__init__.py</code>. Thus, the
+following will create a subpackage <code>sub</code> with a
+submodule <code>common</code>:
+</p><pre class="jdocu_small">  PYTHON_FILES = sub/__init__.py sub/common.py
+</pre><p>
+The Python module <code>sub/common.py</code> can then be imported as
+follows:</p><pre class="jdocu_small">  import simmod.my_module.sub.common
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Module tests that are written in Python should <em>not</em> be
+included in the <code>PYTHON_FILES</code> variable; the test framework
+automatically finds and runs tests directly under the module's source
+directory.</div><h2 class="jdocu"><a name="Python-in-older-versions-of-Simics">12.1 Python in older versions of Simics</a></h2>
+<p>Before the <code>PYTHON_FILES</code> variable was supported,
+there were two different mechanisms for using Python in modules. Both
+mechanisms are deprecated, and will be removed in future Simics
+versions. They are briefly explained here because they may appear in
+existing source code:
+</p><ul>
+  <li>If files named <code><a name="gcommands.py">gcommands.py</a></code>
+    and <code><a name="commands.py">commands.py</a></code> are found in the same
+    directory as the module's <code>Makefile</code>, then they are run
+    when Simics is started and when the module is loaded,
+    respectively. This mechanism is only supported for modules with
+    <code>SIMICS_API</code> set to 4.8 or older.</li>
+  <li>If Python files are listed in the <code>SRC_FILES</code> variable,
+    one Simics module is created for each such source file; module
+    metadata is declared using Python comments on certain forms. It is
+    an error to both specify <code>PYTHON_FILES</code> and list Python
+    files in <code>SRC_FILES</code>.</li>
+</ul>
+
+<h2 class="jdocu"><a name="Recommendations-on-style">12.2 Recommendations on style</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="Importing-Python-modules-within-a-Simics-module">12.2.1 Importing Python modules within a Simics module</a></h3>
+<p>
+
+</p><p>
+When a Python module imports another Python module in the same
+Simics module, the recommended practice is to use
+an <em>explicit relative import</em>:</p><pre class="jdocu_small">from . import common
+from .common import utility
+</pre><p>
+    or, alternatively, to use the more verbose <em>absolute import</em>:</p><pre class="jdocu_small">import simmod.my_module.common
+from simmod.my_module.common import utility
+</pre><p>
+Python permits a third variant of imports, called <em>implicit
+relative imports</em>, which should be avoided in this case:</p><pre class="jdocu_small">import common   # BAD!
+</pre><p>
+This notation is bad because an implicit relative import can
+easily be mistaken for an absolute import. Implicit relative
+imports have been removed in recent versions of the Python language.
+
+</p><h3 class="jdocu"><a name="python-in-modules-style-sharing">12.2.2 Sharing Python code between Simics modules</a></h3>
+<p>
+
+</p><p>
+There are two ways to share Python code between modules. In most
+cases, the best way is to list the shared file in
+the <code>PYTHON_FILES</code> variable of all modules. Use the
+<code>EXTRA_MODULE_VPATH</code> variable (see <a class="reference" href="build-environment.html#makefile-details">3.5.3</a>) to make sure the file is found by Make. One copy of the
+shared Python file will be created in each Simics module using it, and
+each copy will act as an independent Python module in Simics.
+</p><p>
+Alternatively, a single instance of a Python module can be shared
+between multiple Simics modules using absolute imports. While this
+approach may appear simpler, it is also risky, because it places
+very high compatibility requirements on the ABI exposed by the shared
+module. Using an absolute import to access shared code from a
+different module is therefore discouraged in general, and should only
+be done if you fully understand the consequences. The following
+example demonstrates how a seemingly innocent change can cause
+compatibility problems:
+</p><p>
+Let's say that a configuration attribute is added in a new version of
+a model A, and that a CLI command defined in shared code reads from
+this attribute. Furthermore, let's say that the shared code is also
+used by a model B, distributed in a different Simics add-on package,
+and that the shared code is distributed in both packages. Now, suppose
+that we use an <em>old</em> version of package A, where the new
+attribute has not been added, together with a <em>new</em> version of
+package B, where the attribute has been added. Simics will pick the
+version of the shared code from B for both modules; this means that
+the CLI command defined by the shared code will try to access a
+nonexisting attribute, causing unintended errors.
+
+</p><h3 class="jdocu"><a name="Side-effects-in-modules">12.2.3 Side-effects in modules</a></h3>
+<p>
+
+</p><p>
+It is generally considered good design to avoid side-effects when
+merely importing a Python module. In Simics,
+the <code>module_load</code> and <code>simics_start</code> modules
+must have side-effects, usually in the form of class or command
+registration, in order to be meaningful. However, for large Simics
+modules it is recommended to keep these files small, and keep most
+implementation in other Python files. For example, let's say a module
+defines <b>info</b> and <b>status</b> commands for the three
+devices <b>my-uart</b>, <b>my-pic</b>
+and <b>my-timer</b>. Then it can make sense to define command
+callbacks in a separate file, say <code>command_defs.py</code>:</p><pre class="jdocu_small">def uart_status(obj): <i>[…]</i> def uart_info(obj): <i>[…]</i> def
+pic_status(obj): <i>[…]</i> def pic_info(obj): <i>[…]</i> def
+timer_status(obj): <i>[…]</i> def timer_info(obj): <i>[…]</i>
+
+  def register_commands(prefix):
+      cli.register_status_command(prefix + 'uart', uart_status)
+      cli.register_info_command(prefix + 'uart', uart_info)
+      cli.register_status_command(prefix + 'pic', pic_status)
+      cli.register_info_command(prefix + 'pic', pic_info)
+      cli.register_status_command(prefix + 'timer', timer_status)
+      cli.register_info_command(prefix + 'timer', timer_info)
+</pre><p>
+Now <code>module_load.py</code> can be implemented as follows:</p><pre class="jdocu_small">  from . import command_defs
+  command_defs.register_commands('my-')
+</pre><p>
+One advantage of this approach is code reuse: If another Simics
+module <code>your-module</code> contains models of similar hardware,
+say <b>your-uart</b>, <b>your-pic</b>
+and <b>your-timer</b>, then the <code>command_defs.py</code>
+file can be shared between the Simics modules. After editing
+the <code>PYTHON_FILES</code> and <code>EXTRA_MODULE_VPATH</code>
+variables in the <code>Makefile</code> of <code>your-module</code>, as
+discussed in section <a class="reference" href="#python-in-modules-style-sharing">12.2.2</a>,
+<code>module_load.py</code> can be implemented just like
+in <code>my-module</code>:
+</p><pre class="jdocu_small">  from . import command_defs
+  command_defs.register_commands('your-')
+</pre><p>
+Note that the <b><i>register_commands</i></b> function may have to be
+parameterized differently, depending on how the <b>your-</b>
+and <b>my-</b> models differ.
+</p><p>
+
+
+</p>
+<div class="chain">
+<a href="define-new-interface-type.html">11 Defining New Interface Types</a>
+<a href="new-commands.html">13 Adding New Commands</a>
+</div>

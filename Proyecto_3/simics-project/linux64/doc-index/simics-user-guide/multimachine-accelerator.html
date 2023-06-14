@@ -1,0 +1,371 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>17.1 Multimachine Accelerator</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="scaling-simics.html">17 Scaling Simics</a>
+<a href="multicore-accelerator.html">17.2 Multicore Accelerator</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="scaling-simics.html">17 Scaling Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Multimachine-Accelerator">17.1 Multimachine Accelerator</a></h1>
+<p>
+
+<a name="multimachine-accelerator"></a>
+<a name="multithreading"></a> <a name="multiprocessor"></a> <a name="cell"></a> 
+<a name="thread"></a>
+</p><p>
+The easiest way to parallelize a simulation is to use the Simics®
+Multimachine Accelerator feature. It requires that
+the models used in the simulation are marked as
+<em>thread-safe</em>. The rest of this section describes how to use
+Multimachine Accelerator.
+</p><p>
+With Multimachine Accelerator the simulation runs in a single Simics process:
+you control the entire simulation from a single point, and the entire
+simulation state gets saved in one checkpoint, just as when you run a
+single threaded simulation.
+</p><p>
+To use Multimachine Accelerator the configuration must be partitioned into
+<em><a name="simulation-cells">simulation cells</a></em>. Each cell contains a subset of
+the configuration objects in the simulation. The only communication
+allowed between cells is over <em><a name="link">link</a>s</em>. A link
+transmits messages between objects with a <em>latency</em> measured in
+simulated time, for example an Ethernet cable.
+</p><p>
+Dividing the system into cells can be done automatically via the
+Simics's component system. This makes it easy to parallelize an existing
+model.
+</p><p>
+</p><h2 class="jdocu"><a name="Multithread-Ready-Models">17.1.1 Multithread-Ready Models</a></h2>
+<p>
+
+<a name="multithreadingmodels"></a>
+</p><p>
+Most models provided with Simics can run with Multimachine Accelerator enabled and are thus marked
+<em>thread-safe</em>. Loading modules that are not marked 
+<em>thread-safe</em> will result in  a warning message and
+Multimachine Accelerator will be disabled. Please contact your Simics provider
+if you are running a model that is not
+multithread-ready and you want to utilize Multimachine Accelerator.
+</p><p>
+If you developed your own models of devices, you should refer to
+the <em>Model Builder User's Guide</em> to learn how to make them
+multithread-compatible.
+</p><p>
+Whenever possible, all default components provided with Simics
+create <em>simulation cells</em> for use with Multimachine Accelerator. For
+example, instantiating two <i>MPC8641-Simple</i> boards in
+the same Simics session will create two <em>cells</em>, which can be
+scheduled on two simulation threads. The maximum possible parallelism
+is limited by the number of cells in a session (as well as the number
+of processor cores on your host, of course). You can list the cells
+instantiated in a configuration with the following command:
+</p><p>
+
+</p><pre class="jdocu_small">simics&gt; <b>list-objects -all class = cell</b></pre><p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="Enabling-and-Disabling-Multimachine-Accelerator">17.1.2 Enabling and Disabling Multimachine Accelerator</a></h2>
+<p>
+
+<a name="multimachine-acceleratorenable"></a> <a name="multimachine-acceleratordisable"></a>
+<a name="enable-multithreading"></a> <a name="disable-multithreading"></a>
+</p><p>
+Simics® Multimachine Accelerator is enabled by default. It can be turned off
+using the command
+
+</p><pre class="jdocu_small">simics&gt; <b>disable-multithreading</b></pre><p>
+
+</p><p>
+and on again with
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>enable-multithreading</b></pre><p>
+
+</p><p>
+This command will also check that the configuration looks reasonable before
+switching on Multimachine Accelerator, and warn you if something is incorrect. 
+</p><p>
+</p><h2 class="jdocu"><a name="thread-sync-control">17.1.3 Controlling Cell Synchronization</a></h2>
+<p>
+
+<a name="min-latency"></a> <a name="latency"></a> <a name="multithreadinglatency"></a> 
+<a name="synchronization-latency"></a>
+</p><p>
+To allow multi-cell simulation to perform well, Simics lets each thread run
+for a certain amount of virtual time on its own before it needs to
+resynchronize with the other cells. This time span is the synchronization
+latency. Because of the synchronization latency, Simics does not allow
+communication between objects of different cells. Even if all accesses were
+properly locked and performed in a thread-safe way, the objects would have no
+way to control at what time their access would be done in the other cell, and
+the simulation would stop being deterministic.
+</p><p>
+<a name="link2"></a> 
+</p><p>
+The solution is to communicate via <em>link objects</em>. Link objects ensure
+that messages send from one cell are delivered at the expected virtual time in
+the other cell, at the cost of a virtual time delay in the transmission. For
+links to send messages deterministically, the delay in transmission must be
+greater or equal to the synchronization latency. For this reason, the
+synchronization latency is often called the minimum latency for link
+communication.
+</p><p>
+The next two sections explain how to control the synchronization
+latency—and the link latencies—in multi-cell simulations.
+</p><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="latency-simple">The Simple Way</a></h3>
+<p>
+
+<a name="domaindefault"></a> <a name="sync_domain"></a>
+</p><p>
+By default, Simics creates a single synchronization domain
+called <b>default_sync_domain</b>. Cells created later in the simulation
+will be attached to this <a name="synchronization-domain">synchronization domain</a>, unless specified
+otherwise. Thus the synchronization latency in the simulation will be
+controlled by the <i>min_latency</i> attribute set
+in <b>default_sync_domain</b>.
+</p><p>
+The simplest way to control the synchronization latency is to use
+the <b><a name="set-min-latency">set-min-latency</a></b> command, which will immediately
+create a default synchronization domain if it does not exist, and set its
+<i>min_latency</i> attribute with the given valid latency. An error
+message will be printed out if the given latency value failed the validity
+check.
+</p><p>
+
+</p><pre class="jdocu_small">simics&gt; <b>set-min-latency 0.01</b>
+simics&gt; <b>list-objects class = sync_domain</b>
+┌─────────────┬───────────────────┐
+│    Class    │      Object       │
+├─────────────┼───────────────────┤
+│&lt;sync_domain&gt;│default_sync_domain│
+└─────────────┴───────────────────┘
+
+
+simics&gt; <b>default_sync_domain-&gt;min_latency</b>
+0.01
+</pre><p>
+</p><p>
+One important thing to remember is that the <a name="time-quantum">time quantum</a> in each
+multiprocessor cell must be less than half the minimum latency. In other words:
+sync_latency &gt; 2 × time_quantum for every multiprocessor cell in the
+system. Simics will print an error if this condition is not respected.
+</p><p>
+
+</p><h3 class="jdocu"><a class="not-numbered" name="Understanding-Synchronization-Domains">Understanding Synchronization Domains</a></h3>
+<p>
+
+<a name="domainhierarchy"></a>
+</p><p>
+Synchronization latencies can be controlled in a much finer
+way. Synchronization domains can be organized in a hierarchy that allows
+different cells to be synchronized with different latencies. This organization
+is the foundation of the domain-based distribution system, described in
+chapter <a class="reference" href="distributed-simulation.html">17.3</a>.
+</p><p>
+Let us build a networked system with two-tightly coupled machines communicating
+on a very fast network, associated with a control server that sends a command
+from time to time. The two machines require a low communication latency, while
+the communication latency between them and the server does not matter. Using a
+hierarchy of two domains allows all latency requirements to be fulfilled
+without sacrificing performance:
+</p><p>
+</p><pre class="jdocu_small">Top-domain (latency 1.0s)
+ -&gt; Server cell
+ -&gt; Sub-domain (latency 1e-6s)
+     -&gt; Machine0 cell
+     -&gt; Machine1 cell
+</pre><p>
+</p><p>
+In that configuration, the two machines can communicate with a latency
+of 1e-6&nbsp;s while the communication latency between the machines
+and the server is 1&nbsp;s. In practice, this allows Simics to give
+the server a 1&nbsp;s synchronization window with the two machines,
+hence much less synchronization overhead and a better usage of parallel
+simulation.
+</p><p>
+More concretely, in Simics, the domains are setup in the following way (in
+Python):
+</p><p>
+
+</p><pre class="jdocu_small">@top_domain = pre_conf_object("top_domain", "sync_domain")
+@top_domain.min_latency = 1.0
+
+@sub_domain = pre_conf_object("sub_domain", "sync_domain")
+@sub_domain.min_latency = 1e-6
+@sub_domain.sync_domain = top_domain
+
+@SIM_add_configuration([top_domain, sub_domain], None)
+</pre><p>
+</p><p>
+Cells created automatically can be assigned to a domain by using
+the <i>domain</i> attribute of the corresponding top-component. It is
+also possible to set a cell's <i>sync_domain</i> attribute when
+creating it manually.
+</p><p>
+
+</p><h3 class="jdocu"><a class="not-numbered" name="Setting-Latencies-the-Complete-Rules">Setting Latencies: the Complete Rules</a></h3>
+<p>
+
+<a name="min-latency2"></a>
+</p><p>
+Latencies must obey certain rules for the domain hierarchy to work properly:
+</p><p>
+</p><ul>
+
+<li>The <a name="time-quantum2">time quantum</a> of a multiprocessor cell must be less than half
+the <a name="latency2">latency</a> of the domain that contains the cell. The reason for
+this restriction is that the synchronization system considers a cell as a
+single unit and does not cope with the fact that the processors inside the cell
+are scheduled in a round-robin fashion. Simics checks this requirement and
+prints an error message if a domain latency is incompatible with a cell time
+quantum.</li>
+
+<li>The latency of a child domain must be less than half the latency of its
+parent domain. This restriction is once again related to how synchronization
+events are scheduled. Simics checks for this requirement and adjusts the
+latency of the child domain automatically while printing a warning.</li>
+
+<li>The latency of a domain must be greater than the length of two cycles of
+the slowest processor it contains. Simics uses cycles as lowest time unit for
+posting events, so synchronization can not be ensured if the latency resolution
+is too small. Simics checks this requirement and prints an error message if a
+domain latency is incompatible with one of the processor.</li>
+
+<li>A link may not have a latency smaller than the one of the lowest domain in
+the hierarchy that contains the cells the link is connected in. In other words:
+the link must obey the highest latency between the systems it is connected
+to. Simics checks this requirement and adjust the link latency automatically
+upward if necessary while printing a warning.</li>
+
+<li>Once set, latencies may not be changed. This is a limitation in Simics that
+we hope to remove in future versions.</li>
+
+</ul>
+<p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="Multimachine-Accelerator-and-Scripting">17.1.4 Multimachine Accelerator and Scripting</a></h2>
+<p>
+
+</p><p>
+Commands and script branches are never run multithreaded, thus parallelism can
+be safely ignored most of the time when scripting Simics. However,
+using Simics® Multimachine Accelerator has side-effects that may cause
+scripts to behave
+in a correct but indeterministic way. If we consider the following script, in a
+configuration consisting of two cells, <b>cell0</b> and <b>cell1</b>:
+</p><p>
+</p><pre class="jdocu_small">cell0_console.break "foo"
+c
+cell1_console.input "bar"
+</pre><p>
+</p><p>
+Even with <b>cell0</b> and <b>cell1</b> running in parallel, the
+simulation will stop properly when the text breakpoint in <b>cell0</b> is
+triggered. However, <b>cell1</b> is not at a deterministic point in time:
+the only thing known about it is that it is within a certain window of virtual
+time in which it is allowed to drift without needing to re-synchronize
+with <b>cell0</b>, as explained in the previous section. So running this
+script twice in a row may not produce exactly the same results.
+</p><p>
+In many cases, it does not matter and the scripts will work fine. If perfect
+determinism is required, it is possible to save a checkpoint and run the
+sensitive part of the simulation single-threaded.
+</p><p>
+One aspect of Multimachine Accelerator that affects scripting directly is Python
+scripting. Hap handlers are run in the thread where they are triggered, which
+means that the same handler can run in parallel on different host
+processors. If the handler uses global state, it must use proper locks to
+access it. In general, this is not a problem since most haps are triggered for
+a specific object, so their handlers will only run in the thread where this
+object is scheduled. Some haps are triggered globally, however, and care must
+be taken when responding to them.
+</p><p>
+Python scripts are run with the global Python lock taken, so Python scripts
+never <em>really</em> run in parallel. However, the Python interpreter will
+schedule Python threads as it sees fit, so Python code that may run in several
+threads (device or extension code, hap handlers) should not assume that it has
+full control of the execution. The Python lock is also released every time a
+Simics API functions is called (including implicit calls like reading an
+attribute value).
+</p><p>
+When running Python scripts in a simulation thread, the script should not
+access state that is in a different cell, since this cell might be running on
+another host processor. When in need to access the whole simulation state, a
+callback function can be scheduled with <b><i>SIM_run_alone()</i></b> (this is
+currently how script branches and commands are handled).
+</p><p>
+Finally, running commands in the simulation thread is <em>not</em> allowed, as
+the CLI parser is not thread-safe and might cause unexpected problems. Commands
+must be scheduled with <b><i>SIM_run_alone()</i></b>. It is also possible to
+rewrite scripts to access directly objects and attributes instead of using the
+commands directly.
+</p><p>
+</p><h2 class="jdocu"><a name="accelerator-mt">17.1.5 Dynamic Load Balancing</a></h2>
+<p>
+
+</p><p>
+Simics uses <a name="dynamic-load-balancing">dynamic load balancing</a> to distribute the
+simulation workload across the available hardware resources (host
+threads). The dynamic load balancer optimizes the mapping of
+simulation threads onto available host resources.
+</p><p>
+When Simics is running with Simics® Multimachine Accelerator, CPUs belonging
+to the same cell can not be simulated concurrently by separate host
+threads. The available concurrency in this mode of operation is
+between CPUs belonging to different cells. Using as many cells as
+possible can potentially improve performance since this increases the
+parallelism of the simulation. Having many cells also makes it easier
+for the dynamic load balancer to keep all host threads fully loaded.
+</p><p>
+When Simics is running with Multicore Accelerator, CPUs belonging to
+the same cell can be simulated concurrently. Note that Multimachine
+Accelerator is implied by Multicore Accelerator.
+</p><p>
+Simics uses a non hierarchical scheduling algorithm based on simulated
+time and available work. By default, Simics spawns at most as many
+threads as there are host threads, but it is possible to limit this
+number using the <b>set-thread-limit</b> command. Setting a thread
+limit may be useful if the physical machine is shared by multiple
+users.
+</p><p>
+Simics does not interact with the host operating system with regards
+to scheduling. The details of the scheduling are internal and there
+exists no API for controlling it.
+</p><p>
+
+</p>
+<div class="chain">
+<a href="scaling-simics.html">17 Scaling Simics</a>
+<a href="multicore-accelerator.html">17.2 Multicore Accelerator</a>
+</div>

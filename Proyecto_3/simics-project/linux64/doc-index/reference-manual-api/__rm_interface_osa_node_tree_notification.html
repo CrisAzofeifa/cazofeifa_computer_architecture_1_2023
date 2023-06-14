@@ -1,0 +1,191 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_node_tree_notification</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_node_tree_admin.html">osa_node_tree_admin</a>
+<a href="__rm_interface_osa_node_tree_query.html">osa_node_tree_query</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_node_tree_notification">osa_node_tree_notification</a></h1>
+<p>
+
+<a name="osa_node_tree_notification"></a><a name="osa_node_tree_notification_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_node_tree_notification_interface_t2"></a>
+<p>
+   <a name="notify_createosa_node_tree_notification-interface-method"></a>
+   <b><i>notify_create</i></b> and
+   <a name="notify_destroyosa_node_tree_notification-interface-method"></a>
+   <b><i>notify_destroy</i></b> register callbacks to be
+   called when the node is created and destroyed, respectively. The
+   <i>node_id</i> argument specifies for which node the callback should be
+   installed. By specifying both the <i>node_id</i> and the
+   <i>recursive</i> arguments it is possible to get notifications for all
+   nodes in a subtree. It is safe to read the node with <b><i>get_node</i></b> in
+   the <code>osa_node_tree_query</code> interface from within the callback
+   function.
+</p><p>
+   Calling <b><i>notify_create</i></b> without <i>recursive</i> being set is
+   only useful when used together with reverse execution, as only then can the
+   node ID of a node that is to be created later be known. 
+</p><p>
+   <a name="notify_property_changeosa_node_tree_notification-interface-method"></a>
+   <b><i>notify_property_change</i></b> registers a callback that is
+   triggered when the given property <i>key</i> changes on the node (or any
+   property, if <i>key</i> is nil). The callback function will receive the
+   name of the property that was changed in the <i>key</i> argument and the
+   old and new values of that property in the <i>old_val</i> and
+   <i>new_val</i> arguments.
+</p><p>
+   <a name="notify_eventosa_node_tree_notification-interface-method"></a>
+   <b><i>notify_event</i></b> register a callback <i>cb</i> to be called when
+   an event occurs for the given <i>node_id</i>. If the
+   <i>event_name</i> argument is nil the callback will be associated with
+   all events, by providing a specific event name instead the callback will
+   only trigger for that particular event type. The <i>event_data</i>
+   argument passed to the callback contains tracker specific data associated
+   with the event. See specific tracker documentation for details.
+</p><p>
+   If <i>recursive</i>, the callback will be triggered for the given node's
+   descendants as well as the node itself.
+</p><p>
+   Most callbacks have <i>cpu</i> and <i>obj</i> arguments. The
+   <i>cpu</i> argument specifies the processor that caused the event, but
+   may be nil if the event was not caused by a processor. The <i>obj</i>
+   will contain the object that implements the interface. The
+   <i>node_id</i> argument passed to the callback specifies the node ID for
+   the node that has been created, destroyed, modified or has triggered an
+   event.
+</p><p>
+   <a name="notify_cpu_move_fromosa_node_tree_notification-interface-method"></a>
+   <b><i>notify_cpu_move_from</i></b> and
+   <a name="notify_cpu_move_toosa_node_tree_notification-interface-method"></a>
+   <b><i>notify_cpu_move_to</i></b> register callbacks that are triggered when
+   a processor moves from one node path to another—but only if either
+   path lies in the subtree rooted at the given node <i>node_id</i>.
+</p><p>
+   Since a single update to the node tree can result in several different
+   callbacks being triggered, reading nodes with <b><i>get_node</i></b> from a
+   callback function may yield a result containing updates whose callbacks have
+   not yet been run. For example, if two nodes change their <i>name</i>
+   attributes simultaneously, the final state of both nodes may be visible to
+   both property change callbacks. With
+   <a name="notify_callbacks_doneosa_node_tree_notification-interface-method"></a>
+   <b><i>notify_callbacks_done</i></b>, you can register a callback that will run
+   when all other callbacks pertaining to a particular change in the node tree
+   are finished.
+</p><p>
+   <b><i>notify_enable</i></b> register a callback <i>cb</i> to be called when
+   the tracker framework is enabled.
+</p><p>
+   <b><i>notify_disable</i></b> register a callback <i>cb</i> to be called when
+   the tracker framework is disabled.
+</p><p>
+   The functions that install callbacks return an integer ID. This ID can be
+   passed to <b><i>cancel_notify</i></b>
+   <a name="cancel_notifyosa_node_tree_notification-interface-method"></a> in
+   order to uninstall the callback. In case of error in a notification function
+   the returned cancel ID from that function will be 0.
+</p><p>
+   New callbacks registered inside a registered callback will not be called
+   until the next transaction they trigger for. Canceled callbacks are canceled
+   immediately.
+</p><p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(osa_node_tree_notification)
+{
+        cancel_id_t (*notify_create)(conf_object_t *NOTNULL obj,
+                                     node_id_t node_id, bool recursive,
+                                     void (*cb)(cbdata_call_t data,
+                                                conf_object_t *obj,
+                                                conf_object_t *cpu,
+                                                node_id_t node_id),
+                                     cbdata_register_t data);
+        cancel_id_t (*notify_destroy)(conf_object_t *NOTNULL obj,
+                                      node_id_t node_id, bool recursive,
+                                      void (*cb)(cbdata_call_t data,
+                                                 conf_object_t *obj,
+                                                 conf_object_t *cpu,
+                                                 node_id_t node_id),
+                                      cbdata_register_t data);
+        cancel_id_t (*notify_property_change)(
+                conf_object_t *NOTNULL obj, node_id_t node_id,
+                const char *key, bool recursive,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           conf_object_t *cpu, node_id_t node_id,
+                           const char *key, attr_value_t old_val,
+                           attr_value_t new_val),
+                cbdata_register_t data);
+        cancel_id_t (*notify_cpu_move_from)(
+                conf_object_t *NOTNULL obj, node_id_t node_id,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           conf_object_t *cpu, attr_value_t node_path),
+                cbdata_register_t data);
+        cancel_id_t (*notify_cpu_move_to)(
+                conf_object_t *NOTNULL obj, node_id_t node_id,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           conf_object_t *cpu, attr_value_t node_path),
+                cbdata_register_t data);
+        cancel_id_t (*notify_event)(
+                conf_object_t *NOTNULL obj, node_id_t node_id,
+                const char *event_name, bool recursive,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj,
+                           conf_object_t *cpu, node_id_t node_id,
+                           const char *event_name, attr_value_t event_data),
+                cbdata_register_t data);
+        cancel_id_t (*notify_enable)(
+                conf_object_t *NOTNULL obj,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj),
+                cbdata_register_t data);
+        cancel_id_t (*notify_disable)(
+                conf_object_t *NOTNULL obj,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj),
+                cbdata_register_t data);
+        void (*cancel_notify)(conf_object_t *NOTNULL obj,
+                              cancel_id_t cancel_id);
+        cancel_id_t (*notify_callbacks_done)(
+                conf_object_t *NOTNULL obj, uint64 node_id,
+                void (*cb)(cbdata_call_t data, conf_object_t *obj),
+                cbdata_register_t data);
+};
+
+#define OSA_NODE_TREE_NOTIFICATION_INTERFACE "osa_node_tree_notification"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_node_tree_admin.html">osa_node_tree_admin</a>
+<a href="__rm_interface_osa_node_tree_query.html">osa_node_tree_query</a>
+</div>

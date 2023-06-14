@@ -1,0 +1,1150 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5 Overview of SystemC Features</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="connecting-systemc-and-simics-models.html">4 Connecting SystemC and Simics Models</a>
+<a href="execution-of-systemc-models-in-the-simics-simulator.html">6 Execution of SystemC Models in the Simics Simulator</a>
+</div>
+<div class="path">
+<a href="index.html">SystemC* Library</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="overview_of_systemc_features">5 Overview of SystemC Features</a></h1>
+<p>
+
+This section outlines some of the Simics features that are available
+when running SystemC models in Simics.
+</p><p>
+In Simics the SystemC scheduler runs under the control of the Simics
+framework, meaning that simulation can be started and stopped using
+the Simics GUI or normal Simics commands such as <b>continue</b>
+or <b>stop</b>.
+</p><p>
+All SystemC objects, derived from <b>sc_object</b> class, are visible in
+Simics as configuration objects. This means that it is possible to interact with
+the objects from the Simics CLI.
+</p><div class="note">
+<b>Note:</b>
+If some SystemC object is not visible in Simics, check that all the
+following conditions apply:
+<p>
+  1. The name complies to the recommendation of IEEE 1666-2011 5.17 which is
+  also a requirement for naming Simics objects. Non-compliant names are
+  transformed and the Simics object created under Adapter.renamed using
+  the corresponding hierarchy. Invalid characters are escaped with _0x and
+  replaced with the ASCII value in hex. E.g: a.b.test[A] becomes
+  renamed.a.b.test_0x5B_A_0x5D_
+</p><p>
+  2. The object is not dynamic, as stated in section
+  <a class="reference" href="#dynamic_systemc_objects">5.3.2.1</a>;
+</p></div><div class="note">
+<b>Note:</b>
+Use <b>help SystemC</b> to get a list of all supported SystemC CLI
+  commands. And use <b>help</b> on selected command to get detail information.
+</div>Typical operations available on SystemC objects are enabling tracing
+or breakpoints on sockets and signals. In addition, normal Simics
+commands work as expected. For example, to find all SystemC ports the
+command <b>list-objects</b> can be used with sc_port as
+the <i>type</i> argument.
+<p>
+
+
+
+</p><pre class="jdocu_small">simics&gt; <b>list-objects iface=sc_port -recursive</b>
+┌────────────────────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────────────┐
+│                                       Class                                        │                       Object                        │
+├────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────┤
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_at_and_lt_target_1.memory_socket_1_port_0   │
+│&lt;lt_example_tlm_initiator_socket_dut_m_bus_simple_initiator_socket_tagged_0&gt;        │lt.dut.m_bus.simple_initiator_socket_tagged_0        │
+│&lt;lt_example_tlm_initiator_socket_dut_m_bus_simple_initiator_socket_tagged_1&gt;        │lt.dut.m_bus.simple_initiator_socket_tagged_1        │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_bus.simple_target_socket_tagged_0_port_0    │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_bus.simple_target_socket_tagged_1_port_0    │
+│&lt;lt_example_tlm_initiator_socket_dut_m_initiator_1_m_initiator_initiator_socket&gt;    │lt.dut.m_initiator_1.m_initiator.initiator_socket    │
+│&lt;lt_example_tlm_initiator_socket_dut_m_initiator_1_m_initiator_initiator_socket_opt&gt;│lt.dut.m_initiator_1.m_initiator.initiator_socket_opt│
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_initiator_1.m_initiator.port_0              │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_initiator_1.m_initiator.port_1              │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_initiator_1.m_traffic_gen.port_0            │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_initiator_1.m_traffic_gen.port_1            │
+│&lt;lt_example_tlm_initiator_socket_dut_m_initiator_1_top_initiator_socket&gt;            │lt.dut.m_initiator_1.top_initiator_socket            │
+│&lt;lt_example_tlm_initiator_socket_dut_m_initiator_2_m_initiator_initiator_socket&gt;    │lt.dut.m_initiator_2.m_initiator.initiator_socket    │
+│&lt;lt_example_tlm_initiator_socket_dut_m_initiator_2_m_initiator_initiator_socket_opt&gt;│lt.dut.m_initiator_2.m_initiator.initiator_socket_opt│
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_initiator_2.m_initiator.port_0              │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_initiator_2.m_initiator.port_1              │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_initiator_2.m_traffic_gen.port_0            │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_initiator_2.m_traffic_gen.port_1            │
+│&lt;lt_example_tlm_initiator_socket_dut_m_initiator_2_top_initiator_socket&gt;            │lt.dut.m_initiator_2.top_initiator_socket            │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_lt_target_2.memory_socket_2_opt_port_0      │
+│&lt;lt_example_sc_port&gt;                                                                │lt.dut.m_lt_target_2.memory_socket_2_port_0          │
+└────────────────────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────────────────┘
+simics&gt;
+</pre><p>
+</p><p>
+SystemC signals and TLM2 sockets can be traced or have breakpoints
+attached to them. Please refer to section <a class="reference" href="#tools">5.3</a> for more
+information about trace and break on SystemC objects.
+</p><p>
+For example, a transaction break-point can be set on a target
+socket as shown below.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>lt.dut.m_lt_target_2.memory_socket_2.break-sc</b>
+simics&gt; <b>c</b>
+[lt.dut.m_lt_target_2.memory_socket_2 break-b-in] write sz:4 addr:0x0 data:0xefffffff
+[lt.dut.m_lt_target_2.memory_socket_2 break-b-out] write sz:4 addr:0x0 data:0xefffffff status:TLM_OK_RESPONSE
+[lt.dut.m_lt_target_2.memory_socket_2 break-b-in] write sz:4 addr:0x0 data:0xefffffff
+[lt.dut.m_lt_target_2.memory_socket_2 break-b-out] write sz:4 addr:0x0 data:0xefffffff status:TLM_OK_RESPONSE
+simics&gt;
+</pre><p>
+</p><p>
+In order to reduce the message length, Simics shortens common SystemC
+terminology. For instance, in the example above "b_in" refers to an inbound
+blocking transaction. The table below summarizes all the abbreviations.
+</p><p>
+<table>
+
+<tbody><tr>
+  <td class="jdocu_border"><b>Simics</b></td>
+  <td class="jdocu_border"><b>SystemC</b></td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">b</td>
+  <td class="jdocu_border">blocking</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">nb</td>
+  <td class="jdocu_border">non-blocking</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">in</td>
+  <td class="jdocu_border">inbound</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">out</td>
+  <td class="jdocu_border">outbound</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">fw</td>
+  <td class="jdocu_border">forward</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">bw</td>
+  <td class="jdocu_border">backwards</td>
+</tr>
+
+</tbody></table>
+</p><p>
+When a new socket type/protocol is used, it is necessary to register
+the type/protocol with the awareness framework. If it is not
+registered the commands <b>trace-sc</b> and <b>break-sc</b>
+will not be available for the new socket. As an example, for a socket
+that uses width 64 and protocol "MyProtocol", it is necessary to
+register the socket calling the
+function <b><i>registerSocketType&lt;64, MyProtocol&gt;()</i></b>.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Tracing and breaking has certain limitations. Please refer
+to chapter <a class="reference" href="limitations.html">7</a>.</div><h2 class="jdocu"><a name="Logging">5.1 Logging</a></h2>
+<p><a name="logging"></a>
+</p><p>
+SystemC Library implements report handler which forwards SystemC reports
+to Simics according to <b>sc_report</b> actions. Since SystemC
+does not have the concept of objects attached to log messages,
+all messages will be printed on the top-level <b>Adapter</b> object
+in Simics. It is possible to control SystemC logging level using
+<b>log-level</b> command on the <b>Adapter</b> object.
+Also, all the normal Simics logging commands, such as
+<b>log-setup</b>, <b>log-type</b>, work.
+</p><p>
+Simics performs a mapping from SystemC log concepts such as verbosity
+and severity into Simics concepts. The <b>sc_report</b> actions
+work as defined by IEEE-1666 standard. The most important mapping is
+the one from the SystemC verbosity to the Simics log-level, as shown in
+the table below:
+</p><p>
+<table>
+
+<tbody><tr>
+  <td class="jdocu_border"><b>Simics log-level</b></td>
+  <td class="jdocu_border"><b>SystemC verbosity</b></td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">1</td>
+  <td class="jdocu_border">verbosity &lt; SC_MEDIUM</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">2</td>
+  <td class="jdocu_border">SC_MEDIUM ≤ verbosity &lt; SC_HIGH</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">3</td>
+  <td class="jdocu_border">SC_HIGH ≤ verbosity &lt; SC_DEBUG</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">4</td>
+  <td class="jdocu_border">SC_DEBUG ≤ verbosity</td>
+</tr>
+
+</tbody></table>
+</p><p>
+Log messages map to the <em>info</em> category in Simics, unless
+the severity is greater than SC_WARNING, in which case the <em>error</em>
+category is used. It is also possible to emit <em>unimplemented</em> and
+<em>spec-violation</em> log categories by ending the message type with
+"unimplemented" or "unimpl", or "spec-violation" or "spec-viol",
+respectively. However, a severity greater than SC_WARNING will always
+generate an <em>error</em> log.
+</p><p>
+
+
+
+</p><pre class="jdocu_small">simics&gt; <b>lt.log-level level = 3</b>
+[lt] Changing log level: 1 -&gt; 3
+simics&gt; <b>bp.log.break object = lt</b>
+simics&gt; <b>c</b>
+[lt info] 0 s - traffic_generator_thread
+      Initiator: 101 Starting Traffic @ 0 s of traffic_generator.cpp in traffic_generator.cpp:114
+[lt info] 0 s - traffic_generator_thread
+      Initiator: 102 Starting Traffic @ 0 s of traffic_generator.cpp in traffic_generator.cpp:114
+[lt info] 0 s - initiator_thread
+      Initiator: 101 b_transport(GP, 0 s) @ 0 s of lt_initiator.cpp in lt_initiator.cpp:124
+[lt info] 0 s - print
+      ID: 201 COMMAND: WRITE Length: 04
+      Addr: 0x0000000000000000 Data: 0x00000000 @ 0 s of memory.cpp in report.cpp:133
+[lt info] 0 s - b_transport
+      Target: 201 returned delay of 0 s + 20 ns + 60 ns = 80 ns @ 0 s of at_target_1_phase.cpp in at_target_1_phase.cpp:111
+[lt info] 0 s - initiator_thread
+      Initiator: 101 b_transport returned delay = 80 ns @ 0 s of lt_initiator.cpp in lt_initiator.cpp:145
+[lt info] 0 s - initiator_thread
+      Initiator: 102 b_transport(GP, 0 s) @ 0 s of lt_initiator.cpp in lt_initiator.cpp:124
+[lt info] 0 s - print
+      ID: 201 COMMAND: WRITE Length: 04
+      Addr: 0x0000000000000000 Data: 0x00000000 @ 0 s of memory.cpp in report.cpp:133
+[lt info] 0 s - b_transport
+      Target: 201 returned delay of 0 s + 20 ns + 60 ns = 80 ns @ 0 s of at_target_1_phase.cpp in at_target_1_phase.cpp:111
+[lt info] 0 s - initiator_thread
+      Initiator: 102 b_transport returned delay = 80 ns @ 0 s of lt_initiator.cpp in lt_initiator.cpp:145
+[lt] Breakpoint 1: lt log message of type &lt;all&gt;
+[lt] Breakpoint 1: lt log message of type &lt;all&gt;
+[lt] Breakpoint 1: lt log message of type &lt;all&gt;
+[lt] Breakpoint 1: lt log message of type &lt;all&gt;
+[lt] Breakpoint 1: lt log message of type &lt;all&gt;
+[lt] Breakpoint 1: lt log message of type &lt;all&gt;
+[lt] Breakpoint 1: lt log message of type &lt;all&gt;
+[lt] Breakpoint 1: lt log message of type &lt;all&gt;
+simics&gt;
+</pre><p>
+</p><p>
+SystemC Library allows breaking simulation on SystemC log messages,
+which is enabled by <b>bp.log.break</b> command.
+It should be noted that Simics does not break immediately on the first
+log message, but rather after several log messages have been
+printed. This is because a "break" in Simics corresponds to stopping
+virtual time. All the log messages above were printed at the same
+virtual time, and thus there is no way to stop until all messages have
+been printed and virtual time is ready to move on. To understand what
+is going on between the various log messages, source level debugging
+is required.
+</p><p>
+</p><h3 class="jdocu"><a name="Redirecting-Custom-API-Logs">5.1.1 Redirecting Custom API Logs</a></h3>
+<p>
+
+</p><p>
+Logs using <b><i>sc_report</i></b> are
+automatically integrated with the Simics logging system. However,
+since <b><i>sc_report</i></b> has some issues of its own it is common
+that SystemC developers have their own logging API or resort to using
+plain <b><i>std::cout</i></b>. While the use of standard streams for
+logging is highly discouraged this sections explains how to redirect
+these logs to Simics.
+</p><p>
+If a custom log API is being used, it is often possible to enable it
+to support multiple front ends. One simple approach is to specialize
+it to work in Simics using the standard set of <b><i>SIM_log*</i></b>
+functions, as described in the <em>API Reference
+Manual</em>. If the log API works with streams Simics provides a
+convenience class called <b>LogStream</b> that can be used. The
+convenience class has the following signature:
+</p><pre class="jdocu_small"> 
+ <pre class="jdocu_small">template&lt;log_type_t Type = Sim_Log_Info,
+         unsigned Level = 1,
+         int Groups = 0&gt;
+class LogStream : public std::ostream {
+  public:
+    explicit LogStream(ConfObjectRef log_obj)
+</pre><p>
+ ... </p></pre><p>
+</p><p>
+It is possible to use multiple <b>LogStream</b> objects to map
+different types of output to different Simics log-types, log-levels,
+and log-groups. The streams can be used wherever the logging API
+outputs to a <b><i>std::ostream</i></b> object and the log will
+automatically be turned into a Simics log message with the
+appropriate type, level, and group.
+</p><p>
+The <b>LogStream</b> can also be used to
+redirect standard streams, for example <b><i>std::cout</i></b>. This is
+done by replacing the stream's <b>streambuf</b> with
+the <b>streambuf</b> of the Simics <b>LogStream</b> as is
+shown in the example below.
+</p><pre class="jdocu_small">
+<pre class="jdocu_small">#include &lt;simics/systemc/awareness/log.h&gt;
+
+class CoutRedirect : public simics::ConfObject {
+  public:
+    explicit CoutRedirect(simics::ConfObjectRef o)
+        : simics::ConfObject(o),
+          simLog_(o) {
+        std::cout.rdbuf(simLog_.rdbuf());
+    }
+
+    static void init_class(simics::ConfClass *cls);
+
+  private:
+    void print_a_log() const {
+        std::cout &lt;&lt; "Print a simple message to std::cout" &lt;&lt; std::flush;
+    }
+
+    simics::LogStream&lt;Sim_Log_Info, 2&gt; simLog_;
+</pre><p>
+};
+</p></pre><p>
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="signal-read-and-write">5.2 SystemC Signal Read and Write</a></h2>
+<p>
+
+</p><p>
+SystemC Library has support for read and write of SystemC signals
+<b>sc_signal</b>, <b>sc_in</b>, <b>sc_out</b>, and
+<b>sc_inout</b>. A signal's value can be read by invoking the Simics
+interface <code>sc_signal_read</code> on the signal object.
+</p><p>
+There is a second Simics interface, <code>sc_signal_write</code>, which
+is used to write a value to the signal object. Based on the type of signal,
+either the <code>sc_signal_read</code>,
+<code>sc_signal_write</code>, or both interfaces are implemented by
+the object.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+When writing a value to the signal object, the value will be updated
+  during the next SystemC cycle. From the command line, simply invoke
+  <b>c 1</b> will update the signal object's value.</div>SystemC signals use a template parameter that specifies the underlying
+value-type of the signal. This allows to use arbitrary classes as
+value-types. The current implementation directly supports the following
+value-types:
+<ul>
+<li>bool</li>
+<li>int8_t</li>
+<li>int16_t</li>
+<li>int32_t</li>
+<li>int64_t</li>
+<li>uint8_t</li>
+<li>uint16_t</li>
+<li>uint32_t</li>
+<li>uint64_t</li>
+<li>sc_time</li>
+</ul>
+<p>
+To support SystemC signals with a value-type not listed above,
+<b>simics::systemc::ScSignalAccessTemplate</b> needs to be implemented.
+</p><p>
+To activate support for the additional type, the template class needs to be
+instantiated. This is required to register the support for the new value-type in
+the infrastructure. One possibility is to declare it as a member variable of the
+Adapter.
+</p><p>
+Below is an example that shows the required steps to support signals with
+a value-type of <code>sc_dt::sc_bigint&lt;1024&gt;</code>.
+</p><pre class="jdocu_small">
+ <pre class="jdocu_small">class BigInt1024Access
+    : public simics::systemc::ScSignalAccessTemplate&lt;sc_dt::sc_bigint&lt;1024&gt; &gt; {
+  public:
+    bool attrToValueT(const attr_value_t *attr,
+                      sc_dt::sc_bigint&lt;1024&gt; *value) const {
+        const char *str = NULL;
+        if (!attrToValue(attr, &amp;str))
+            return false;
+
+        *value = str;
+        return true;
+    }
+
+    attr_value_t valueToAttrT(const sc_dt::sc_bigint&lt;1024&gt; &amp;value) const {
+        std::string str = value.to_string();
+        return valueToAttr(str.c_str());
+    }
+};
+</pre><p>
+
+class Adapter : public scl::Adapter
+[...]
+    BigInt1024Access big_int_1024_access_;
+[...]
+</p></pre><p>
+</p><p>
+The function <b><i>attrToValueT</i></b> implements the transformation from a Simics
+<code>attr_value_t</code> to the signal's value-type. If the transformation can
+not be performed, <code>false</code> must be returned, otherwise <code>true</code>.
+</p><p>
+The template class
+provides <b><i>attrToValue</i></b> functions to transform from
+<code>attr_value_t</code> to:
+</p><ul>
+<li>bool</li>
+<li>int64_t</li>
+<li>int32_t</li>
+<li>int16_t</li>
+<li>int8_t</li>
+<li>long long unsigned int</li>
+<li>uint64_t</li>
+<li>uint32_t</li>
+<li>uint16_t</li>
+<li>uint8_t</li>
+<li>double</li>
+<li>const char *</li>
+</ul>
+<p>
+The function <b><i>valueToAttrT</i></b> is used to transform from the SystemC
+signal value-type to a <code>attr_value_t</code>.
+The template class provides transformation for the the same types as listed
+above.
+
+</p><h2 class="jdocu"><a name="tools">5.3 SystemC Library Tools</a></h2>
+<p>
+
+</p><p>
+SystemC Library comes with a variety of tools that use the Simics
+instrumentation framework and interact with the SystemC objects. For generic
+information on how Simics instrumentation framework works please refer to the
+chapter in <em>Analyzer User's Guide</em>.
+</p><p>
+</p><h3 class="jdocu"><a name="instrumentation_systemc_objects">5.3.1 Supported SystemC Objects</a></h3>
+<p>
+
+</p><p>
+The following table shows the different kinds of SystemC objects and when they
+interact with the SystemC Library tools:
+</p><p>
+<table>
+
+<tbody><tr>
+  <td class="jdocu_border"><b>SystemC object</b></td>
+  <td class="jdocu_border"><b>Event</b></td>
+</tr>
+
+<tr>
+  <td class="jdocu_border"><code>sc_event</code></td>
+  <td class="jdocu_border">an event is notified</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border"><code>SC_METHOD</code></td>
+  <td class="jdocu_border">a method process is triggered</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border"><code>SC_THREAD</code></td>
+  <td class="jdocu_border">a thread process is triggered or resumed</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border"><code>tlm_initiator_socket</code></td>
+  <td class="jdocu_border">a TLM initiator socket method is called</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border"><code>tlm_target_socket</code></td>
+  <td class="jdocu_border">a TLM target socket method is called</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border"><code>sc_signal</code></td>
+  <td class="jdocu_border">a signal's value is changed</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border"><code>sc_in/sc_out/sc_inout</code></td>
+  <td class="jdocu_border">a port's value is changed</td>
+</tr>
+
+</tbody></table>
+</p><p>
+
+</p><h3 class="jdocu"><a name="usage_of_tools">5.3.2 Using the Tools</a></h3>
+<p>
+
+There are two different ways to use the tools and their provided functionality.
+The user could use the Simics commands registered on the SystemC objects.
+These commands are tool-specific both in terms of functionality and usage. They
+automatically create an instrumentation tool for internal use by the commands.
+The user should avoid using this tool directly.
+</p><p>
+When using trace and break tools, existing DMI tables are
+automatically invalidated and the DMI hint is suppressed. When all
+tools have been removed, DMI hint is no longer suppressed - allowing
+the initiator to build up a new DMI table if supported.
+</p><p>
+In the following example, by invoking the command <b>trace-sc</b> on the
+SystemC target socket, an internal instrumentation tool is created and
+connected to the target socket. It traces the invocation of any socket method.
+</p><p>
+
+
+
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>simple.simple_device.target_socket.trace-sc</b>
+Created simple.internal.sc_trace_tool (connected to 1 provider)
+</pre><p>
+</p><p>
+For advanced instrumentation tasks, the user should use the Simics
+instrumentation framework directly. This makes it possible to use more tool
+features. It is, for example, possible to create a tool that only traces a
+certain event or method invocation. Other tools with different filtering options
+can of course be instantiated and operated in parallel.
+</p><p>
+The commands bound to the SystemC objects are covered in the tool specific
+sections below. The remainder of this section shows how the tools provided with
+SystemC Library can be used.
+</p><p>
+In the following example, a new trace tool is created that traces all supported
+SystemC objects. To avoid mixing different C++ ABIs, the standard SystemC tools
+are built together with the adapter as part of building the corresponding
+Simics module. The default name of the tool if not provided is prefixed with
+the module's name. For readability it is recommended to create the tool as a
+sub-object of the adapter instead, as shown by the example below, whenever that
+makes sense.
+</p><p>
+When using trace and break tools, existing DMI tables are
+automatically invalidated and the DMI hint is suppressed. When all
+tools have been removed, DMI hint is no longer suppressed - allowing
+the initiator to build up a new DMI table if supported.
+</p><p>
+
+
+
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>simple.new-sc-trace-tool -connect-all name=simple.trace_tool</b>
+[simple.gasket_simple_device_target_socket.initiator_socket trace-invalidate-dmi-in] start_addr:0x0 end_addr:0xffffffffffffffff
+Created simple.trace_tool (connected to 7 providers)
+</pre><p>
+</p><p>
+The newly created tool can now be disabled, enabled and, if it is of no use
+anymore, removed. Additional SystemC objects can also be connected and
+disconnected. All this information is available by invoking the
+command <b>help</b> on the tool.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>help simple.trace_tool</b>
+</pre><p>
+</p><p>
+To trace TLM sockets only, the user can instantiate a filter that only matches
+sockets and add it to the tool. The filter can be removed later to trace all
+supported objects again. There are four kinds of filters: signal, event, process
+and socket. All this information is available by invoking <b>help</b> on the
+<b>new-systemc-filter</b> command.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>new-systemc-filter socket</b>
+Created SystemC filter sc_filter0
+simics&gt; <b>simple.trace_tool.add-filter sc_filter0</b>
+simics&gt; <b>simple.trace_tool.remove-filter sc_filter0</b>
+</pre><p>
+</p><p>
+When connecting the tool to objects of socket kind the functions argument can be
+used to select which TLM2 functions to act on. The functions argument
+correspond to the methods in the <code>tlm_bw_transport_if</code> and
+<code>tlm_fw_transport_if</code> interfaces. For each interface method there
+exists a pair of pre and post functions. The pre function is used to instrument
+the transaction before it is sent through the socket. The post function is used
+to instrument the transaction after the invocation of the interface method has
+been performed.
+</p><p>
+The functions argument is optional. If omitted, all interface methods are
+handled by the tool. The argument is ignored and has no effect for connections
+to other kind of objects.
+</p><p>
+A summary of all tools and their supported functions can be shown by running:
+</p><pre class="jdocu_small">simics&gt; <b>help topic = Instrumentation</b>
+</pre><p>
+</p><p>
+</p><h4 class="jdocu"><a name="dynamic_systemc_objects">5.3.2.1 Dynamic SystemC Objects</a></h4>
+<p>
+
+SystemC allows to create and delete processes and events dynamically during
+simulation. Due to their dynamic nature, these objects do not have dedicated
+Simics configuration objects. Instead, they are grouped together and have one
+shared object for each type that can be used by the tools.
+</p><p>
+<code>&lt;adapter&gt;.sc_event_all_dynamic</code> can be used to connect tools to
+all dynamic <code>sc_event</code> objects.
+</p><p>
+<code>&lt;adapter&gt;.sc_process_all_dynamic</code> can be used to connect tools to
+all dynamic <code>SC_METHOD</code> or <code>SC_THREAD</code> objects.
+</p><p>
+The commands <b>trace-sc</b>, <b>untrace-sc</b>, <b>break-sc</b>,
+and <b>unbreak-sc</b> can be used on these two Simics configuration objects.
+
+
+</p><p>
+</p><h3 class="jdocu"><a name="sc_trace_tool">5.3.3 sc_trace_tool</a></h3>
+<p>
+
+</p><p>
+The <code>sc_trace_tool</code> can be used for tracing any event listed in
+section <a class="reference" href="#instrumentation_systemc_objects">5.3.1</a>.
+</p><p>
+To enable or disable tracing of these events, <b>trace-sc</b> or
+<b>untrace-sc</b> needs to be invoked on the corresponding SystemC object.
+See <b>help &lt;sc_provider_controller&gt;.trace-sc</b> and
+<b>help &lt;sc_provider_controller&gt;.untrace-sc</b> for more information
+about the commands. Section
+<a class="reference" href="overview_of_systemc_features.html">5</a> contains an example of how to
+enable tracing on a TLM2 socket.
+</p><p>
+There is also a set of commands that makes it possible to trace and untrace on
+all objects of a certain kind. These commands are located in the corresponding
+adapter. The following commands <b>trace-sc-event-all</b>,
+<b>trace-sc-signal-all</b>, <b>trace-sc-process-all</b>, and
+<b>trace-sc-socket-all</b> are available for enabling instrumentation and
+the following commands <b>untrace-sc-event-all</b>,
+<b>untrace-sc-signal-all</b>, <b>untrace-sc-process-all</b>, and
+<b>untrace-sc-socket-all</b> are available for disabling instrumentation.
+
+</p><h3 class="jdocu"><a name="sc_break_tool">5.3.4 sc_break_tool</a></h3>
+<p>
+
+</p><p>
+The <code>sc_break_tool</code> is a tool that can be used to stop the
+simulation on any event listed in section
+<a class="reference" href="#instrumentation_systemc_objects">5.3.1</a>.
+</p><p>
+To enable or disable break on these events, <b>break-sc</b> or
+<b>unbreak-sc</b> has to be invoked on the corresponding SystemC object.
+See <b>help &lt;sc_provider_controller&gt;.break-sc</b> and
+<b>help &lt;sc_provider_controller&gt;.unbreak-sc</b> for more information
+about the commands. Section
+<a class="reference" href="overview_of_systemc_features.html">5</a> contains an example of how to
+enable tracing on a TLM2 socket; the break tools works just like trace.
+</p><p>
+There is also a set of commands that makes it possible to break and unbreak on
+all objects of a certain kind. These commands are located in the corresponding
+adapter. The following commands <b>break-sc-event-all</b>,
+<b>break-sc-signal-all</b>, <b>break-sc-process-all</b>, and
+<b>break-sc-socket-all</b> are available for enabling instrumentation and
+the following commands <b>unbreak-sc-event-all</b>,
+<b>unbreak-sc-signal-all</b>, <b>unbreak-sc-process-all</b>, and
+<b>unbreak-sc-socket-all</b> are available for disabling instrumentation.
+
+</p><h3 class="jdocu"><a name="sc_transaction_tracker_tool">5.3.5 sc_transaction_tracker_tool</a></h3>
+<p>
+
+</p><p>
+To simplify debugging of complex SystemC models where multiple TLM
+transactions are sent between multiple sockets, Simics has a capability to
+track the path a transaction went through as well as to save the history
+of the transaction changes which happened when the transaction travelled
+along the path. This capability is provided by the
+<em>transaction tracker tool</em> which is based on Simics
+instrumentation framework.
+</p><p>
+To track a transaction the tool connects to TLM sockets of the SystemC
+model and observes all the transactions which are sent between the sockets.
+The tool adds special TLM extension to each transaction passed through
+a socket, if the transaction does not have the extension added earlier,
+and uses the extension to save the transaction history. A new entry,
+consisting of current transaction attributes and hierarchical name of
+the socket, is appended to the history when the transaction is passed
+through the socket. Currently, the only transaction attribute which is
+saved in the entry is transaction address.
+</p><p>
+To create and connect the tool to all sockets of the SystemC model one
+should use adapter's <b>track-transactions-all</b> command.
+Corresponding <b>untrack-transactions-all</b> command disconnects
+the tool from all the sockets. One may use <b>track-transactions</b>
+command of a selected socket to connect the socket to the tool, and
+<b>untrack-transactions</b> command to disconnect it. Also it is
+possible to use instrumentation tool commands, such as
+<b>add-instrumentation</b> or <b>remove-instrumentation</b>,
+to control connection of the tool to all or selected sockets. Please
+refer to corresponding <b>help</b> commands or
+<em>Instrumentation Framework Reference Manual</em>.
+</p><p>
+To view the transaction history user should enable GDB pretty
+printing for TLM transactions. The pretty printer output can be seen
+in GDB console.
+
+</p><h3 class="jdocu"><a name="sc_protocol_checker_tool">5.3.6 sc_protocol_checker_tool</a></h3>
+<p>
+
+</p><p>
+The <code>sc_protocol_checker_tool</code> is a tool for validation of TLM2
+transactions. It checks the transactions sent through sockets and detect those
+which are not in compliance with the "OSCI TLM-2.0 USER MANUAL".
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The checker is using the Doulos TLM-2.0 Base Protocol Checker of an older
+version. The checker will be upgraded to a more recent version checking against
+the IEEE Std 1666-2011 specification.</div>The <code>sc_protocol_checker_tool</code> supports
+<code>tlm_initiator_socket</code> and <code>tlm_target_socket</code> as stated
+in section <a class="reference" href="#instrumentation_systemc_objects">5.3.1</a>. This tool does not
+have commands registered on the SystemC objects.
+<p>
+The protocol checker keeps track of the transaction state before the transaction
+is sent through a socket and after it returns. It checks all TLM socket methods
+for possible TLM2 transaction specification violations.
+</p><p>
+As an example, <b>&lt;adapter&gt;.new-sc-protocol-checker-tool -connect-all</b>
+can be used to check all sockets in a simulation.
+
+</p><h3 class="jdocu"><a name="sc_vcd_trace_tool">5.3.7 sc_vcd_trace_tool</a></h3>
+<p>
+
+The <code>sc_vcd_trace_tool</code> generates files based on the VCD format.
+</p><p>
+As an example, the command
+<b>&lt;adapter&gt;.new-sc-vcd-trace-tool file = myfile.vcd -connect-all</b>
+would generate a file in VCD format containing changes for any SystemC object
+listed in section <a class="reference" href="#instrumentation_systemc_objects">5.3.1</a> with the
+exception of type <code>SC_THREAD</code> and <code>SC_METHOD</code>.
+</p><p>
+During generation, two files are created. One contains the header section
+with variable definitions and the second file contains the value change
+section. When Simics ends or the tool is deleted, these two files are merged
+together into a single file. If this merge can not be performed automatically,
+it should be sufficient to append the file with the
+value change section on to the header file.
+For instance: <b>cat myfile.vcd.tail &gt;&gt; myfile.vcd</b>
+
+
+</p><h2 class="jdocu"><a name="SystemC-Profiling">5.4 SystemC Profiling</a></h2>
+<p>
+
+<a name="profiling"></a>
+</p><p>
+To aid users in developing well-performing models, Simics offers two
+ways of profiling SystemC processes. These features encompass a
+process profiler, that helps users identify performance-heavy
+processes, and memory profiling, that compiles memory statistics of
+memory-intensive processes. Details on how to enable and use these
+features are presented below.
+</p><p>
+</p><h3 class="jdocu"><a name="Process-Profiler">5.4.1 Process Profiler</a></h3>
+<p>
+
+<a name="profilingprocess"></a>
+The process profiler feature measures wall clock time execution of
+method- and thread-processes. The feature is disabled by default, but
+can be enabled on adapters by using
+the <b>enable-process-profiler</b> command.
+The feature can be disabled again by using the command
+<b>disable-process-profiler</b>.
+</p><p>
+The profiling results can be obtained by using the adapter command
+<b>process-profiler-results</b>. This command will show the number
+of processes of each type and the number of calls and total time spent
+executing them.
+</p><p>
+If using the <b>status</b> command on a process, more detailed information
+will be shown. This information will consist of minimum time, maximum time,
+total time executing and number of calls to the process. For thread processes
+the number of calls will represent the number of times we yielded to that
+process.
+</p><p>
+The <b>clear-process-profiler-results</b> command clears accumulated
+profiling results. All process profiler data including the aggregated execution
+time is cleared.
+
+</p><h3 class="jdocu"><a name="profiling-memory">5.4.2 Memory Profiling</a></h3>
+<p>
+
+<a name="profilingmemory"></a>
+</p><p>
+Memory profiling is enabled and disabled for each adapter by using
+the <b>enable-memory-profiler</b>
+and <b>disable-memory-profiler</b> commands. Memory profiling is
+disabled by default.
+</p><p>
+When memory profiling is enabled, Simics will record allocations and
+deallocations made in underlying processes. Please note that memory
+profiling has to be enabled for each adapter you wish to profile.
+</p><p>
+Users may inspect the current memory usage of a process by using
+the <b>status</b> command on the corresponding object in the
+awareness object hierarchy. Additionally, the collective memory usage of
+processes in a module may be inspected by using the <b>status</b>
+command on that module.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Memory profiling has certain limitations listed in chapter
+<a class="reference" href="limitations.html">7</a>.</div>
+
+<h2 class="jdocu"><a name="trigger-processes">5.5 Trigger SystemC Processes</a></h2>
+<p>
+
+SystemC Library supports unscheduled running of SystemC thread and SystemC
+method process objects. Two different options are available to run the
+processes. The first way is to locate the event object that the processes
+are sensitive to and invoke <b><i>notify</i></b> on the event object. This
+will cause all processes that are sensitive to the event object to be run
+during the next SystemC cycle. The second option is to locate the SystemC
+thread or process and invoke <b><i>run</i></b> on the object directly.
+The process will be run during the next SystemC cycle. This implies that
+<b><i>SIM_continue()</i></b> must be invoked before the process is run.
+From the command line, this corresponds to invoking <b>c 1</b>.
+
+</p><h2 class="jdocu"><a name="tlm-inject">5.6 TLM Injection</a></h2>
+<p>
+
+Sockets, registered with the awareness framework, provide the Simics
+<code>sc_tlm_fw_transport</code> and <code>sc_tlm_bw_transport</code>
+interfaces. The interfaces correspond to the SystemC TLM2 transport interfaces
+and support injection. The following rules specify the mapping between the
+Simics interfaces and the SystemC transport interfaces.
+</p><p>
+</p><ul>
+<li>The <code>attr_value_t</code> are dictionaries with <code>string</code> as
+key</li>
+<li>The keys are based on namespaces to address the designated target</li>
+<li>The namespace used for the transaction is <b>gp</b></li>
+<li>The namespace used for the <code>tlm_dmi</code> descriptor is <b>dmi</b></li>
+</ul>
+<p>
+For example, injecting a write transaction into a socket could be done as shown
+below.
+</p><p>
+
+
+
+</p><pre class="jdocu_small">simics&gt; <b>dut.top.simple_initiator_socket_0.trace-sc</b>
+Created dut.internal.sc_trace_tool (connected to 1 provider)
+simics&gt; <b>@socket = dut.top.simple_initiator_socket_0.iface.sc_tlm_fw_transport</b>
+simics&gt; <b>@socket.b_transport({'gp.command' : 1, 'gp.data_ptr' : (0, 1, 2, 3)}, 0)</b>
+None
+simics&gt; <b>c 1</b>
+[dut.top.simple_initiator_socket_0 trace-b-out] write sz:4 addr:0x0 data:0x03020100
+[dut.top.simple_initiator_socket_0 trace-b-in] write sz:4 addr:0x0 data:0x03020100 status:TLM_OK_RESPONSE
+simics&gt;
+</pre><p>
+</p><p>
+The transaction is injected into the socket by invoking <b><i>b_transport</i></b>
+of the <code>sc_tlm_fw_transport</code> interface. To avoid blocking Simics
+when the interface is called, the transaction is queued up and sent when
+simulation starts. This is only required for <b><i>b_transport</i></b>.
+All other functions of <code>sc_tlm_fw_transport</code> and
+<code>sc_tlm_bw_transport</code> execute their side-effects directly. The
+fields of the <code>tlm_generic_payload</code> are set by building the key
+prefixed with <b>gp.</b>, followed by the name of the setter function.
+The key <b>gp.command</b> addresses the generic payload and invokes
+<b><i>set_command</i></b> on the generic payload.
+The functions expects a <code>tlm_command</code> enum type when invoked in
+SystemC. For argument passing, enums are passed as <code>signed integer</code>
+types.
+The value 0 reflects a read transaction and 1 corresponds to a write
+transaction. This is according to the <code>tlm_command</code> enum definition
+in the SystemC kernel.
+</p><p>
+To simplify matters, <b>gp.data_ptr</b> invokes <b><i>set_data_ptr</i></b>,
+<b><i>set_data_length</i></b> and <b><i>set_streaming_width</i></b>.
+The following guidelines should be followed when setting the value of the
+key-value pair in dictionaries.
+</p><ul>
+<li>Pointers to data are set via <code>attr_value_t</code> 'data'</li>
+<li>The length of the data is encapsulated by the <code>attr_value_t</code>
+'data', and should not be explicitly set</li>
+<li>Arrays are set via <code>attr_value_t</code> 'list'</li>
+<li>The length of the array is encapsulated by the <code>attr_value_t</code>
+'list', and should not be explicitly set</li>
+<li>Each extension is set as an attr_value_t 'dict'</li>
+<li>For multiple function arguments of different types, use a 'dict'</li>
+<li>For multiple function arguments of the same type, use a 'list'</li>
+</ul>
+<p>
+Injecting a read transaction into a socket could be done as shown below.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@socket.b_transport({'gp.command' : 0, 'gp.data_ptr' : (0,) * 4}, 0)</b>
+None
+simics&gt; <b>c 1</b>
+[dut.top.simple_initiator_socket_0 trace-b-out] read sz:4 addr:0x0 data:0x00000000
+[dut.top.simple_initiator_socket_0 trace-b-in] read sz:4 addr:0x0 data:0x03020100 status:TLM_OK_RESPONSE
+simics&gt;
+</pre><p>
+</p><p>
+The length of the data to be read is specified by the Python tuple. Because the
+transaction is sent into the socket at a later point in time, the Simics
+instrumentation framework is used to display the actual data returned from the
+<b><i>b_transport</i></b> call.
+</p><p>
+To add an extension to the transaction, additional key-value pairs need to be
+set in the dictionary associated with the transaction argument. The table below
+lists the mapping between each namespace and the corresponding SystemC Library
+extension.
+</p><p>
+<table>
+
+<tbody><tr>
+  <td class="jdocu_border"><b>Namespace key</b></td>
+  <td class="jdocu_border"><b>Extension</b></td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">ethernet_common</td>
+  <td class="jdocu_border">EthernetCommonExtension</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">i2c_master_v2</td>
+  <td class="jdocu_border">I2cMasterV2Extension</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">i2c_slave_v2</td>
+  <td class="jdocu_border">I2cSlaveV2Extension</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">map_info</td>
+  <td class="jdocu_border">MapInfoExtension</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">pci_bus</td>
+  <td class="jdocu_border">PciBusExtension</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">pci_device</td>
+  <td class="jdocu_border">PciDeviceExtension</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">pci_express</td>
+  <td class="jdocu_border">PciExpressExtension</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">pci_upstream_operation</td>
+  <td class="jdocu_border">PciUpstreamOperationExtension</td>
+</tr>
+
+<tr>
+  <td class="jdocu_border">serial_device</td>
+  <td class="jdocu_border">SerialDeviceExtension</td>
+</tr>
+
+</tbody></table>
+</p><p>
+The key-value pairs for the extensions are specific. For details about the valid
+pairs, please refer to the implementation of the extension injector located in
+<code>simics/systemc/iface/</code>. One example that demonstrates the inject of
+a transaction with an <code>EthernetCommonExtension</code> set is shown below.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@data = tuple(bytearray(b'ABCDEF'))</b>
+simics&gt; <b>@fraglist = [data[:4], data[4:]]</b>
+simics&gt; <b>@frame = {'len' : len(data), 'fraglist' : fraglist}</b>
+simics&gt; <b>@socket.b_transport({'ethernet_common.frame' : {'frame' : frame, 'crc_ok' : 1}}, 0)</b>
+None
+simics&gt; <b>c 1</b>
+[dut.top.simple_initiator_socket_0 trace-b-out] ignore sz:0 addr:0x0
+[dut.top.simple_initiator_socket_0 trace-b-in] ignore sz:0 addr:0x0 status:TLM_OK_RESPONSE
+</pre><p>
+</p><p>
+</p><h3 class="jdocu"><a name="custom-injector-implementation">5.6.1 Writing an Injector for a Custom Extension</a></h3>
+<p>
+
+</p><p>
+To support inject of extensions not provided by SystemC Library,
+<b>simics::systemc::injection::InjectBase</b> needs to be implemented.
+</p><p>
+To activate support for the additional injector, the template class needs to be
+instantiated. This is required to register the support for the new injector in
+the infrastructure. One possibility is to declare it as a member variable of the
+Adapter. Below is an example that shows the required steps to support a new
+extension.
+</p><pre class="jdocu_small">
+ <pre class="jdocu_small">class CustomExtension : public tlm::tlm_extension&lt;CustomExtension&gt; {
+  public:
+    CustomExtension() : member_a_(0), member_b_(0),
+                        member_d_(NULL), member_d_len_(0),
+                        member_x_(0), member_y_(0) {}
+    virtual tlm::tlm_extension_base *clone() const {
+        return new CustomExtension(*static_cast&lt;const CustomExtension *&gt;(this));
+    }
+    virtual void copy_from(tlm::tlm_extension_base const &amp;extension) {
+        *this = static_cast&lt;const CustomExtension &amp;&gt;(extension);
+    }
+    void set_member_b(uint8_t member) {
+        member_b_ = member;
+    }
+    void set_xy(uint8_t x, int8_t y) {
+        member_x_ = x;
+        member_y_ = y;
+    }
+    virtual ~CustomExtension() {}
+    uint8_t member_a_;
+    uint8_t member_b_;
+    std::vector&lt;uint8_t&gt; member_c_;
+    const uint8_t *member_d_;
+    uint64_t member_d_len_;
+
+  private:
+    uint8_t member_x_;
+    int8_t member_y_;
+};
+
+#include &lt;simics/systemc/injection/inject_base.h&gt;  // NOLINT
+
+template &lt;typename TPAYLOAD&gt;
+class InjectCustomExtension
+    : public simics::systemc::injection::InjectBase&lt;TPAYLOAD&gt; {
+  public:
+    ATTR_DICT_PARSER_NAMESPACE("custom.")
+
+    virtual bool setValue(simics::systemc::injection::AttrDictParser *parser,
+                          const std::string &amp;key, attr_value_t *attr,
+                          TPAYLOAD *gp) {
+        if (key == "member_a") {
+            CustomExtension *extension =
+                this-&gt;template get_extension&lt;CustomExtension&gt;(gp);
+
+            if (!parser-&gt;value(&amp;extension-&gt;member_a_))
+                return false;
+
+            return true;
+        }
+
+        INJECT_SET_VALUE(set_member_b, uint8_t, CustomExtension);
+
+        if (key == "set_xy") {
+            simics::systemc::injection::AttrDictParser p = parser-&gt;init(attr);
+            CustomExtension *extension =
+                this-&gt;template get_extension&lt;CustomExtension&gt;(gp);
+            uint8_t x = 0;
+            if (!p.lookUp("x", &amp;x))
+                return false;
+
+            int8_t y = 0;
+            if (!p.lookUp("y", &amp;y))
+                return false;
+
+            extension-&gt;set_xy(x, y);
+            return true;
+        }
+
+        if (key == "member_c") {
+            CustomExtension *extension =
+                this-&gt;template get_extension&lt;CustomExtension&gt;(gp);
+
+            if (!parser-&gt;value(&amp;extension-&gt;member_c_))
+                return false;
+
+            return true;
+        }
+
+        if (key == "member_d") {
+            CustomExtension *extension =
+                this-&gt;template get_extension&lt;CustomExtension&gt;(gp);
+
+            if (!SIM_attr_is_data(*attr)) {
+                parser-&gt;reportError("member_d must be data");
+                return false;
+            }
+            extension-&gt;member_d_ = SIM_attr_data(*attr);
+            extension-&gt;member_d_len_ = SIM_attr_data_size(*attr);
+
+            return true;
+        }
+
+        return false;
+    }
+};
+
+static InjectCustomExtension&lt;tlm::tlm_generic_payload&gt; injector_;
+</pre><p>
+
+</p></pre><p>
+The example shows different ways to set the members in the
+<code>CustomerExtension</code>. If the member in the extension is
+directly accessible, it could be set as shown for <b>member_a</b>.
+Data access is usually provided by setters and getters,
+<b><i>set_member_b</i></b> can be called by <b><i>INJECT_SET_VALUE</i></b>.
+If multiple arguments are required by the extension method, the arguments should
+be grouped in another dictionary or list as key <b>set_xy</b> shows.
+The key <b>member_c</b> demonstrates how a Python list can be loaded into a
+<code>vector</code>. Setting a data pointer is shown by key <b>member_d</b>.
+If a member in the extension cannot be properly setup, <code>false</code> must
+be returned. The failing key will be reported as an error and the inject call
+will be aborted.
+</p><p>
+The corresponding calls to setup the extension from Python could be as in the
+following example.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@socket.b_transport({'custom.member_a' : 1}, 0)</b>
+simics&gt; <b>@socket.b_transport({'custom.set_member_b' : 2}, 0)</b>
+simics&gt; <b>@socket.b_transport({'custom.set_xy' : {'x' : 3, 'y' : 4}}, 0)</b>
+simics&gt; <b>@socket.b_transport({'custom.member_c' : [5, 6]}, 0)</b>
+simics&gt; <b>@socket.b_transport({'custom.member_d' : (7, 8, 9)}, 0)</b>
+</pre><p>
+</p><p>
+
+
+</p><h2 class="jdocu"><a name="Unconnected-Ports">5.7 Unconnected Ports</a></h2>
+<p>
+
+According to SystemC language standard, port instances defined by
+<b>sc_port</b> class cannot remain unbound at the end of elaboration,
+unless allowed by port policy. SystemC Library optionally permits using
+unbound ports. Such ports are then automatically bound to a dynamically
+allocated object implementing the corresponding interface. Access to
+an unbound port will log an unimplemented message in Simics, for example:
+</p><p>
+</p><pre class="jdocu_small">[device unimpl] Access to unbound port: device.simple_initiator_socket_0 @ 0 s
+of intc/unimplemented in unconnected_base.h:28
+</pre><p>
+</p><p>
+The feature is disabled by default and can be enabled using
+<em>allow_unconnected_ports</em> attribute of the SystemC adapter.
+The list of supported unbound ports includes specialized
+<b>sc_in</b>, <b>sc_out</b> and <b>sc_inout</b>
+ports as well as socket ports which use the standard TLM-2.0 forward and
+backward transport interfaces.
+
+</p>
+<div class="chain">
+<a href="connecting-systemc-and-simics-models.html">4 Connecting SystemC and Simics Models</a>
+<a href="execution-of-systemc-models-in-the-simics-simulator.html">6 Execution of SystemC Models in the Simics Simulator</a>
+</div>

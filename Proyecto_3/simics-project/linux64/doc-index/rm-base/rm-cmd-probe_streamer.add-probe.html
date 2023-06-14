@@ -1,0 +1,87 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;probe_streamer&gt;.add-probe</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-probe_sim_virtual_time_ps.status.html">&lt;probe_sim_virtual_time_ps&gt;.status</a>
+<a href="rm-cmd-probe_streamer.delete.html">&lt;probe_streamer&gt;.delete</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="probe_streamer.add-probe"></a>
+<h1 id="probe_streamer.add-probe"><a href="#probe_streamer.add-probe">&lt;probe_streamer&gt;.add-probe</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;probe_streamer&gt;.add-probe</b> [-internal-probes] [-objects] [-verbose] [-hidden] (<i>"probe"</i> ... | list of <i>"probe"</i>) [<i>mode</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Add probes to the streamer. Naming a <i>probe</i> will add all instances of that probe to the streamer, i.e. all objects that have that probe will be added.
+<p>
+If <tt>-objects</tt> is used the syntax object:probe-name can be used to add a probe for a single object, e.g., board.mb.cpu[0]:cpu.cycles.
+</p><p>
+Either way a prefix which ends with a dot (.) is allowed to add any probes below the prefix in the probe name hierarchy, e.g., "board.mb.cpu[0]:cpu." will add all probes that start with "cpu.". in the board.mb.cpu[0] object, and similarly, a prefix of just "cpu." will add all probes in all objects having "cpu." as prefix.
+</p><p>
+If <tt>-objects</tt> is used the syntax "object_name:" can be used to add all probes belonging to an object, e.g., "board.mb.cpu[0]:" will add all probes in the board.mb.cpu[0] object.
+</p><p>
+Use <tt>-internal-probes</tt> to be able to add internal probes.
+</p><p>
+The <i>mode</i> argument tells the streamer how the probe values should be display in each sample, by default the <tt>delta</tt> value from last sample is shown. Other options are <tt>current</tt> and <tt>session</tt>. <tt>current</tt> means the actual probe value is displayed in each sample. With the <tt>session</tt> mode, the delta value since the probe was added to the streamer is displayed.
+</p><p>
+For example, a <tt>steps</tt> probe might have a value of several millions when you add the probe to the streamer. With <tt>current</tt> the full number will be displayed, with <tt>session</tt> it will start at zero and increase. The <tt>delta</tt> will show the number of steps between each sample.
+</p><p>
+A probe can be added with different modes by using the command repeatedly. A probe can only be added once in each mode and adding it several time will have no effect.
+</p><p>
+If <tt>-verbose</tt> is given all the proves added are logged to the console.
+</p><p>
+The <tt>-hidden</tt> flag can be used to collect a probe during sampling, but not print the value on the console. (Reducing the width and the amount of data being presented). Hidden probes will still be printed by the various commands that list or export the data.
+</p><p>
+The command returns a list of the probe names added if used as a value. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.probe-monitor.html">probe-monitor</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-probe_streamer.remove-probe.html">&lt;probe_streamer&gt;.remove-probe</a>, 
+<a href="rm-cmd-probe_streamer.stop.html">&lt;probe_streamer&gt;.stop</a>, 
+<a href="rm-cmd-probe_streamer.delete.html">&lt;probe_streamer&gt;.delete</a>, 
+<a href="rm-cmd-probe_streamer.summary.html">&lt;probe_streamer&gt;.summary</a>, 
+<a href="rm-cmd-probe_streamer.start.html">&lt;probe_streamer&gt;.start</a>, 
+<a href="rm-cmd-probe_streamer.sampling-settings.html">&lt;probe_streamer&gt;.sampling-settings</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-probe_sim_virtual_time_ps.status.html">&lt;probe_sim_virtual_time_ps&gt;.status</a>
+<a href="rm-cmd-probe_streamer.delete.html">&lt;probe_streamer&gt;.delete</a>
+</div>

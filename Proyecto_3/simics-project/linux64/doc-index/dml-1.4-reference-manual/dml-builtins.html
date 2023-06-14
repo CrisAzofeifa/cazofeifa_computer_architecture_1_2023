@@ -1,0 +1,1092 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4 Libraries and Built-ins</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="language.html">3 Device Modeling Language, version 1.4</a>
+<a href="utility.html">5 Standard Templates</a>
+</div>
+<div class="path">
+<a href="index.html">Device Modeling Language 1.4 Reference Manual</a>
+&nbsp;/&nbsp;</div>
+<h1 id="libraries-and-built-ins">4 <a href="#libraries-and-built-ins">Libraries and Built-ins</a></h1>
+<p>Most standard functionality in Device Modeling Language (DML) is implemented in
+templates. Built-in
+templates can be categorized as follows:</p>
+<ul>
+<li>
+<p>Each object type has a corresponding template which is instantiated for all
+objects of that type. For instance, the template <code>register</code> is automatically
+instantiated in all registers. All such templates inherit the <code>object</code>
+template, and define the <code>objtype</code> parameter to the name of the object type,
+e.g. <code>"register"</code> for registers.</p>
+</li>
+<li>
+<p>Some templates primarily provide a standard implementation of some
+behaviour. For instance, the <code>uint64_attr</code> template can be
+applied on <code>attribute</code> objects to make it a simple integer
+attribute.</p>
+</li>
+<li>
+<p>Some templates primarily specify a programming interface, typically by
+providing an abstract or overrideable method or parameter. Such templates
+are often named like the provided member. For instance, objects
+that implement the <code>init</code> template provide the abstract method
+<code>init</code>. Interface templates have a number of uses:</p>
+<ul>
+<li>
+<p>In some cases, an interface template extends an existing
+template, altering its default behaviour to make sure its
+interface method is called. Often, this means that when you
+provide an implementation of an interface method,
+you <em>must</em> instantiate the corresponding template;
+otherwise, the method will not be called. For instance, if you
+implement the <code>write</code> method in a register, it is not called
+by default upon a write access; however, if you instantiate
+the <code>write</code> template in the register, then the register's
+behaviour is altered to call the
+<code>write</code> method. Thus, in order to provide custom
+side-effects on a write, you must write something like:</p>
+<pre><code>register r @ 0 is write { method write(uint64 value) { default();
+log info: "wrote r"; } }
+</code></pre>
+</li>
+<li>
+<p>When writing a method or parameter override
+<em>inside a template</em>, you must
+explicitly instantiate the template you are overriding in order to specify
+that your declaration takes precedence over the default implementation. If
+your template is intended for a specific object type, then it is sufficient
+to override that template, but it is often better to override a more
+specific template if possible. For instance, the <code>init_val</code>
+parameter belongs to the <code>init_val</code> template, which is
+inherited by all registers. So a template that overrides this parameter
+may be implemented as follows:</p>
+<pre><code>template init_to_ten is register {
+    param init_val = 10;
+}
+</code></pre>
+<p>However, it is even better to only inherit the <code>init_val</code>
+template:</p>
+<pre><code>template init_to_ten is init_val {
+    param init_val = 10;
+}
+</code></pre>
+<p>The latter improves efficiency and
+permits <code>init_to_ten</code> to also be used on fields.</p>
+</li>
+<li>
+<p>Similarly, if you write a template that needs to <em>access</em> some
+member of the object, then it must inherit a template that provides that
+member. For instance:</p>
+<pre><code>template log_on_change is (write, get, name) {
+    method write(uint64 value) {
+        if (this.get() != value) {
+            log info: "%s changed!", this.name;
+        }
+        default();
+    }
+}
+</code></pre>
+<p>Again, it would also work to inherit <code>register</code> instead of
+<code>get</code> and <code>name</code>, but at the cost of reduced
+flexibility and efficiency.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="universal-templates">4.1 <a href="#universal-templates">Universal templates</a></h2>
+<p>The following templates are applicable to all object kinds:</p>
+<h3 id="name">4.1.1 <a href="#name">name</a></h3>
+<p>Provides a string parameter <code>name</code>, containing the name of the
+object, as exposed to the end-user. This parameter is typically used in log
+messages and names of configuration attributes. The name can be overridden
+in order to hide confidential information from the end-user.</p>
+<h3 id="desc">4.1.2 <a href="#desc">desc</a></h3>
+<p>Provides a string parameter <code>desc</code>, with a short description in plain text. By
+convention, this should preferably be a few descriptive words, but may also be
+a long name. The description can appear during simulation, when inspecting the
+device, and also serves as a docstring that enriches the DML source code. The
+parameter's default value is <code>undefined</code>. The <code>desc</code> parameter has a short-hand
+syntax described in section <a href="language.html#object-declarations">Object
+Declarations</a>.</p>
+<p>Also provides a string parameter <code>shown_desc</code>, which is the string
+actually exposed to the end-user during simulation. This parameter defaults to
+<code>desc</code>, and can be overridden in order to hide confidential information
+from the end-user.</p>
+<p>See also <a href="#documentation">template
+<code>documentation</code></a>.</p>
+<h3 id="shown_desc">4.1.3 <a href="#shown_desc">shown_desc</a></h3>
+<p>A subtemplate of <a href="#desc"><code>desc</code></a> that makes the <code>shown_desc</code> parameter a typed
+parameter. This is inherited by objects that need to access <code>shown_desc</code> from
+the context of a shared method.</p>
+<h3 id="documentation">4.1.4 <a href="#documentation">documentation</a></h3>
+<p>Provides a string parameter <code>documentation</code>, with a longer
+description. The documentation may appear when extracting documentation from
+the device.</p>
+<p>If you have the <em>Documentation and Packaging</em> package and intend to
+generate Simics reference documentation for the device then the
+<code>documentation</code> string must follow the Simics documentation XML format,
+otherwise you will get a syntax error during the documentation build. See the
+<em>Writing Documentation</em> application note.</p>
+<p>Also provides a string parameter <code>shown_documentation</code>, defaulting to
+<code>documentation</code>. This parameter is similar to <code>shown_desc</code> in the <a href="#desc">desc</a>
+template, and is mainly a convenient way to suppress documentation.</p>
+<h3 id="limitations">4.1.5 <a href="#limitations">limitations</a></h3>
+<p>Provides a string parameter <code>limitations</code>, describing limitations in
+the implementation of this object. The documentation may appear when extracting
+documentation from the device.</p>
+<p>If you have the <em>Documentation and Packaging</em> package and intend to
+generate Simics reference documentation for the device then the
+<code>limitations</code> string must follow the Simics documentation XML format,
+otherwise you will get a syntax error during the documentation build. See the
+<em>Writing Documentation</em> application note.</p>
+<p>Also provides a string parameter <code>shown_limitations</code>, defaulting to
+<code>limitations</code>. This parameter is similar to <code>shown_desc</code>, and
+is mainly a convenient way to suppress documentation.</p>
+<h3 id="init">4.1.6 <a href="#init">init</a></h3>
+<p>Provides an abstract method <code>init</code>, which is called when the
+device is created, <em>before</em> any attributes have been
+initialized. Typically used to initialize a default value, or to set up data
+structures.</p>
+<p>The method <code>init</code> is automatically called on all objects that implement the <code>init</code> template.</p>
+<h3 id="post_init">4.1.7 <a href="#post_init">post_init</a></h3>
+<p>Provides an abstract method <code>post_init</code>, which is called when the
+device is created, <em>after</em> any attributes have been
+initialized. Typically used to establish connections to other devices, or to
+set up data structures that depend on configured attribute values.</p>
+<p>The method <code>post_init</code> is automatically called on all objects that
+implement the <code>post_init</code> template.</p>
+<h3 id="object">4.1.8 <a href="#object">object</a></h3>
+<p>Base template, implemented by all objects. Inherits the templates
+<a href="#name"><code>name</code></a>, <a href="#desc"><code>desc</code></a>, <a href="#documentation"><code>documentation</code></a> and
+<a href="#limitations"><code>limitations</code></a>. Provides the following additional parameters,
+which cannot be overridden:</p>
+<ul>
+<li>
+<p><code>this</code> (reference): Always refers to the current object, i.e., the
+nearest enclosing object definition.</p>
+</li>
+<li>
+<p><code>objtype</code>: string constant describing the object type, e.g. <code>"register"</code></p>
+</li>
+<li>
+<p><code>parent</code> (reference or <code>undefined</code>): Always refers to the parent
+(containing) object. Has the value <code>undefined</code> in the <code>device</code> object.</p>
+</li>
+<li>
+<p>qname: The fully qualified name, including indices, such as
+<code>some_bank.r0</code>. Constructed from the <code>name</code> parameter.  In the
+device object, this is equal to the <code>name</code> parameter.</p>
+</li>
+<li>
+<p>dev: The top-level <code>device</code> object</p>
+</li>
+<li>
+<p>indices: List of local indices for this object. For a non-array
+object, this is the empty list. In a register array of size N, it is
+a list with one element, a non-negative integer smaller than N. The
+parameter is <em>not</em> cumulative across the object hierarchy, so for a
+single field inside a register array, the value is the empty list.</p>
+</li>
+<li>
+<p>Each array has an <em>individual index parameter</em>, to make it possible
+to refer to both inner and outer indexes when arrays are nested
+(cf. the <code>indices</code> parameter, above). The parameter name is
+specified in the array declaration; for instance, the declaration
+<code>register regs[i &lt; 4][j &lt; 11];</code> defines two index parameters, <code>i</code> and <code>j</code>.
+In this case, the <code>indices</code> parameter is <code>[i, j]</code>.</p>
+</li>
+</ul>
+<p>The <code>object</code> template provides the non-overridable method <code>cancel_after()</code>,
+which cancels all pending events posted using <code>after</code> which are associated with
+the object (any events associated with subobjects are unaffected).</p>
+<p>There are no other methods common for all objects, but the methods <code>init</code>
+and <code>post_init</code> are automatically called on all objects that implement
+the <a href="#init"><code>init</code></a> and <a href="#post_init"><code>post_init</code></a> template, respectively.</p>
+<h2 id="device-objects">4.2 <a href="#device-objects">Device objects</a></h2>
+<p>The top-level scope of a DML file defines the <em>device object</em>, defined by the
+template <code>device</code>. This template inherits the <a href="#init"><code>init</code></a> and
+<a href="#post_init"><code>post_init</code></a> templates.</p>
+<p>The <code>device</code> template contains the following methods:</p>
+<ul>
+<li>
+<p><code>init()</code>: Called when the device object is loaded, but before its
+configuration-object attributes have been initialized.</p>
+</li>
+<li>
+<p><code>post_init()</code>: Called when the device object is loaded, <em>after</em> its
+configuration-object attributes have been initialized.</p>
+</li>
+<li>
+<p><code>destroy()</code>: Called when the device object is being deleted.</p>
+</li>
+</ul>
+<p>The <code>device</code> template contains the following parameters:</p>
+<ul>
+<li>
+<p><code>classname</code> <em>[string]</em>: The name of the Simics configuration object class defined
+by the device model. Defaults to the name of the device object.</p>
+</li>
+<li>
+<p><code>register_size</code> <em>[integer | undefined]</em>: The default size (width) in bytes
+used for <code>register</code> objects; inherited by <code>bank</code> objects. The default value
+is <code>undefined</code>.</p>
+</li>
+<li>
+<p><code>byte_order</code> <em>[string]</em>: The default byte order used when accessing registers
+wider than a single byte; inherited by <code>bank</code> objects. Allowed values are
+<code>"little-endian"</code> and <code>"big-endian"</code>. The default value is <code>"little-endian"</code>.</p>
+</li>
+<li>
+<p><code>be_bitorder</code> <em>[bool]</em>: The default value of the <code>be_bitorder</code> in banks.  The
+default value is <code>true</code> if the DML file containing the <code>device</code> statement
+declares <code>bitorder be;</code>, and <code>false</code> otherwise.</p>
+</li>
+<li>
+<p><code>use_io_memory</code> <em>[bool]</em>: The default value of the <code>use_io_memory</code> parameter
+in banks. The current default value is <code>true</code>, but in future Simics versions
+it will be <code>false</code>.</p>
+</li>
+<li>
+<p><code>obj</code> *[conf_object_t <em>]</em>: A pointer to the <code>conf_object_t</code> C struct
+that Simics associates with this device instance</p>
+</li>
+<li>
+<p><code>simics_api_version</code> <em>[string]</em>: The Simics API version used when building
+this device, as specified by the <code>--simics-api</code> command-line argument;
+e.g. <code>"6"</code> for the Simics 6 API.</p>
+</li>
+</ul>
+<h2 id="group-objects">4.3 <a href="#group-objects">Group objects</a></h2>
+<p>Group objects are generic container objects, used to group other objects.
+They can appear anywhere in the object hierarchy, but some object types
+(currently <code>implement</code> and <code>interface</code>) may not have a group
+as parent.</p>
+<p>The <code>group</code> template contains no particular methods or parameters other
+than what is inherited from the <a href="#object"><code>object</code></a> template.</p>
+<p>In a group hierarchy directly below a <code>port</code> or <code>device</code> object, none of the
+group object may be named <code>bank</code> or <code>port</code>; this is to avoid name clashes.</p>
+<h2 id="attribute-objects">4.4 <a href="#attribute-objects">Attribute objects</a></h2>
+<p>The <code>attribute</code> template contains the following methods:</p>
+<dl><dt id="dt:get-attr_value_t">
+<p><small>get() -&gt; (attr_value_t)</small></p>
+</dt><dd>
+<p>Abstract method. Returns the value of the attribute.</p>
+</dd><dt id="dt:set-attr_value_t-value-throws">
+<p><small>set(attr_value_t value) throws</small></p>
+</dt><dd>
+<p>Abstract method. Sets the value of the attribute. If the provided value is
+not allowed, use a <code>throw</code> statement to signal the error.</p>
+</dd><dt id="dt:get_attribute-attr_value_t-set_attribute-attr_value_t-value-set_error_t">
+<p><small>get_attribute -&gt; (attr_value_t), set_attribute(attr_value_t value) -&gt; (set_error_t)</small></p>
+</dt><dd>
+<p>Not intended to be used directly. Called by Simics for reading and
+writing the attribute value. Calls the <code>get</code>
+and <code>set</code> methods.</p>
+</dd></dl>
+<p>The <code>attribute</code> template contains the following parameters:</p>
+<dl><dt id="dt:type-string-undefined">
+<p>type [string | undefined]</p>
+</dt><dd>
+<p>A Simics configuration-object attribute type description string,
+such as <code>"i"</code> or <code>"[s*]"</code>, specifying the type of the
+attribute. (See the documentation of
+<code>SIM_register_typed_attribute</code> in the <em>Model Builder
+Reference Manual</em> for details.) For simple types this can easily be set
+by standard attribute templates.</p>
+</dd><dt id="dt:configuration-required-optional-pseudo-none">
+<p>configuration [<code>"required"</code> | <code>"optional"</code> | <code>"pseudo"</code> | <code>"none"</code>]</p>
+</dt><dd>
+<p>Specifies how Simics treats the attribute. The default value is
+<code>"optional"</code>. A <em>required</em> attribute must be initialized to a
+value when the object is created, while an <em>optional</em> attribute can be
+left undefined. In both cases, the value is saved when a checkpoint
+is created. For a <em>pseudo</em>-attribute, the value is <em>not</em> saved
+when a checkpoint is created (and it is not required to be initialized upon
+object creation). Setting the value to <code>"none"</code> suppresses creation of
+the attribute. This is seldom useful in attribute objects, but can be used in
+related object types like <code>register</code> to suppress
+checkpointing.</p>
+</dd><dt id="dt:persistent-bool">
+<p>persistent [bool]</p>
+</dt><dd>
+<p>If this parameter is <code>true</code>, the attribute will be treated
+as persistent, which means that its value will be saved
+when using the <code>save-persistent-state</code> command.  The default
+value is <code>false</code>.</p>
+</dd><dt id="dt:readable-bool">
+<p>readable [bool]</p>
+</dt><dd>
+<p>If false, the attribute cannot be read. This can only be used if
+the <code>configuration</code> parameter is set
+to <code>"pseudo"</code>. Normally set by the <code>write_only_attr</code> template.</p>
+</dd><dt id="dt:writable-bool">
+<p>writable [bool]</p>
+</dt><dd>
+<p>If false, the attribute cannot be written. This should normally be
+set by instantiating the <code>read_only_attr</code> template, and requires
+that the <code>configuration</code> parameter
+is <code>"pseudo"</code>. Normally set by
+the <code>read_only_attr</code> template.</p>
+</dd><dt id="dt:internal-bool">
+<p>internal [bool]</p>
+</dt><dd>
+<p>If this parameter is <code>true</code>, the attribute will be treated
+as internal, meaning that it will be excluded from documentation.
+The default value is <code>true</code> if the <code>documentation</code> and <code>desc</code> parameters
+are undefined, and <code>false</code> otherwise.</p>
+</dd></dl>
+<h2 id="attribute-templates">4.5 <a href="#attribute-templates">Attribute templates</a></h2>
+<p>Four templates are used to create a simple checkpointable attribute with
+standard types. Each store the attribute value in a member <code>val</code>,
+provide default implementations of methods <code>get</code> and <code>set</code> according to the
+type, and provide a default implementation of <code>init</code> that initializes
+<code>val</code> using the <code>init_val</code> parameter also provided by the template (whose
+default definition simply zero-initializes <code>val</code>.) These four templates are:</p>
+<dl><dt id="dt:bool_attr">
+<p>bool_attr</p>
+</dt><dd>
+<p>boolean-valued attribute, <code>val</code> has type
+<code>bool</code></p>
+</dd><dt id="dt:int64_attr">
+<p>int64_attr</p>
+</dt><dd>
+<p>integer-valued attribute, <code>val</code> has type
+<code>int64</code></p>
+</dd><dt id="dt:uint64_attr">
+<p>uint64_attr</p>
+</dt><dd>
+<p>integer-valued attribute, <code>val</code> has type
+<code>uint64</code></p>
+</dd><dt id="dt:double_attr">
+<p>double_attr</p>
+</dt><dd>
+<p>floating-point-valued attribute, <code>val</code> has type
+<code>double</code></p>
+</dd></dl>
+<p>In addition, three templates can be used to define a pseudo attribute,
+and cannot be used with the above templates:</p>
+<dl><dt id="dt:pseudo_attr">
+<p>pseudo_attr</p>
+</dt><dd>
+<p>Pseudo attribute. Will not be
+checkpointed. Methods <code>get</code> and <code>set</code> are abstract.</p>
+</dd><dt id="dt:read_only_attr">
+<p>read_only_attr</p>
+</dt><dd>
+<p>Pseudo attribute that cannot be written. Method <code>get</code> is
+abstract.</p>
+</dd><dt id="dt:write_only_attr">
+<p>write_only_attr</p>
+</dt><dd>
+<p>Pseudo attribute that cannot be read. Method <code>set</code> is
+abstract</p>
+</dd></dl>
+<p>These templates are not compatible with the <code>bool_attr</code>, <code>uint64_attr</code>,
+<code>int64_attr</code>, or <code>float_attr</code> templates.</p>
+<h2 id="connect-objects">4.6 <a href="#connect-objects">Connect objects</a></h2>
+<p>The <code>connect</code> template contains the following methods:</p>
+<dl><dt id="dt:validate-conf_object_t-obj-bool">
+<p><small>validate(conf_object_t *obj) -&gt; (bool)</small></p>
+</dt><dd>
+<p>Called when Simics attempts to assign a new target object. If the return value
+is <code>false</code>, the attempted connection will fail, and any existing connection
+will be kept. The default is to return <code>true</code>.</p>
+<p>If connecting to a port interface (rather than a port object), then
+a session variable <code>port</code>, of type <code>char *</code>, is set to
+the new port name during the <code>validate</code> call. This will be
+removed in future versions of Simics.</p>
+</dd><dt id="dt:set-conf_object_t-obj">
+<p><small>set(conf_object_t *obj)</small></p>
+</dt><dd>
+<p>Called after validation, to assign a new target object. Can be
+overridden to add side-effects before or after the assignment</p>
+</dd><dt id="dt:get_attribute-attr_value_t-set_attribute-attr_value_t-value-set_error_t-2">
+<p><small>get_attribute -&gt; (attr_value_t),
+set_attribute(attr_value_t value) -&gt; (set_error_t)</small></p>
+</dt><dd>
+<p>Internal, not intended to be used directly. Called by Simics for accessing
+the attribute value.</p>
+</dd></dl>
+<p>The <code>connect</code> template contains the following parameters:</p>
+<dl><dt id="dt:configuration-required-optional-pseudo-none-2">
+<p>configuration [<code>"required"</code> | <code>"optional"</code> | <code>"pseudo"</code> | <code>"none"</code>]</p>
+</dt><dd>
+<p>Specifies how Simics treats the automatically created
+<a href="#attribute-objects">attribute</a>
+corresponding to the connect object. The default value is <code>"optional"</code>.</p>
+<p>The attribute can be set to a nil value only if this parameter is <code>"optional"</code>
+or <code>"pseudo"</code>. In an array of connects, this applies element-wise.</p></dd><dt id="dt:internal-bool-2"><p></p>
+<p>internal [bool]</p>
+</dt><dd>
+<p>Specifies whether the <a href="#attribute-objects">attribute</a> should be internal.</p>
+</dd></dl>
+<h2 id="connect-templates">4.7 <a href="#connect-templates">Connect templates</a></h2>
+<p>A <code>connect</code> object can instantiate the template
+<code>init_as_subobj</code>. This causes the connect to automatically
+set itself to an automatically created object. This can be used to create
+a private helper object.</p>
+<p>The <code>init_as_subobj</code> template accepts one parameter,
+<code>classname</code>. This defines the class of the automatically created object.</p>
+<p>The template also overrides the <code>configuration</code> parameter to
+<code>"none"</code> by default, which makes the connect invisible to the end-user.</p>
+<p>The <code>init_as_subobj</code> inherits the <a href="#init"><code>init</code></a> and
+<a href="#connect-objects"><code>connect</code></a> templates.</p>
+<h2 id="interface-objects">4.8 <a href="#interface-objects">Interface objects</a></h2>
+<p>The <code>interface</code> template contains one parameter,
+<code>required</code>. Defaults to <code>true</code>. If overridden to <code>false</code>,
+the interface is optional and the parent <code>connect</code> object can
+connect to an object that does not implement the interface.</p>
+<p>The template provides a session variable <code>val</code> of type <code>const void *</code>. It points to the Simics interface struct of the currently connected
+object. If the interface is optional, then the variable can be compared to NULL
+to check whether the currently connected object implements the interface.</p>
+<h2 id="port-objects">4.9 <a href="#port-objects">Port objects</a></h2>
+<p>The <code>port</code> template exposes one parameter, <code>obj</code>.
+When compiling with Simics API 5 or earlier, evaluates to dev.obj.
+When compiling with Simics API 6 or newer, evaluates to the
+<code>conf_object_t *</code> of the port's port object.</p>
+<h2 id="subdevice-objects">4.10 <a href="#subdevice-objects">Subdevice objects</a></h2>
+<p>The <code>subdevice</code> template exposes one parameter, <code>obj</code>, which evaluates to the
+<code>conf_object_t *</code> of the Simics object that represents the subdevice.</p>
+<h2 id="implement-objects">4.11 <a href="#implement-objects">Implement objects</a></h2>
+<p>The <code>implement</code> template provides no particular parameters or methods.</p>
+<h2 id="implement-templates">4.12 <a href="#implement-templates">Implement templates</a></h2>
+<p>There is a single template for <a href="#implement-objects"><code>implement</code></a> objects,
+namely <code>bank_io_memory</code>. The template can be instantiated when implementing the
+<code>io_memory</code> interface, and redirects the access to a bank, specified by the
+<code>bank</code> parameter.</p>
+<p>Bank objects contain an implementation of <code>io_memory</code> that
+inherits this template.</p>
+<h2 id="bank-objects">4.13 <a href="#bank-objects">Bank objects</a></h2>
+<p>In addition to the <code>object</code> template, the <code>bank</code> template also inherits the
+<a href="#shown_desc"><code>shown_desc</code></a> template.</p>
+<p>The <code>bank</code> template contains the following methods:</p>
+<dl><dt id="dt:io_memory_access-generic_transaction_t-memop-uint64-offset-void-aux-bool">
+<p><small>io_memory_access(generic_transaction_t *memop, uint64 offset,
+void *aux) -&gt; (bool)</small></p>
+</dt><dd>
+<p>Entry point for an access based on <code>generic_transaction_t</code>.
+Extracts all needed info from <code>memop</code>, calls appropriate
+memop-free methods, updates the <code>memop</code> parameter
+accordingly, and returns <code>true</code> if the access succeeded. The
+<code>offset</code> parameter is the offset of the access relative to
+the bank. The <code>aux</code> parameter is NULL by default, and is
+passed on to bank methods.  In order to pass additional information on
+the access down to register and field methods, one can override
+<code>io_memory_access</code>, decode needed information from the incoming
+memop, and call <code>default</code> with the extracted information in the
+<code>aux</code> argument.</p>
+</dd><dt id="dt:transaction_access-transaction_t-t-uint64-offset-void-aux-exception_type_t">
+<p><small>transaction_access(transaction_t *t, uint64 offset, void *aux) -&gt;
+(exception_type_t)</small></p>
+</dt><dd>
+<p>Entry point for an access based on the <code>transaction</code> interface.  Extracts all
+needed info from <code>t</code>, calls appropriate access methods (<code>read</code>, <code>write</code>, <code>get</code>,
+<code>set</code>), and updates the <code>t</code> parameter accordingly. Returns
+<code>Sim_PE_No_Exception</code> if the access succeeded, and <code>SIM_PE_IO_Not_Taken</code>
+otherwise. The <code>offset</code> parameter is the offset of the access relative to the
+bank. The <code>aux</code> parameter is NULL by default, and is passed on to bank methods.
+In order to pass additional information on the access down to register and
+field methods, one can override <code>transaction_access</code>, decode needed information
+from the incoming transaction, and call <code>default</code> with the extracted
+information in the <code>aux</code> argument. Accesses that bigger than 8 bytes are split
+into smaller sized chunks before being completed, the exact details of which
+are <em>undefined</em>.</p>
+</dd><dt id="dt:write-uint64-offset-uint64-value-uint64-enabled_bytes-void-aux-throws">
+<p><small>write(uint64 offset, uint64 value, uint64 enabled_bytes,
+void *aux) throws</small></p>
+</dt><dd>
+<p>A write operation at the given offset. Throwing an exception
+makes the access fail, and is typically signaled for writes
+outside registers. The default behavior is to forward the
+access to registers, as follows:</p>
+<ol>
+<li>
+<p>Deduce which registers are hit by the
+access. The <code>offset</code> and <code>size</code>
+parameters of each register object is used to deduce whether
+the register is covered by the access. A register which is
+only partially covered will be considered hit if the bank
+parameter <code>partial</code> is true, and a register
+which does not fully cover the access is considered hit if
+the bank parameter <code>overlapping</code> is set.</p>
+</li>
+<li>
+<p>If any portion of the access is not covered by a hit
+register, then the <code>unmapped_write</code> method is
+called with a bit pattern showing what parts of the access
+are unmapped. Any exception thrown by unmapped_write is
+propagated, causing the access to fail.</p>
+</li>
+<li>
+<p>The <code>write_register</code> method is called in all hit
+registers, starting with the register at the lowest
+offset.</p>
+</li>
+</ol>
+</dd><dt id="dt:unmapped_write-uint64-offset-uint64-value-uint64-bits-void-aux-throws">
+<p><small>unmapped_write(uint64 offset, uint64 value,
+uint64 bits, void *aux) throws</small></p>
+</dt><dd>
+<p>If an access is not fully covered by registers, then this
+method is called before the access is performed. Throwing an
+exception aborts the entire access. <em>bits</em> is a bit
+pattern showing which bits are affected; in the lowest 'size'
+bits, each 0xff byte represents the position of one unmapped
+byte in the access. The <em>value</em> parameter contains the
+originally written value, including parts that are mapped to
+registers. Both <em>bits</em> and <em>value</em> are
+expressed in the host's endianness. The default behavior is to
+log a <code>spec-viol</code> message on level 1, and throw an exception.</p>
+</dd><dt id="dt:read-uint64-offset-uint64-enabled_bytes-void-aux-uint64-value-throws">
+<p><small>read(uint64 offset, uint64 enabled_bytes, void *aux) -&gt;
+(uint64 value) throws</small></p>
+</dt><dd>
+<p>A read operation at the given offset. The access is decomposed
+in the same way as in <code>write</code>. If there are
+unmapped portions of the access, <code>unmapped_read</code> is
+invoked, possibly aborting the operation. The return value is
+composed by the results from calling <code>read_register</code> in
+hit registers, combined with the result
+of <code>unmapped_read</code> if the access is not fully
+mapped.</p>
+</dd><dt id="dt:unmapped_read-uint64-offset-uint64-bits-void-aux-throws">
+<p><small>unmapped_read(uint64 offset, uint64 bits, void *aux) throws</small></p>
+</dt><dd>
+<p>Like <code>unmapped_write</code> but for reads. The default
+implementation unconditionally throws an exception.</p>
+</dd></dl>
+<p>The <code>bank</code> template contains the following parameters:</p>
+<dl><dt id="dt:mappable-boolean">
+<p>mappable [boolean]</p>
+</dt><dd>
+<p>Controls whether a bank is visible as an interface port for the
+<code>io_memory</code> interface, which makes it mappable in a memory
+space.  This defaults to true.</p>
+</dd><dt id="dt:overlapping-bool">
+<p>overlapping [bool]</p>
+</dt><dd>
+<p>Specifies whether this bank allows accesses that cover more than
+one register. (This translates to one or more, possibly partial,
+accesses to adjacent registers.) Defaults to <code>true</code>. This parameter
+must have the same value among all elements in a bank array
+object, i.e., it must not depend on the index of the bank.</p>
+</dd><dt id="dt:partial-bool">
+<p>partial [bool]</p>
+</dt><dd>
+<p>Specifies whether this bank allows accesses that cover only parts
+of a register. A partial read will read the touched register fields
+(or the whole register if there are no fields) and extract the bits
+covered by the read. A partial write will call the <code>get</code>
+method on the touched register fields (or the whole register when
+there are no fields) and replace the written bits with the written
+value and then call the <code>write</code> method on the fields (or the
+register) with the merged value. Defaults to <code>true</code>. This parameter
+must have the same value among all elements in a bank array
+object, i.e., it must not depend on the index of the bank.</p>
+</dd><dt id="dt:register_size-integer-undefined">
+<p>register_size [integer | undefined]</p>
+</dt><dd>
+<p>Inherited from the <code>device</code> object; provides the
+default value for the <code>size</code> parameter of <code>register</code>
+objects.</p>
+</dd><dt id="dt:byte_order-string">
+<p>byte_order [string]</p>
+</dt><dd>
+<p>Specifies the byte order used when accessing registers wider than a
+single byte; inherited from <code>device</code> objects. Allowed values
+are <code>"little-endian"</code> and <code>"big-endian"</code>.
+This parameter must have the same value among all elements in a bank
+array object, i.e., it must not depend on the index of the bank.</p>
+</dd><dt id="dt:be_bitorder-bool">
+<p>be_bitorder [bool]</p>
+</dt><dd>
+<p>Controls the preferred bit ordering of registers within this bank.
+Whenever the register is presented to the user as a bitfield, bit 0 refers to
+the least significant bit if the parameter is <code>false</code> (the default), and
+to the most significant bit if the parameter is <code>true</code>. The parameter is
+only a presentation hint and does not affect the model's behaviour. The
+parameter is technically unrelated to the top-level <code>bitorder</code>
+declaration, though in most cases the two should match.</p>
+</dd><dt id="dt:use_io_memory-bool">
+<p>use_io_memory [bool]</p>
+</dt><dd>
+<p>If <code>true</code>, this bank is exposed using the legacy <code>io_memory</code> interface. In this
+case, the <code>io_memory_access</code> method can be called and overridden, but
+the <code>transaction_access</code> method can not.</p>
+<p>If <code>false</code>, this bank is exposed using the <code>transaction</code> interface. In this
+case, the <code>transaction_access</code> method can be called and overridden, but
+the <code>io_memory_access</code> method can not.</p>
+<p>The default is inherited from <code>dev.use_io_memory</code>.</p></dd><dt id="dt:obj-conf_object_t"><p></p>
+<p>obj [conf_object_t *]</p>
+</dt><dd>
+<p>When compiling with Simics API 5 or earlier, evaluates to dev.obj.
+When compiling with Simics API 6 or newer, evaluates to the bank's port object.</p>
+</dd></dl>
+<h2 id="register-objects">4.14 <a href="#register-objects">Register objects</a></h2>
+<p>In addition to <a href="#object"><code>object</code></a>, the <code>register</code> template inherits the
+templates <a href="#get"><code>get</code></a>, <a href="#set"><code>set</code></a>, <a href="#shown_desc"><code>shown_desc</code></a>,
+<a href="#read_register"><code>read_register</code></a>, <a href="#write_register"><code>write_register</code></a>, and
+<a href="#init_val"><code>init_val</code></a>.</p>
+<p>The <code>register</code> template contains the following parameters:</p>
+<dl><dt id="dt:val-integer">
+<p>val [integer]</p>
+</dt><dd>
+<p>The contents of the register.
+Manipulating <code>val</code> is a simpler, but less safe
+alternative to using <code>get_val()</code> and <code>set_val()</code> — unlike <code>set_val()</code>,
+it is <em>undefined behavior</em> to write a value to <code>val</code> larger than what the
+register can hold.</p>
+</dd><dt id="dt:size-integer">
+<p>size [integer]</p>
+</dt><dd>
+<p>The size (width) of the register, in bytes. This parameter
+can also be specified using the "<code>size <em>n</em></code>" short-hand
+syntax for register objects. The default value is provided by the
+<code>register_size</code> parameter of the enclosing <code>bank</code>
+object.</p>
+</dd><dt id="dt:bitsize-integer">
+<p>bitsize [integer]</p>
+</dt><dd>
+<p>The size (width) of the register, in bits. This is equivalent to the
+value of the <code>size</code> parameter multiplied by 8, and cannot be
+overridden.</p>
+</dd><dt id="dt:offset-integer">
+<p>offset [integer]</p>
+</dt><dd>
+<p>The address offset of the register, in bytes relative to the start
+address of the bank that contains it. This parameter can also be
+specified using the "<code>@ <em>n</em></code>" short-hand syntax for register
+objects. There is no default value. If the register inherits the
+<code>unmapped</code> template, the register is not mapped to an address.
+This parameter must have the same value among all elements in a bank
+array object, i.e., it must not depend on the index of the bank.</p>
+</dd><dt id="dt:fields-list-of-references">
+<p>fields [list of references]</p>
+</dt><dd>
+<p>A list of references to all the <code>field</code> objects of a register
+object.</p>
+</dd><dt id="dt:init_val-integer">
+<p>init_val [integer]</p>
+</dt><dd>
+<p>The value used by the default implementation of the
+<code>init</code> method, when the device is instantiated. The value is
+also used by the default implementations of hard reset, soft reset and
+power-on reset. Defaults to 0.</p>
+</dd><dt id="dt:configuration-required-optional-pseudo-none-3">
+<p>configuration [<code>"required"</code> | <code>"optional"</code> | <code>"pseudo"</code> | <code>"none"</code>]</p>
+</dt><dd>
+<p>Specifies how Simics treats the automatically created [attribute]
+(#attribute-objects) corresponding to the register. The default value is
+<code>"optional"</code>.</p>
+</dd><dt id="dt:persistent-bool-2">
+<p>persistent [bool]</p>
+</dt><dd>
+<p>Specifies whether the register <a href="#attribute-objects">attribute</a>
+should be persistent.</p>
+</dd><dt id="dt:internal-bool-3">
+<p>internal [bool]</p>
+</dt><dd>
+<p>Specifies whether the register <a href="#attribute-objects">attribute</a>
+should be internal, default is <code>true</code>.</p>
+</dd></dl>
+<p>The <code>register</code> template provides the following
+overridable methods:</p>
+<dl><dt id="dt:read_unmapped_bits-uint64-unmapped_enabled_bits-void-aux-uint64">
+<p><code>read_unmapped_bits(uint64 unmapped_enabled_bits, void *aux) -&gt; (uint64)</code></p>
+</dt><dd>
+<p><code>read_unmapped_bits</code> is used by the default implementation of
+<code>read_register</code> to read the bits not covered by fields from
+a register, possibly with side-effects.</p>
+<p>The default implementation of <code>read_unmapped_bits</code>
+acts similarly to if the unmapped regions of the register were covered by
+fields, the <code>value</code> of the register is masked by
+<code>unmapped_enabled_bits</code> and returned.</p>
+</dd><dt id="dt:write_unmapped_bits-uint64-val-uint64-enabled_bits-void-aux">
+<p><code>write_unmapped_bits(uint64 val, uint64 enabled_bits, void *aux)</code>.</p>
+</dt><dd>
+<p>The <code>write_unmapped_bits</code> method is called from
+the default implementation of the <code>write_register</code> method
+when <code>enabled_bytes</code> specifies
+bytes not completely covered by field in the register (and the register
+has at least one field).
+<code>unmapped_enabled_bits</code> is defined as in the
+<code>read_unmapped_bits</code> method. <code>val</code> is the
+<code>val</code> argument passed to <code>write_register</code>, masked with
+the bits not covered by fields.</p>
+<p>Default behaviour of <code>write_unmapped_bits</code> is to compare
+the <code>unmapped_enabled_bits</code> in <code>value</code> to those
+in the register <code>val</code>; if they do not match, a
+message of type <code>spec-viol</code> is logged for each bitrange
+that does not match, but <code>val</code> is not modified.</p>
+</dd></dl>
+<h2 id="field-objects">4.15 <a href="#field-objects">Field objects</a></h2>
+<p>In addition to <a href="#object"><code>object</code></a>, the <code>field</code> template inherits the templates
+<a href="#init_val"><code>init_val</code></a> and <a href="#shown_desc"><code>shown_desc</code></a>.</p>
+<p>The template inherits methods <code>get</code>, <code>set</code> and
+<code>init</code>, and the parameter <code>init_val</code></p>
+<p>The <code>field</code> template contains the following parameters:</p>
+<dl><dt id="dt:val-integer-2">
+<p>val [integer]</p>
+</dt><dd>
+<p>The bitslice of the parent register corresponding to the field.
+Manipulating <code>val</code> is a simpler alternative to using <code>get_val()</code> and
+<code>set_val()</code>, while being just as safe (unlike with register objects).
+Unlike <code>get_val()</code> and <code>set_val()</code>, <code>val</code> is not a member of the <code>field</code>
+template type, and thus can't be used in certain contexts.</p>
+</dd><dt id="dt:reg-reference">
+<p>reg [reference]</p>
+</dt><dd>
+<p>Always refers to the containing register object.</p>
+</dd><dt id="dt:lsb-integer">
+<p>lsb [integer]</p>
+</dt><dd>
+<p>Required parameter. The bit number in the containing register of the
+field's least significant bit. Represented in little-endian bit order,
+regardless of <code>bitorder</code> declarations. The preferred way of defining
+this parameter is to use the "<code>[<em>highbit</em>:<em>lowbit</em>]</code>"
+short-hand syntax for field ranges, whose interpretation <em>is</em> dependent
+on the <code>bitorder</code> declaration of the file. Care must be taken when
+referring to this parameter in a big-endian bit numbering system - if possible,
+put such code in a separate file that uses little-endian bit order
+interpretation.</p>
+</dd><dt id="dt:msb-integer">
+<p>msb [integer]</p>
+</dt><dd>
+<p>Required parameter. The bit number in the containing register of the
+field's most significant bit. Represented in little-endian bit order. See
+<code>lsb</code> for details.</p>
+</dd><dt id="dt:bitsize-integer-2">
+<p>bitsize [integer]</p>
+</dt><dd>
+<p>The size (width) of the field, in bits. This is automatically set
+from the <code>lsb</code> and <code>msb</code> parameters and cannot be
+overridden.</p>
+</dd><dt id="dt:init_val-integer-2">
+<p>init_val [integer]</p>
+</dt><dd>
+<p>The value used by the default implementation of the
+<code>init</code> method, when the device is instantiated. The value is
+also used by the default implementations of hard reset, soft reset and
+power-on reset. Defaults to 0.</p>
+</dd></dl>
+<h2 id="templates-for-registers-and-fields">4.16 <a href="#templates-for-registers-and-fields">Templates for registers and fields</a></h2>
+<p>This section lists templates that are specific for <code>register</code> and
+<code>field</code> objects.</p>
+<p>All templates (except <code>read_register</code> and
+<code>write_register</code>) are applicable to both registers and
+fields. When writing a template that is applicable to both registers and
+fields, one should normally inherit one or more of the <code>read</code>,
+<code>write</code>, <code>get</code> and <code>set</code> methods.</p>
+<p>Some methods have an argument <code>void *aux</code>. By default, that argument is
+NULL. The value can be overridden to carry arbitrary extra information about
+the access; this is done by overriding the <code>io_memory_access</code> method
+in the parent <a href="#bank-objects">bank</a>.</p>
+<h3 id="get_val">4.16.1 <a href="#get_val">get_val</a></h3>
+<p>Provides a single non-overrideable method <code>get_val() -&gt; (uint64)</code>. In
+a register, it returns the value of the .val member; in a field, it
+returns the bits of the parent register's <code>val</code> member that are
+covered by the field.</p>
+<p><code>get_val</code> is very similar to <a href="#get"><code>get</code></a>; the difference is that <code>get_val</code>
+is unaffected if <code>get</code> is overridden. Thus, <code>get_val</code> is slightly more
+efficient, at the cost of flexibility. It is generally advisable to
+use <code>get</code>.</p>
+<h3 id="set_val">4.16.2 <a href="#set_val">set_val</a></h3>
+<p>Provides a single non-overrideable method
+<code>set_val(uint64)</code>. In a register, it sets the value of
+the .val member; in a field, it sets the bits in the parent
+register's <code>val</code> member that are covered by the field.</p>
+<p><code>set_val</code> is very similar to (<code>set</code>)[#set); the difference is
+that <code>set_val</code> is unaffected if <code>set</code> is
+overridden. Thus, <code>set_val</code> is slightly more efficient, at the
+cost of flexibility. It is generally advisable to use <code>set</code>.</p>
+<h3 id="get">4.16.3 <a href="#get">get</a></h3>
+<p>Extends the <a href="#get_val"><code>get_val</code></a> template. Provides a single
+overrideable method <code>get() -&gt; (uint64)</code>, which retrieves the
+register's value, without side-effects, used for checkpointing and
+inspection. The default is to retrieve the value using the
+get_val` method.</p>
+<p>In a field, this template must be explicitly instantiated in order for an
+override to take effect. Note however that field objects do provide a
+callable default implementation of the method.</p>
+<h3 id="set">4.16.4 <a href="#set">set</a></h3>
+<p>Extends the <a href="#set_val"><code>set_val</code></a> template. Provides a single
+overrideable method <code>set(uint64)</code>, which modifies the register's
+value, without triggering other side-effects. Used for checkpointing and
+inspection. The default is to set the value using the <code>set_val</code>
+method.</p>
+<p>In a field, this template must be explicitly instantiated in order for an
+override to take effect. Note however that field objects do provide a
+callable default implementation of the method.</p>
+<h3 id="read_register">4.16.5 <a href="#read_register">read_register</a></h3>
+<p>Implemented only by registers, not applicable to fields.</p>
+<p>Provides a single abstract method
+<code>read_register(uint64 enabled_bytes, void *aux) -&gt; (uint64)</code>.</p>
+<p>The method reads from a register, possibly with side-effects. The
+returned value is represented in the host's native endianness. The
+<code>enabled_bytes</code> argument defines which bytes of the register is
+accessed, as a bitmask; each byte of the returned value has
+significance only if the corresponding byte in <code>enabled_bytes</code> is
+0xff. If the access covers more than one register, then the parts of
+<code>enabled_bytes</code> that correspond to other registers are still zero.</p>
+<p>Register objects provide a default implementation of
+<code>read_register</code>. The implementation invokes the <code>read_field</code> method of
+all sub-fields at least partially covered by <code>enabled_bytes</code>, in order
+from least to most significant bit. Bits not covered by fields are
+retrieved by calling the <code>read_unmapped_bits</code>, with
+<code>unmapped_enabled_bits</code> set as the <code>enabled_bytes</code> not covered by
+fields. If a register implements no fields, then the
+<code>read_unmapped_bits</code> is not called by default.</p>
+<p>If a register inherits the <code>read_field</code> or <code>read</code> templates, then that
+template takes precedence over <code>read_register</code>, and the register's
+read behaviour is specified by the <code>read_field</code> or <code>read</code> method.</p>
+<h3 id="write_register">4.16.6 <a href="#write_register">write_register</a></h3>
+<p>Implemented only by registers, not applicable to fields.</p>
+<p>Provides a single abstract method:
+<code>write_register(uint64 value, uint64 enabled_bytes, void *aux)</code>.</p>
+<p>The method writes to the register, possibly with side-effects. The
+<code>enabled_bytes</code> parameter is defined as in the <code>read_register</code> method.</p>
+<p>Register objects provide a default implementation of write_register.
+The default behaviour depends on whether the register has fields:</p>
+<ul>
+<li>
+<p>If the register has no fields, then
+the default behaviour is to set the register's <code>val</code> member to the
+new value, using the <code>set</code> method.</p>
+</li>
+<li>
+<p>If the register has fields, then the default behavior is to
+invoke the <code>write_fields</code> method of all sub-fields covered at
+least partially by <code>enabled_bytes</code>, in order from
+least to most significant bit. Then <code>write_unmapped_bits</code>
+is called with the enabled bits that were not covered by fields.</p>
+<p>If a register inherits the <code>write</code> or
+<code>write_field</code> template, then that template takes precedence
+over <code>write_register</code>, and the register's write behaviour is
+specified by the <code>write</code> (or <code>write_field</code>) method.</p>
+</li>
+</ul>
+<h3 id="read_field">4.16.7 <a href="#read_field">read_field</a></h3>
+<p>Provides a single abstract method
+<code>read_field(uint64 enabled_bits, void *aux) -&gt; (uint64)</code>.</p>
+<p>The method reads from a field or register, possibly with
+side-effects. The returned value is represented in the host's native
+endianness. The <code>enabled_bytes</code> argument defines which bits of the
+register is accessed, as a bitmask; each bit of the returned value has
+significance only if the corresponding bit in <code>enabled_bits</code> is 1. If
+the access covers more than one field, then the parts of
+<code>enabled_bits</code> that correspond to other fields are still zero.</p>
+<p>The <code>read_field</code> template is <em>not</em> implemented by
+fields or registers by default, and must be explicitly instantiated in
+order for a method override to have effect.
+<code>read_field</code> is the interface used for access by registers;
+in most cases, it is easier to express read operations using the
+<code>read</code> template.</p>
+<p>Note that instantiating <code>read_field</code> on a register means that
+register reads behave as if the register consists of one single field; a
+read access will ignore any actual field subobjects in the register.</p>
+<h3 id="write_field">4.16.8 <a href="#write_field">write_field</a></h3>
+<p>Provides a single abstract method
+<code>write_field(uint64 value, uint64 enabled_bits, void *aux)</code>.</p>
+<p>The method writes to a field or register, possibly with
+side-effects. The value is represented in the host's native
+endianness. The <code>enabled_bytes</code> argument is defined as in the
+<code>read_field</code> method.</p>
+<p>The <code>write_field</code> template is <em>not</em> implemented by fields or registers
+by default, and must be explicitly instantiated in order for a method
+override to have effect.  <code>write_field</code> is the interface used for
+access by registers; in most cases, it is easier to express write
+operations using the <code>write</code> template.</p>
+<p>Note that instantiating <code>write_field</code> on a register means that
+register writes behave as if the register consists of one single
+field; a write access will ignore any actual field subobjects in the
+register.  This is often useful in read-only registers, as it allows
+reads to propagate to fields, while a violating write can be handled
+centrally for the whole register.</p>
+<h3 id="read">4.16.9 <a href="#read">read</a></h3>
+<p>Extends templates <a href="#read_field"><code>read_field</code></a> and <a href="#get_val"><code>get_val</code></a>.</p>
+<p>Provides a single overrideable method <code>read() -&gt; (uint64)</code>.</p>
+<p>The method reads from a field or register, possibly with
+side-effects. The returned value is represented in the host's native
+endianness. The default behaviour is to retrieve the value using the
+<code>get</code> method.</p>
+<p>The <code>read</code> template is <em>not</em> implemented by fields or registers by
+default, and must be explicitly instantiated in order for a method
+override to have effect.</p>
+<p>Note that instantiating <code>read</code> on a register means that register reads
+behave as if the register consists of one single field; a read access
+will ignore any actual field subobjects in the register.</p>
+<h3 id="write">4.16.10 <a href="#write">write</a></h3>
+<p>Extends templates <a href="#write_field"><code>write_field</code></a>, <a href="#get_val"><code>get_val</code></a> and
+<a href="#set_val"><code>set_val</code></a>.</p>
+<p>Provides a single overrideable method <code>write(uint64)</code>.</p>
+<p>The method writes to a field or register, possibly with
+side-effects. The value is represented in the host's native
+endianness. The default behaviour is to set the value using the <code>set</code>
+method.</p>
+<p>The <code>write</code> template is <em>not</em> implemented by fields or registers by
+default, and must be explicitly instantiated in order for a method
+override to have effect.</p>
+<p>Note that instantiating <code>write</code> on a register means that register
+writes behave as if the register consists of one single field; a write
+access will ignore any actual field subobjects in the register.</p>
+<h3 id="init_val">4.16.11 <a href="#init_val">init_val</a></h3>
+<p>Extends the <a href="#init"><code>init</code></a> template.</p>
+<p>Provides a parameter <code>init_val : uint64</code>, defining the initial value
+of the register's <code>val</code> member when the object is created. In a field,
+defines the initial value of the bits of <code>val</code> that are covered by
+this field. The parameter is also used by default reset methods.</p>
+<p>The template is inherited by both registers and fields. The value is 0
+by default. In a register with fields, parameter overrides are
+permitted both in the register and in the field objects:</p>
+<ul>
+<li>
+<p>if the parameter is overridden <em>only</em> in the register, then this
+defines the full value of the register.</p>
+</li>
+<li>
+<p>if the parameter is overridden both in the register and in some fields,
+then the field overrides take precedence and define the value of the bits
+covered by the field</p>
+</li>
+</ul>
+<p>On a technical level, the default value of <code>init_val</code> in a field is
+the field's corresponding bits in the parent register's <code>init_val</code>;
+furthermore, the <code>init_val</code> template provides a default
+implementation of the <code>init</code> method which in register objects sets
+bits in <code>val</code> not covered by fields, and in field objects sets
+corresponding bits of the parent register's <code>val</code> member.</p>
+<h2 id="event-objects">4.17 <a href="#event-objects">Event objects</a></h2>
+<p>The <code>event</code> template contains little functionality in itself; it
+requires one of six predefined templates <code>simple_time_event</code>,
+<code>simple_cycle_event</code>, <code>uint64_time_event</code>,
+<code>uint64_cycle_event</code>, <code>custom_time_event</code>, and
+<code>custom_cycle_event</code> to be instantiated. These templates expose the
+methods <code>event</code> and <code>post</code>, and possibly others.</p>
+<p>In addition to the <a href="#object"><code>object</code></a> template, the <code>event</code> template inherits
+the <a href="#shown_desc"><code>shown_desc</code></a> template.</p>
+<h2 id="event-templates">4.18 <a href="#event-templates">Event templates</a></h2>
+<p>Each <code>event</code> object is required to instantiate one of six
+predefined templates: <code>simple_time_event</code>, <code>simple_cycle_event</code>,
+<code>uint64_time_event</code>, <code>uint64_cycle_event</code>,
+<code>custom_time_event</code>, and <code>custom_cycle_event</code>. These are defined as follows:</p>
+<ul>
+<li>
+<p>The <code>simple_*_event</code> templates are used for events that carry no
+data</p>
+</li>
+<li>
+<p>The <code>uint64_*_event</code> templates are used for events parameterized
+with a single 64-bit integer value</p>
+</li>
+<li>
+<p>The <code>custom_*_event</code> templates are used for events that carry more
+complex data; the user must supply explicit serialization and deserialization
+methods.</p>
+</li>
+<li>
+<p>In the <code>*_time_event</code> templates, time is provided in seconds, as a
+floating-point number</p>
+</li>
+<li>
+<p>In the <code>*_cycle_event</code> templates, time is provided in cycles, as
+a 64-bit integer</p>
+</li>
+</ul>
+<p>The following methods are defined by all six templates:</p>
+<dl><dt id="dt:event-event-uint64-data-event-void-data">
+<p><small>event()</small>, <small>event(uint64 data)</small>, <small>event(void
+*data)</small></p>
+</dt><dd>
+<p>Abstract method, called when the event is triggered. When one of
+the <code>custom_*_event</code> templates is used, the <code>event</code>
+method is responsible for deallocating the data.</p>
+</dd><dt id="dt:post-time-post-time-uint64-data-post-time-void-data">
+<p><small>post(time), post(time, uint64 data), post(time, void *data)</small></p>
+</dt><dd>
+<p>Non-overrideable method. Posts the event on the associated queue of the
+device. The time argument is specified in cycles or seconds, depending on which
+template was instantiated. The event will be triggered after the specified
+amount of time has elapsed. The data parameter in a <code>uint64</code> or
+<code>custom</code> event will be passed on to the event() method.</p>
+</dd></dl>
+<p>The following methods are specific to the <code>simple_time_event</code>,
+<code>simple_cycle_event</code>, <code>uint64_time_event</code> and
+<code>uint64_cycle_event</code> templates:</p>
+<dl><dt id="dt:remove-remove-uint64-data">
+<p><small>remove(), remove(uint64 data)</small></p>
+</dt><dd>
+<p>Removes all events of this type with matching data from
+the queue.</p>
+</dd><dt id="dt:posted-bool-posted-uint64-value-bool">
+<p><small>posted() -&gt; (bool), posted(uint64 value) -&gt; (bool)</small></p>
+</dt><dd>
+<p>Returns <code>true</code> if the event is in the queue, and
+<code>false</code> otherwise.</p>
+</dd><dt id="dt:next-next-uint64-data-double-or-cycles_t">
+<p><small>next(), next(uint64 data) -&gt; (double or cycles_t)</small></p>
+</dt><dd>
+<p>Returns the time to the next occurrence of the event in the queue
+(relative to the current time), in cycles or seconds depending on which
+event template was instantiated. If there is no such event in the
+queue, a negative value is returned.</p>
+</dd></dl>
+<p>The following methods are specific to the <code>custom_time_event</code>
+and <code>custom_cycle_event</code> templates:</p>
+<dl><dt id="dt:get_event_info-void-data-attr_value_t">
+<p><small>get_event_info(void *data) -&gt; (attr_value_t)</small></p>
+</dt><dd>
+<p>This method is called once for each pending event instance when
+saving a checkpoint.  It should create an attribute value that can be
+used to restore the event.  The <code>data</code> parameter is the
+user data provided in the <code>post</code> call.  The default
+implementation always returns a nil value.</p>
+</dd><dt id="dt:set_event_info-attr_value_t-info-void">
+<p><small>set_event_info(attr_value_t info) -&gt; (void *)</small></p>
+</dt><dd>
+<p>This method is used to restore event information when loading a
+checkpoint.  It should use the attribute value to create a user data
+pointer, as if it had been provided in a <code>post</code>. The default
+implementation only checks that the checkpointed information is
+nil.</p>
+</dd><dt id="dt:destroy-void-data">
+<p><small>destroy(void *data)</small></p>
+</dt><dd>
+<p>This method is called on any posted events when the device object is deleted.</p>
+<!-- (and also on `SIM_event_cancel_*`, but that function is not exposed for
+custom events so no need to mention) -->
+<p>If memory was allocated for the <code>data</code> argument to <code>post</code>, then <code>destroy</code>
+should free this memory.</p>
+<p>The <code>destroy</code> method is <em>not</em> called automatically when an event is triggered;
+therefore, the method should typically also be called explicitly from the
+<code>event</code> method.</p>
+</dd></dl>
+
+<div class="chain">
+<a href="language.html">3 Device Modeling Language, version 1.4</a>
+<a href="utility.html">5 Standard Templates</a>
+</div>

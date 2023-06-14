@@ -1,0 +1,94 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_tracker_control</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_tracker_component.html">osa_tracker_component</a>
+<a href="__rm_interface_osa_tracker_state_admin.html">osa_tracker_state_admin</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_tracker_control">osa_tracker_control</a></h1>
+<p>
+
+<a name="osa_tracker_control"></a><a name="osa_tracker_control_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_tracker_control_interface_t2"></a>
+<p>
+   <a name="enableosa_tracker_control-interface-method"></a>
+   <b><i>enable</i></b> and
+   <a name="disableosa_tracker_control-interface-method"></a>
+   <b><i>disable</i></b> are called from the OS Awareness framework,
+   for all trackers that have been set in the <i>top_trackers</i>
+   attribute for the <b>node_tree</b> object, when OS Awareness is
+   enabled or disabled, respectively.
+</p><p>
+   <a name="clear_stateosa_tracker_control-interface-method"></a>
+   <b><i>clear_state</i></b> is called to clear the trackers state. The tracker
+   should clear all its internal data and its data in the node tree when this
+   is called.  This call can only occur while the tracker is disabled.
+</p><p>
+   <a name="add_processorosa_tracker_control-interface-method"></a>
+   <b><i>add_processor</i></b> and
+   <a name="remove_processorosa_tracker_control-interface-method"></a>
+   <b><i>remove_processor</i></b> are called to add or remove a processor
+   <i>cpu</i> to/from the tracker which the tracker should start/stop
+   tracking. If the tracker is registered as a top level tracker these methods
+   will be called by the OS Awareness framework for all processors available
+   to the framework when it is enabled or disabled. If the tracker is a guest
+   under a hypervisor the hypervisor should call these methods when a
+   processor becomes available or unavailable to the guest.
+   These functions should return true if a processor was successfully added or
+   removed, otherwise the function should return false.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(osa_tracker_control) {
+        void (*disable)(conf_object_t *NOTNULL obj);
+        bool (*enable)(conf_object_t *NOTNULL obj);
+        void (*clear_state)(conf_object_t *NOTNULL obj);
+        bool (*add_processor)(conf_object_t *NOTNULL obj,
+                              conf_object_t *NOTNULL cpu);
+        bool (*remove_processor)(conf_object_t *NOTNULL obj,
+                                 conf_object_t *NOTNULL cpu);
+};
+
+#define OSA_TRACKER_CONTROL_INTERFACE "osa_tracker_control"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for <b><i>enable</i></b>, <b><i>disable</i></b> and
+   <b><i>clear_state</i></b>.
+   Cell Context for <b><i>add_processor</i></b> and
+   <b><i>remove_processor</i></b>.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_tracker_component.html">osa_tracker_component</a>
+<a href="__rm_interface_osa_tracker_state_admin.html">osa_tracker_state_admin</a>
+</div>

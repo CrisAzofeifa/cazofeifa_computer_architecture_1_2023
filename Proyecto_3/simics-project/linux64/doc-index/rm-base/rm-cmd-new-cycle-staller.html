@@ -1,0 +1,62 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-cycle-staller</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-new-cpu-mode-filter.html">new-cpu-mode-filter</a>
+<a href="rm-cmd-new-datagram-link.html">new-datagram-link</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="new-cycle-staller"></a>
+<h1 id="new-cycle-staller"><a href="#new-cycle-staller">new-cycle-staller</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>new-cycle-staller</b> [<i>"name"</i>] [<i>stall-interval</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Return a new cycle staller object that can be used to insert extra stall cycles to the clocks/processors in the model. An example usage is together with caches to model extra cycles due to cache misses. A cycle staller object will accumulate the extra stall cycles fed by other objects and eventually at every <i>stall-interval</i> insert those extra cycles by stalling the associated clock. <i>name</i> can be given to set a name for the object.
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.cycle-staller.html">cycle-staller</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-new-simple-cache-tool.html">new-simple-cache-tool</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-new-cpu-mode-filter.html">new-cpu-mode-filter</a>
+<a href="rm-cmd-new-datagram-link.html">new-datagram-link</a>
+</div>

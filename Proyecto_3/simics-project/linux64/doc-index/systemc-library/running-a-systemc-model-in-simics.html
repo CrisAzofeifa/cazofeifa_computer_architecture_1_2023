@@ -1,0 +1,287 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3 Running a SystemC Model in Simics</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="systemc-library-requirements.html">2 SystemC Library Requirements</a>
+<a href="connecting-systemc-and-simics-models.html">4 Connecting SystemC and Simics Models</a>
+</div>
+<div class="path">
+<a href="index.html">SystemC* Library</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Running-a-SystemC-Model-in-Simics">3 Running a SystemC Model in Simics</a></h1>
+<p>
+
+</p><p>
+The simplest case of running a SystemC model in Simics is to run it
+without any connections to models written in other languages, a so
+called <em>SystemC-only</em> model. When working with the proof of
+concept implementation of SystemC provided by Accellera it is common
+to build an executable by providing an implementation
+of <b><i>sc_main</i></b> that assembles the model hierarchy, starts the
+simulation, and performs any cleanup actions. Because of the dynamic
+nature of Simics the model will be a Simics module instead of a
+standalone application. This allows Simics to instantiate one or more
+copies of the model at run-time using the normal Simics configuration
+mechanisms. To achieve this the <b><i>sc_main</i></b> function is replaced by a
+Simics configuration object. The purpose of this object is the same as
+<b><i>sc_main</i></b>: create the model hierarchy, provide a way to start
+the simulation, and perform any cleanup. The difference is that now
+the object hierarchy is created when the Simics object is instantiated
+and the cleanup is done when the Simics object is
+destroyed. Simulation control is also handled by Simics, using
+standard Simics commands such as <b>continue</b>
+and <b>stop</b>.
+</p><p>
+</p><h2 class="jdocu"><a name="Standalone-application">3.1 Standalone application</a></h2>
+<p>
+
+</p><p>
+Here a standalone application refers to an executable that runs in its own
+process without Simics. Typically, <b><i>sc_main</i></b> is implemented as the
+entry point to the application.
+</p><p>
+Running a SystemC model in Simics does not affect the model's behavior and this
+fact can be leveraged when integrating models with Simics. It is recommended to
+first verify that the functionality is as expected by running the model as a
+standalone application before integrating with Simics. The verification is
+typically done using a SystemC test bench, which may be reused later as a
+Simics model test.
+</p><p>
+To get started with a SystemC-only model in Simics it is best to begin
+with a simple example. Create a new SystemC-only model in your project
+by issuing the command:
+<code><b>./bin/project-setup --sc-only-device empty-device-sc-only</b></code>
+</p><p>
+This command copies a SystemC-only model skeleton from the installation into the
+module directory of the project with the name <code>empty-device-sc-only</code>.
+</p><p>
+The <b>empty-device-sc-only</b> module contains a very simple
+SystemC device, in three source files: <code>sc-device.h</code>,
+<code>sc-device.cc</code>, and <code>sc-main.cc</code>. Compiled
+together, these three files contain all the relevant code to run the
+simulation standalone, i.e., as a separate application outside of
+Simics. The Makefile for this standalone application is not provided but
+is easy to write since the only dependency for this module is the SystemC
+kernel. The entire source code is shown below.
+</p><p>
+</p><ul><li><code>sc-device.h</code></li></ul>
+
+ <pre class="jdocu_small">#ifndef EMPTY_DEVICE_SC_ONLY_SC_DEVICE_H
+#define EMPTY_DEVICE_SC_ONLY_SC_DEVICE_H
+
+#include &lt;systemc&gt;
+
+SC_MODULE(DeviceModel) {
+  public:
+    SC_CTOR(DeviceModel) : count_(10) {
+        SC_THREAD(run_test);
+    }
+
+    void set_count(int count) { count_ = count; }
+    int get_count() const { return count_; }
+
+ private:
+    void run_test();
+
+    int count_;
+};
+
+sc_core::sc_module *setup(int argc, char *argv[]);
+void teardown(sc_core::sc_module *top_level);
+
+#endif  </pre><p>
+
+</p><ul><li><code>sc-device.cc</code></li></ul>
+
+ <pre class="jdocu_small">#include "sc-device.h"
+
+namespace {
+const char *const TAG = "intel/empty-device-sc-only/info";
+}
+
+void DeviceModel::run_test() {
+    while (--count_ &gt;= 0) {
+        SC_REPORT_INFO(TAG, "Looping...");
+        wait(sc_core::sc_time(500, sc_core::SC_NS));
+    }
+}
+
+sc_core::sc_module *setup(int argc, char *argv[]) {
+    DeviceModel *top = new DeviceModel("top");
+    if (argc &gt; 1) {
+        int count = atoi(argv[1]);
+        top-&gt;set_count(count);
+    }
+
+    return top;
+}
+
+void teardown(sc_core::sc_module *top_level) {
+    delete top_level;
+}
+</pre><p>
+
+</p><ul><li><code>sc-main.cc</code></li></ul>
+
+ <pre class="jdocu_small">#include "sc-device.h"
+
+int sc_main(int argc, char *argv[]) {
+    sc_core::sc_module *top_level = setup(argc, argv);
+    // coverity[fun_call_w_exception]
+    sc_core::sc_start();
+    teardown(top_level);
+
+    return 0;
+}
+</pre><p>
+
+</p><p>
+This device has a counter which counts down every 500 nano seconds.
+When it counts down, a message as shown below is printed to the standard output.
+</p><pre class="jdocu_small">  Info: intel/empty-device-sc-only/info: Looping...
+</pre><p>
+By default, the above message is printed 10 times since counter is initialized
+to 10 in the constructor. This value can be modified by passing an integer
+argument when the application is executed.
+</p><p>
+Now that we have verified the functionality of this simple SystemC device,
+let's move on to next section on how to run it in Simics. The same behavior will
+be observed when it runs in Simics.
+
+</p><h2 class="jdocu"><a name="Running-in-Simics">3.2 Running in Simics</a></h2>
+<p>
+
+To create a Simics module instead of a standalone application, the
+file <code>sc-main.cc</code> is replaced with a similar entry-point
+that defines a Simics class instead of creating an application.
+
+ </p><pre class="jdocu_small">#include &lt;simics/systemc/sc_factory.h&gt;
+#include "sc-device.h"
+
+#define CLASS_NAME "empty_device_sc_only"
+#define CLASS_DESC "example SystemC device"
+#define CLASS_DOC  "The &lt;class&gt;" CLASS_NAME "&lt;/class&gt;" \
+    " class runs a SystemC-only device in Simics."
+
+simics::systemc::RegisterModel model(CLASS_NAME, CLASS_DESC, CLASS_DOC,
+                                     setup, teardown);
+</pre><p>
+
+</p><p>
+The example above may need some explanation. It registers a new
+configuration class with Simics. The name of the class
+is <b>empty_device_sc_only</b> and the documentation and short
+description are provided by the <em>CLASS_DOC</em> and <em>CLASS_DESC</em>
+constants. The class is registered by creating an instance of
+the <b>simics::systemc::RegisterModel</b> in the file scope,
+that is as a global or static variable, or in a unnamed
+namespace. When the module is loaded into Simics, all objects defined
+in file scope will be constructed and the <b>model</b> object will
+take care of registering the <b>empty_device_sc_only</b> class
+with Simics. Simics will now know how to instantiate this class, which
+in turn will be responsible for instantiating the rest of the SystemC
+subsystem, as defined by the provided <b><i>setup</i></b> function. When
+the configuration object is destroyed, the
+registered <b><i>teardown</i></b> function, if any, will be called with
+the return value of <b><i>setup</i></b>. The return value
+from <b><i>setup</i></b> and the argument to <b><i>teardown</i></b> can be a
+pointer to any type, the only restriction is that they have to
+match. It is also possible to have a <code>void</code> return value
+from <b><i>setup</i></b>, in which case <b><i>teardown</i></b> does not take
+any arguments.
+</p><p>
+The device can be built by running <code><b>make empty-device-sc-only</b></code>
+in the top-level project directory. Refer to the
+<em>Model Builder User's Guide</em> for more details.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+No binaries are shipped from the Simics package. Therefore, these
+  binaries must be built before any device modules
+  can be constructed. See <a class="reference" href="building-required-libraries.html">8</a> for more
+  details.</div>
+To test the device in Simics it is necessary to instantiate it. This
+is easily done from the Simics CLI, by calling
+the <b><i>SIM_create_object</i></b> function via the Python API:
+<pre class="jdocu_small">simics&gt; <b>@SIM_create_object('empty_device_sc_only', 'dev')</b>
+&lt;the empty_device_sc_only 'dev'&gt;
+</pre><p>
+</p><p>
+To see what objects exist in the simulation,
+the <b>list-objects</b> command can be used:
+</p><pre class="jdocu_small">simics&gt; <b>list-objects substr = dev -recursive</b>
+┌────────────────────────────────────────┬──────────────────────────┐
+│                 Class                  │          Object          │
+├────────────────────────────────────────┼──────────────────────────┤
+│&lt;empty_device_sc_only&gt;                  │dev                       │
+│&lt;empty_device_sc_only_cci_global&gt;       │dev.cci_global            │
+│&lt;co-execute&gt;                            │dev.engine                │
+│&lt;vtime&gt;                                 │dev.engine.vtime          │
+│&lt;cycle-counter&gt;                         │dev.engine.vtime.cycles   │
+│&lt;ps-clock&gt;                              │dev.engine.vtime.ps       │
+│&lt;ScEventObjectAllDynamic&gt;               │dev.sc_event_all_dynamic  │
+│&lt;sc_method_process_all_dynamic&gt;         │dev.sc_process_all_dynamic│
+│&lt;empty_device_sc_only_sc_module&gt;        │dev.top                   │
+│&lt;empty_device_sc_only_sc_thread_process&gt;│dev.top.run_test          │
+│&lt;vtime&gt;                                 │dev.vtime                 │
+│&lt;cycle-counter&gt;                         │dev.vtime.cycles          │
+│&lt;ps-clock&gt;                              │dev.vtime.ps              │
+└────────────────────────────────────────┴──────────────────────────┘
+</pre><p>
+</p><p>
+In this example <b>dev</b> is the Simics configuration object that
+wraps the SystemC subsystem, <b>dev.top</b> is the SystemC device
+returned by <b><i>setup</i></b>, and <b>dev.top.run_test</b> is the
+thread process in dev.top that will call <b><i>SC_REPORT_INFO</i></b> and
+print the "Looping..." output shown in the example output below.
+</p><p>
+The <b>dev.engine</b>, <b>dev.vtime</b> and their sub-objects are
+Simics helper objects and can be ignored.
+</p><p>
+Before running the simulation, turn up the log-level to 2 or higher in
+order to show reports of INFO type and normal verbosity:
+</p><pre class="jdocu_small">simics&gt; <b>dev.log-level 2</b>
+simics&gt; <b>continue</b>
+  [dev info] Looping... @ 0 s of intel/empty-device-sc-only/info in sc-device.cc:15
+[dev info] Looping... @ 500 ns of intel/empty-device-sc-only/info in sc-device.cc:15
+[dev info] Looping... @ 1 us of intel/empty-device-sc-only/info in sc-device.cc:15
+[dev info] Looping... @ 1500 ns of intel/empty-device-sc-only/info in sc-device.cc:15
+[dev info] Looping... @ 2 us of intel/empty-device-sc-only/info in sc-device.cc:15
+[dev info] Looping... @ 2500 ns of intel/empty-device-sc-only/info in sc-device.cc:15
+[dev info] Looping... @ 3 us of intel/empty-device-sc-only/info in sc-device.cc:15
+[dev info] Looping... @ 3500 ns of intel/empty-device-sc-only/info in sc-device.cc:15
+[dev info] Looping... @ 4 us of intel/empty-device-sc-only/info in sc-device.cc:15
+[dev info] Looping... @ 4500 ns of intel/empty-device-sc-only/info in sc-device.cc:15
+running&gt; <b>stop</b>
+simics&gt;
+</pre><p>
+
+</p>
+<div class="chain">
+<a href="systemc-library-requirements.html">2 SystemC Library Requirements</a>
+<a href="connecting-systemc-and-simics-models.html">4 Connecting SystemC and Simics Models</a>
+</div>

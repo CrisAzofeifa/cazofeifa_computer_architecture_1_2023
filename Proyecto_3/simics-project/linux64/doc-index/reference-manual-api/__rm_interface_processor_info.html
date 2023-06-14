@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>processor_info</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_processor_gui.html">processor_gui</a>
+<a href="__rm_interface_processor_info_v2.html">processor_info_v2</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_processor_info">processor_info</a></h1>
+<p>
+
+<a name="processor_info"></a><a name="processor_info_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">An older version of the processor_info_v2 interface. See processor_info_v2
+   for more information.
+<p>
+   </p><pre class="jdocu_small">
+SIM_INTERFACE(processor_info) {
+        tuple_int_string_t (*disassemble)(conf_object_t *obj,
+                                          generic_address_t address,
+                                          attr_value_t instruction_data,
+                                          int sub_operation);
+        void (*set_program_counter)(conf_object_t *obj,
+                                    logical_address_t pc);
+        logical_address_t (*get_program_counter)(conf_object_t *obj);
+
+        physical_block_t (*logical_to_physical)(conf_object_t *obj,
+                                                logical_address_t address,
+                                                access_t access_type);
+        int (*enable_processor)(conf_object_t *obj);
+        int (*disable_processor)(conf_object_t *obj);
+        int (*get_enabled)(conf_object_t *obj);
+
+        cpu_endian_t (*get_endian)(conf_object_t *obj);
+        conf_object_t *(*get_physical_memory)(conf_object_t *obj);
+
+        int (*get_logical_address_width)(conf_object_t *obj);
+        int (*get_physical_address_width)(conf_object_t *obj);
+
+        const char *(*architecture)(conf_object_t *obj);
+};
+
+#define PROCESSOR_INFO_INTERFACE "processor_info"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_processor_gui.html">processor_gui</a>
+<a href="__rm_interface_processor_info_v2.html">processor_info_v2</a>
+</div>

@@ -1,0 +1,231 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i3c_master</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_i3c_daa_snoop.html">i3c_daa_snoop</a>
+<a href="__rm_interface_i3c_slave.html">i3c_slave</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_i3c_master">i3c_master</a></h1>
+<p>
+
+<a name="i3c_master"></a><a name="i3c_master_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">
+typedef enum {
+        I3C_ack = 0,
+        I3C_noack
+} i3c_ack_t;
+
+
+SIM_INTERFACE(i3c_master) {
+        void (*acknowledge)(conf_object_t *obj, i3c_ack_t ack);
+        void (*read_response)(conf_object_t *obj, uint8 value, bool more);
+        void (*daa_response)(conf_object_t *obj,
+                             uint64 id, uint8 bcr, uint8 dcr);
+        void (*ibi_request)(conf_object_t *obj);
+        void (*ibi_address)(conf_object_t *obj, uint8 address);
+};
+
+#define I3C_MASTER_INTERFACE "i3c_master"
+</pre><p>
+</p><p>
+
+   The interfaces <code>i3c_master</code> <code>i3c_slave</code>
+   and <code>i3c_daa_snoop</code> are used together to model
+   communication over an I3C bus.
+   There are four kinds of devices roles on the I3C bus: Main Master,
+   Secondary Master, Slave and Legacy I2C Slave. Exactly one device
+   must be the Main Master; this is typically configured statically.
+   Main Master should implement the <code>i3c_master</code> interface,
+   while slave should implement the <code>i3c_slave</code> interface.
+   Secondary Master should implement both.
+   Most calls to a method in the slave device interfaces expect a response
+   call to a method in the master device interfaces. One exception is the
+   method <b><i>sdr_write</i></b> in the <b><i>i3c_slave</i></b> interface, master
+   expects no response when calling it.
+   It is up to each device to find the caller's interfaces; usually it is
+   configured with attributes in both the master and slave device.
+</p><p>
+   Two I3C devices can communicate directly if one implements the
+   <code>i3c_master</code> interface and the other one implements the
+   <code>i3c_slave</code> interface. An I3C bus with multiple masters
+   or slaves is typically modelled using an <b>i3c-link</b> object,
+   where each device is connected to an endpoint object.
+</p><p>
+   An I3C bus consists of a number of <em>master</em> devices and a number
+   of <em>slave</em> devices. Each I3C slave device listens to one or more
+   <em>7-bit addresses</em>. The slave devices can be I3C slave devices or
+   Legacy I2C slave devices. This is because I3C protocol is compatible with
+   I2C protocol, so that I3C master device can communicate with I2C slave
+   devices.
+   For legacy I2C slave device, the address it listens to is
+   pre-configured by the device, i.e. static address. For I3C slave device,
+   the address it listens to can be either static address or dynamic address.
+   The dynamic address is assigned by master during Dynamic Address Assignment
+   process. It is an error to connect two slave devices to the same
+   bus if they listen to the same address.
+   In a communication, the Current Master refers to the device who now drives
+   the bus. It can be Main Master, or Secondary Master.
+   Usually, communication over the bus is initiated by the Current Master,
+   which can communicate with one or more slave devices at a time.
+   A slave device can request to initiate an communication, i.e., issue
+   an ibi_request, in three cases:
+   Hot-Join, In-Band Interrupt and as a Secondary Master other than the
+   Current Master requesting to become Current Master.
+   Only one device on a bus can communicate at a time.
+</p><p>
+   The <b><i>start</i></b> method starts a transfer. The <i>address</i>
+   parameter is the address header combined with read/write bit encoded as an
+   8-bit number. The least significant bit is the read/write bit and the other
+   bits is the 7-bit address header.
+   If the <b><i>start</i></b> method is called from master, the address header
+   can be address pattern 0x7E for broadcast, or specific slave address (either
+   I2C slave static address or I3C slave dynamic address).
+</p><p>
+   In I3C bus or link implementation, every start request will broadcast to
+   all other devices. So does the stop request. This will monitor bus/link
+   status to all devices.
+</p><p>
+   Normally, master starts a transfer, then the slave responds to
+   <b><i>start</i></b> using the <b><i>acknowledge</i></b> method (implemented by
+   master side interface). The <i>ack</i> parameter may be
+   <code>I3C_ack</code> or <code>I3C_noack</code> if the start is acked or
+   noacked, respectively.
+</p><p>
+   There are five types of different start requests:
+   </p><dl><dt id="dt:i3c-master-read-transaction"><b>I3C master read transaction</b></dt><dd>If a master's start with specific slave address was acked by other
+   device, and read/write bit in the <i>address</i> parameter of
+   the <b><i>start</i></b> method was 1, then master proceeds with a sequence
+   of <b><i>read</i></b> calls. Each call is followed by a <b><i>read_response</i></b>
+   call from the slave. Parameter <i>data</i> in the method
+   <b><i>read_response</i></b> is the data transferred. The procedure is no
+   difference with regard to read from I3C slave or read from I2C slave.
+   In hardware, the ACK/T bit is handled differently for i2c and i3c, and
+   the master is supposed to know whether the slave is an i2c or i3c device.
+   In the i3c case, the slave is supposed to pass the T bit in the
+   <i>more</i> argument of <b><i>read_response</i></b>, while an i2c
+   device always passes <i>more</i> as true. Further more, in the
+   i2c case, a master sends an ACK bit, which is not represented explicitly
+   in the interface. The value of this bit can be deduced from whether the
+   following operation is START/STOP or READ. For i3c case, parameter
+   <i>more</i> in method <b><i>read_response</i></b> indicates if
+   there are still data waiting to be transferred from slave to master.
+   <i>more</i> is true when there are still data left, false otherwise.
+   </dd><dt id="dt:i3c-master-write-transaction-write-to-i3c-slave"><b>I3C master write transaction (write to I3C slave)</b></dt><dd>If a master's start with specific slave address was acked by other
+   device, and the read/write bit in the <i>address</i> parameter
+   of <b><i>start</i></b> method was 0, the master proceeds with a
+   <b><i>sdr_write</i></b> call, no response is expected. Parameter
+   <i>data</i> in method <b><i>write</i></b> is the data transferred.
+   The parity bit is not passed explicitly in sdr_write, and that the slave
+   can assume the parity bit is correctly set.
+   </dd><dt id="dt:i3c-master-write-transaction-write-to-i2c-slave"><b>I3C master write transaction (write to I2C slave)</b></dt><dd>When the master's start request is to write to I2C slave, i.e.,
+   master issues a start request to I2C slave address with read/write bit
+   is 0, then master proceeds with a sequence of <b><i>write</i></b> calls,
+   each call expects a response call to a method <b><i>acknowledge</i></b>.
+   This is quite similar to I2C write transaction.</dd><dt id="dt:i3c-broadcast-transaction"><b>I3C broadcast transaction</b></dt><dd>When master starts a transfer with I3C Broadcast Address 0x7E which
+   is passed as address header, i.e., address 0xFC passed in the
+   <i>address</i> argument of method <b><i>start</i></b>, a typical
+   I3C message transfer is initiated.
+<p>
+   Multiple I3C slave devices may acknowledge the start request. The master
+   will conceive a request as being acknowledged if it was acknowledged by
+   at least one of the slaves. Note that there will be a single
+   <b><i>acknowledge</i></b> call in the master; the link or bus handles
+   aggregation of acks.
+</p><p>
+   Master sends the I3C Commands (Common Command Code, CCC) using
+   <b><i>sdr_write</i></b> method after receiving ACK, showing to communicate
+   with either all Slaves (Broadcast CCCs) or specific individual Slaves
+   (Direct CCCs). This operation expects no response, and master will proceed.
+</p><p>
+   If Broadcast CCC sent previously, master calls <b><i>sdr_write</i></b> method
+   to transfer data to all slaves who acked the initial access.</p></dd><dt id="dt:i3c-direct-transaction"><b>I3C direct transaction</b></dt><dd>After sending a Direct CCC, master continues with a repeated start
+   request along with one specific I3C slave address. The transaction goes
+   on just like master is communicating with only one slave. After the
+   communication with one slave, master may be issue a repeated start request
+   to another slave. Further communication is routed only to the targeted
+   slave device.</dd></dl><p>After sending a number of reads or a number of writes, the master may
+   choose to either call the <b><i>stop</i></b> method to issue a <em>stop
+   condition</em> which terminates the transfer, or to call the <b><i>start</i></b>
+   method again to issue a <em>repeated start condition</em>. The repeated start
+   condition works like a normal start condition.
+</p><p>
+   The <b><i>start</i></b> method and <b><i>read</i></b> method in the slave
+   interfaces are allowed to respond synchronously; i.e., the
+   <b><i>acknowledge</i></b> or <b><i>read</i></b> method may be called before the
+   corresponding method in the slave interfaces has returned. A master that
+   needs to connect directly to a slave device needs to take this into
+   consideration; however, when communicating via an <b>i3c-link</b>
+   object, the link guarantees that all responses are asynchronous.
+</p><p>
+   The method <b><i>daa_read</i></b> and method <b><i>daa_response</i></b> are used
+   in Dynamic Address Assignment process.
+   Method <b><i>daa_read</i></b> is called from master to signal a daa read request.
+   Method <b><i>daa_response</i></b> is called from slave to send slave specific
+   8-bytes data (48-bit Unique ID, BCR, DCR) to master. The parameter
+   <i>id</i>, <i>bcr</i> and <i>dcr</i> in method
+   <b><i>daa_response</i></b> represent the slave specific daa data.
+   If multiple slaves response daa data, the slave with the lowest data wins
+   and it will get the assigned address this time.
+   Master calls method <b><i>write</i></b> in slave interfaces to send assigned
+   dynamic address to the slave who wins. This operation expects a response
+   call to method <b><i>acknowledge</i></b> in master side. Parameter
+   <i>data</i> in method <b><i>write</i></b> stores the assigned address.
+</p><p>
+   Master should implement the method <b><i>stop</i></b> in the interface
+   <code>i3c_slave</code> in case there is secondary master in the
+   configuration which may issue start request.
+</p><p>
+   Slave can request to start a communication through <b><i>ibi_request</i></b>.
+   The request is sent to Current Master which drives the bus now.
+   If the master chooses to continue the slave request, <b><i>ibi_start</i></b>
+   is called, this ibi start will broadcast to all devices in the configuration.
+   Then slave can send its address header with <b><i>ibi_address</i></b>
+   argument <i>address</i>. The address header can be 0x02 for Hot-Join,
+   or the address of the slave itself for IBI and secondary master with
+   read/write bit 1 and 0 respectively.
+   If more than one slave issues <b><i>ibi_address</i></b>, arbitration occurs,
+   the slave with lowest address header wins and the winning address will be
+   delivered to master by link or bus.
+   At that time, master issues <b><i>ibi_acknowledge</i></b> to the slave who wins.
+   Other slaves which do not receive <b><i>ibi_acknowledge</i></b> will consume it
+   lost arbitration already.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_i3c_daa_snoop.html">i3c_daa_snoop</a>
+<a href="__rm_interface_i3c_slave.html">i3c_slave</a>
+</div>

@@ -1,0 +1,140 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>8.2 Host Serial Console</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="serial-link-component.html">8.1 Serial Link Component</a>
+<a href="instrumentation.html">9 Instrumentation</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="serial-links.html">8 Serial Links</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Host-Serial-Console">8.2 Host Serial Console</a></h1>
+<p>
+
+</p><p>
+The text consoles also have the ability to open host serial
+connections. This is a way of connecting a terminal application
+through a serial port on the host machine to a serial device object in
+Simics. The procedure is almost identical in both Linux and
+Windows. The following examples show how to open host serial
+connections on a <i>QSP-x86</i> machine, first in Linux:
+</p><p>
+</p><pre class="jdocu_small">
+simics&gt; <b>board.serconsole.con.host-serial-setup pty = /dev/pts/1</b>
+[board.serconsole.con info] Device opened: /dev/pts/1
+
+</pre><p>
+</p><p>
+And the same procedure in Windows:
+</p><p>
+</p><pre class="jdocu_small">
+simics&gt; <b>board.serconsole.con.host-serial-setup pty = COM1</b>
+[board.serconsole.con info] Opened: COM1
+
+</pre><p>
+</p><p>
+The host serial connection will operate at the baud rate and other attributes
+that are set for the physical serial port of the host. In Linux these host
+settings are edited with <b>stty</b>. In Windows these settings
+must be edited from a <b>Command Prompt</b>, this is an example:
+</p><p>
+</p><pre class="jdocu_small">
+C:\&gt; <b>mode com1: baud=4800 parity=n data=8 stop=1</b>
+
+</pre><p>
+</p><p>
+It is also possible to open a host serial connection to a virtual
+serial port. In Linux this is called pseudo-terminal or
+pseudo-device. If there is no parameter specified
+to <b>host-serial-setup</b>, any free <code>pts</code> is opened.
+</p><p>
+However, in Windows a virtual serial port must have been created in
+advance.  There exist several Windows third-party utilities which
+create virtual serial port pairs for various purposes. In the
+following example, first such a pair has been created with the port
+names COM98 and COM99, then a host serial connection can be opened to
+port 98, and finally the terminal application can connect to port 99
+and the two can communicate over the pair:
+</p><p>
+</p><pre class="jdocu_small">
+simics&gt; <b>board.serconsole.con.host-serial-setup pty = COM98</b>
+[board.serconsole.con info] Opened: COM98
+
+</pre><p>
+</p><p>
+</p><h2 class="jdocu"><a name="Using-host-serial-connections-with-Windows-HyperTerminal">8.2.1 Using host serial connections with Windows HyperTerminal</a></h2>
+<p>
+
+</p><p>
+Once the host serial connection has been configured within Simics it is
+possible to connect to it using a standard terminal program running
+on your host system. In this section we will use the <a name="HyperTerminal">HyperTerminal</a>
+application, which comes bundled with some Windows versions, to connect to the
+simulated system.
+</p><p>
+First launch HyperTerminal from
+<b>Start Menu → All Programs → Accessories →
+Communications → HyperTerminal</b>.
+The dialog <i>Connection Description</i> will appear, as shown in Figure
+<a class="reference" href="#host-serial-hyperterminal-setup">2</a>. Name the Connection "Simics"
+and press <i>OK</i>. In the next dialog, select the COM-port that Simics
+has opened in the field <i>Connect using</i>.
+In the next dialog, just accept the default settings and press <i>OK</i>.
+</p><p>
+</p><div class="figure" id="host-serial-hyperterminal-setup">
+
+<div style="text-align: center">
+<img alt="" src="hyperterm-1-new-connection.png">
+</div>
+<div class="caption">Figure 2. Connecting to Simics using the Windows HyperTerminal</div>
+</div>
+
+<p>
+Now, resume the simulation in Simics. The output from the simulated serial
+console will appear in the HyperTerminal window. See figure
+<a class="reference" href="#host-serial-hyperterminal-running">3</a>.
+</p><p>
+</p><div class="figure" id="host-serial-hyperterminal-running">
+
+<div style="text-align: center">
+<img alt="" src="hyperterm-2-running.png">
+</div>
+<div class="caption">Figure 3. HyperTerminal connected to a simulation</div>
+</div>
+
+<p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="serial-link-component.html">8.1 Serial Link Component</a>
+<a href="instrumentation.html">9 Instrumentation</a>
+</div>

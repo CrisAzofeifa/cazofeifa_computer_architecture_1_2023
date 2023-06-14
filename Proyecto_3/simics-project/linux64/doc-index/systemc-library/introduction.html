@@ -1,0 +1,140 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>1 Introduction</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="index.html">SystemC* Library</a>
+<a href="systemc-library-requirements.html">2 SystemC Library Requirements</a>
+</div>
+<div class="path">
+<a href="index.html">SystemC* Library</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Introduction">1 Introduction</a></h1>
+<p>
+
+<a name="systemc-library"></a>
+<a name="systemc-model"></a>
+</p><h2 class="jdocu"><a name="SystemC-Library">1.1 SystemC* Library</a></h2>
+<p>
+
+Simics SystemC* Library provides support for creating and
+running SystemC models in Simics. SystemC, as standardized by
+IEEE-1666, is a C++ class library and a methodology that can be used
+to create cycle-accurate or transaction-level models of
+hardware. When choosing to develop models in SystemC for use in Simics
+it is important to be aware that there exists some fundamental
+differences in vocabulary, methodology, and features compared to
+writing models directly to the Simics API. While SystemC Library
+attempts to minimize those differences it cannot do so completely.
+</p><p>
+SystemC Library provides three basic capabilities. It makes it
+possible to run SystemC models in Simics with only a few minor changes
+compared to running a stand-alone SystemC simulation. Note that none of
+these changes are to the SystemC model itself. SystemC
+Library also provides awareness and inspection capabilities of SystemC
+models running in Simics by connecting SystemC
+concepts, such as the object hierarchy and the sc_report mechanism to
+the corresponding Simics concepts. Support for tracing and breaking on SystemC
+ports and exports as well as signals is provided.
+Finally, SystemC Library provides a mechanism to
+connect SystemC models with traditional Simics models through the use
+of interface gaskets.
+
+</p><h2 class="jdocu"><a name="SystemC">1.2 SystemC</a></h2>
+<p>
+
+SystemC was originally designed to supplement or replace RTL and HDL
+modeling with languages such as Verilog or VHDL. One of the goals with
+SystemC 2.0 was to enable system-level modeling at a higher level of
+abstraction than RTL. In this tradition the SystemC kernel implements
+an event based timing model with delta-cycles similar to VHDL
+where there is an "outer" simulation loop that drives time forward and
+an "inner" loop that stabilizes all signals during the delta-cycles.
+</p><p>
+Systems modeled in SystemC are made up of a number of SystemC <em>modules</em>
+(C++ classes) that are connected at compile-time using ports and signals and
+implement their functionality in
+<em>processes</em> (C++ methods) and <em>threads</em> (coroutines). A
+SystemC module is simply a C++ class derived from <b>sc_module</b>
+provided by the SystemC kernel. The module includes processes and
+threads that are simply member functions of the class that may be
+"registered" as <em>sensitive</em> to a specific port. A port can represent
+different "activation signals"; such as the rising and falling of a
+clock's edge or, at a higher level of abstraction, an arbitrary C++
+type being passed from one module to another via a signal connected to
+a port.
+</p><p>
+To further support system-level modeling the Transaction-level
+Modeling (TLM) standard was proposed as an addition to
+SystemC. SystemC TLM 2.0 (hereafter TLM2) extends SystemC with
+a set of core interfaces, a global quantum for temporal decoupling,
+initiator and target sockets, a generic payload and base protocol, and
+some utilities.
+
+</p><h2 class="jdocu"><a name="About-this-Document">1.3 About this Document</a></h2>
+<p>
+
+This document assumes that the reader has a basic knowledge of
+Simics. It is recommended to be familiar with the contents of the
+<em>Simics User's Guide</em> and to have performed the introductory steps
+in <em>Getting Started with Simics</em>. It is useful if the reader is
+able to find relevant information in the <em>API Reference Manual</em>.
+At the very least, the reader should be familiar with starting Simics
+and loading a configuration.
+</p><p>
+It is also recommended to be familiar with basic Simics Model Builder
+concepts, such as building a module, creating a module test, as well
+as familiarity with the C++ API. Please refer to the <em>Model
+Builder User's Guide</em> and the <em>C++ Device API Programming Guide
+</em> for more information. The reader is expected to be familiar
+with SystemC and Transaction-level Modeling (TLM).
+</p><p>
+This document describes how to run SystemC models in Simics and how to
+integrate them with Simics models written for the Simics API. It does
+not try to cover how to write good SystemC models. For more details
+about SystemC, refer to the IEEE-1666 standard.
+</p><p>
+This document serves multiple purposes and has been constructed to try to meet
+these requirements. It starts out with a brief introduction to SystemC
+Library and a quick tutorial on how to get started. This is followed up by a
+chapter on how to connect SystemC models with Simics. That chapter starts off
+with a hands-on example highlighting all the building blocks including testing
+and configuration. The chapter follows up with some guidelines before it goes
+into details on how the gaskets work and how users can write their own. The
+chapter is rounded off by describing two common gaskets. The next chapter
+covers all the features. More advanced topics about how SystemC models are
+executed in the Simics simulator is described next. All known major
+limitations are listed as a separate chapter. Last chapter is about the
+compile-time requirements.
+</p><p>
+The document can be used both as a tutorial and as reference. It has not been
+written in such a way that it would make sense to read it from cover to cover.
+
+</p>
+<div class="chain">
+<a href="index.html">SystemC* Library</a>
+<a href="systemc-library-requirements.html">2 SystemC Library Requirements</a>
+</div>

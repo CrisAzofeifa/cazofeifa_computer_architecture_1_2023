@@ -1,0 +1,88 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;uefi_fw_tracker_comp&gt;.detect-parameters</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-uefi_fw_tracker.status.html">&lt;uefi_fw_tracker&gt;.status</a>
+<a href="rm-cmd-uefi_fw_tracker_comp.info.html">&lt;uefi_fw_tracker_comp&gt;.info</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="uefi_fw_tracker_comp.detect-parameters"></a>
+<h1 id="uefi_fw_tracker_comp.detect-parameters"><a href="#uefi_fw_tracker_comp.detect-parameters">&lt;uefi_fw_tracker_comp&gt;.detect-parameters</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;uefi_fw_tracker_comp&gt;.detect-parameters</b> [<i>param-file</i>] [-overwrite] [-verbose] [-load] [<i>map-file</i>] [-enable-pre-dxe-tracking] [<i>pre-dxe-start</i>] [<i>pre-dxe-size</i>] [-disable-dxe-tracking] [-disable-hand-off-tracking] [<i>dxe-start</i>] [<i>dxe-size</i>] [-disable-execution-tracking] [<i>exec-scan-size</i>] [-disable-notification-tracking] [-disable-smm-tracking] [-disable-reset-support] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Detect the parameters to use with the UEFI Firmware tracker and write to a parameter file. For information about tracking techniques, see <cite>Analyzer User's Guide</cite>.
+<p>
+The optional <i>param-file</i> argument is used to specify where to save the parameters, the default is <tt>uefi.params</tt>. If this argument is left out and the <tt>-load</tt> flag is used then no parameters will be saved.
+</p><p>
+The <tt>-load</tt> flag can be used to load the newly detected parameters directly after detection.
+</p><p>
+The optional <tt>-overwrite</tt> flag tells the detect command to overwrite the file specified by the <i>param-file</i> argument, if it exists.
+</p><p>
+Use <tt>-verbose</tt> to show a configuration overview of the tracker configuration.
+</p><p>
+Configure map file tracking by setting the <i>map-file</i> argument to the <em>UEFI build's map-file</em>.
+</p><p>
+Pre-DXE tracking is only supported for X86 platform and is enabled by setting <tt>-enable-pre-dxe-tracking</tt>. This requires that the scanning range which will be scanned for dynamic PEI modules by the tracker is set with <i>pre-dxe-start</i> and <i>pre-dxe-size</i>.
+</p><p>
+DXE tracking is enabled by default and can be disabled with <tt>-disable-dxe-tracking</tt>. The default scanning range to locate EFI_SYSTEM_TABLE_POINTER is from 0 to 4 GB, but this range can be modified by specifying <i>dxe-start</i> and <i>dxe-size</i>.
+</p><p>
+OS hand-off tracking tracks hand-off to the OS from UEFI, and when this happens, only SMM and reset-tracking are preserved. OS hand-off tracking requires DXE tracking, which means that if DXE tracking is disabled, OS hand-off tracking must be disabled as well. To disable OS hand-off tracking, use <tt>-disable-hand-off-tracking</tt>.
+</p><p>
+Execution tracking is enabled by default and can be disabled with <tt>-disable-execution-tracking</tt>. This tracking requires that the scanning size is as large as the largest module in the system and defaults to 327680 bytes on X86. To modify the scanning size, set <i>exec-scan-size</i>.
+</p><p>
+Notification tracking is only available on an X86 platform, and is enabled by default on X86. To disable notification tracking, use <tt>-disable-notification-tracking</tt>. This tracking requires that notification support has been added to the UEFI system.
+</p><p>
+SMM tracking is only available on an X86 platform, and is enabled by default on X86, but can be disabled with <tt>-disable-smm-tracking</tt>.
+</p><p>
+Processor reset monitoring is only available on an X86 platform, and is enabled by default on X86, but can be disabled with <tt>-disable-reset-support</tt>.
+</p><p>
+For further details, see the <cite>Analyzer User's Guide</cite>. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.uefi-fw-tracker.html">uefi-fw-tracker</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-osa_parameters.load-parameters.html">&lt;osa_parameters&gt;.load-parameters</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-uefi_fw_tracker.status.html">&lt;uefi_fw_tracker&gt;.status</a>
+<a href="rm-cmd-uefi_fw_tracker_comp.info.html">&lt;uefi_fw_tracker_comp&gt;.info</a>
+</div>

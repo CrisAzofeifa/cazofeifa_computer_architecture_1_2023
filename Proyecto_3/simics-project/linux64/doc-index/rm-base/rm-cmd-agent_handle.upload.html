@@ -1,0 +1,75 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;agent_handle&gt;.upload</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-agent_handle.target-time.html">&lt;agent_handle&gt;.target-time</a>
+<a href="rm-cmd-agent_handle.upload-dir.html">&lt;agent_handle&gt;.upload-dir</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="agent_handle.upload"></a>
+<h1 id="agent_handle.upload"><a href="#agent_handle.upload">&lt;agent_handle&gt;.upload</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;agent_handle&gt;.upload</b> [-executable] [-flush] [-overwrite] <i>from</i> [<i>"to"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Copy a file from the host to the target system, where the Simics Agent connected to this <tt>agent_handle</tt> object is running.
+<p>
+The <i>from</i> argument is mandatory and must refer to an existing readable file on the host system.
+</p><p>
+The <i>to</i> argument is optional and without it the agent handle's current working directory will be used. If provided, the destination directory path is taken relative to the handle's current working directory, unless the path is absolute. The destination directory must exist on the target and the user must have write permission in it.
+</p><p>
+When the <tt>-executable</tt> flag is given, the file mode bits will be updated so that all users who have read access to the file will also gain executable access to it.
+</p><p>
+With the <tt>-flush</tt> flag, the Simics Agent will immediately commit each piece of data to the storage media before requesting the next piece of data to be transmitted. This allows readers of the destination file to read the data as each piece is transferred, at the expense of performance.
+</p><p>
+The <tt>-overwrite</tt> flag is required to overwrite any existing destination file on the target system. Otherwise, the command will fail if the destination file already exists.
+</p><p>
+Note: The Simics Agent must have permissions to create and write files in the destination directory on the target system. The uploaded contents will be given ownership and the access permissions of the <i>user</i> who is running the Simics Agent.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.matic.html">matic</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-agent_handle.upload-dir.html">&lt;agent_handle&gt;.upload-dir</a>, 
+<a href="rm-cmd-agent_handle.download.html">&lt;agent_handle&gt;.download</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-agent_handle.target-time.html">&lt;agent_handle&gt;.target-time</a>
+<a href="rm-cmd-agent_handle.upload-dir.html">&lt;agent_handle&gt;.upload-dir</a>
+</div>

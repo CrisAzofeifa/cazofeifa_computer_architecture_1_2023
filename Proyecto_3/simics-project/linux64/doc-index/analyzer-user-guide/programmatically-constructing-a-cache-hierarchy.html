@@ -1,0 +1,160 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.3 Programmatically constructing a cache hierarchy</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simulating-a-simple-cache.html">5.2 Simulating a Simple Cache</a>
+<a href="workload-positioning-and-cache-models.html">5.4 Workload Positioning and Cache Models</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="caches.html">5 Cache Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 id="programmatically-constructing-a-cache-hierarchy">5.3 <a href="#programmatically-constructing-a-cache-hierarchy">Programmatically constructing a cache hierarchy</a></h1>
+<p>Using <code>simple_cache</code>, we can programmatically (here using Python) setup a cache hierarchy not limited to the commands described in the previous section.</p>
+<p>You still need a cache instrumentation tool and its connections to build on. It is from the connection that is associated with a processor (or hardware thread) you build up the hierarchy.</p>
+<p>The important attributes in each cache are those that connect the caches together. The <code>next_level</code> attribute of the cache should point to the next level cache, if any, and the <code>prev_level</code> should point to the caches of the previous level, if any. The <code>prev_level</code> attribute is a list of cache objects, e.g., the level 2 cache can have both a data and an instruction cache as its previous caches. If only one previous cache object exists, only one object should be set in the list.</p>
+<p>The first cache level is special. Each connection in the cache tool should point the first level data cache and instruction cache by setting the <code>dcache</code> and <code>icache</code> attribute of the connection. If there is only one first level cache, both these attribute should point to the same cache object. Several connections can point to the same cache, e.g., all the hardware threads in a core typically share the first level caches. Each hardware thread will get a connection if you use the <code>-connect-all</code> argument to the <code>new-simple-cache-tool</code> command.</p>
+<p>The first level caches should also be set up to point back to the connections, using the <code>cache_conn</code> attribute. This attribute should be set to the first connection pointing to the cache, e.g., if a core has two hardware threads the attribute should be set to the connection representing the first hardware thread.</p>
+<p>All the cache levels need a <code>simple_directory</code> object. This object keeps track of where each cache lines are stored in that level and make sure the cache coherency is fulfilled. Each directory object need to be setup to point to the next level directory using the <code>next_directory</code> attribute.</p>
+<p>For simplicity the following example does not involve hardware threads.</p>
+<pre><code>
+from simics import *
+
+# create an instrumentation connection object for each processor
+run_command("new-simple-cache-tool name = cachetool -connect-all")
+
+# put all objects under my_caches namespace
+mc = pre_conf_object("my_caches", "namespace")
+
+mc.dir3 = pre_conf_object("simple_directory")
+mc.dir2 = pre_conf_object("simple_directory", next_directory = mc.dir3)
+mc.dir1 = pre_conf_object("simple_directory", next_directory = mc.dir2)
+
+mc.l3 = pre_conf_object("simple_cache",
+                        cache_block_size = 64,
+                        cache_set_number = 4096,
+                        cache_ways = 12,
+                        prefetch_additional = 3,
+                        prefetch_adjacent = True,
+                        read_penalty = 80,
+                        read_miss_penalty = 200,
+                        write_back = True,
+                        write_allocate = True,
+                        directory = mc.dir3)
+
+all_l2 = []
+l1d_names = []
+l1i_names = []
+num = 0
+
+mc.cache = pre_conf_object("index_map")
+
+# loop through all connections and add caches to the associated processors
+for conn in conf.cachetool.connections:
+    mc.cache[num] = pre_conf_object("namespace")
+    mc.cache[num].l2 = pre_conf_object("simple_cache",
+                                       cache_block_size = 64,
+                                       cache_set_number = 1024,
+                                       cache_ways = 20,
+                                       prefetch_additional = 3,
+                                       prefetch_adjacent = True,
+                                       read_penalty = 20,
+                                       write_back = True,
+                                       write_allocate = True,
+                                       directory = mc.dir2,
+                                       next_level = mc.l3)
+
+    mc.cache[num].l1d = pre_conf_object("simple_cache",
+                                        cache_block_size = 64,
+                                        cache_set_number = 64,
+                                        cache_ways = 12,
+                                        ip_read_prefetcher = True,
+                                        prefetch_additional = 1,
+                                        read_penalty = 4,
+                                        write_back = True,
+                                        write_allocate = True,
+                                        directory = mc.dir1,
+                                        next_level = mc.cache[num].l2)
+
+    mc.cache[num].l1i = pre_conf_object("simple_cache",
+                                        cache_block_size = 64,
+                                        cache_set_number = 64,
+                                        cache_ways = 8,
+                                        prefetch_additional = 1,
+                                        read_penalty = 4,
+                                        directory = mc.dir1,
+                                        next_level = mc.cache[num].l2)
+
+    l1d_names.append(f"my_caches.cache[{num}].l1i")
+    l1i_names.append(f"my_caches.cache[{num}].l1d")
+
+    mc.cache[num].l2.prev_level = [mc.cache[num].l1d, mc.cache[num].l1i]
+
+    mc.cache[num].l1d.cache_conn = conn
+    mc.cache[num].l1i.cache_conn = conn
+
+    all_l2.append(mc.cache[num].l2)
+    num += 1
+
+mc.l3.prev_level = all_l2
+
+SIM_add_configuration([mc], None)
+
+# set attributes in the connections to refer to the 1st level caches
+num = 0
+for conn in conf.cachetool.connections:
+    conn.dcache = SIM_get_object(l1d_names[num])
+    conn.icache = SIM_get_object(l1i_names[num])
+    conn.issue_instructions = True
+    num += 1
+</code></pre>
+<p>The caches are put an a namespace (cache[N]) to keep the processor associated caches together. The shared level three cache (l3) and the directory objects are left on the top level. This is the partial output from <code>list-objects -tree</code>.</p>
+<pre><code>
+├ cachetool ┐
+│           ├ con0
+│           └ con1
+├ my_caches ┐
+│           ├ cache[0] ┐
+│           │          ├ l1d
+│           │          ├ l1i
+│           │          └ l2
+│           ├ cache[1] ┐
+│           │          ├ l1d
+│           │          ├ l1i
+│           │          └ l2
+│           ├ dir1
+│           ├ dir2
+│           ├ dir3
+│           └ l3
+</code></pre>
+<p>You can also see the cache tool that has two connection objects, con0 and con1. These are associated with the two processors in this example setup. It is possible to put the cache objects anywhere in the object hierarchy by giving them hierarchical names.</p>
+
+<div class="chain">
+<a href="simulating-a-simple-cache.html">5.2 Simulating a Simple Cache</a>
+<a href="workload-positioning-and-cache-models.html">5.4 Workload Positioning and Cache Models</a>
+</div>

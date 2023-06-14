@@ -1,0 +1,84 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>datagram_link</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_coreint.html">coreint</a>
+<a href="__rm_interface_ethernet_cable.html">ethernet_cable</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_datagram_link">datagram_link</a></h1>
+<p>
+
+<a name="datagram_link"></a><a name="datagram_link_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(datagram_link) {
+        /* Transmit a message to the object. */
+        void (*receive)(conf_object_t *NOTNULL obj, bytes_t msg);
+};
+
+#define DATAGRAM_LINK_INTERFACE "datagram_link"
+</pre><p>
+</p><p>
+  
+</p><p>
+  This interface is implemented by objects that receive messages from a
+  datagram-link, and by the datagram-link connection endpoints themselves.
+</p><p>
+  There is a single function <b><i>receive()</i></b>, which is used to pass the
+  message <i>msg</i> to the object <i>obj</i>. 
+</p><p>
+  The message <i>msg</i> is treated as a series of bytes with no
+  special format or meaning expected. If <i>obj</i> is a datagram-link
+  endpoint, it will forward the message to all other endpoints registered on
+  the link except the sender, effectively broadcasting the message on the
+  link. If <i>obj</i> is a device, it will simply receive the message
+  as sent by the original sender.
+</p><p>
+  Note that the symmetry of the interface allows two devices to be connected
+  directly to each other and talk as if connected via a datagram-link. This is
+  however not supported by the default datagram-link component, so a special
+  connector must be created for this purpose. Additionally, the standard link
+  features, such as multicell configurations and latency, will not be available
+  in that setup.
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem"><table>
+
+  <tbody><tr><td class="jdocu_noborder"><b><i>receive</i></b></td><td class="jdocu_noborder">Cell Context</td></tr>
+
+  </tbody></table>
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_coreint.html">coreint</a>
+<a href="__rm_interface_ethernet_cable.html">ethernet_cable</a>
+</div>

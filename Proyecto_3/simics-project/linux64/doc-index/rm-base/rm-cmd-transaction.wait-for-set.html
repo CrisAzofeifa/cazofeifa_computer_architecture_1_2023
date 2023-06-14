@@ -1,0 +1,75 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;transaction&gt;.wait-for-set</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-transaction.wait-for-read.html">&lt;transaction&gt;.wait-for-read</a>
+<a href="rm-cmd-transaction.wait-for-write.html">&lt;transaction&gt;.wait-for-write</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="transaction.wait-for-set"></a>
+<h1 id="transaction.wait-for-set"><a href="#transaction.wait-for-set">&lt;transaction&gt;.wait-for-set</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;transaction&gt;.wait-for-set</b> <i>address</i> <i>value</i> [<i>size</i>] [-l|-b] [<i>initiator</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ The command issues an inquiry write transaction (via the 'transaction' interface) to <i>address</i> with the <i>value</i> value and the length of <i>size</i> bytes. The default <i>size</i> is 4 bytes, but it can have any positive value. If the transaction is not completed immediately the command postpones the execution of a script branch until the transaction is completed.
+<p>
+If a positive <i>value</i> doesn't fit in the specified size, an error is reported.
+</p><p>
+Providing <i>initiator</i> is rarely needed, but some devices may only accept accesses from certain initiating objects. If provided, <i>initiator</i> is the object that will be used as the source of the access.
+</p><p>
+The <tt>-l</tt> and <tt>-b</tt> flags are used to select little-endian and big-endian byte order, respectively. If neither is given, the byte order of the <i>initiator</i> is used if specified and a processor, or else the order of the currently selected processor.
+</p><p>
+If the <i>value</i> argument is a list, then each item is written to memory as a value of <i>size</i> bytes, starting at <i>address</i>. The byte order flags operate on each item in the list.
+</p><p>
+If a request fails an error is reported.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-wait-for-read.html">wait-for-read</a>, 
+<a href="rm-cmd-wait-for-write.html">wait-for-write</a>, 
+<a href="rm-cmd-wait-for-get.html">wait-for-get</a>, 
+<a href="rm-cmd-wait-for-set.html">wait-for-set</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-transaction.wait-for-read.html">&lt;transaction&gt;.wait-for-read</a>
+<a href="rm-cmd-transaction.wait-for-write.html">&lt;transaction&gt;.wait-for-write</a>
+</div>

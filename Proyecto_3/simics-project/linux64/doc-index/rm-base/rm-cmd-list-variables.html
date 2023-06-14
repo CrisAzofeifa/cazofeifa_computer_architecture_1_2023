@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>list-variables</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-list-transactions.html">list-transactions</a>
+<a href="rm-cmd-ll.html">ll</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="list-variables"></a>
+<a name="list-vars"></a>
+<h1 id="list-variables"><a href="#list-variables">list-variables</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>list-variables</b> [<i>"substr"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Lists all CLI variables and their current values. Use <i>substr</i> to filter for matching variable names. If the command is used in an expression, a list is returned instead.
+<p>
+CLI variables can be used to store temporary values. To set a variable, write <code>$variable = value</code> at the Simics prompt. The value can be of type integer, string, float, boolean or a list or values. To access a variable, prefix the name with a dollar sign (<tt>$</tt>); e.g., <code>$variable</code>. A variable can be used wherever an expression can be used. For example:
+</p><p>
+</p><pre>simics&gt; $tmp = %pc + 4
+simics&gt; $count = 10
+simics&gt; disassemble $tmp $count
+</pre>
+<p>
+They can also be accessed from Python by using the namespace <tt>simenv</tt> (<tt>simenv</tt> is imported into global namespace by default, but if it is needed elsewhere, it can be imported from the <tt>cli</tt> module):
+</p><p>
+</p><pre>simics&gt; $foo = 1 + 4 * 4
+simics&gt; @print(simenv.foo)
+17
+simics&gt; @simenv.bar = "hello"
+simics&gt; echo $bar
+hello
+</pre> 
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-_dollar_.html">$</a>, 
+<a href="rm-cmd-read-variable.html">read-variable</a>, 
+<a href="rm-cmd-defined.html">defined</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-list-transactions.html">list-transactions</a>
+<a href="rm-cmd-ll.html">ll</a>
+</div>

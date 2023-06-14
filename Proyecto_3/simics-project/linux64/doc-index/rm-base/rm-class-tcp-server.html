@@ -1,0 +1,94 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>tcp-server</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-tcf-serial-tee.html">tcf-serial-tee</a>
+<a href="rm-class-tcp_server.html">tcp_server</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="tcp-server"><a href="#tcp-server">tcp-server</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+External connection server for TCP/IP sockets
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, external_connection_ctl, tcp_connection_info
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-tcp-server.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-tcp-server.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:client">
+<i>client</i>
+</dt>
+<dd>
+<b>Required</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o</code>
+<br>Client object, which must implement the external_connection_events interface.</dd>
+<dt id="dt:new_port_if_busy">
+<i>new_port_if_busy</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>b</code>
+<br>Determines if a new TCP port may be used when the given port is already busy. The default value is TRUE. It may be set to FALSE for setups that rely on the same port being used all the time.</dd>
+<dt id="dt:port">
+<i>port</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i|n</code>
+<br>Return the TCP listening port used by the server, or NIL if no port is open. The port must not be privileged, i.e. the allowed range is [1024, 65535]. Specifying a value of 0 means that a random free port will be used and specifying NIL results in the server closing down.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.external-connection.html">external-connection</a>
+</section>
+<div class="chain">
+<a href="rm-class-tcf-serial-tee.html">tcf-serial-tee</a>
+<a href="rm-class-tcp_server.html">tcp_server</a>
+</div>

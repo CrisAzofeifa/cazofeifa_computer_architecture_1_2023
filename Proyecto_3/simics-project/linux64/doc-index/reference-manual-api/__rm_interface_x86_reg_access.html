@@ -1,0 +1,149 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>x86_reg_access</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_x86_pkg_cstate.html">x86_pkg_cstate</a>
+<a href="__rm_interface_x86_smm.html">x86_smm</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_x86_reg_access">x86_reg_access</a></h1>
+<p>
+
+<a name="x86_reg_access"></a><a name="x86_reg_access_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>x86_reg_acc_access</code> interface can be
+   used to access x86 register state in an efficient manner.
+   The interface is intended to be used from user decoder
+   service routines.
+<p>
+   This interface is internal and may change without notice.
+   </p><pre class="jdocu_small">SIM_INTERFACE(x86_reg_access) {
+        uint64 (*get_gpr)(conf_object_t *cpu, unsigned index);
+        void (*set_gpr)(conf_object_t *cpu, unsigned index, uint64 val);
+
+        uint64 (*get_rip)(conf_object_t *cpu);
+        void (*set_rip)(conf_object_t *cpu, uint64 rip);
+
+        uint64 (*get_rflags)(conf_object_t *cpu);
+        void (*set_rflags)(conf_object_t *cpu, uint64 rflags);
+
+        /* Possibly faster method for setting only cf,pf,af,zf,sf,of */
+        void (*set_status_flags)(conf_object_t *cpu, uint16 flags);
+
+        /* Regular segment registers */
+        x86_seg_reg_t (*get_seg)(conf_object_t *cpu, x86_seg_t n);
+        void (*set_seg)(conf_object_t *cpu, x86_seg_t n, x86_seg_reg_t seg);
+
+        /* IDTR and GDTR */
+        x86_system_seg_reg_t (*get_system_seg)(conf_object_t *cpu,
+                                               x86_system_seg_t n);
+        void (*set_system_seg)(conf_object_t *cpu, x86_system_seg_t n,
+                               x86_system_seg_reg_t seg);
+
+        /* Control registers */
+        uint64 (*get_cr)(conf_object_t *cpu, x86_cr_t n);
+        void (*set_cr)(conf_object_t *cpu, x86_cr_t n, uint64 val);
+        uint64 (*get_efer)(conf_object_t *cpu);
+        void (*set_efer)(conf_object_t *cpu, uint64 efer);
+        uint64 (*get_xcr)(conf_object_t *cpu, x86_xcr_t n);
+        void (*set_xcr)(conf_object_t *cpu, x86_xcr_t n, uint64 val);
+
+        /* x87 FPU */
+        x86_fpu_reg_t (*get_freg)(conf_object_t *cpu, unsigned index);
+        void (*set_freg)(conf_object_t *cpu, unsigned index, x86_fpu_reg_t freg);
+        x86_fpu_env_t (*get_fpu_env)(conf_object_t *cpu);
+        void (*set_fpu_env)(conf_object_t *cpu, x86_fpu_env_t state);
+
+        /* SIMD */
+        xmm_reg_t (*get_xmm)(conf_object_t *cpu, unsigned index);
+        void (*set_xmm)(conf_object_t *cpu, unsigned index, xmm_reg_t val);
+        ymm_reg_t (*get_ymm)(conf_object_t *cpu, unsigned index);
+        void (*set_ymm)(conf_object_t *cpu, unsigned index, ymm_reg_t val);
+        uint32 (*get_mxcsr)(conf_object_t *cpu);
+        void (*set_mxcsr)(conf_object_t *cpu, uint32 mxcsr);
+
+        /* Debug registers */
+        uint64 (*get_dr)(conf_object_t *cpu, x86_dr_t n);
+        void (*set_dr)(conf_object_t *cpu, x86_dr_t n, uint64 val);
+
+        /* SMM */
+        bool (*get_in_smm)(conf_object_t *cpu);
+        void (*set_in_smm)(conf_object_t *cpu, bool val);
+        uint64 (*get_smm_base)(conf_object_t *cpu);
+        void (*set_smm_base)(conf_object_t *cpu, uint64 val);
+
+        /* Monitor/Mwait */
+        x86_monitor_info_t (*get_monitor_info)(conf_object_t *cpu);
+        void (*set_monitor_info)(conf_object_t *cpu, x86_monitor_info_t val);
+        x86_mwait_info_t (*get_mwait_info)(conf_object_t *cpu);
+        void (*set_mwait_info)(conf_object_t *cpu, x86_mwait_info_t val);
+
+        /* Non-register state */
+        x86_activity_t (*get_activity_state)(conf_object_t *cpu);
+        void (*set_activity_state)(conf_object_t *cpu, x86_activity_t val);
+        x86_intstate_t (*get_interruptibility_state)(conf_object_t *cpu);
+        void (*set_interruptibility_state)(conf_object_t *cpu,
+                                           x86_intstate_t val);
+
+        /* A debug exception is pending if triggered by the last instruction,
+           but not yet taken. */
+        x86_pending_debug_exc_t (*get_pending_debug_exc)(conf_object_t *cpu);
+        void (*set_pending_debug_exc)(conf_object_t *cpu,
+                                      x86_pending_debug_exc_t val);
+
+        /* Derived state for fast/easy access */
+        x86_xmode_info_t (*get_xmode_info)(conf_object_t *cpu);
+        x86_exec_mode_t (*get_exec_mode)(conf_object_t *cpu);
+
+        /* This is configuration info. No need for a set method. */
+        uint32 (*get_mxcsr_mask)(conf_object_t *cpu);
+
+        /* Extension state dirty bit modification (for XSAVE) */
+        uint64 (*get_ext_state_dirty_bits)(conf_object_t *cpu);
+        void (*or_ext_state_dirty_bits)(conf_object_t *cpu, uint64 dirty_bits);
+        void (*and_ext_state_dirty_bits)(conf_object_t *cpu, uint64 dirty_bits);
+
+        /* PDPTE registers used in PAE paging mode */
+        uint64 (*get_pdpte)(conf_object_t *cpu, int num);
+        void (*set_pdpte)(conf_object_t *cpu, int num, uint64 val);
+};
+#define X86_REG_ACCESS_INTERFACE "x86_reg_access"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_x86_pkg_cstate.html">x86_pkg_cstate</a>
+<a href="__rm_interface_x86_smm.html">x86_smm</a>
+</div>

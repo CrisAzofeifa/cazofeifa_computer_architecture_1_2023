@@ -1,0 +1,657 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.8 Hardware inspection</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="getting-data-into-the-simulated-system.html">2.7 Getting data into the simulated system</a>
+<a href="target-software-debugging.html">2.9 Debugging Target Software</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="hardware-inspection">2.8 <a href="#hardware-inspection">Hardware inspection</a></h1>
+<p>One of the important reasons to use a simulator such as Simics is the ability to inspect hardware in a non-intrusive way. This section will describe various Simics features that facilitates hardware inspection.</p>
+<ol>
+<li>Inspection of registers in processors and devices. </li>
+<li>Controlling the logging system to obtain information on what is happening in the hardware. </li>
+<li>Using tracing to see what the simulation is doing. </li>
+<li>Using the instrumentation framework to obtain statistics about instructions, exceptions and caches. </li>
+</ol>
+<h2 id="processor-and-device-inspection">2.8.1 <a href="#processor-and-device-inspection">Processor and device inspection</a></h2>
+<p>Here are some examples of how to inspect processors and devices, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine.</p>
+<ul>
+<li>Start Simics using the mentioned target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>To inspect the target machine, use the <code>list-objects</code> command.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>list-objects</strong>
+┌───────────────────┬─────────────────┐
+│  Component Class  │     Object      │
+├───────────────────┼─────────────────┤
+│&lt;chassis_qsp_x86&gt;  │board            │
+│&lt;ethernet_switch&gt;  │ethernet_switch0 │
+│&lt;service_node_comp&gt;│service_node_cmp0│
+└───────────────────┴─────────────────┘
+┌─────────────────┬───────────────────┐
+│      Class      │      Object       │
+├─────────────────┼───────────────────┤
+│&lt;bp-manager&gt;     │bp                 │
+│&lt;breakpoints-old&gt;│breakpoints        │
+│&lt;sync_domain&gt;    │default_sync_domain│
+│&lt;script-params&gt;  │params             │
+│&lt;preferences&gt;    │prefs              │
+│&lt;sim&gt;            │sim                │
+└─────────────────┴───────────────────┘
+</code></pre>
+<ul>
+<li>Here we see that we have a few special objects, like the breakpoint manager and the <code>sim</code> object, we have the network related objects, and at the top we have the actual machine. We can look at the objects inside it:</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>list-objects namespace = board</strong>
+┌───────────────────────┬─────────────────┐
+│    Component Class    │     Object      │
+├───────────────────────┼─────────────────┤
+│&lt;sata_cdrom_comp&gt;      │board.cdrom      │
+│&lt;gfx_console_comp&gt;     │board.console    │
+│&lt;sata_disk_comp&gt;       │board.disk0      │
+│&lt;sata_disk_comp&gt;       │board.disk1      │
+│&lt;motherboard_x58_ich10&gt;│board.mb         │
+│&lt;txt_console_comp&gt;     │board.serconsole │
+│&lt;txt_console_comp&gt;     │board.serconsole1│
+│&lt;usb_tablet_component&gt; │board.tablet     │
+└───────────────────────┴─────────────────┘
+┌──────────────┬──────────────────┐
+│    Class     │      Object      │
+├──────────────┼──────────────────┤
+│&lt;cell&gt;        │board.cell        │
+│&lt;context&gt;     │board.cell_context│
+│&lt;recorder&gt;    │board.cell_rec0   │
+│&lt;os_awareness&gt;│board.software    │
+└──────────────┴──────────────────┘
+</code></pre>
+<ul>
+<li>To list all processors, use the <code>list-processors</code> command. This command can show information about the state of each processor core, to help diagnose the current state of the system. There are multiple switches available, use help or tab-completion to see the available options. The <code>-disassemble</code> option is particularly interesting, as it often indicates processor modes like wait states.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>list-processors -disassemble</strong>
+┌────────────────────────┬─┬─────────┬────────┬────────────────────────────────────────┐
+│        CPU Name        │ │CPU Class│  Freq  │              Disassembly               │
+├────────────────────────┼─┼─────────┼────────┼────────────────────────────────────────┤
+│board.mb.cpu0.core[0][0]│*│x86QSP1  │2.00 GHz│cs:0x000000000000fff0 p:0x0fffffff0  nop│
+└────────────────────────┴─┴─────────┴────────┴────────────────────────────────────────┘
+</code></pre>
+<ul>
+<li>To see the objects associated with the processor, we can again use the <code>list-objects</code> command. The <code>-tree</code> option displays the objects in a hierarchical fashion.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>list-objects namespace = board.mb.cpu0 -tree</strong>
+┐
+├ apic[0] ┐
+│         └ [0] 
+├ core[0] ┐
+│         └ [0] ┐
+│               └ vtime ┐
+│                       ├ cycles 
+│                       └ ps 
+├ mem[0] ┐
+│        └ [0] 
+├ socket 
+└ tlb[0] ┐
+         └ [0] 
+</code></pre>
+<ul>
+<li>We can inspect the registers and current execution mode of a processor can using the <code>print-processor-registers</code> command.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>board.mb.cpu0.core[0][0].print-processor-registers</strong>
+16-bit legacy real mode
+rax = 0x0000000000000000             r8  = 0x0000000000000000
+rcx = 0x0000000000000000             r9  = 0x0000000000000000
+rdx = 0x00000000000106a1             r10 = 0x0000000000000000
+rbx = 0x0000000000000000             r11 = 0x0000000000000000
+rsp = 0x0000000000000000             r12 = 0x0000000000000000
+rbp = 0x0000000000000000             r13 = 0x0000000000000000
+rsi = 0x0000000000000000             r14 = 0x0000000000000000
+rdi = 0x0000000000000000             r15 = 0x0000000000000000
+
+rip = 0x000000000000fff0
+
+eflags = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 = 0x00000002
+         I V V A V R - N I I O D I T S Z - A - P - C
+         D I I C M F   T O O F F F F F F   F   F   F
+           P F           P P                        
+                         L L                        
+
+</code></pre>
+<ul>
+<li>Individual registers are also typically accessible. Here we also use the <code>output-radix</code> command that specifies the base when numbers are displayed.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>output-radix 16</strong>
+simics&gt; <strong>%rdx</strong>
+0x106a1
+</code></pre>
+<ul>
+<li>We can also inspect devices, thas the abilityheir register banks, and individual registers. Information about their registers can be displayed using the <code>print-device-regs</code> command. For example, we can look at the DMI device. First, we locate it in the system.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>list-classes -l substr = dmi</strong>
+The following classes have been registered:
+┌───────────────────┬──────────────────────────────────────────────────┐
+│       Class       │                Short description                 │
+├───────────────────┼──────────────────────────────────────────────────┤
+│osa_admin_emulator │deprecated OS awareness administrator             │
+│x58-dmi            │Intel® X58 DMI unit                               │
+│x58-dmi.HRESET     │                                                  │
+│x58-dmi.io_regs    │                                                  │
+│x58-dmi.msg        │legacy PCI INTx message to pci_interrupt converter│
+│x58-dmi.pcie_config│                                                  │
+└───────────────────┴──────────────────────────────────────────────────┘
+simics&gt; <strong>list-objects class = x58-dmi -all</strong>
+┌─────────┬──────────────────┐
+│  Class  │      Object      │
+├─────────┼──────────────────┤
+│&lt;x58-dmi&gt;│board.mb.nb.bridge│
+└─────────┴──────────────────┘
+</code></pre>
+<ul>
+<li>Now we can inspect the banks and device registers.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>print-device-regs bank = board.mb.nb.bridge</strong>
+Bank: io_regs
+Offset  Name            Size  Value | Offset  Name         Size  Value
+------------------------------------+---------------------------------
+ 0xcf8  config_address     4    0x0 |  0xcfc  config_data     4    0x0
+
+Bank: pcie_config
+Offset  Name                 Size    Value
+------------------------------------------
+   0x0  vendor_id               2   0x8086
+   0x2  device_id               2   0x3400
+   0x4  command                 2      0x0
+   0x6  status                  2     0x10
+   0x8  revision_id             1     0x13
+   0x9  class_code              3  0x80000
+   0xc  cache_line_size         1      0x0
+   0xd  latency_timer           1      0x0
+   0xe  header_type             1      0x0
+   0xf  bist                    1      0x0
+  0x2c  subsystem_vendor_id     2   0x8086
+  0x2e  subsystem_id            2      0x0
+  0x34  capabilities_ptr        1      0x0
+  0x3c  interrupt_line          1      0x0
+  0x3d  interrupt_pin           1      0x0
+</code></pre>
+<ul>
+<li>We can specify a pattern to only display certain registers.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>print-device-regs bank = board.mb.nb.bridge pattern = vendor_id</strong>
+Bank: pcie_config
+Offset  Name       Size   Value
+-------------------------------
+   0x0  vendor_id     2  0x8086
+</code></pre>
+<ul>
+<li>To obtain more information about a particular register, we can use the <code>print-device-reg-info</code> command.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>print-device-reg-info register = board.mb.nb.bridge.bank.pcie_config.vendor_id</strong>
+Vendor ID [board.mb.nb.bridge.bank.pcie_config:vendor_id]
+
+                Bits : 16
+              Offset : 0x0
+               Value : 32902 (0x8086)
+
+Bit Fields:
+    vendor_id[15..0] : 1000000010000110
+
+</code></pre>
+<p>When retrieving a register value for inspection or use in further code, it is better to use one of the commands designed for that purpose:</p>
+<ul>
+<li><code>get-device-reg</code> </li>
+<li><code>get-device-offset</code> </li>
+<li><code>read-device-reg</code> </li>
+<li><code>read-device-offset</code> </li>
+<li><code>set-device-reg</code> </li>
+<li><code>set-device-offset</code> </li>
+<li><code>write-device-reg</code> </li>
+<li><code>write-device-offset</code> </li>
+</ul>
+<p>The command names have the following meanings:</p>
+<ul>
+<li>
+<p>Operation type:</p>
+<ul>
+<li><strong>get</strong> = do inquiry reads and should not have side-effects on the state of the register </li>
+<li><strong>set</strong> = do inquiry writes, change the register contents but do not trigger side effects </li>
+<li><strong>read</strong> and <strong>write</strong> = do normal memory operations that have side effects </li>
+</ul>
+</li>
+<li>
+<p>Target specification:</p>
+<ul>
+<li><strong>reg</strong> = specify the register by name (<strong>name.of.device.bank.registername</strong>). </li>
+<li><strong>offset</strong> = specify <strong>name.of.device.bank</strong>, and <strong>offset</strong>, and <strong>size</strong>. </li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>get-device-reg board.mb.nb.bridge.bank.pcie_config.device_id</strong>
+0x3400
+simics&gt; <strong>get-device-offset board.mb.nb.bridge.bank.pcie_config offset = 2 size = 2</strong>
+0x3400 (LE)
+</code></pre>
+<p>To sum up, we have shown a few simple ways in which the hardware can be inspected. One important point is that the inspection is non-intrusive, any software running on the target machine cannot notice anything of our inspection.</p>
+<h2 id="logging">2.8.2 <a href="#logging">Logging</a></h2>
+<p>Simics hardware models generally output log messages for various kinds of events. The Simics log system offers a very powerful system for configuring which log messages to see - from which objects, at which level. The result is often large volumes of output. That output can be configured and sent to files for later inspection, as well as used in scripts to stop Simics or take other actions when a log message appears.</p>
+<p>Here we will show some logging examples when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>The starting point is the large set of options available to the <code>log-setup</code> command. To check the current settings, just issue <code>log-setup</code> alone:</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>log-setup</strong>
+Time stamp      : disabled
+Picoseconds     : disabled
+Real time       : disabled
+Log to console  : enabled
+Include group   : disabled
+Include level   : disabled
+Log file        : (disabled)
+</code></pre>
+<ul>
+<li>All objects in Simics, and all log messages, have a log level. The default log level is 1, which is supposed to show important information. Log level 2 to 4 add progressively more information. To configure and inspect the log level of an object, use the <code>log-level</code> object command. This will show or configure the log level for the object.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>log-level board.mb.nb.bridge 2</strong>
+[board.mb.nb.bridge] Changing log level: 1 -&gt; 2
+simics&gt; <strong>log-level board.mb.nb.bridge</strong>
+Current log levels:
+
+Lvl  Object                              | Lvl  Object
+-----------------------------------------+------------------------------------
+  2  board.mb.nb.bridge                  |   2  board.mb.nb.bridge.port
+  2  board.mb.nb.bridge.bank             |   2  board.mb.nb.bridge.port.HRESET
+  2  board.mb.nb.bridge.bank.io_regs     |   2  board.mb.nb.bridge.port.msg
+  2  board.mb.nb.bridge.bank.pcie_config |      
+</code></pre>
+<ul>
+<li>
+<p>The log messages that are displayed are those which have a level less than or equal to the ones configured on the object.</p>
+<p>Each log message also has a log type, and similarly like log levels, we can configure which log types to display on each object:</p>
+</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>log-type board.mb.nb.bridge info</strong>
+board.mb.nb.bridge:
+ enabled log types: "info"
+ disabled log types: "error" "spec-viol" "unimpl" "critical"
+board.mb.nb.bridge.bank:
+ enabled log types: "info"
+ disabled log types: "error" "spec-viol" "unimpl" "critical"
+board.mb.nb.bridge.bank.io_regs:
+ enabled log types: "info"
+ disabled log types: "error" "spec-viol" "unimpl" "critical"
+board.mb.nb.bridge.bank.pcie_config:
+ enabled log types: "info"
+ disabled log types: "error" "spec-viol" "unimpl" "critical"
+board.mb.nb.bridge.port:
+ enabled log types: "info"
+ disabled log types: "error" "spec-viol" "unimpl" "critical"
+board.mb.nb.bridge.port.HRESET:
+ enabled log types: "info"
+ disabled log types: "error" "spec-viol" "unimpl" "critical"
+</code></pre>
+<ul>
+<li>When we run the simulation, log messages will appear based on our filtering.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>run 1000</strong>
+[board.mb.nb.bridge.bank.io_regs info] PCIe write 0xe0000001 to ff:0.1 offset 0x50, 4 bytes
+</code></pre>
+<ul>
+<li>
+<p>It is also possible to set breakpoints on log messages. These can similarly be filtered on object, log type etc.</p>
+<p>To see when in virtual time a log message is printed, use <code>log-setup -time-stamp</code>. This will print the processor that provided the virtual time for the message, its current instruction pointer or program counter (address of the instruction active when the log was printed), and its current cycle count. To turn it off, use <code>-no-time-stamp</code>. The <code>-pico-seconds</code> and <code>-real-time</code> are similar, but prints picosecond resolution timestamps and real time, respectively. </p>
+</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>log-setup -time-stamp</strong>
+simics&gt; <strong>bp.log.break object = board.mb.nb.bridge.bank.io_regs type = info</strong>
+Breakpoint 2: Break on 'info' log messages from board.mb.nb.bridge.bank.io_regs hierarchy
+simics&gt; <strong>run</strong>
+[board.mb.nb.bridge.bank.io_regs info] {board.mb.cpu0.core[0][0] 0xfffecbf7 136713}
+PCI read 0x0 from bus 0, device 31, function 0, register 68 (0x44, 1 bytes), PCIE address = 0xf8044
+[board.mb.nb.bridge.bank.io_regs] Breakpoint 1: board.mb.nb.bridge.bank.io_regs log message of type info
+</code></pre>
+<p>To send all log outputs to a file, use <code>log-setup logfile=&lt;filename&gt;</code>. To overwrite an existing file, the <code>-overwrite</code> flag must be given. To stop output, use the command <code>log-setup -no-log-file</code>.</p>
+<h2 id="tracing">2.8.3 <a href="#tracing">Tracing</a></h2>
+<p>Tracing is a way to observe what is going on during the simulation. Simics has a <em>Breakpoint Manager</em> that includes functionality for tracing various types of events. This means that messages (in fact, Simics log messages) are printed when an event of the specified occurs. Such a sequence of messages is what is here is known as a <strong>trace</strong>.</p>
+<p>Here we will show some tracing examples when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>First, we can try tracing control register updates. By default, it traces updates on the primary processor (in this case there is only one).</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>bp.control_register.trace -all</strong>
+[board.mb.cpu0.core[0][0] info] VMP not engaged. Reason: hap installed on CR0 read.
+2
+</code></pre>
+<ul>
+<li>We run the simulation and observe the trace output where we can see that registers are read and written.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>run 1000</strong>
+[bp.control_register trace] [trace:2] board.mb.cpu0.core[0][0] cr0 &lt;- 0x40000023
+[bp.control_register trace] [trace:2] board.mb.cpu0.core[0][0] cr4 &lt;- 0x640
+[bp.control_register trace] [trace:2] board.mb.cpu0.core[0][0] read of cr4
+[bp.control_register trace] [trace:2] board.mb.cpu0.core[0][0] cr4 &lt;- 0x640
+</code></pre>
+<ul>
+<li>The trace output are log messages and can be controlled with the <code>log-setup</code> command. For example, each message can be prepended with a time-stamp, indicating the processor, program counter and the cycle count at the point where the event occurred.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>log-setup -time-stamp</strong>
+simics&gt; <strong>c 17450</strong>
+[bp.control_register trace] {board.mb.cpu0.core[0][0] 0xfffec638 398442} [trace:2] board.mb.cpu0.core[0][0] read of IA32_APIC_BASE
+</code></pre>
+<ul>
+<li>Here is another example where we trace memory accesses. First, we remove the previous trace.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>bp.delete -all</strong>
+</code></pre>
+<ul>
+<li>Now we turn on tracing of all memory read accesses to a specific region. Again, by default this will accesses on the primary processor and hence these are virtual addresses.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>bp.memory.trace address = 0 length = 100000 -r</strong>
+</code></pre>
+<ul>
+<li>We run the simulation again and notice a memory access.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>run 365_016_915 cycles</strong>
+[bp.memory trace] {board.mb.cpu0.core[0][0] 0x836872 365415364} [trace:3]
+board.cell_context 'r' access to v:0x10 len=4
+</code></pre>
+<p>Several other types of events can also be traced, such as target console string output and hits at specific source code lines.</p>
+<h2 id="instrumentation">2.8.4 <a href="#instrumentation">Instrumentation</a></h2>
+<p>The Simics instrumentation framework has powerful ways to inspect the simulation. It is built on four core concepts:</p>
+<ul>
+<li><strong>Providers</strong>. Instrumentation providers provide information about what is happening in the model and are usually things like processors and devices. Any part of the simulated system can provide access for instrumentation tools. Each model can implement instrumentation in their own way, and Simics modelers can add instrumentation to any model that they build. </li>
+<li><strong>Tools</strong>. Instrumentation tools take the data from the providers and turn it into useful information. Tools are provided as part of Simics and can also be created by a user. </li>
+<li><strong>Connections</strong>. Connections connect providers to tools and can be individually enabled and disabled to control when data is sent from a provider to a tool. </li>
+<li><strong>Filters</strong>. Filters control the collection of data (by enabling and disabling connections) and are used to restrict data collection based on model state like the currently running process, the current processor mode, and similar. </li>
+</ul>
+<p>At the Simics command line, it is the tools and filters that are manipulated. To see a list of available tools:</p>
+<pre><code class="language-simics">simics&gt; <strong>list-instrumentation-tools substr = bank</strong>
+┌──────────────────────┬──────────────────┬──────────────────────────────┐
+│ Tool create command  │    Tool class    │         Description          │
+├──────────────────────┼──────────────────┼──────────────────────────────┤
+│new-bank-coverage-tool│bank_coverage_tool│register bank coverage tool   │
+│new-bank-patch-tool   │bank_patch_tool   │device access miss repair tool│
+└──────────────────────┴──────────────────┴──────────────────────────────┘
+</code></pre>
+<p>Here is an example of using instrumentation to compare user and supervisor mode instruction occurrences, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>
+<p>Boot the target machine.</p>
+</li>
+<li>
+<p>Create two histogram tools and connect them to all processors.</p>
+</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>new-instruction-histogram name = user_instr -connect-all</strong>
+[board.mb.cpu0.core[0][0] info] VMP not engaged. Reason: instrumentation enabled.
+Created user_instr (connected to 1 processor)
+simics&gt; <strong>new-instruction-histogram name = kernel_instr -connect-all</strong>
+Created kernel_instr (connected to 1 processor)
+</code></pre>
+<ul>
+<li>Create filters and add them to the tools.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>new-cpu-mode-filter name = usermode mode = user</strong>
+Created filter usermode with mode user
+simics&gt; <strong>new-cpu-mode-filter name = kernelmode mode = supervisor</strong>
+Created filter kernelmode with mode supervisor
+simics&gt; <strong>user_instr.add-filter filter = usermode</strong>
+Added filter to 1 connections
+simics&gt; <strong>kernel_instr.add-filter filter = kernelmode</strong>
+Added filter to 1 connections
+</code></pre>
+<ul>
+<li>Run the simulation to collect data from the providers.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>run 4 s</strong>
+</code></pre>
+<ul>
+<li>Display the resulting histograms.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>user_instr.histogram max = 15</strong>
+┌─────────┬────────┬────────┬───────┬───────────┐
+│  Row #  │mnemonic│ Count  │Count% │Accumulated│
+│         │        │        │       │  Count%   │
+├─────────┼────────┼────────┼───────┼───────────┤
+│        1│mov     │12137948│ 28.98%│     28.98%│
+│        2│cmp     │ 3030796│  7.24%│     36.22%│
+│        3│je      │ 2846035│  6.80%│     43.01%│
+│        4│test    │ 2661377│  6.35%│     49.37%│
+│        5│push    │ 2068299│  4.94%│     54.30%│
+│        6│pop     │ 2022557│  4.83%│     59.13%│
+│        7│jne     │ 1810666│  4.32%│     63.46%│
+│        8│add     │ 1596786│  3.81%│     67.27%│
+│        9│xor     │ 1540722│  3.68%│     70.95%│
+│       10│lea     │ 1492439│  3.56%│     74.51%│
+│       11│jmp     │ 1056509│  2.52%│     77.03%│
+│       12│sub     │  914262│  2.18%│     79.22%│
+│       13│ret     │  874834│  2.09%│     81.30%│
+│       14│call    │  874753│  2.09%│     83.39%│
+│       15│movzx   │  858974│  2.05%│     85.44%│
+├─────────┼────────┼────────┼───────┼───────────┤
+│# 15/149 │        │        │       │           │
+│Sum (all)│        │41883708│100.00%│           │
+│Sum shown│        │35786957│ 85.44%│           │
+└─────────┴────────┴────────┴───────┴───────────┘
+simics&gt; <strong>kernel_instr.histogram max = 15</strong>
+┌─────────┬────────┬────────┬───────┬───────────┐
+│  Row #  │mnemonic│ Count  │Count% │Accumulated│
+│         │        │        │       │  Count%   │
+├─────────┼────────┼────────┼───────┼───────────┤
+│        1│mov     │ 8427494│ 37.31%│     37.31%│
+│        2│je      │ 1372749│  6.08%│     43.39%│
+│        3│push    │ 1362419│  6.03%│     49.42%│
+│        4│test    │ 1326411│  5.87%│     55.29%│
+│        5│pop     │ 1315206│  5.82%│     61.12%│
+│        6│cmp     │ 1227033│  5.43%│     66.55%│
+│        7│xor     │  910401│  4.03%│     70.58%│
+│        8│jne     │  868442│  3.84%│     74.42%│
+│        9│add     │  723691│  3.20%│     77.63%│
+│       10│lea     │  695604│  3.08%│     80.71%│
+│       11│call    │  616243│  2.73%│     83.44%│
+│       12│ret     │  597695│  2.65%│     86.08%│
+│       13│and     │  534859│  2.37%│     88.45%│
+│       14│sub     │  358369│  1.59%│     90.04%│
+│       15│jmp     │  268310│  1.19%│     91.23%│
+├─────────┼────────┼────────┼───────┼───────────┤
+│# 15/108 │        │        │       │           │
+│Sum (all)│        │22586736│100.00%│           │
+│Sum shown│        │20604926│ 91.23%│           │
+└─────────┴────────┴────────┴───────┴───────────┘
+</code></pre>
+<p>Here is another example of using instrumentation to show exception occurrences, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>Create the histogram tool and connect it to all processors.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>new-exception-histogram name = exc_hist -connect-all</strong>
+[board.mb.cpu0.core[0][0] info] VMP not engaged. Reason: instrumentation enabled.
+Created exc_hist (connected to 1 processor)
+</code></pre>
+<ul>
+<li>Run the simulation to collect data from the providers.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>run 60 s</strong>
+</code></pre>
+<ul>
+<li>Display the resulting histogram.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>exc_hist.histogram</strong>
+┌─────┬────────────────────────────┬─────┬───────┬───────────┐
+│Row #│         Exception          │Count│Count% │Accumulated│
+│     │                            │     │       │  Count%   │
+├─────┼────────────────────────────┼─────┼───────┼───────────┤
+│    1│Page_Fault_Exception        │ 7956│ 44.22%│     44.22%│
+│    2│Interrupt_64                │ 5312│ 29.52%│     73.74%│
+│    3│Interrupt_34                │ 2720│ 15.12%│     88.86%│
+│    4│Interrupt_35                │ 1535│  8.53%│     97.39%│
+│    5│Interrupt_236               │  314│  1.75%│     99.14%│
+│    6│Interrupt_48                │  112│  0.62%│     99.76%│
+│    7│General_Protection_Exception│   21│  0.12%│     99.88%│
+│    8│Interrupt_37                │   16│  0.09%│     99.97%│
+│    9│NMI                         │    4│  0.02%│     99.99%│
+│   10│Interrupt_40                │    1│  0.01%│     99.99%│
+│   11│Interrupt_39                │    1│  0.01%│    100.00%│
+├─────┼────────────────────────────┼─────┼───────┼───────────┤
+│Sum  │                            │17992│100.00%│           │
+└─────┴────────────────────────────┴─────┴───────┴───────────┘
+</code></pre>
+<p>Source code for instrumentation tools are in </p>
+<pre><code>
+    src/extensions/instruction-histogram
+    src/extensions/exception-histogram
+    src/extensions/cpu-mode-filter
+  
+</code></pre>
+<p>in the Simics-Base package.</p>
+<h2 id="connecting-a-cache-model">2.8.5 <a href="#connecting-a-cache-model">Connecting a cache model</a></h2>
+<p>Let us now show a simple example of how to use simple cache model in Simics. By default, Simics does not model any cache system. It uses its own memory system to achieve high speed simulation and modeling a hardware cache model would only slow it down. However, via the instrumentation framework, the flow of memory operations coming from the processor can be captured, and this allows modelling caches.</p>
+<p>Here is an example of using instrumentation to connect a simple cache model, when running the </p>
+<pre><code>%simics%/targets/qsp-x86/firststeps.simics
+</code></pre>
+<p>target machine.</p>
+<ul>
+<li>Start Simics with this target. </li>
+</ul>
+<pre><code class="language-simics">$ <strong>bin/simics targets/qsp-x86/firststeps.simics</strong>
+</code></pre>
+<ul>
+<li>Create the cache tool and connect it to all processors.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>new-simple-cache-tool name = cachetool -connect-all</strong>
+[board.mb.cpu0.core[0][0] info] VMP not engaged. Reason: instrumentation enabled.
+Created cachetool (connected to 1 provider)
+</code></pre>
+<ul>
+<li>Create caches on the processors.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>cachetool.add-l1d-cache name = l1d line-size = 64 sets = 64 ways = 12 -ip-read-prefetcher prefetch-additional = 1</strong>
+Created cache board.mb.cpu0.cache[0].l1d
+simics&gt; <strong>cachetool.add-l1i-cache name = l1i line-size = 64 sets = 64 ways = 8</strong>
+Created cache board.mb.cpu0.cache[0].l1i
+simics&gt; <strong>cachetool.add-l2-cache name = l2 line-size = 64 sets = 1024 ways = 20 -prefetch-adjacent prefetch-additional = 4</strong>
+Created cache board.mb.cpu0.cache[0].l2
+simics&gt; <strong>cachetool.add-l3-cache name = l3 line-size = 64 sets = 8192 ways = 12</strong>
+Created cache board.mb.cpu0.l3
+</code></pre>
+<ul>
+<li>Run the simulation.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>run 55 s</strong>
+</code></pre>
+<ul>
+<li>Display one of the cache statistics.</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>board.mb.cpu0.cache[0].l1d.print-statistics</strong>
+┌─────┬───────────────────────────────────┬─────────┬─────┐
+│Row #│              Counter              │  Value  │  %  │
+├─────┼───────────────────────────────────┼─────────┼─────┤
+│    1│read accesses                      │699427620│     │
+│    2│read misses                        │  2905903│ 0.42│
+│    3│write accesses                     │432645847│     │
+│    4│write misses                       │  7196304│ 1.66│
+│    5│prefetch accesses                  │  6509721│     │
+│    6│prefetch misses                    │  4468886│68.65│
+│    7│prefetched lines used              │  2828455│43.45│
+│    8│evicted lines (total)              │ 14570325│     │
+│    9│evicted modified lines             │  7651899│52.52│
+│   10│entire cache flushes (invd, wbinvd)│        8│     │
+│   11│uncachable read accesses           │110513271│     │
+│   12│uncachable write accesses          │ 70608384│     │
+└─────┴───────────────────────────────────┴─────────┴─────┘
+</code></pre>
+<ul>
+<li>As a comparison, if we do the same exercise when running the 
+<pre><code>%simics%/targets/qsp-x86/qsp-client-core.simics
+</code></pre>
+target system, which has a more modern processor with 4 cores, we get the following statistics:</li>
+</ul>
+<pre><code class="language-simics">simics&gt; <strong>board.mb.cpu0.cache[0].l1d.print-statistics</strong>
+┌─────┬───────────────────────────────────┬─────────┬─────┐
+│Row #│              Counter              │  Value  │  %  │
+├─────┼───────────────────────────────────┼─────────┼─────┤
+│    1│read accesses                      │651920234│     │
+│    2│read misses                        │  2659454│ 0.41│
+│    3│write accesses                     │432965032│     │
+│    4│write misses                       │  8850450│ 2.04│
+│    5│prefetch accesses                  │  5561939│     │
+│    6│prefetch misses                    │  3800816│68.34│
+│    7│prefetched lines used              │  2176319│39.13│
+│    8│prefetch instructions              │     1741│     │
+│    9│evicted lines (total)              │ 15309952│     │
+│   10│evicted modified lines             │  9257461│60.47│
+│   11│entire cache flushes (invd, wbinvd)│        8│     │
+│   12│uncachable read accesses           │ 56577895│     │
+│   13│uncachable write accesses          │ 39917361│     │
+└─────┴───────────────────────────────────┴─────────┴─────┘
+</code></pre>
+<p>Source code for cache model is in </p>
+<pre><code>    src/extensions/simple-cache-tool
+</code></pre>
+<p>in the Simics-Base package.</p>
+
+<div class="chain">
+<a href="getting-data-into-the-simulated-system.html">2.7 Getting data into the simulated system</a>
+<a href="target-software-debugging.html">2.9 Debugging Target Software</a>
+</div>

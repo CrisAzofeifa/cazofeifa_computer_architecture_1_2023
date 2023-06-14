@@ -1,0 +1,128 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>translation_flush</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_translate.html">translate</a>
+<a href="__rm_interface_translator.html">translator</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_translation_flush">translation_flush</a></h1>
+<p>
+
+<a name="translation_flush"></a><a name="translation_flush_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>translation_flush</code> interface is an optional interface
+   which can be implemented by objects implementing the
+   <code>transaction_translator</code> or <code>translator</code> interface.
+   The interface is used
+   by Simics an optimization when Simics flushes its simulation caches.
+   Simics caches translations returned by translators but
+   quite often this cache needs to be invalidated, usually, due to
+   the changes in the memory map of the target system. In such cases
+   Simics may use this interface (if it is available) to do a fine-grain
+   invalidation of its simulation caches.
+<p>
+   The <code>translation_flush</code> interface has one method
+   - <b><i>flush_range</i></b> - which will be called whenever there is
+   a need to flush simulation caches. The <b><i>flush_range</i></b> method
+   has the following parameters:<br>
+   - <i>base</i> is the start of the region to flush;<br>
+   - <i>size</i> is the size of the region to flush;<br>
+   - <i>access</i> is a bitmask which specifies targets
+   for what access types should be flushed;<br>
+   - <i>default_target</i> is only used for translators implementing
+   the <code>translator</code> interface and has the same as value as
+   the <i>default_target</i> parameter of
+   the <b><i>translate</i></b> method of the <code>translator</code> interface.
+   Please see the documentation of the <code>translator</code> for more
+   information about the parameter.
+</p><p>
+   In the <b><i>flush_range</i></b> method, the translator object is expected
+   to flush all previously returned destinations of the translation requests
+   that the translator did for
+   the [<i>base</i>, <i>base</i>+<i>size</i>) range.
+   The flushing is done by calling the <b><i>SIM_map_target_flush</i></b> function
+   for the destination map target(s). If no translation requests were processed
+   to the range since the last invocation of the <b><i>flush_range</i></b> method
+   then no flushing is needed, and the <b><i>flush_range</i></b> may immediately
+   return the <code>true</code> value.
+</p><p>
+   Please note that there is no need to call
+   the <b><i>SIM_map_target_flush</i></b> function for the translations which
+   were tagged with the <code>Sim_Translation_Dynamic</code> flag. Either,
+   no invalidation is needed for the parts of the range where nothing is mapped.
+</p><p>
+   The return value is used to report whether the invalidation request
+   completed successfully, i.e. whether all calls to
+   the <b><i>SIM_map_target_flush</i></b> function succeeded (i.e. returned
+   the <code>true</code> value). If a call to
+   the <b><i>SIM_map_target_flush</i></b> fails (i.e.
+   the <code>false</code>value is returned) then
+   the <b><i>flush_range</i></b> function is expected to
+   return immediately with the <code>false</code> return value. If, for
+   some reason, the translator cannot invalidate all possible destinations,
+   then it can just immediately return the <code>false</code> value.
+</p><p>
+   If <code>false</code> is returned, then all translations in the simulator
+   will typically be flushed, which could be an expensive operation.
+</p><p>
+   </p></dd><dt class="jdocu_descitem">EXAMPLE</dt><dd>
+Here is pseudo code providing a sample implementation of
+   the flush_range method:
+   <pre class="jdocu_small">   bool flush_range(obj, base, size, access):
+       for (map_target, start, size) in destinations(obj, base, size, access):
+           if not SIM_map_target_flush(map_target, start, size, access):
+               return False
+       return True
+   </pre><p>
+   </p></dd>
+<pre class="jdocu_small">
+SIM_INTERFACE(translation_flush) {
+        bool (*flush_range)(
+                conf_object_t *obj,
+                uint64 base,
+                uint64 size,
+                access_t access,
+                const map_target_t *default_target);
+};
+
+#define TRANSLATION_FLUSH_INTERFACE "translation_flush"
+</pre><p>
+</p><p>
+   
+
+</p><dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_translate.html">translate</a>
+<a href="__rm_interface_translator.html">translator</a>
+</div>

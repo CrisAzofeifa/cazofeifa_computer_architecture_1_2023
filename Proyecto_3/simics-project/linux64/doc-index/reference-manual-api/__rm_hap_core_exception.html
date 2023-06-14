@@ -1,0 +1,57 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>Core_Exception</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_hap_core_dstc_flush_counter.html">Core_DSTC_Flush_Counter</a>
+<a href="__rm_hap_core_exception_return.html">Core_Exception_Return</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="haps-chapter.html">12 Haps</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_hap_Core_Exception">Core_Exception</a></h1>
+<p>
+
+<a name="Core_Exception"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Triggered when an exception/trap is taken by a processor. The hap occurs before side-effects, control transfers included, have taken place.
+<p>
+Interrupting the simulation by calling <b><i>SIM_break_simulation</i></b> inside the hap will cause the simulation to stop right before the exception (and the trapping instruction, if any). The simulation state will then be as it was prior to the execution of the instruction or exception. Continuing the simulation will then re-run the exception, this time without calling hap functions.
+</p><p>
+Depending on the processor model, some state may actually have changed in an idempotent way when the hap occurs, but this should not be relied upon.
+</p><p>
+The exact meaning of the exception number depends on the simulated processor architecture. The <code>exception</code> interface can be used to translate the number to an exception name.</p></dd>
+<dt class="jdocu_descitem"><b>Callback Type</b></dt><dd class="jdocu_descitem"><pre class="jdocu_small">void (*)(lang_void *callback_data, 
+         conf_object_t *trigger_obj, 
+         int64 exception_number);</pre><p>
+</p></dd>
+<dt class="jdocu_descitem"><b>Index</b></dt><dd class="jdocu_descitem">exception_number</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_hap_core_dstc_flush_counter.html">Core_DSTC_Flush_Counter</a>
+<a href="__rm_hap_core_exception_return.html">Core_Exception_Return</a>
+</div>

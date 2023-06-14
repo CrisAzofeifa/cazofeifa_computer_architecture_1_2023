@@ -1,0 +1,632 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.4 Scripting Using Python</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="targets.html">5.3 Targets and parameters</a>
+<a href="configuration.html">6 Configuration and Checkpointing</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="script-support-in-simics.html">5 Simics Scripting Environment</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="userguide-scripting-python">5.4 Scripting Using Python</a></h1>
+<p>
+
+</p><p>
+Simics provides support for the script language Python
+(<a class="jdocu" href="http://www.python.org" rel="noopener noreferrer" target="_top">http://www.python.org</a>). By using Python the user can extend Simics,
+and control it in greater detail. Python can interface with Simics using
+functions in the <i>Simics API</i>.
+</p><p>
+</p><h2 class="jdocu"><a name="Python-in-Simics">5.4.1 Python in Simics</a></h2>
+<p>
+
+</p><p>
+<a name="Python">Python</a> is normally hidden from the user by the command line
+interface (CLI). But since the CLI is implemented in Python, it also provides
+simple access to the Python environment, making it easy to write your own
+functions and scripts.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+All commands in Simics are implemented as Python
+functions. Commands for modules are often included in the
+corresponding source-code package. To find the source code of a
+command, look in the source code of the corresponding Simics module
+and search for calls to
+the functions <b><i>new_command</i></b>, <b><i>new_info_command</i></b>
+and <b><i>new_status_command</i></b> functions in the module's <code>.py</code>
+source files.</div>To execute some Python code from the command line, prefix the line
+with the <a name="">@</a> character. Example:
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>@print("This is a Python line")</b>
+This is a Python line
+simics&gt;
+</pre><p>
+</p><p>
+For code spanning more than one line, the prompt will change to
+<code>.......</code>
+and more code can be inserted until an empty line is entered. The full
+code block will then be executed. (Note that whitespace indentation is 
+significant in Python.) Example:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@if SIM_number_processors() &gt; 1:</b>
+.......     <b>print("Wow, an MP system!")</b>
+....... <b>else:</b>
+.......     <b>print("Only single pro :-(")</b>
+.......
+Wow, an MP system!
+simics&gt;
+</pre><p>
+</p><p>
+Entering more than one line is useful for defining Python functions. It is also
+possible to execute Python code from a file, which is done with the
+<b><a name="run-python-file">run-python-file</a></b> command.
+</p><p>
+If the Python code is an expression that should return a value to the CLI, the
+<code>python</code> command can be used, or the expression can be back-quoted.
+The following example selects a file with Python commands to execute depending
+on the number of processors in the system:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>run-python-file `"abc-%d.py" % SIM_number_processors()`</b>
+</pre><p>
+</p><p>
+If the system has 2 processors, the file <code>abc-2.py</code> will be
+executed.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Accessing-CLI-Variables-from-Python">5.4.2 Accessing CLI Variables from Python</a></h2>
+<p>
+
+<a name="variable"></a>
+CLI variables can be accessed from Python via the <code>simenv</code> namespace,
+for example:
+</p><pre class="jdocu_small">simics&gt; <b>$cpu = "processor"</b>
+simics&gt; <b>@simenv.cpu = simenv.cpu.capitalize()</b>
+simics&gt; <b>$cpu</b>
+Processor
+</pre><p>
+As we could see in the example, <code>simenv</code> is imported into global
+namespace by default, but if it is needed elsewhere, it can be imported from
+the <code>cli</code> module.
+
+</p><h2 class="jdocu"><a name="Accessing-the-Configuration-from-Python">5.4.3 Accessing the Configuration from Python</a></h2>
+<p>
+
+</p><p>
+</p><h3 class="jdocu"><a name="python-and-conf-access">5.4.3.1 Configuration Objects</a></h3>
+<p>
+    
+</p><p>
+<a name="configurationobject"></a>
+<a name="configurationaccess-from-Python"></a>
+</p><p>
+All configuration objects are visible as objects in Python. The
+global Python module <code>conf</code> holds the top level namespace,
+which contains all top level objects. The objects contain all
+their subobjects as attributes.
+</p><p>
+The configuration objects also expose their attributes as Python attributes.
+The attributes can be accessed via
+the <i><a name="attr">attr</a></i><a name="attributes"></a> attribute, or,
+in a legacy way, directly as Python object attributes.
+Thus the attributes can be both read and written as Python attributes.
+The following example prints the <i>size</i> attribute from
+the <b>board.mb.rom_image</b> object of the <b>image</b> class:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@conf.board.mb.rom_image.attr.size</b>
+262144
+</pre><p>
+</p><p>
+Here is a legacy way to access the same attribute:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@conf.board.mb.rom_image.size</b>
+262144
+</pre><p>
+</p><p>
+We recommend to access Simics objects' attributes via
+the <i>attr</i> attribute, except for a few commonly
+used attributes like <i>name</i> and <i>classname</i>.
+</p><p>
+If an object contains a subobject and an attribute with the
+same name, the subobject takes precedence and hides the attribute.
+</p><p>
+To try the previous example in an arbitrary configuration, run
+<b>list-objects -all image</b> to find available objects
+of the <b>image</b> class to use
+instead of the <b>board.mb.rom_image</b> object.
+</p><p>
+Any '<code>-</code>' (dash) character in the object name, or in an attribute name,
+is replaced by '<code>_</code>' (underscore). This substitution is performed
+because Python always treats the dash character as the minus operator. To avoid
+confusion the recommendation is to always use underscore. 
+</p><p>
+Indexed attributes can be accessed using <code>[]</code> indexing in Python. It
+is also possible to index other list attributes this way, but it might be
+inefficient since the full list is converted to a Python list before the
+element is extracted. Here are some examples of indexed attributes access
+(a <b>pcie-bus</b> object, and a
+<b>memory-space</b> object):
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@conf.board.mb.nb.pci_bus.attr.pci_devices[0]</b>
+[29, 1, &lt;the ich10_usb_uhci 'board.mb.sb.uhci[1]'&gt;, 1]
+
+simics&gt; <b>@conf.board.mb.phys_mem.attr.memory[0x100:0x10f]</b>
+(89, 236, 0, 240, 61, 0, 0, 158, 83, 255, 0, 240, 144, 37, 0)
+
+simics&gt; <b>@conf.board.mb.phys_mem.attr.memory[0x10000:0x10003] = <img alt="Line break" src="nextline.png">
+(100, 101, 102)</b>
+</pre><p>
+</p><p>
+If the attribute contains a list, dictionary or data, then an access
+returns a reference instead of the actual value. This is similar to how 
+container objects such as lists and dictionaries work in Python and allows
+constructs such as:
+</p><p>
+</p><pre class="jdocu_small">@conf.board.mb.phys_mem.attr.map[0][0] = 0x1000
+</pre><p>
+</p><p>
+The example modifies the attribute at position [0][0]. To get the copy
+of the attribute value, the following can be used:
+</p><p>
+</p><pre class="jdocu_small">@memory_map = conf.board.mb.phys_mem.attr.map.copy()
+</pre><p>
+</p><p>
+Note that there is a difference in how references to Simics attributes work
+compared to ordinary Python objects: if the attribute access returns a list,
+dictionary or tuple, then a reference to the full attribute is used and not
+only to the referenced container objects. The reason is that internally in
+Simics, the attribute is treated as a single value.
+</p><p>
+Consider a list of lists, such as <code>a = [[1, 2, 3], [4, 5, 6]]</code>. If this
+was a Python list, then the following applies:
+</p><pre class="jdocu_small">b = a[0]       # b is a reference to the [1, 2, 3] list.
+a[0][1] = 9    # b will now change to [1, 9, 3].
+a[0] = [7, 8]  # b still references the [1, 9, 3] list, only a will change.
+</pre><p>
+If <code>a</code> instead is a Simics attribute:
+</p><pre class="jdocu_small">b = a[0]       # b is a reference to the first list in a, i.e. [1, 2, 3].
+a[0][1] = 9    # b will now change to [1, 9, 3].
+a[0] = [7, 8]  # b is still a reference to the first list in a, i.e [7, 8].
+</pre><p>
+As we see, only the last line of the examples differs. The most common situation
+where this difference is visible is when doing list duplication. In Python a
+list can be duplicated in whole or part by using slicing to produce a shallow
+copy. In Simics, that would simply produce a reference to the same list if any
+of the items in the list is a container object. In this case the
+<code>.copy()</code> method has to be used.
+</p><p>
+
+</p><h3 class="jdocu"><a name="Interfaces">5.4.3.2 Interfaces</a></h3>
+<p>
+
+</p><p>
+From Python, the <i><a name="iface">iface</a></i><a name="interfaces"></a> attribute
+of a configuration object can be used to access the interfaces it exports. Use
+<code></code><i>obj</i><code>.iface.</code><i>name</i><code>.</code><i>method</i><code></code> to accesses the
+<i>method</i> function in the <i>name</i> interface of the
+<i>obj</i> object. Example:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@conf.board.mb.cpu0.core[0][0].iface</b>
+&lt;interfaces of board.mb.cpu0.core[0][0]&gt;
+simics&gt; <b>@conf.board.mb.cpu0.core[0][0].iface.processor_info</b>
+&lt;processor_info_interface_t interface of board.mb.cpu0.core[0][0]&gt;
+simics&gt; <b>@conf.board.mb.cpu0.core[0][0].iface.processor_info.get_program_counter</b>
+&lt;built-in method logical_address_t (*)([conf_object_t *]) of interface <img alt="Line break" src="nextline.png">
+method object at 0x5cb2070&gt;
+simics&gt; <b>@hex(conf.board.mb.cpu0.core[0][0].iface.processor_info<img alt="Line break" src="nextline.png">
+.get_program_counter())</b>
+'0xfff0'
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+When called from Python, the first <code>conf_object_t *</code> argument
+for interface methods should not be used: it is passed automatically.</div>The last command corresponds to the following C code (with no error-checking):
+<p>
+</p><pre class="jdocu_small">conf_object_t *obj = SIM_get_object("board.mb.cpu0.core[0][0]");
+processor_info_interface_t *iface = 
+        SIM_get_interface(obj, PROCESSOR_INFO_INTERFACE);
+logical_address_t pc = iface-&gt;get_program_counter(obj);
+printf("0x%llx", pc);
+</pre><p>
+</p><p>
+
+</p><h3 class="jdocu"><a name="Ports-and-Banks">5.4.3.3 Ports and Banks</a></h3>
+<p>
+
+</p><p>
+Port objects in Simics represent ports and banks.
+For scripting access to objects they work exactly as a sub-object.
+By convention they are placed in the <code>port</code> and <code>bank</code>
+namespaces under the object.
+</p><p>
+Use
+<code></code><i>obj</i><code>.port.</code><i>portname</i><code>.iface.</code><i>interfacename</i><code>.</code><i>method</i><code></code> or
+<code></code><i>obj</i><code>.bank.</code><i>bankname</i><code>.iface.</code><i>interfacename</i><code>.</code><i>method</i><code></code>
+to access interface methods in a port object.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@conf.board.mb.sb.com[0].port</b>
+&lt;the namespace 'board.mb.sb.com[0].port'&gt;
+simics&gt; <b>@conf.board.mb.sb.com[0].port.HRESET</b>
+&lt;the NS16550.HRESET 'board.mb.sb.com[0].port.HRESET'&gt;
+simics&gt; <b>@conf.board.mb.sb.com[0].port.HRESET.iface</b>
+&lt;interfaces of board.mb.sb.com[0].port.HRESET&gt;
+simics&gt; <b>@conf.board.mb.sb.com[0].port.HRESET.iface.signal</b>
+&lt;signal_interface_t interface of board.mb.sb.com[0].port.HRESET&gt;
+simics&gt; <b>@conf.board.mb.sb.com[0].port.HRESET.iface.signal.signal_raise</b>
+&lt;built-in method void (*)([conf_object_t *NOTNULL]) of interface method object at 0x7f90f32f5310&gt;
+simics&gt; <b>@conf.board.mb.sb.com[0].port.HRESET.iface.signal.signal_raise()</b>
+</pre><p>
+</p><p>
+The last command corresponds to the following C code (with no error-checking):
+</p><p>
+</p><pre class="jdocu_small">conf_object_t *obj = SIM_get_object("@conf.board.mb.sb.com[0].port.HRESET");
+signal_interface_t *iface = 
+        SIM_get_interface(obj, SIGNAL_INTERFACE);
+iface-&gt;signal_raise(obj);
+</pre><p>
+</p><h3 class="jdocu"><a name="Port-Interfaces">5.4.3.4 Port Interfaces</a></h3>
+<p>
+
+</p><p>
+Simics also has a legacy mechanism for providing named entry points
+to objects, called <a name="port-interfaces">port interfaces</a>.
+This mechanism is still used by some models.
+Named port interfaces are referenced from other objects using a list of
+<code>[object, portname]</code> instead of just a single object reference. 
+Port interfaces are accessed from Python in a similar way to interfaces.
+</p><p>
+Use
+<code></code><i>obj</i><code>.<a name="ports">ports</a>.</code><i>portname</i><code>.</code><i>interfacename</i><code>.</code><i>method</i><code></code>
+to access the <i>interfacename</i> interface in port <i>portname</i> of
+the object <i>obj</i>. Example:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@conf.board.mb.cpu0.core[0][0].ports</b>
+&lt;ports of board.mb.cpu0.core[0][0]&gt;
+simics&gt; <b>@conf.board.mb.cpu0.core[0][0].ports.RESET</b>
+&lt;interfaces of port RESET of board.mb.cpu0.core[0][0]&gt;
+simics&gt; <b>@conf.board.mb.cpu0.core[0][0].ports.RESET.signal</b>
+&lt;signal_interface_t interface of board.mb.cpu0.core[0][0]&gt;
+simics&gt; <b>@conf.board.mb.cpu0.core[0][0].ports.RESET.<img alt="Line break" src="nextline.png">
+signal.signal_raise</b>
+&lt;built-in method void (*)([conf_object_t * NOTNULL]) of <img alt="Line break" src="nextline.png">
+interface method object at 0x5cb22d0&gt;
+simics&gt; <b>@conf.board.mb.cpu0.core[0][0].ports.RESET.<img alt="Line break" src="nextline.png">
+signal.signal_raise()</b>
+</pre><p>
+</p><p>
+The last command corresponds to the following C code:
+</p><p>
+</p><pre class="jdocu_small">conf_object_t *obj = SIM_get_object("board.mb.cpu0.core[0][0]");
+signal_interface_t *iface = 
+        SIM_get_port_interface(obj, SIGNAL_INTERFACE, "RESET");
+iface-&gt;signal_raise(obj);
+</pre><p>
+</p><p>
+
+             </p><p>
+
+</p><h2 class="jdocu"><a name="python-access-cli-commands">5.4.4 Accessing Command Line Commands from Python</a></h2>
+<p>
+
+</p><p>
+<a name="run_command"></a>
+<a name="command-line-interfaceaccessing-commands-from-Python"></a>
+</p><p>
+At times, it can be useful to access command line commands from a Python
+script file. This can be done in two ways which are described below.
+</p><p>
+The first way to access command-line commands from Python is
+to use the <b><i>run_command(cli_string)</i></b>
+function, which takes a string which is then evaluated by the command line
+front-end. For example, write <code>run_command("print-processor-registers")</code>
+to execute the <b>print-processor-registers</b> command. Any return value
+from the command is returned
+to Python. There is also the <b><i>quiet_run_command</i></b> function,
+which captures any output produced by the command and returns
+a tuple with the command return value as first entry, and the text output
+as the second. More details about both functions can be found in
+the <em>Simics Reference Manual</em>.
+</p><p>
+The second way to access command line commands from Python is to use
+wrapper functions from two special namespaces. The first namespace is
+<code>global_cmds</code> (provided by the <code>cli</code> module).
+It allows to run commands which are not tied
+to any Simics object. For example, the <b>print-processor-registers</b>
+command can be executed as <code>global_cmds.print_processor_registers()</code>.
+The commands which are tied
+to Simics objects (namespace commands)
+can be executed via the <code>cli_cmds</code> namespaces which can be accessed
+through a Python object representing a Simics objects. For example,
+the <b>sim.info</b> command can be executed as
+<code>conf.sim.cli_cmds.info()</code>.
+</p><p>
+</p><ul>
+  <li>
+    The wrapper function name is usually the same as the name of the command
+    it executes with hyphens replaced with underscores.
+  </li>
+  <li>
+    The parameters of the wrapper functions are the same as of the
+    corresponding command (again, with hyphens replaced with underscores).
+  </li>
+  <li>
+    Command flags (the names of the corresponding function parameters start
+    with an underscore) are passed as Python Boolean values.
+  </li>
+  <li>
+    In the rare case that a wrapper function name or a wrapper function
+    parameter name collides with a Python keyword, the <code>_cmd</code> suffix is
+    appended to the wrapper function name, and the function parameter gets
+    the <code>_</code> suffix.
+  </li>
+  <li>
+    Wrapper functions return the value returned by the command which they
+    execute.
+  </li>
+  <li>
+    Wrapper functions have Python docstrings which can be used to get
+    information about the function and its parameters, e.g., by running
+    <code>@help(conf.sim.cli_cmds.info)</code>. The docstrings complement the CLI
+    command documentation (to access the documentation of a command one can
+    run "help <i>command-name</i>" command at Simics CLI).
+  </li>
+</ul>
+<p>
+Please note that Simics command-line commands are defined to only be
+executed in the Simics API execution context known as Global Context.
+If a command is executed while not in Global Context then
+Simics will stop with an error message. Though, this doesn't happen often
+in practice; usually only when CLI commands are
+be called directly from user callbacks installed for haps or notifiers,
+or from device models. For more information about Simics execution contexts
+and how to get to Global Context, please see section "API Execution Contexts"
+in the Simics API reference manual.
+
+</p><h2 class="jdocu"><a name="The-Script-Branch-API">5.4.5 The Script Branch API</a></h2>
+<p>
+
+</p><p>
+Script branches can be manipulated from Python using the script branch
+API. A script branch can be created using <b><i>sb_create</i></b>,
+passing a Python function that defines the script branch.
+</p><p>
+From the script branch Python function, one can use <b><i>sb_wait</i></b>
+to suspend the script branch. From somewhere else, the branch can be
+woken up again by calling <b><i>sb_signal_waiting</i></b>. Thus one can
+make the script branch wait on arbitrary conditions. Example:
+</p><p>
+</p><pre class="jdocu_small">def script_branch(data):
+    print("Branch start")
+    wait_id = cli.sb_get_wait_id()
+    data.append(wait_id)
+    cli.sb_wait("wait", wait_id)
+    print("Branch done")
+
+data = []
+print("Create branch")
+cli.sb_create(lambda: script_branch(data))
+wait_id = data[0]
+time.sleep(1)
+print("Signal branch")
+cli.sb_signal_waiting(wait_id)
+</pre><p>
+</p><p>
+One can also access the existing script wait functionality using the
+ability to run any CLI command, described in <a class="reference" href="#python-access-cli-commands">5.4.4</a>. As an example:
+</p><p>
+</p><pre class="jdocu_small"># Sample script branch stopping simulation after 5 cycles
+# executed on the clock object.
+def script_branch():
+    clock.cli_cmds.wait_for_cycle(cycle = 5, _relative = True)
+    cli.global_cmds.stop()
+
+cli.sb_create(script_branch)
+</pre><p>
+
+</p><h2 class="jdocu"><a name="The-Simics-API">5.4.6 The Simics API</a></h2>
+<p>
+    
+</p><p>
+    The Simics API is a set of functions that
+    provide access to Simics functionality from loadable modules
+    (i.e., devices and extensions), and Python scripts. All
+    functions in the Simics API have a name that starts with
+    "<b><i>SIM_</i></b>". They are described in details in the
+    <em>Simics Reference Manual</em>.
+</p><p>
+    By using the <b><a name="api-help">api-help</a></b> and
+    <b><a name="api-search">api-search</a></b> commands you can get the
+    declarations for API functions and data types. <b>api-help
+    <i>identifier</i></b> will print the declaration of
+    <b><i>identifier</i></b>. <b>api-search
+    <i>identifier</i></b> lists all declarations where
+    <b><i>identifier</i></b>
+    appears.
+</p><p>
+    Note that while <b>api-help <i>topic</i></b> does the same
+    thing as <b>help api:<i>topic</i></b>,
+    the <b>help-search</b> command will not search through the API
+    declarations.
+</p><p>
+    The Simics API functions are available in the <code>simics</code>
+    Python module. This module is imported into the Python environment
+    in the frontend when Simics starts. However, for
+    user-written <code>.py</code> files, the module must be imported
+    explicitly:
+</p><p>
+</p><pre class="jdocu_small">    from simics import *
+</pre><p>
+</p><p>
+    Errors in API functions are reported back to the caller using
+    <i>frontend exceptions</i>. The exception is thrown together with
+    a string that describes the problem more in detail. Examples of
+    exceptions are <code>SimExc_General</code>, <code>SimExc_Memory</code>,
+    <code>SimExc_Index</code>, and <code>SimExc_IOError</code>.
+    In DML and C/C++, these exceptions have to
+    be tested for using <b><i>SIM_clear_exception</i></b>
+    or <b><i>SIM_get_pending_exception</i></b>. In Python, such
+    exceptions result in regular Python exceptions.
+</p><p>
+    For the Python environment, Simics defines an exception subclass for
+    each of its defined exceptions in the <code>simics</code>
+    module. These are raised to indicate exceptions inside the API
+    functions. When errors occur in the interface between Python and
+    the underlying C API function, the standard Python exceptions are
+    used; e.g., if the C API function requires an <code>int</code>
+    argument, and the Python function is called with a
+    <code>tuple</code>, a Python <code>TypeError</code> exception is
+    raised.
+</p><p>
+    
+</p><h2 class="jdocu"><a name="hap-description">5.4.7 Haps</a></h2>
+<p>
+   
+   <a name="hap"></a>
+</p><p>
+   
+   
+</p><p>
+   A <i>hap</i> is an event or occurrence in Simics with some specific
+   semantic meaning, either related to the target or to the internals
+   of the simulator.
+</p><p>
+   Examples of simulation haps are:
+   </p><ul>
+   <li>Exception or interrupt</li>
+   <li>Control register read or write</li>
+   <li>Breakpoint on read, write, or execute</li>
+   <li>Execution of a magic instruction (see the <em>Simics User's
+       Guide</em>)</li>
+   <li>Device access</li>
+   </ul>
+<p>
+   There are also haps which are related to the simulator, e.g.,
+   (re)starting the simulation or stopping it and returning to prompt.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+In the Simics documentation, the word <em>event</em> is used exclusively for
+events that occur at a specific point in simulated time, and <em>hap</em> for
+those that happen in response to other specific conditions (like a state change
+in the simulator or in the simulated machine).</div>A <a name="callback">callback</a> can be invoked for all occurrences of the hap,
+   or for a specified range. This range can be a register number, an
+   address, or an exception number, depending on the hap.
+<p>
+   A complete reference of the haps available in Simics can be found
+   in the <i>Simics Reference Manual</i>.
+</p><p>
+   
+   </p><h3 class="jdocu"><a name="Example-of-Python-Callback-on-a-Hap">5.4.7.1 Example of Python Callback on a Hap</a></h3>
+<p>
+
+</p><p>
+This example uses functions from the Simics API to install a callback
+on the hap that occurs when a control register is written. It is
+intended to be part of a <code>.simics</code> script, that extends
+an <i>QSP-x86</i> machine setup. The
+<b><i>SIM_hap_add_callback_index()</i></b> function sets the index of the control
+register to listen to, in this case the <code>%ia32_feature_control</code> register in an
+x86-intel64-turbo processor.
+</p><p>
+</p><pre class="jdocu_small">@ia32_feature_control_reg_no = conf.board.mb.cpu0.core[0][0]<img alt="Line break" src="nextline.png">
+.iface.int_register.get_number("ia32_feature_control")
+
+# print the new value when %ia32_feature_control is changed
+@def ctrl_write_ia32_feature_control(user_arg, cpu, reg, val):
+    print("[%s] Write to %%ia32_feature_control: 0x%x" % (cpu.name, val))
+
+# install the callback
+@SIM_hap_add_callback_index("Core_Control_Register_Write",
+                            ctrl_write_ia32_feature_control, None,<img alt="Line break" src="nextline.png">
+ia32_feature_control_reg_no)
+</pre><p>
+</p><p>
+In CLI, the same example would look like:
+</p><pre class="jdocu_small">script-branch {
+    local $cpu = (pselect)
+    while TRUE {
+        $cpu.wait-for-register-write ia32_feature_control
+        echo "[" + $cpu + "] Write to %ia32_feature_control: "<img alt="Line break" src="nextline.png">
++ ((hex ($cpu.read-reg ia32_feature_control)))
+    }
+}
+</pre><p>
+</p><p>
+
+   </p><h3 class="jdocu"><a name="Example-of-Python-Callback-on-Core_Log_Message_Extended-Hap">5.4.7.2 Example of Python Callback on Core_Log_Message_Extended Hap</a></h3>
+<p>
+
+</p><p>
+This example shows how to add a callback to the
+Core_Log_Message_Extended. This allows for better control when
+handling log messages. This example writes all log messages to a file
+that is associated with the <b>cpu</b> object.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The Core_Log_Message_Extended hap will only be triggered for
+messages with log level less than or equal to the log level setting
+of the object.</div><pre class="jdocu_small">from simics import *
+
+class file_log:
+
+    def __init__(self, fname, obj, level):
+        # setup logging
+        try:
+            self.f = open(fname, 'w')
+        except Exception as msg:
+            raise Exception("Failed to open file %s, %s" % (fname, msg))
+        self.obj = obj
+        self.level = level
+
+        # install the callback
+        SIM_hap_add_callback_obj(
+            "Core_Log_Message_Extended", obj, 0, self.log_callback, None)
+
+    def log_callback(self, not_used, obj, log_type, message, level, group):
+        type_str = conf.sim.log_types[log_type]
+        if level &lt;= self.level:
+            self.f.write("[%s %s] %s,  level=%d, group=%d\n" % (
+                    obj.name, type_str, message, level, group))
+
+file_log('log_cpu.out', conf.board.mb.cpu0.core[0][0], 1)
+</pre><p>
+</p><p>
+
+</p><p>
+   
+</p><p>
+</p>
+<div class="chain">
+<a href="targets.html">5.3 Targets and parameters</a>
+<a href="configuration.html">6 Configuration and Checkpointing</a>
+</div>

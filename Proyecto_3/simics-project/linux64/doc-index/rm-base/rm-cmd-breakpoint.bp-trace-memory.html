@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>&lt;breakpoint&gt;.bp-trace-memory</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-breakpoint.bp-run-until-memory.html">&lt;breakpoint&gt;.bp-run-until-memory</a>
+<a href="rm-cmd-breakpoint.bp-wait-for-memory.html">&lt;breakpoint&gt;.bp-wait-for-memory</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="breakpoint.bp-trace-memory"></a>
+<h1 id="breakpoint.bp-trace-memory"><a href="#breakpoint.bp-trace-memory">&lt;breakpoint&gt;.bp-trace-memory</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>&lt;breakpoint&gt;.bp-trace-memory</b> <i>address</i> [<i>length</i>] [-r] [-w] [-x] [<i>"prefix"</i>] [<i>"substr"</i>] [<i>"pattern"</i>] [<i>"mask"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Enables tracing of memory accesses.
+<p>
+The accesses to trace are specified as (read, write, or execute) on <i>address</i> for and object implementing the breakpoint interface. This is typically a memory space object such as physical memory. Accesses intersecting the given range will be traced. By default only instruction execution is traced, but any subset of read, write, and execute accesses can traced using combinations of <tt>-r</tt>, <tt>-w</tt>, and <tt>-x</tt>.
+</p><p>
+<i>length</i> is the interval length in bytes (default is 1).
+</p><p>
+For convenience the tracing is on memory connected to the current frontend processor (see <code>pselect</code>). Default is to trace virtual address accesses (in the current context). By prefixing the address with <tt>p:</tt> it is possible to trace on physical accesses as well.
+</p><p>
+Use <i>prefix</i> to trace instructions with this prefix. For example, a prefix "add" will trace instructions that begins with "add". The text to compare the prefix with for an instruction is the one which the instruction is disassembled to. The comparison is case insensitive.
+</p><p>
+Use <i>substr</i> to trace instructions with a certain syntax substring. For example, specifying a substring "r31" will trace instructions containing the substring "r31". The match is case insensitive.
+</p><p>
+Use <i>pattern</i> to trace instructions with a certain bit-pattern. First the <i>mask</i> will be applied to the instruction and then the result will be compared with the <i>pattern</i>. For example, a pattern "0x0100" and mask "0x0101" will trace instructions whose first byte has the lowest bit set and the second not.
+</p><p>
+Note that pattern and mask are supplied as strings with string byte order (low address first). 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.bp-manager.html">bp-manager</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-breakpoint.bp-run-until-memory.html">&lt;breakpoint&gt;.bp-run-until-memory</a>
+<a href="rm-cmd-breakpoint.bp-wait-for-memory.html">&lt;breakpoint&gt;.bp-wait-for-memory</a>
+</div>

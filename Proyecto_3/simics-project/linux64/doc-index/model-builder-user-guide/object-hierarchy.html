@@ -1,0 +1,307 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>33 Object Hierarchy</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="attributes.html">32 Attributes</a>
+<a href="port-objects.html">34 Port Objects</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-simics-programming.html">VI Simics API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Object-Hierarchy">33 Object Hierarchy</a></h1>
+<p>
+
+</p><p>
+Simics objects are stored in an object hierarchy. The hierarchy
+allows objects to be grouped logically, making it easier to navigate
+complex configurations. The object hierarchy also serves a secondary
+purpose: it allows child objects to provide functionality to parent objects.
+</p><p>
+Starting with Simics 6, objects can be created in the namespace of another
+object almost without restrictions. In previous versions, the object
+hierarchy was tightly coupled to the component concept.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Accessing-Objects">33.1 Accessing Objects</a></h2>
+<p>
+
+</p><p>
+Several API functions exist for querying the object hierarchy:
+</p><ul>
+  <li>
+    <b><i>SIM_object_descendant</i></b> returns a specific descendant of
+    an object.
+  </li>
+  <li>
+    <b><i>SIM_object_parent</i></b> returns the parent of an object.
+  </li>
+  <li>
+    <b><i>SIM_object_iterator</i></b> returns an iterator for all
+    descendants of an object.
+  </li>
+  <li>
+    <b><i>SIM_shallow_object_iterator</i></b> returns an iterator for all
+    children of an object.
+  </li>
+</ul>
+<p>
+In Python, the root of the object hierarchy is the <code>conf</code> namespace,
+and child objects can be specified using the dot operator, as in the
+example <code>conf.parent.child</code>. If a child object and an attribute
+has the same name, then the child object has precedence. Object attributes
+can be accessed unambiguously using the <code>attr</code> namespace,
+e.g. <code>object.attr.attribute</code>.
+
+</p><h2 class="jdocu"><a name="Object-Creation">33.2 Object Creation</a></h2>
+<p>
+
+</p><p>
+Simics objects can be created in the namespace of a another object by
+simply providing a hierarchical name. This is illustrated in the following
+example which creates the objects <b>testbench</b>,
+<b>testbench.ram</b> and <b>testbench.ram.image</b>.
+</p><p>
+
+ </p><pre class="jdocu_small">tb = pre_conf_object('testbench', 'namespace')
+image = pre_conf_object('testbench.ram.image', 'image', size = 0x1000)
+ram = pre_conf_object('testbench.ram', 'ram')
+ram(image = image)
+
+SIM_add_configuration([tb, image, ram], None)
+</pre><p>
+</p><p>
+ 
+</p><p>
+The <b>pre_conf_object</b> class also allows the configuration
+to be built hierarchically, which is illustrated in the following example:
+</p><p>
+
+ </p><pre class="jdocu_small">tb2 = pre_conf_object('testbench2', 'namespace')
+tb2.image = pre_conf_object('image', size = 0x1000)
+tb2.image.ram = pre_conf_object('ram')
+tb2.image.ram(image = tb2.image)
+
+SIM_add_configuration([tb2], None)
+</pre><p>
+</p><p>
+ 
+</p><p>
+Hierarchical object names can also be passed directly to e.g.
+<b><i>SIM_create_object</i></b>:
+</p><p>
+
+ </p><pre class="jdocu_small">SIM_create_object("memory-space", "testbench.pspace", [])
+</pre><p>
+</p><p>
+ 
+</p><p>
+
+</p><h2 class="jdocu"><a name="Special-Object-Classes">33.3 Special Object Classes</a></h2>
+<p>
+
+</p><p>
+There are two basic Simics classes which often are useful when building
+the object hierarchy. The first one is the <b>namespace</b>
+class which basically is an "empty" Simics class without any custom
+attributes or interfaces. The second class is the <b>index-map</b>
+class, which is used by Simics to represent object maps.
+</p><p>
+As an example, the objects <b>alpha[0]</b>, <b>alpha[1]</b>
+and <b>alpha[2]</b> are children of the object <b>index-map</b>
+object <b>alpha</b>. Nested index maps are used to construct
+multi-dimensional object maps, e.g. <b>beta[1][2][3]</b>.
+</p><p>
+Simics adds index-maps automatically during object creation when
+necessary, but sometimes it is useful to create the index map object
+explicitly, like in the example below:
+</p><p>
+
+ </p><pre class="jdocu_small">array = pre_conf_object('array', 'index-map')
+array[0] = pre_conf_object('memory-space')
+array[1] = pre_conf_object('memory-space')
+
+SIM_add_configuration([array], None)
+</pre><p>
+</p><p>
+ 
+</p><p>
+
+</p><h2 class="jdocu"><a name="Naming-Conventions">33.4 Naming Conventions</a></h2>
+<p>
+
+</p><p>
+Simics does not impose any rules how child objects should be named.
+It is, however, recommended that the following conventions are followed
+in order to make it easy for a user to understand the purpose of
+a particular object:
+</p><p>
+</p><ul>
+  <li>
+    <b>object.port</b>.&lt;port&gt;
+<p>
+    Objects under the <b>port</b> namespace should be used for objects
+    implementing interfaces on behalf of <b>object</b>.
+  </p></li>
+  <li>
+    <b>object.bank</b>.&lt;bank&gt;
+<p>
+    The <b>bank</b> namespace is used for objects implementing
+    register banks on behalf of <b>object</b>.
+  </p></li>
+  <li>
+    <b>object</b>.&lt;name&gt;
+<p>
+    Used for all other kinds of objects.
+  </p></li>
+</ul>
+<p>
+The <b>object.port</b> and <b>object.bank</b> objects are
+just plain namespaces. For specific objects, there might also be
+other namespaces that have been assigned a special meaning:
+</p><p>
+</p><ul>
+  <li>
+    <b>cpu.vtime</b>.&lt;clock&gt;
+<p>
+    All CPUs have a <b>vtime</b> object which handles
+    event dispatching. Below this objects there are objects
+    implementing event queues used by the CPU. There are normally
+    at least a <b>cycles</b> object which contains the cycle based
+    event queue and a <b>ps</b> object which holds the pico-seconds
+    based event queue.
+  </p></li>
+</ul>
+<p>
+
+</p><h2 class="jdocu"><a name="Object-Initialization">33.5 Object Initialization</a></h2>
+<p>
+
+</p><p>
+The creation of Simics objects is a process which contains several
+distinct steps that are executed in a strict sequence. Each step
+is performed for all objects under construction before the next
+step is attempted. The sequence looks as follows:
+</p><p>
+</p><ol>
+  <li>Space is allocated for all objects under construction by
+    calling the <b><i>alloc</i></b> function from the
+    corresponding class.
+  </li> 
+  <li>
+    The Simics private parts of the objects are initialized and
+    the objects are added to the object hierarchy.
+  </li>
+  <li>
+    The <b><i>init</i></b> method is called for each object.
+  </li>
+  <li>
+    Object attributes of the kind <code>Sim_Init_Phase_Pre1</code>
+    are set for all objects. Attributes of this kind should only
+    be registered by classes provided by Simics Core.
+  </li>
+  <li>
+    Normal attributes are set for all objects.
+  </li>
+  <li>
+    Object attributes marked with <code>Sim_Init_Phase_1</code> are
+    set for all objects.
+  </li>
+  <li>
+    The <b><i>finalize</i></b> method is called for each object.
+    The object is marked as configured.
+  </li>
+  <li>
+    The <b><i>objects_finalized</i></b> method is called for each object.
+  </li>
+</ol>
+<p>
+The object ordering for each step is defined by the object hierarchy,
+with parents being initialized before any descendants. Siblings
+are ordered alphanumerically. For the last step,
+there can be exceptions to this rule caused by explicit usage of
+the <b><i>SIM_require_object</i></b> function from the
+<b><i>finalize</i></b> method.
+</p><p>
+The particulars of the object initialization sequence and
+initialization ordering have some implications:
+</p><p>
+</p><ul>
+  <li>
+    An object can use the <b><i>SIM_object_descendant</i></b> function
+    from its <b><i>init</i></b> method to obtain a reference
+    to a child object. This is particularly useful for obtaining
+    references to automatically created port objects.
+  </li>
+
+  <li>
+    A port object can obtain a reference to its port object parent from
+    the <b><i>init</i></b> method by using the
+    <b><i>SIM_port_object_parent</i></b> function.
+  </li>
+
+  <li>
+    Objects can propagate default attribute values to children using
+    the <b><i>SIM_set_attribute_default</i></b> function.
+    This can be done from the <b><i>init</i></b> function but also from
+    individual attribute setters.
+<p>
+    <b>Important:</b> Objects should never set attributes on other
+    objects during object construction since this will invariably break
+    checkpointing. Setting <em>default</em> attribute values, however,
+    is permitted and useful for configuring port objects.
+ </p></li>
+</ul>
+<p>
+
+</p><h2 class="jdocu"><a name="Clock-and-Cell-Inheritance">33.6 Clock and Cell Inheritance</a></h2>
+<p>
+
+</p><p>
+Each object in Simics has an associated default clock which, among
+other things, is used for event posting. The <i>queue</i> attribute
+is used to explicitly select a clock for a particular object.
+</p><p>
+In Simics 6, objects without an explicitly assigned clock
+inherit a default one from their respective parents. Thus, in
+many cases it is sufficient to just set the <i>queue</i>
+attribute for a single object and all descendants will inherit the clock
+implicitly.
+</p><p>
+Note that the <i>queue</i> attribute reflects the explicitly
+assigned clock. The <b><i>SIM_object_clock</i></b> function can be used to
+retrieve the default clock for a particular object.
+</p><p>
+Cell membership is also inherited hierarchically.
+</p><p>
+
+</p>
+<div class="chain">
+<a href="attributes.html">32 Attributes</a>
+<a href="port-objects.html">34 Port Objects</a>
+</div>

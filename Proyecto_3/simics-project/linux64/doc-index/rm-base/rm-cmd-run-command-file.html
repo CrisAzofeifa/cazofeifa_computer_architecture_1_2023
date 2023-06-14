@@ -1,0 +1,98 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>run-command-file</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-run.html">run</a>
+<a href="rm-cmd-run-cycles.html">run-cycles</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="run-command-file"></a>
+<h1 id="run-command-file"><a href="#run-command-file">run-command-file</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>run-command-file</b> <i>file</i> [-main-branch] [-local] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Starts executing CLI commands from the Simics script <i>file</i>. Simics scripts usually have the ".simics" filename extension but this is only a convention.
+<p>
+Plain command scripts, i.e. scripts without any script declaration block, execute in the same variable scope as the script calling <code>run-command-file</code>. The only exception are variables in the called script declared using the <tt>local</tt> keyword. Such variables are not available to the calling script. If the <tt>-local</tt> flag is supplied to the command, then the called script will run with its own copy of all global CLI variables. When the script has finished executing, the original variable values are restored.
+</p><p>
+CLI variable scoping is different for scripts starting with a script declaration block. Only variables declared in the decl {} block are available to such scripts and only return variables will be passed back to the calling CLI environment.
+</p><p>
+If <code>run-command-file</code> is issued in a script-branch and the <tt>-main-branch</tt> flag is specified, then the commands in the file will execute in the main script branch the next time it is scheduled. This allows the command file to define its own script branches for example. Note that scripts without a script declaration block will run in the global CLI variable environment and not within the script-branch scope. Scripts with a declaration block on the other hand will get its parameter set from the script-branch CLI environment at the time <code>run-command-file</code> is called.
+</p><p>
+If the script to run has declared parameters, then those parameters can be specified as arguments to <code>run-command-file</code>. Tab completion can be used to list the parameters available to a script.
+</p><p>
+<tt> run-command-file script-with-parameters.simics name = "abc" cycle = 20 </tt>
+</p><p>
+This is identical to:
+</p><p>
+<tt> $name = "abc"<br>
+ $cycle = 20<br>
+ run-command-file script-with-parameters.simics<br>
+ unset name cycle </tt>
+</p><p>
+It is not possible to pass parameters in this way to a plain script.
+</p><p>
+Python code can be included in a script by using the @ prefix. Multi-line Python statements only need @ on the first line. For larger sections of Python code, the use of <code>run-python-file</code> is encouraged instead.
+</p><p>
+Example Simics script:
+</p><p>
+<tt> # This is a Simics script<br>
+ <br>
+ break 0xffc000 # set a breakpoint<br>
+ run<br>
+ echo "breakpoint reached"<br>
+ run-command-file another-script.simics </tt>
+</p><p>
+If a command fails, the user presses Ctrl-C or stops the simulation from a GUI, the Simics script is interrupted.
+</p><p>
+<code>run-command-file</code> uses Simics's Search Path and path markers (%simics%, %script%) to find the script to run. Refer to <cite>The Command Line Interface</cite> chapter of the <cite>Simics User's Guide</cite> manual for more information.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>
+<a href="rm-cmd-run-python-file.html">run-python-file</a>, 
+<a href="rm-cmd-add-directory.html">add-directory</a>, 
+<a href="rm-cmd-decl.html">decl</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-run.html">run</a>
+<a href="rm-cmd-run-cycles.html">run-cycles</a>
+</div>

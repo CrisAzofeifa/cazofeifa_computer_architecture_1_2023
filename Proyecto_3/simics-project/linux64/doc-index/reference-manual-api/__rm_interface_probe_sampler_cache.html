@@ -1,0 +1,84 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>probe_sampler_cache</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_probe_index.html">probe_index</a>
+<a href="__rm_interface_probe_subscribe.html">probe_subscribe</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_probe_sampler_cache">probe_sampler_cache</a></h1>
+<p>
+
+<a name="probe_sampler_cache"></a><a name="probe_sampler_cache_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface is implemented by the singleton <b>probes</b>
+  object. The interface is expected to be used by either probe-samplers
+  (<b><i>enable</i></b>, <b><i>disable</i></b> or by a probe
+  which supports caching (<b><i>get_generation_id</i></b>).
+<p>
+  When a probe-sampler calls the <b><i>enable</i></b> method,
+  caching can start. Caching depends on a generation id, this is
+  automatically increased by <b><i>enable</i></b>.
+</p><p>
+  With caching enabled, probes can return the previous value back,
+  avoiding expensive calculation, if they are read multiple times
+  (either directly, or indirectly from other probes). It can also be
+  used to avoid probe values to return a slightly different value the
+  next time in the same sample, such as wallclock time.
+</p><p>
+  A probe which wants to use caching needs to call the
+  <b><i>get_generation_id</i></b> method. As long as the generation id is the same
+  as the last time the probe-value was returned, the same probe-value can be
+  returned. Otherwise a new value needs to be returned.
+  Generation id zero, is special, it means that caching is not currently enabled.
+</p><p>
+  When sampling is finished the probe_sampler calls the <b><i>disable</i></b>
+  which will cause the generation id zero to be returned until the
+  next sample begins again.
+</p><p>
+  </p><pre class="jdocu_small">SIM_INTERFACE(probe_sampler_cache) {
+        void (*enable)(conf_object_t *obj);
+        void (*disable)(conf_object_t *obj);
+
+        uint64 (*get_generation)(conf_object_t *obj);
+};
+#define PROBE_SAMPLER_CACHE_INTERFACE "probe_sampler_cache"
+</pre><p>
+</p><p>
+  
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+  
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_probe_index.html">probe_index</a>
+<a href="__rm_interface_probe_subscribe.html">probe_subscribe</a>
+</div>

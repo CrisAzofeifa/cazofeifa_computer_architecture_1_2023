@@ -1,0 +1,200 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2 Compatibility</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="overview.html">3 Migrating to a New Simics Version</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Migration Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="compatibility">2 Compatibility</a></h1>
+<p>
+
+</p><p>
+This chapter describes the compatibility Simics provides and how to keep
+scripts, modules and checkpoints from previous versions of Simics working in
+new versions.
+</p><p>
+Simics is ABI backward compatible between minor versions (third digit change).
+As a result, user-written modules can be moved to a newer minor Simics release
+without recompilation. Any exceptions to this rule are clearly noted in the
+release notes.
+</p><p>
+Simics is also API backward compatible between major releases, up to
+two releases back. A module written for an older version of Simics can
+be recompiled in a newer Simics version by selecting the appropriate
+older API. This must be explicitly requested in the module makefile,
+as described in this chapter.
+</p><p>
+Simics maintains backward compatibility for checkpoints one major version older
+than the oldest of the currently supported API versions, i.e. Simics 6 supports
+loading checkpoints from versions 5, 4.8 and 4.6. This assumes that the
+model also supports older checkpoints.
+</p><p>
+</p><h2 class="jdocu"><a name="Supported-Simics-API">2.1 Supported Simics API</a></h2>
+<p>
+
+</p><p>
+The API consists of all functions which have a <code>SIM_</code> prefix, as well as and types required by those functions. There are
+also some internal functions prefixed <code>VT_</code> and <code>DBG_</code> that are
+not supported and usually not documented.
+</p><p>
+The Simics API can be accessed from C/C++ by including one of the
+<code>simics/device-api.h</code>, <code>simics/processor-api.h</code> and
+<code>simics/simulator-api.h</code> header files, or in DML by including the
+corresponding files. There are also several additional header files defining
+Simics <em>interfaces</em>. The Simics specific memory allocation functions
+defined in <code>simics/alloc.h</code> are also supported.
+</p><p>
+Part of the Simics API is only available when programming in Python. The
+supported classes and functions belonging to the Simics Python API are listed
+in the <em>Simics API Reference Manual</em>.
+</p><p>
+Simics also defines some utility functions in <code>simics/utils.h</code>, that
+can be useful when programming in C/C++. These functions are currently
+<em>not</em> part of the supported Simics API.
+</p><p>
+
+</p><h2 class="jdocu"><a name="API-Deprecation">2.2 API Deprecation</a></h2>
+<p>
+
+</p><p>
+Features marked as deprecated in a particular major Simics version
+are, as far as possible, supported in several subsequent major releases. Using
+only non-deprecated features of one Simics release guarantees that an
+upgrade to the next major version will be without major hurdles.
+</p><p>
+Starting in Simics 7, features can also be marked as <i>legacy</i>
+in a particular major Simics version. Such features continue to exist
+until further notice, but are typically not supported for use in
+new functionality, and receive only critical bug fixes. Legacy
+features may be re-classified as deprecated in a future major version.
+</p><p>
+The lifespan of a SIM-prefixed API call is:
+</p><dl><dt id="dt:major-release-a-supported"><b>Major release A: Supported</b></dt><dd>The function is a fully supported feature. Most features remain supported
+for all major releases and are never deprecated.</dd><dt id="dt:major-releases-b-deprecated-or-legacy"><b>Major releases B: Deprecated or Legacy</b></dt><dd>Documented as deprecated or legacy but still supported. Using
+deprecated functionality generates both compile-time and run-time
+warnings, which helps in migrating from deprecated API calls. When
+applicable, documentation in the form of release notes or porting
+guides points to replacement functionality. Using legacy functionality
+do not generate any warnings.
+<p>
+By default, deprecated functionality cannot be used when building modules. It
+is however still available by explicitly specifying an older major
+version as the API version, see Section <a class="reference" href="#migrating-modules">2.3</a>.</p></dd><dt id="dt:major-release-c-removed-or-still-legacy"><b>Major release C: Removed or still Legacy</b></dt><dd>Deprecated
+features are removed in the subsequent major version. Legacy features
+remain (but can be re-classified as deprecated).</dd></dl><p>Calls with other prefixes such as <code>VT</code> or <code>DBG</code>
+do not necessarily follow the same process.
+</p><p>
+
+</p><h2 class="jdocu"><a name="migrating-modules">2.3 Compiling Modules Written for an Older Simics Version</a></h2>
+<p>
+
+</p><p>
+Modules from older versions must specify what API they are written for
+by setting the make variable <code><a name="SIMICS_API">SIMICS_API</a></code>. This
+variable must have one of the following values:
+</p><p>
+</p><dl><dt id="dt:latest"><b><code>latest</code></b></dt><dd>Use the most recent Simics API.</dd><dt id="dt:6"><b><code>6</code></b></dt><dd>Compile module for the 6 API.</dd><dt id="dt:5"><b><code>5</code></b></dt><dd>Compile module for the 5 API.</dd><dt id="dt:4-8"><b><code>4.8</code></b></dt><dd>Compile module for the 4.8 API.</dd></dl><p>In order to simplify upgrades to the future major Simics releases, it
+is recommended that this variable be set even when writing new
+modules. The recommendation is to always specify an explicit version
+number, not use <code>latest</code>.
+</p><p>
+</p><h3 class="jdocu"><a name="find-deprecated">2.3.1 Migrating Modules to the Most Recent Simics Version</a></h3>
+<p>
+
+</p><p>
+Simics features are added and improved with every product release. At
+major releases some features may be deprecated in favor of improved
+implementations or solutions to the same problem.
+</p><p>
+Although the recommendation for developers is to avoid such deprecated
+features, they may continue to work in future releases. In these cases 
+Simics provides both compile-time and run-time checks for use of deprecated
+features. The compile-time checks make deprecated parts of the API not visible
+during module compilation, resulting in compilation errors or warnings when
+such parts are being used. The compile time checks work for modules written in
+C or DML, but not for modules written in Python. To enable the compile-time
+checks, set the <code><a name="SIMICS_API2">SIMICS_API</a></code> make variable to the version of
+the new Simics release, for example <code>6</code>:
+</p><pre class="jdocu_small">    SIMICS_API = 6
+</pre><p>
+</p><p>
+A run-time check triggers when a feature is actually being
+used. Run-time checks complement compile time checks, since not all
+checks can be done statically. For example, static checking can not
+capture if passing a NULL pointer in an argument is deprecated.
+</p><p>
+The following Simics command-line options are related to warnings
+about deprecated features:
+</p><p>
+</p><dl><dt id="dt:wdeprecated"><b>-wdeprecated</b></dt><dd>Issue a warning when a deprecated feature is used, or in many
+cases when a used feature will become deprecated in the next major
+release. This is equivalent to setting
+the <i>sim→deprecation_level</i> attribute to 2.</dd><dt id="dt:no-wdeprecated"><b>-no-wdeprecated</b></dt><dd>Never warn for use of deprecated features. This is equivalent to setting the <i>sim→deprecation_level</i> attribute to 0.</dd></dl><p>The default warning level, if none of the above flags is given, is for
+the <i>sim→deprecation_level</i> attribute to have the
+value 1. The resulting behaviour is to warn about all used features
+that were deprecated in the latest major release, but to issue no
+warnings about deprecations that will appear in the next major
+release.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+The compile-time and run-time checks does not catch all uses of
+deprecated parts of the API. Direct accesses to struct and enum members
+are not caught. Check the reference documentation to find deprecated
+struct and enum members. Most direct accesses to members in structs
+defined in the Simics API are deprecated. </div>
+
+<h2 class="jdocu"><a name="migrating-python">2.4 Running Python Code Written for an Older Simics Version</a></h2>
+<p>
+
+</p><p>
+To run a Python module, or some other Python code, that was written for an
+older Simics version, the old API module has to be included early in the Python
+source file. To run Python code written for Simics 4.8, add the following line:
+</p><pre class="jdocu_small">import simics_4_8_api as simics
+</pre><p>
+and then access old API functions as <code>simics.SIM_old_function()</code>, for
+example.
+
+</p><h2 class="jdocu"><a name="Build-Environment-Compatibility">2.5 Build Environment Compatibility</a></h2>
+<p>
+ Only the make variables, and
+makefiles described in the <em>Model Builder User's Guide</em> are
+supported. User written scripts and makefiles that rely on the internals of the
+Simics makefiles and other parts of the build environment may break in future
+Simics versions.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="introduction.html">1 Introduction</a>
+<a href="overview.html">3 Migrating to a New Simics Version</a>
+</div>

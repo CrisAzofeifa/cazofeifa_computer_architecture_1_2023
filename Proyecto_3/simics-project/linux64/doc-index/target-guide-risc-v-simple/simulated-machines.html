@@ -1,0 +1,281 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>3 Simulated Machines</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="simicsreg-risc-v-simple-overview.html">2 Simics® RISC-V* Simple Overview</a>
+<a href="supported-components.html">4 Supported Components</a>
+</div>
+<div class="path">
+<a href="index.html">RISC-V* Simple Board Target Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Simulated-Machines">3 Simulated Machines</a></h1>
+<p>
+
+</p><p>
+Simics scripts for starting RISC-V machines are located in the
+<code>[project]/targets/risc-v-simple/</code> directory, while the actual
+configuration scripts can be found in the
+<code>targets/risc-v-simple/</code> directory in the corresponding
+add-on package.
+</p><p>
+
+  </p><h2 class="jdocu"><a name="Build-and-run">3.1 Build and run</a></h2>
+<p>
+
+You need to build the Linux software stack for the RISC-V simple system
+before you can boot it, since the package does not include any prebuilt binaries. 
+The target scripts are built to assume a Buildroot configuration, which
+is described in this section.  You can also use other Linux and operating
+system build, which will require adjusting the software configuration 
+parameters of the system. 
+</p><h3 class="jdocu"><a name="Building-linux-bootloader-and-root-file-system">3.1.1 Building linux, bootloader, and root file system</a></h3>
+<p>
+
+This is how you use Buildroot to create a bootable software set up 
+for the RISC-V simple, as used by default by the target scripts. 
+</p><p>
+</p><ol>
+    <li>Start by cloning buildroot: 
+<pre class="jdocu_small">$ <b>git clone https://github.com/buildroot/buildroot.git</b>
+</pre><p>
+    </p></li>
+    <li>Add a configuration file called <code>simics_simple_riscv_defconfig</code>
+       to the <code>configs</code> directory.  Copy the following text into the file:
+        <pre class="jdocu_small"># Architecture
+BR2_riscv=y
+BR2_RISCV_64=y
+
+# System
+BR2_TARGET_GENERIC_GETTY_PORT="ttyS0"
+BR2_SYSTEM_DHCP="eth0"
+
+# Kernel
+BR2_LINUX_KERNEL=y
+BR2_LINUX_KERNEL_USE_ARCH_DEFAULT_CONFIG=y
+BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="5.17"
+BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_17=y
+BR2_LINUX_KERNEL_IMAGE=y
+
+# Boot loader
+BR2_TARGET_OPENSBI=y
+BR2_TARGET_OPENSBI_PLAT="generic"
+
+# Root file system
+BR2_TARGET_ROOTFS_EXT2=y
+
+# Host packages
+BR2_PACKAGE_HOST_DTC=y
+        </pre><p>
+    </p></li>
+    <li>Configure Buildroot to use this configuration:
+<pre class="jdocu_small">$ <b>make simics_simple_riscv_defconfig</b>
+</pre><p></p></li>
+    <li>Build:
+<pre class="jdocu_small">$ <b>make</b>
+</pre><p></p></li>
+    <li>Check the directory <code>output/images</code>.  There should be something like this:
+        <pre class="jdocu_small">output/images/
+├── fw_dynamic.bin
+├── fw_dynamic.elf
+├── fw_jump.bin
+├── fw_jump.elf
+├── Image
+├── rootfs.ext2
+└── rootfs.tar
+        </pre><p>
+    </p></li>
+    <li>Copy <code>Image</code>, <code>rootfs.ext2</code> and <code>fw_jump.elf</code>
+    to your Simics project, into the folder 
+    <code>[project]/targets/risc-v-simple/images/linux</code>. 
+    You might have to create this folder if it does not already exist.</li>
+</ol>
+
+<h3 class="jdocu"><a name="Run-RISC-V-Simple-Simics-Platform">3.1.2 Run RISC-V Simple Simics Platform</a></h3>
+<p>
+
+</p><ol>
+    <li>Open a shell in your Simics project</li>
+    <li>Start a new Simics simulation session:
+<pre class="jdocu_small">$ <b>./simics</b>
+</pre><p></p></li>
+    <li>Load the RISC-V simple target script from the Simics simulator
+        command line:
+<pre class="jdocu_small">simics&gt; <b>load-target target = "risc-v-simple/linux"</b>
+</pre><p>
+    </p></li>
+    <li> Run the simulation:    
+<pre class="jdocu_small">simics&gt; <b>run</b>
+</pre><p>
+</p></li>
+    <li>Wait a short while. The target system should boot,  and the
+        target system serial console should show something like this:
+<pre class="jdocu_small">[    0.105470] EXT4-fs (vda): mounted filesystem with ordered data mode. Quota mode: disabled.
+[    0.106430] VFS: Mounted root (ext4 filesystem) on device 254:0.
+[    0.107130] devtmpfs: mounted
+[    0.107700] Freeing unused kernel image (initmem) memory: 2152K
+[    0.123900] Run /sbin/init as init process
+[    0.138840] EXT4-fs (vda): re-mounted. Quota mode: disabled.
+Starting syslogd: OK
+Starting klogd: OK
+Running sysctl: OK
+Saving random seed: [    0.155108] random: dd: uninitialized urandom read (32 bytes read)
+OK
+Starting network: OK
+
+Welcome to Buildroot
+buildroot login: root
+#
+</pre><p></p></li>
+</ol>
+
+<h3 class="jdocu"><a name="Enabling-SSH">3.1.3 Enabling SSH</a></h3>
+<p>
+
+The Buildroot configuration above does not include a secure shell (SSH) 
+server or client.  To use remote login with the target system, either from  the 
+host or from another simulated machine, you need to add SSH to the 
+configuration. 
+</p><p>
+First step is to configure Builtroot to include the SSH daemon
+into your root file system and add an <b>sshd</b> configuration.
+</p><p>
+Add these two lines into <code>[BUILDROOT_DIR]/configs/simics_simple_riscv_defconfig</code>
+</p><pre class="jdocu_small">BR2_ROOTFS_OVERLAY="board/simics/risc-v-simple/rootfs_overlay"
+BR2_PACKAGE_OPENSSH=y
+</pre><p>
+</p><p>
+To configure <b>sshd</b> to allow root to login over SSH, 
+add this file (and create the necessary folder hierarchy):
+<br>
+<code>[BUILDROOT_DIR]/board/simics/risc-v-simple/rootfs_overlay/etc/ssh/sshd_config</code>
+</p><pre class="jdocu_small">PermitRootLogin yes
+PermitEmptyPasswords yes
+AuthorizedKeysFile .ssh/authorized_keys
+Subsystem sftp /usr/libexec/sftp-server
+</pre><p>
+</p><p>
+With SSH thus added and configured, reconfigure and rebuild the root file system:
+</p><ul>
+    <li>Configure Buildroot to use this configuration:
+<pre class="jdocu_small">$ <b>make simics_simple_riscv_defconfig</b>
+</pre><p></p></li>
+    <li>Build:
+<pre class="jdocu_small">$ <b>make</b>
+</pre><p></p></li>
+</ul>
+<p>
+Copy the the <code>output/images/rootfs.ext2</code> to your Simics project
+as described in section <a class="reference" href="#Building-linux-bootloader-and-root-file-system">3.1.1</a>. 
+</p><p>
+Start a new Simics simulation as described
+in section <a class="reference" href="#Run-RISC-V-Simple-Simics-Platform">3.1.2</a>
+and wait for linux to boot up.
+</p><p>
+Check the target machine IPv4 address using <b>ifconfig</b>. In the target system
+serial console: 
+</p><pre class="jdocu_small"># ifconfig
+eth0      Link encap:Ethernet  HWaddr 00:17:A0:00:00:00
+          inet addr:10.10.0.10  Bcast:10.10.0.255  Mask:255.255.255.0
+          inet6 addr: 11:2233:4455:6677:217:a0ff:fe00:0/64 Scope:Global
+          inet6 addr: fe80::217:a0ff:fe00:0/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:5 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:11 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000
+          RX bytes:1196 (1.1 KiB)  TX bytes:1675 (1.6 KiB)
+</pre><p>
+</p><p>
+You need to enable the Simics simulator real time mode, since 
+otherwise the SSH TCP connection
+will time out because simulated time runs faster than real time. 
+</p><p>
+To provide access to the simulated target machine from the host, 
+you must enable NAPT-based real networking. 
+</p><pre class="jdocu_small">running&gt; <b>stop</b>
+simics&gt; <b>enable-real-time-mode</b>
+Real-time mode enabled.
+simics&gt; <b>connect-real-network target-ip = 10.10.0.10</b>
+NAPT enabled with gateway 10.10.0.1/24 on link ethernet_switch0.link.
+NAPT enabled with gateway fe80::2220:20ff:fe20:2000/64 on link ethernet_switch0.link.
+Host TCP port 4021 -&gt; 10.10.0.10:21
+Host TCP port 4022 -&gt; 10.10.0.10:22
+Host TCP port 4023 -&gt; 10.10.0.10:23
+Host TCP port 4080 -&gt; 10.10.0.10:80
+Warning: This can expose the target system on the host local network.
+Real DNS enabled at 10.10.0.1/24 on link ethernet_switch0.link.
+Real DNS enabled at fe80::2220:20ff:fe20:2000/64 on link ethernet_switch0.link.
+simics&gt; <b>run</b>
+</pre><p>
+In this example port 4022 on the host is forwarded to port 22 in the target machine
+(which is the port used for SSH). This number can be different, if port 4022 is
+in use the Simics simulator will select another, free, port to use. 
+</p><p>
+Now we are ready to ssh into the target machine. In another terminal on your host:
+</p><pre class="jdocu_small">$ <b>ssh root@localhost -p 4022</b>
+[...]
+# <b>uname -a</b>
+Linux buildroot 6.1.9 #1 SMP Fri Feb  3 11:58:53 CET 2023 riscv64 GNU/Linux
+#
+</pre><p>
+
+</p><h3 class="jdocu"><a name="Modifying-the-device-tree">3.1.4 Modifying the device tree</a></h3>
+<p>
+
+If  you change the hardware configuration of the target system by changing
+the number of cores or the size of memory, you need to also provide the
+software stack with an updated device tree blob (DTB) file. 
+</p><p>
+The device tree binary blob that is used by default is located at
+<code>[RISC-V-simple-package]/targets/risc-v-simple/risc-v-simple.dtb</code>. 
+A text version exists as well, <code>targets/risc-v-simple/risc-v-simple.dts</code>. 
+</p><p>
+To compile changes to the <code>.dts</code> file into a new <code>.dtb</code>, you 
+need the program <b>dtc</b>. If you have that installed already you can use it. 
+Otherwise the buildroot project you just built generated that program for 
+you: <code>[BUILDROOT_DIR]/output/host/bin/dtc</code>.
+You can copy the text version, edit it, and compile as shown below, to create your local version <code>local-risc-v-simple.dtb</code>.
+</p><pre class="jdocu_small">$ <b>[BUILDROOT_DIR]/output/host/bin/dtc -O dtb -o local-risc-v-simple.dtb copy-risc-v-simple.dts</b>
+</pre><p>
+</p><p>
+Running with your modified device tree:
+</p><pre class="jdocu_small">simics&gt; <b>load-target target = "risc-v-simple/linux" linux:runtime:dtb_image = local-risc-v-simple.dtb</b>
+</pre><p>
+
+
+  </p><h2 class="jdocu"><a name="Machine-Scripts-and-Parameters">3.2 Machine Scripts and Parameters</a></h2>
+<p>
+
+Documentation of target parameters is missing because
+autogeneration is not supported yet.
+
+
+</p><p>
+</p>
+<div class="chain">
+<a href="simicsreg-risc-v-simple-overview.html">2 Simics® RISC-V* Simple Overview</a>
+<a href="supported-components.html">4 Supported Components</a>
+</div>

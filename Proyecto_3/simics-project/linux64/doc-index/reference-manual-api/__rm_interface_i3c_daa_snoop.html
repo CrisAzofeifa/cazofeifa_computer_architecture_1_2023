@@ -1,0 +1,72 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i3c_daa_snoop</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_i2c_slave_v2.html">i2c_slave_v2</a>
+<a href="__rm_interface_i3c_master.html">i3c_master</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_i3c_daa_snoop">i3c_daa_snoop</a></h1>
+<p>
+
+<a name="i3c_daa_snoop"></a><a name="i3c_daa_snoop_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(i3c_daa_snoop) {
+        void (*assigned_address)(conf_object_t *obj, uint64 id,
+                                 uint8 bcr, uint8 dcr, uint8 address);
+};
+
+#define I3C_DAA_SNOOP_INTERFACE "i3c_daa_snoop"
+</pre><p>
+</p><p>
+
+   During DAA process, the assigned address information will be monitored
+   to devices who implement the interface <code>i3c_daa_snoop</code>.
+   Whenever an address is assigned to a slave, the method
+   <b><i>assigned_address</i></b> is called in all devices that implement the
+   interface. The parameter <i>id</i>, <i>bcr</i> and
+   <i>dcr</i> in method <b><i>assigned_address</i></b> is slave specific
+   daa data which indicates who gets the assigned address. Parameter
+   <i>address</i> stores the assigned address. The 7-bit address
+   is represented as 8-bit number with the highest bit set to 0.
+</p><p>
+   Interface <code>i3c_daa_snoop</code> is mainly implemented by slave who
+   may become secondary master later and needs to know the information about
+   slave addresses.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_i2c_slave_v2.html">i2c_slave_v2</a>
+<a href="__rm_interface_i3c_master.html">i3c_master</a>
+</div>

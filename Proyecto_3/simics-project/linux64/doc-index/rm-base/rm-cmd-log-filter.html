@@ -1,0 +1,66 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>log-filter</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-log.html">log</a>
+<a href="rm-cmd-log-group.html">log-group</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="log-filter"></a>
+<h1 id="log-filter"><a href="#log-filter">log-filter</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>log-filter</b> [<i>object</i>] [<i>"substr"</i>] [<i>"substring"</i>] [-temporary] [-clear] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Adds a filter that selectively suppresses log messages from an object.
+<p>
+While it is possible to disable logging for a particular object by setting its log level to 0, doing so may also hide important information. As an alternative, this command can suppress select log messages from a particular object. This is useful when lots of messages are printed by a misbehaving model. Using <code>log-filter</code> should be a temporary solution until the model is fixed by moving offending log messages to one or more log groups or to a higher log level.
+</p><p>
+When used without any arguments, or with just the <i>object</i> argument, the command will print all current log suppression entries, or those for the specified object.
+</p><p>
+To add a filter, both the <i>object</i> and <i>substr</i> arguments are mandatory. A message will be suppressed when it is logged by the specified <i>object</i> and it matches the <i>substr</i>. Messages of "critical" type are never suppressed. If the <tt>-temporary</tt> flag is specified, the filter will be removed if a message not suppressed by any filter is encountered.
+</p><p>
+The <tt>-clear</tt> flag is used to disable log suppression. When the flag is used and no other arguments, all suppression entries will be cleared. Otherwise, the <i>object</i> and <i>substr</i> arguments are required to disable suppression for the specified object and substring. 
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.simics.core.html">Simics Core</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-log.html">log</a>
+<a href="rm-cmd-log-group.html">log-group</a>
+</div>

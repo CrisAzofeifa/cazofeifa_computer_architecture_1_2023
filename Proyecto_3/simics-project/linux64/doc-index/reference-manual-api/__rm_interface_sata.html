@@ -1,0 +1,69 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>sata</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_rs232_device.html">rs232_device</a>
+<a href="__rm_interface_scale_factor_listener.html">scale_factor_listener</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_sata">sata</a></h1>
+<p>
+
+<a name="sata"></a><a name="sata_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">SIM_INTERFACE(sata) {
+        void (*receive_fis)(conf_object_t *obj, const bytes_t fis);
+};
+
+#define SATA_INTERFACE "sata"
+</pre><p>
+</p><p>
+
+   This interface is implemented by SATA objects that provide
+   an interface for serial data delivery.
+</p><p>
+   This interface can be used in both direction in SATA communication.
+   The <b><i>receive_fis</i></b> function is used by a device to send 
+   a SATA FIS to the SATA controller(HBA). The same function is used
+   when sending a SATA FIS from HBA to SATA device. The FIS should be
+   a <code><a name="bytes_t">bytes_t</a></code> containing a complete SATA FIS.
+   Different types of FIS may have different length. Please follow
+   SATA specification when determine the length and content of the FIS.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_rs232_device.html">rs232_device</a>
+<a href="__rm_interface_scale_factor_listener.html">scale_factor_listener</a>
+</div>

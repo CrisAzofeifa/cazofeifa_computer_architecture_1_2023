@@ -1,0 +1,132 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>osa_tracker_state_admin</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_osa_tracker_control.html">osa_tracker_control</a>
+<a href="__rm_interface_osa_tracker_state_notification.html">osa_tracker_state_notification</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="simulator-to-simulator-interfaces.html">7 Simulator-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_osa_tracker_state_admin">osa_tracker_state_admin</a></h1>
+<p>
+
+<a name="osa_tracker_state_admin"></a><a name="osa_tracker_state_admin_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><a name="osa_tracker_state_admin_interface_t2"></a>
+<p>
+   <a name="beginosa_tracker_state_admin-interface-method"></a> <b><i>begin</i></b>
+   is called from the tracker to start a transaction when modifying an entity in
+   the node tree. The <i>tracker</i> argument specifies the tracker object
+   for which the updates are done for.  The <i>initiator</i> argument
+   specifies the processor that initiated the transaction, this can be nil if
+   it was not a processor that caused the transaction to begin, when enabling
+   the tracker as an example. The <i>initiator</i> is passed as an argument
+   to the <b><i>tracker_updated</i></b> function in the
+   <code>osa_mapper_admin</code> interface. The function returns an ID that
+   is used when calling <b><i>end</i></b>.
+</p><p>
+   <a name="endosa_tracker_state_admin-interface-method"></a> <b><i>end</i></b> is
+   called from the tracker to end a transaction. This should be called at the
+   end of a transaction when all entity modifications are done. The
+   <i>transaction_id</i> argument should be the value returned from
+   <b><i>begin</i></b> that started the transaction.  Stacked calls to
+   <b><i>begin</i></b> and <b><i>end</i></b> are possible, then the transaction will
+   be ended when the first <b><i>begin</i></b> is ended. The <b><i>begin</i></b>
+   methods must be ended in the opposite order that they were called. For
+   stacked calls to <b><i>begin</i></b> only the initiator of the first call to
+   begin will be used.
+</p><p>
+   <a name="addosa_tracker_state_admin-interface-method"></a>
+   <b><i>add</i></b> adds a new entity with ID <i>entity_id</i> to the node
+   tree. The new entity's attributes are set in the <i>attributes</i>
+   argument, which is a dictionary.
+</p><p>
+   <a name="removeosa_tracker_state_admin-interface-method"></a>
+   <b><i>remove</i></b> removes the entity with ID <i>entity_id</i> for the
+   current tracker from the node tree.
+</p><p>
+   <a name="remove_allosa_tracker_state_admin-interface-method"></a>
+   <b><i>remove_all</i></b> removes all entities for the current tracker from
+   the node tree.
+</p><p>
+   <a name="set_attributeosa_tracker_state_admin-interface-method"></a>
+   <b><i>set_attribute</i></b> adds or updates an attribute <i>key</i> for
+   the entity with ID <i>entity_id</i>. The new value is specified in
+   <i>val</i>.
+</p><p>
+   <a name="updateosa_tracker_state_admin-interface-method"></a>
+   <b><i>update</i></b> updates or adds one or more attributes for the entity with
+   ID <i>entity_id</i>. The <i>attributes</i> argument is a dictionary
+   with the attributes to be updated.
+</p><p>
+   In order to remove a property, set the property value to nil when calling
+   <b><i>update</i></b> or <b><i>set_attribute</i></b>.
+</p><p>
+   <a name="eventosa_tracker_state_admin-interface-method"></a>
+   <b><i>event</i></b> registers a new event, associated with the given
+   <i>entity_id</i> argument. The <i>event_name</i> argument is the
+   name of the event. The <i>event_data</i> argument is the data associated
+   with the event and it is up to the responsible tracker to document its exact
+   form. An event differes from other properties in the way that they are not
+   persistent.
+</p><p>
+   Entity attributes have the limitation that the value of the attribute can
+   not be of type data or dictionary. The keys of entity attributes must be of
+   string type.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(osa_tracker_state_admin) {
+        transaction_id_t (*begin)(conf_object_t *NOTNULL obj,
+                                  conf_object_t *NOTNULL tracker,
+                                  conf_object_t *initiator);
+        void (*end)(conf_object_t *NOTNULL obj, transaction_id_t txid);
+        void (*add)(conf_object_t *NOTNULL obj, entity_id_t entity_id,
+                    attr_value_t attributes);
+        void (*remove)(conf_object_t *NOTNULL obj, entity_id_t entity_id);
+        void (*remove_all)(conf_object_t *NOTNULL obj);
+        void (*set_attribute)(conf_object_t *NOTNULL obj, entity_id_t entity_id,
+                              const char *key, attr_value_t val);
+        void (*update)(conf_object_t *NOTNULL obj, entity_id_t entity_id,
+                       attr_value_t attributes);
+        void (*event)(conf_object_t *NOTNULL obj, entity_id_t entity_id,
+                      const char *event_name, attr_value_t event_data);
+};
+
+#define OSA_TRACKER_STATE_ADMIN_INTERFACE "osa_tracker_state_admin"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_osa_tracker_control.html">osa_tracker_control</a>
+<a href="__rm_interface_osa_tracker_state_notification.html">osa_tracker_state_notification</a>
+</div>

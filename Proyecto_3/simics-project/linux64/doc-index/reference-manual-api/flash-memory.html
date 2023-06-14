@@ -1,0 +1,147 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10.5 Flash Memory</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="hypersim.html">10.4 Hypersim</a>
+<a href="system-panel.html">10.6 System Panel</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="python-api.html">10 Python API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Flash-Memory">10.5 Flash Memory</a></h1>
+<p>
+
+    </p><h2 class="jdocu"><a class="not-numbered" name="Flash-Memory-Classes-and-Functions">Flash Memory Classes and Functions</a></h2>
+<p></p><h3 class="jdocu"><a class="not-numbered" name="flash_memory.flash_add_model">flash_memory.flash_add_model()</a></h3>
+<p>
+  
+  <a name="flash_add_model"></a> <a name="flash_memory-Python-moduleflash_add_model"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_flash_memory.flash_add_model"></a><b>flash_add_model</b> — add a new flash model</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">flash_add_model(product_no, config, complete_func)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Adds a new flash model. Instances of the new flash can then be created
+with the <b><i>flash_create_memory</i></b> and
+<b><i>flash_create_memory_anon</i></b> functions.
+<p>
+These are the arguments:
+</p><dl><dt id="dt:product_no"><b><i>product_no</i></b></dt><dd>Product number; e.g., "28F___C3_". Underscores act as wild cards
+        and will match any character.</dd><dt id="dt:config"><b><i>config</i></b></dt><dd>Dictionary containing <i>attribute</i>: value pairs. These
+         attributes are <b>generic-flash-memory</b> attributes;
+         information on available attributes and how to configure them can
+         be found in the reference manual.</dd><dt id="dt:complete_fun"><b><i>complete_fun</i></b></dt><dd>Function of type <b><i>complete_fun(product_no, config)</i></b> that
+         will be called just before a flash memory is instantiated.
+         <i>product_no</i> is the product number specified by the
+         user. <i>config</i> is the same <i>config</i>
+         dictionary as passed to the <b><i>flash_add_model</i></b> function.
+         The <b><i>complete_fun</i></b> can modify the attribute values, add
+         new attributes or remove attributes from the configuration, based
+         on e.g. the <i>product_no</i>. The <b><i>complete_fun</i></b>
+         should return either an error message (i.e. a string), or a tuple
+         (<i>updated_config</i>, <i>size</i>) where
+         <i>size</i> is the size of one flash chip, in bytes.</dd></dl><p></p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+True if the flash model was successfully added,
+or False if it failed.</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="flash_memory.flash_create_memory">flash_memory.flash_create_memory()</a></h3>
+<p><a name="flash_create_memory"></a> <a name="flash_memory-Python-moduleflash_create_memory"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_flash_memory.flash_create_memory"></a><b>flash_create_memory</b> — create a list of objects representing a flash memory</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">flash_create_memory(name, product_no, interleave, bus_width,
+                    files = [],
+                    queue = None,
+                    accept_smaller_reads = 1,
+                    accept_smaller_writes = 0,
+                    big_endian = 0)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns a list of pre_objects suitable as input for
+<b><i>SIM_add_configuration</i></b> and the total size in bytes of the flash
+memory. The list and the size is returned as a tuple.
+<p>
+The flash objects will be named, which makes them suitable for use in legacy
+components. New components should use the function
+<b><i>flash_create_memory_anon</i></b> instead.
+</p><p>
+Function arguments:
+</p><dl><dt id="dt:name"><b><i>name</i></b></dt><dd>Base name for all objects (flash, ram, and image).</dd><dt id="dt:product_no-2"><b><i>product_no</i></b></dt><dd>Product name; e.g., "28F160C3T".</dd><dt id="dt:interleave"><b><i>interleave</i></b></dt><dd>Byte interleaving; one of 1, 2, 4, and 8.</dd><dt id="dt:bus_width"><b><i>bus_width</i></b></dt><dd>Bus width; one of 8, 16, 32, and 64.</dd><dt id="dt:files"><b><i>files</i></b></dt><dd>Same as the <i>file</i> attribute of <b>image</b>
+     objects. Defaults to the empty list.</dd><dt id="dt:queue"><b><i>queue</i></b></dt><dd>Queue object to use.</dd><dt id="dt:accept_smaller_reads"><b><i>accept_smaller_reads</i></b></dt><dd>If 1 (default), the flash device will accept reads smaller than
+         the bus width. if 0, the flash device will complain when receiving
+         smaller reads.
+     </dd><dt id="dt:accept_smaller_writes"><b><i>accept_smaller_writes</i></b></dt><dd>If 1, the flash device will accept writes smaller than the bus
+         width. If 0 (default), the flash device will complain when
+         receiving smaller writes.
+     </dd><dt id="dt:big_endian"><b><i>big_endian</i></b></dt><dd>If set, the flash device will behave as a big endian device. If
+         not set (default), it will behave as a little endian device.
+     </dd></dl><p></p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+tuple(object dict, total size in bytes)</dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="flash_memory.flash_create_memory_anon">flash_memory.flash_create_memory_anon()</a></h3>
+<p><a name="flash_create_memory_anon"></a> <a name="flash_memory-Python-moduleflash_create_memory_anon"></a>
+  </p><dl class="jdocu_di">
+<dt class="jdocu_descitem">NAME</dt><dd>
+<a name="__jdocu_seealso_flash_memory.flash_create_memory_anon"></a><b>flash_create_memory_anon</b> — create a list of objects representing a flash memory</dd>
+<dt class="jdocu_descitem">SYNOPSIS</dt><dd>
+<pre class="jdocu_small">flash_create_memory_anon(product_no, interleave, bus_width,
+                         files = [],
+                         queue = None,
+                         accept_smaller_reads = 1,
+                         accept_smaller_writes = 0,
+                         big_endian = 0)</pre><p></p></dd>
+<dt class="jdocu_descitem">DESCRIPTION</dt><dd>
+Returns an list of pre_objects suitable as input for
+<b><i>SIM_add_configuration</i></b> and the total size in bytes of the flash
+memory. The list and the size is returned as a tuple.
+<p>
+The flash objects will be anonymous, which makes them suitable for use in
+new components. Legacy components should use the function
+<b><i>flash_create_memory</i></b> instead.
+</p><p>
+Function arguments:
+</p><dl><dt id="dt:product_no-3"><b><i>product_no</i></b></dt><dd>Product name; e.g., "28F160C3T".</dd><dt id="dt:interleave-2"><b><i>interleave</i></b></dt><dd>Byte interleaving; one of 1, 2, 4, and 8.</dd><dt id="dt:bus_width-2"><b><i>bus_width</i></b></dt><dd>Bus width; one of 8, 16, 32, and 64.</dd><dt id="dt:files-2"><b><i>files</i></b></dt><dd>Same as the <i>file</i> attribute of <b>image</b>
+     objects. Defaults to the empty list.</dd><dt id="dt:queue-2"><b><i>queue</i></b></dt><dd>Queue object to use.</dd><dt id="dt:accept_smaller_reads-2"><b><i>accept_smaller_reads</i></b></dt><dd>If 1 (default), the flash device will accept reads smaller than
+         the bus width. if 0, the flash device will complain when receiving
+         smaller reads.
+     </dd><dt id="dt:accept_smaller_writes-2"><b><i>accept_smaller_writes</i></b></dt><dd>If 1, the flash device will accept writes smaller than the bus
+         width. If 0 (default), the flash device will complain when
+         receiving smaller writes.
+     </dd><dt id="dt:big_endian-2"><b><i>big_endian</i></b></dt><dd>If set, the flash device will behave as a big endian device. If
+         not set (default), it will behave as a little endian device.
+     </dd></dl><p></p></dd>
+<dt class="jdocu_descitem">RETURN VALUE</dt><dd>
+tuple(object list, total size in bytes)</dd>
+</dl><p>
+</p>
+<div class="chain">
+<a href="hypersim.html">10.4 Hypersim</a>
+<a href="system-panel.html">10.6 System Panel</a>
+</div>

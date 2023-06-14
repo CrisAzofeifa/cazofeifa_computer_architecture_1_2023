@@ -1,0 +1,71 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>new-instruction-histogram</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-new-instruction-count.html">new-instruction-count</a>
+<a href="rm-cmd-new-korben.html">new-korben</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="new-instruction-histogram"></a>
+<h1 id="new-instruction-histogram"><a href="#new-instruction-histogram">new-instruction-histogram</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>new-instruction-histogram</b> [<i>"name"</i>] [<i>view</i>] ([ <i>processors</i> ... ] | list of <i>processors</i>) [<i>parent</i>] [-connect-all] [<i>"group"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+Creates a new instruction_histogram object which can be connected to processors which support instrumentation. This tool can be used to get an instruction histogram based of the frequency of the instructions that have been executed.
+<p>
+The <i>view</i> argument decides which instruction "perspective" that should be collected. Currently there are four choices: <br>
+1. <b>mnemonic</b> - Groups all instructions with the same first word in the instruction disassembly. <br>
+2. <b>size</b> - Groups the instructions by the length of the instruction. <br>
+3. <b>xed-iform</b> - Uses Intel® X86 Encoder Decoder (Intel® XED) module and groups the x86 instruction by their instruction form definition. <br>
+4. <b>x86-normalized</b> - The instruction disassembly, but replaces register names and immediates with normalized names. <br>
+Default, the <i>mnemonic</i> view is used. The <i>xed-iform</i> and <i>x86-normalized</i> views are only applicable when connected to x86 target processors.<br>
+<br>
+The optional <i>name</i> argument can be used to set a name of the created object. If no name is given, a default name <i>ihist</i> followed by a sequence number is generated (<i>ihist0</i>, <i>ihist1</i>,...).<br>
+<br>
+ The optional <i>processors</i> argument, supports connecting one or several processors directly. With the optional <i>parent</i> argument a hierarchical object can be specified and all processors below this object matching the provider requirements will be connected to the tool. The <tt>-connect-all</tt> flag can be given to add a connection to all supported processors in the configuration.<br>
+<br>
+The optional argument <i>group</i> let a user specify a named instrumentation group to use for the connection. (See <code>add-instrumentation-group</code> for details on named groups.)
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.instruction-histogram.html">instruction-histogram</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-new-instruction-count.html">new-instruction-count</a>
+<a href="rm-cmd-new-korben.html">new-korben</a>
+</div>

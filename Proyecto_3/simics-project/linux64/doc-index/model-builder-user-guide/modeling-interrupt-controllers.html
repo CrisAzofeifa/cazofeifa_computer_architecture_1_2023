@@ -1,0 +1,99 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>17 Modeling Interrupt Controllers</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="part-common-hardware-components.html">III Modeling Common Hardware Components</a>
+<a href="dma.html">18 Modeling Direct Memory Access (DMA)</a>
+</div>
+<div class="path">
+<a href="index.html">Model Builder User's Guide</a>
+&nbsp;/&nbsp;
+<a href="part-common-hardware-components.html">III Modeling Common Hardware Components</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Modeling-Interrupt-Controllers">17 Modeling Interrupt Controllers</a></h1>
+<p>
+
+</p><p>
+An interrupt controller is the link between devices generating
+interrupt signals and the processor. A common device typically has
+one or more outbound interrupt signals. The signals are connected to
+the interrupt controller which has an outbound interrupt signal to the
+processor. The interrupt controller is programmed by the processor to
+clear, enable, and disable interrupts.
+</p><p>
+The interrupt controller often have one or more <em>mask</em>,
+<em>interrupt</em>, and <em>update</em> registers. They may be named
+differently, but it is the most common set of registers. The processor
+use these registers to control which interrupts that are forwarded to
+the processor.
+</p><p>
+Interrupt signals in Simics are modeled using the
+<code>signal</code> interface. The interface has a
+<b><i>signal_raise</i></b> and a <b><i>signal_lower</i></b> function. A
+device raise an interrupt using the <b><i>signal_raise</i></b> and lowers
+the interrupt using the <b><i>signal_lower</i></b> function.
+</p><p>
+</p><h2 class="jdocu"><a name="Edge-Triggered-and-Level-Triggered">17.1 Edge Triggered and Level Triggered</a></h2>
+<p>
+
+</p><p>
+Interrupts are either level triggered or edge triggered. Assume that
+an interrupt controller has an outbound signal port connected to the
+processor and that the signal is called <em>out</em>. A device that can
+generate interrupts has an outbound interrupt port connected to the interrupt
+controller; this interrupt signal is called <em>in</em>. The signals can
+either be high or low.  The interrupt controller typically has a couple of
+control registers, controlling which interrupts are masked and which are
+not. A masked interrupt signal is not forwarded to the processor.
+</p><p>
+Assume that the device raises the <em>in</em> signal from low to high,
+and that the signal is not masked by the interrupt controller.
+The interrupt controller will then raise the <em>out</em> signal from
+low to high, regardless of whether the signal is level or edge triggered.
+The difference between level and edge triggering is only visible if the
+<em>in</em> signal is raised while the interrupt is masked, i.e., disabled.
+In this case, the <em>out</em> signal will not be changed, but when the
+interrupt is unmasked later, i.e., the interrupt is enabled by the processor,
+the <em>out</em> signal will go from low to high only if it is level
+triggered. An edge triggered signal will only affect the signal on
+signal flanks.
+</p><p>
+The <em>out</em> signal is lowered when the device lowers the
+<em>in</em> signal from high to low. The <em>out</em> signal can also
+be lowered by the processor by clearing the interrupt if the signal is
+edge triggered. A signal which is level triggered is not lowered when
+the interrupt is cleared in the interrupt controller. In some cases
+the signal will go from high to low to high when clearing a level
+triggered signal.
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="part-common-hardware-components.html">III Modeling Common Hardware Components</a>
+<a href="dma.html">18 Modeling Direct Memory Access (DMA)</a>
+</div>

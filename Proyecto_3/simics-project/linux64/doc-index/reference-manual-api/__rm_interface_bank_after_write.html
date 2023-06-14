@@ -1,0 +1,81 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>bank_after_write</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_bank_after_read.html">bank_after_read</a>
+<a href="__rm_interface_bank_before_read.html">bank_before_read</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_bank_after_write">bank_after_write</a></h1>
+<p>
+
+<a name="bank_after_write"></a><a name="bank_after_write_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>bank_after_write</code> interface is used to monitor and modify
+   the state of write accesses from the <b><i>after_write_callback_t</i></b>
+   callback.
+<p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(bank_after_write) {
+        physical_address_t (*offset)(bank_access_t *handle);
+        physical_address_t (*size)(bank_access_t *handle);
+        bool (*missed)(bank_access_t *handle);
+
+        void (*set_missed)(bank_access_t *handle, bool missed);
+        conf_object_t *(*initiator)(bank_access_t *handle);
+};
+#define BANK_AFTER_WRITE_INTERFACE "bank_after_write"
+</pre><p>
+</p><p>
+
+   <b><i>offset</i></b> retrieves the address of the access.
+</p><p>
+   <b><i>size</i></b> gets the size of the access.
+</p><p>
+   <b><i>missed</i></b> tells you whether or not the access succeeded.
+</p><p>
+   <b><i>set_missed</i></b> can be used to inject or forgive an access miss.
+</p><p>
+   <b><i>initiator</i></b> returns the initiator of the access. This method may be
+   <code>NULL</code>, although this is deprecated. If the interface was implemented
+   by a DML/C/C++ bank, then the method may only be accessed if the bank was
+   compiled with Simics Base 6.0.129 or newer.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods, but must be called from an
+   <b><i>after_write_callback_t</i></b> callback with a valid handle of type
+   <code>bank_access_t</code>.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_bank_after_read.html">bank_after_read</a>
+<a href="__rm_interface_bank_before_read.html">bank_before_read</a>
+</div>

@@ -1,0 +1,123 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.1 Simple Virtual Network</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="ethernet-guide-tutorial.html">2 Tutorial</a>
+<a href="connect-to-a-real-network.html">2.2 Connect to a Real Network</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="ethernet-guide-tutorial.html">2 Tutorial</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Simple-Virtual-Network">2.1 Simple Virtual Network</a></h1>
+<p>
+
+</p><p>
+
+
+
+</p><p>
+Simics can simulate several computers in the same session, and connect them
+together using simulated Ethernet links.
+</p><p>
+Before reading on, launch the
+<code>firststeps-multi.simics</code> configuration: in the <b>File</b>
+menu, select <b>New Session from Script</b> and select
+the <code>qsp-x86\firststeps-multi.simics</code> file as a start
+script. This configuration contains two identical QSP-x86 machines.
+Simics will simulate both machines in the same session, keeping them
+synchronized.
+</p><p>
+Boot the two simulated machines by starting the simulation:
+</p><p>
+
+</p><pre class="jdocu_small">simics&gt; <b>c</b>
+</pre><p>
+</p><p>
+The machines' network cards will not be connected to any media. The machines
+will not have any Internet Protocol (IP) addresses assigned either.
+As a result, an attempt to ping one of the machines from the other will fail.
+</p><p>
+The <b>eth-links</b> module provides several ready-to-use simulated
+network models. The simplest is the <b>ethernet-hub</b> which is a
+simple cloud, or hub, to which any number of Ethernet devices can be
+connected to and talk together. Other variants include an Ethernet cable, with
+only two ends, and an Ethernet switch, that will act somewhat like a real
+Ethernet switch, sending packets to the right destination whenever it can.
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>stop</b>
+simics&gt; <b>load-module eth-links</b>
+simics&gt; <b>new-ethernet-hub</b>
+Created instantiated 'ethernet_hub' component 'ethernet_hub0'
+simics&gt;
+</pre><p>
+</p><p>
+Next, let us connect the simulated network cards to the hub:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>connect board0.mb.sb.eth_slot ethernet_hub0.device0</b>
+simics&gt; <b>connect board1.mb.sb.eth_slot ethernet_hub0.device1</b>
+simics&gt; <b>ethernet_hub0.link.status</b>
+Status of ethernet_hub0.link [class eth-hub-link]
+=================================================
+
+    Effective latency : 10.0 ms
+
+    Connected devices : ('board0.mb.sb.phy', 'board0.cell')
+                        ('board1.mb.sb.phy', 'board1.cell')
+simics&gt; <b>c</b>
+
+</pre><p>
+</p><p>
+Once the simulation is resumed the machines will get IPv6 link-local addresses
+assigned automatically. It should now be possible to ping between
+the two simulated machines. Enter the following command in the first machine.
+</p><p>
+</p><pre class="jdocu_small">
+~# <b>ping6 -c 3 -I enp0s25 fe80::217:a0ff:fe00:1</b>
+PING fe80::217:a0ff:fe00:1(fe80::217:a0ff:fe00:1) from fe80::217:a0ff:fe00:0 enp0s25: 56 data bytes
+64 bytes from fe80::217:a0ff:fe00:1: icmp_seq=1 ttl=64 time=20.1 ms
+64 bytes from fe80::217:a0ff:fe00:1: icmp_seq=2 ttl=64 time=20.1 ms
+64 bytes from fe80::217:a0ff:fe00:1: icmp_seq=3 ttl=64 time=20.1 ms
+
+--- fe80::217:a0ff:fe00:1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+rtt min/avg/max/mdev = 20.190/20.191/20.192/0.000 ms
+~#
+</pre><p>
+</p><p>
+
+
+
+</p><p>
+Network simulation is covered in more details in chapter <a class="reference" href="simicsnet.html">3</a>.
+</p><p>
+</p>
+<div class="chain">
+<a href="ethernet-guide-tutorial.html">2 Tutorial</a>
+<a href="connect-to-a-real-network.html">2.2 Connect to a Real Network</a>
+</div>

@@ -1,0 +1,75 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>mdio45_bus</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_map_demap.html">map_demap</a>
+<a href="__rm_interface_mdio45_phy.html">mdio45_phy</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_mdio45_bus">mdio45_bus</a></h1>
+<p>
+
+<a name="mdio45_bus"></a><a name="mdio45_bus_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">
+SIM_INTERFACE(mdio45_bus) {
+        uint16 (*read_register)(conf_object_t *obj, int phy, int mmd, int reg);
+        void   (*write_register)(conf_object_t *obj, int phy, int mdd, int reg,
+                                 uint16 value);
+
+};
+#define MDIO45_BUS_INTERFACE "mdio45_bus"
+
+</pre><p>
+</p><p>
+
+   Interface that should be implemented by classes that either represent
+   an MDIO bus, or multi PHY devices implementing the IEEE 802.3 clause 45
+   MDIO management interface.
+</p><p>
+   The <b><i>read_register</i></b> function should return the 16-bit value of
+   the specified register. <i>phy</i> specifies the PHY address (0-31),
+   <i>mmd</i> specifies the MMD (MDIO manageable device) within the PHY
+   (0-31) and <i>reg</i> specifies the register number within the MMD
+   (0-65535).
+</p><p>
+   Devices modeling a single PHY should implement the <code>mdio45_phy</code>
+   interface instead.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_map_demap.html">map_demap</a>
+<a href="__rm_interface_mdio45_phy.html">mdio45_phy</a>
+</div>

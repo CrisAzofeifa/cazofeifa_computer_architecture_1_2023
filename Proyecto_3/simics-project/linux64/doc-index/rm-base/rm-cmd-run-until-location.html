@@ -1,0 +1,74 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>run-until-location – deprecated</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-cmd-run-until-line.html">run-until-line – deprecated</a>
+<a href="rm-cmd-save-component-template.html">save-component-template</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds-chapter.html">3 Commands</a>
+&nbsp;/&nbsp;
+<a href="rm-cmds.html">3.2 Command List</a>
+&nbsp;/&nbsp;</div>
+<a name="run-until-location"></a>
+<h1 id="run-until-location"><a href="#run-until-location">run-until-location – deprecated</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="synopsis">
+<a href="#synopsis">Synopsis</a>
+</h3>
+<b>run-until-location</b> (<i>"location"</i>|<i>address</i>) [<i>length</i>] [-error-not-planted] [-r] [-w] [-x] [-p] [<i>"context-query"</i>] <br>
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+ Run until the specified location is reached. The location is either <i>location</i>, which should specify a C expression or <i>address</i>. In addition you can specify the length of the breakpoint, i.e. how many consecutive memory addresses it should match with <i>length</i>.
+<p>
+The break condition will evaluate to true if any of the selected <tt>access methods</tt> operates on the <tt>address</tt> of the location argument in the <tt>target memory object</tt>. The default access method is <tt>execution</tt> and the default target memory object is the <tt>virtual memory space</tt> of the processor associated with the debug context.
+</p><p>
+To use other access methods, use any combination <tt>-r</tt> for read, <tt>-w</tt> for write and <tt>-x</tt> for execute.
+</p><p>
+To change the target memory object from the <tt>virtual</tt> memory object to the <tt>physical</tt> memory object of the processor for the debug context, set the <tt>-p</tt> argument flag.
+</p><p>
+If <i>location</i> could not be resolved to an address among the added symbol files, it is possible to make the command fail by specifying <tt>-error-not-planted</tt>.
+</p><p>
+You can limit the debug contexts the breakpoint applies to by providing a context query with <i>context-query</i>. It defaults to <tt>*</tt>, which matches all debug contexts.
+</p><h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.tcf-agent.html">tcf-agent</a>
+<h3 id="see-also">
+<a href="#see-also">See Also</a>
+</h3>bp.source_location.run-until, 
+<a href="rm-cmd-tcf-context-proxy.bp-break-source-location.html">&lt;tcf-context-proxy&gt;.bp-break-source-location</a>, 
+<a href="rm-cmd-tcf-context-proxy.bp-wait-for-source-location.html">&lt;tcf-context-proxy&gt;.bp-wait-for-source-location</a>, 
+<a href="rm-cmd-tcf-context-proxy.bp-run-until-source-line.html">&lt;tcf-context-proxy&gt;.bp-run-until-source-line</a>
+</section>
+<div class="chain">
+<a href="rm-cmd-run-until-line.html">run-until-line – deprecated</a>
+<a href="rm-cmd-save-component-template.html">save-component-template</a>
+</div>

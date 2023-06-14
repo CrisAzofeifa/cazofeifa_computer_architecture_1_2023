@@ -1,0 +1,133 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.3 Work flow</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="requirements.html">4.2 Requirements</a>
+<a href="code-coverage-commands.html">4.4 Commands</a>
+</div>
+<div class="path">
+<a href="index.html">Analyzer User's Guide</a>
+&nbsp;/&nbsp;
+<a href="code-coverage.html">4 Code Coverage</a>
+&nbsp;/&nbsp;</div>
+<h1 id="work-flow">4.3 <a href="#work-flow">Work flow</a></h1>
+<p>In this chapter we will look into how code coverage can be collected and how the HTML report will look like. We will look at two different examples, one where we run code coverage for a Linux user space program and one where we run code coverage for a UEFI system.</p>
+<h2 id="code-coverage-for-a-linux-user-space-program">4.3.1 <a href="#code-coverage-for-a-linux-user-space-program">Code coverage for a Linux user space program</a></h2>
+<h3 id="preparations">4.3.1.1 <a href="#preparations">Preparations</a></h3>
+<p>The most basic use case is to collect coverage and generate a code coverage report in the same run.</p>
+<p>For this example, we will use the firststeps machine that comes with the <em>QSP-x86</em> package. First we upload the <code>worker-opt</code> binary to the target system. The Linux image used by the firststeps machine is already configured to have the <code>simics-agent</code> application running. We will use it to transfer files to the simulated machine.</p>
+<p>Please boot the <code>targets/qsp-x86/firststeps.simics</code> target system and then issue the following commands inside Simics:</p>
+<pre><code class="language-simics">simics&gt; <strong>$worker_opt_file = (lookup-file "%simics%/targets/qsp-x86/images/worker-opt")</strong>
+simics&gt; <strong>$agent = (start-agent-manager)</strong>
+simics&gt; <strong>$handle = ($agent.connect-to-agent)</strong>
+simics&gt; <strong>$handle.upload -executable $worker_opt_file /root</strong>
+simics&gt; <strong>$handle.run-until-job</strong>
+</code></pre>
+<p>Before we can start collecting code coverage we need to enable the Linux tracker and set up symbol file information.</p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.enable-tracker</strong>
+simics&gt; <strong>add-symbol-file $worker_opt_file context-query = "'worker-opt'"</strong>
+</code></pre>
+<h3 id="collection">4.3.1.2 <a href="#collection">Collection</a></h3>
+<p>The <code>collect-coverage</code> command is used to start collecting code coverage data from the simulation. The <code>collect-coverage</code> command takes a context query for which to collect coverage.</p>
+<p>We will start collecting code coverage for the next created context that matches our context query. For more information about the available options, see the built-in help. </p>
+<pre><code class="language-simics">simics&gt; <strong>$cc = (collect-coverage context-query = "'worker-opt'")</strong>
+</code></pre>
+<p>It is finally time to run the test program. This can be done by inputting the command on the target console and then running the simulation until the program completes. </p>
+<pre><code class="language-simics"><strong>./worker-opt 5 8 10</strong>
+</code></pre>
+<p>Depending on where the file were compiled, we may have to add a path map. Since "%simics%" may return the path from any package or project we give the exact file name here. However, normally only the directory needs to be provided. </p>
+<pre><code class="language-simics">simics&gt; <strong>$cc.add-path-map "/tmp/worker_opt.c" "%simics%/targets/qsp-x86/worker_opt.c"</strong>
+</code></pre>
+<p>When the program has finished, or when the test case of interest is completed it is time to generate a coverage report. Again, there are many options for how to generate the HTML report available, see the built-in help for more details. </p>
+<pre><code class="language-simics">simics&gt; <strong>$cc.html-report coverage-report</strong>
+</code></pre>
+<p>If we use a web browser to open <code>index.html</code> located in <code>coverage-report</code> directory, we will see something like figure <a class="reference" href="#coverage-worker-opt-start">16</a>.</p>
+<p>The current page shows all known source files that were used to compile the program, in this case the <code>worker_opt.c</code> file. We can also see the number of executed lines and how many executable lines there are; together with a ratio, given in percentage. This is shown both in total and per file.</p>
+<figure id="coverage-worker-opt-start">
+<p><img alt="" src="worker-opt-html-start.png"></p><figcaption>Figure 16. Code Coverage Main Page</figcaption><p></p>
+</figure>
+<p>If we follow the link to the <code>worker_opt.c</code> file, we are provided much more details about that particular file. First, there is a short summary about the coverage, where we can see how much coverage it is for this source file and from which mappings it was referenced, see figure <a class="reference" href="#coverage-worker-opt-src-header">17</a>. This is followed by the entire source file, an excerpt of the <code>worker_opt.c</code> is shown in figure <a class="reference" href="#coverage-worker-opt-src-file">18</a>. The source file is marked with green if a line was executed and red for executable lines that were not executed. Lines that are grey are not executable, this includes comment, lines that were optimized away and parts of multiline expressions. Remember that the quality of the source to instruction mapping is heavily dependent on compiler optimization level. A line will be counted as executed if at least one instruction that has been executed has a mapping to the source line in question.</p>
+<figure id="coverage-worker-opt-src-header">
+<p><img alt="" src="worker-opt-html-source-header.png"></p><figcaption>Figure 17. Code Coverage Source Header Details</figcaption><p></p>
+</figure>
+<figure id="coverage-worker-opt-src-file">
+<p><img alt="" src="worker-opt-html-source-file.png"></p><figcaption>Figure 18. Code Coverage Source File Details</figcaption><p></p>
+</figure>
+<p>To get information on disassembly level we can click the <code>Disassembly</code> link in the header. This will take us to the disassembly overview page as seen in figure <a class="reference" href="#coverage-worker-opt-dis-main">19</a>. This contains an overview of how many instructions the program consists of and how many of those that were executed. See the <code>Explanation</code> page for information and limitations about disassembly information.</p>
+<figure id="coverage-worker-opt-dis-main">
+<p><img alt="" src="worker-opt-html-dis-main.png"></p><figcaption>Figure 19. Disassembly Overview</figcaption><p></p>
+</figure>
+<p>To get even more details about the exact instructions that has been run, we can follow the link to the <code>worker_opt</code> binary, see figure <a class="reference" href="#coverage-worker-opt-dis-details">20</a>. At the top of the page, there is a summary with details about how many instructions that were executed followed by a table with known functions addresses and how much coverage each function has. There is also a source indication if there is a known source file for the particular function. Further down, the entire disassembly is available. Again, executed instructions are marked with green and instructions that has not been executed are marked with red. It is also possible to get the number of times an instruction has been executed and if a branch instruction has been taken or not. To enable this, see the built-in help for the <code>collect-coverage</code> command. Again the <code>Explanation</code> page provides more details about how such information is presented in the report.</p>
+<figure id="coverage-worker-opt-dis-details">
+<p><img alt="" src="coverage-worker-opt-dis-details.png"></p><figcaption>Figure 20. Source Coverage Combined</figcaption><p></p>
+</figure>
+<p>To demonstrate that it is possible to combine coverage from multiple runs we will save a raw coverage report as well. This is done with the <code>save</code> command. </p>
+<pre><code class="language-simics">simics&gt; <strong>$cc.save worker-opt.cc</strong>
+</code></pre>
+<p>We will now start a second coverage collection, by using the <code>collect-coverage</code> command. </p>
+<pre><code class="language-simics">simics&gt; <strong>$cc2 = (collect-coverage context-query = "'worker-opt'")</strong>
+</code></pre>
+<p>Again, we may have to setup a path map. </p>
+<pre><code class="language-simics">simics&gt; <strong>$cc2.add-path-map "/tmp/worker_opt.c" "%simics%/targets/qsp-x86/worker_opt.c"</strong>
+</code></pre>
+<p>To be able to see the difference we will start the worker-opt program without any input argument this time. And run until the program has finished. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.serconsole.con.input "./worker-opt\n"</strong>
+</code></pre>
+<p>We can now add the previously saved coverage data to the currently gathered data. This is done with the <code>add-report</code> command. </p>
+<pre><code class="language-simics">simics&gt; <strong>$cc2.add-report worker-opt.cc</strong>
+</code></pre>
+<p>To create a new html report we use the <code>html-report</code> command again, this time for the second code coverage object. </p>
+<pre><code class="language-simics">simics&gt; <strong>$cc2.html-report coverage-report-2</strong>
+</code></pre>
+<p>We can now compare the source code coverage for the two runs. In the first run, see figure <a class="reference" href="#coverage-worker-opt-src-file">18</a>, line 65 and 67 have not been executed. In the second report, see figure <a class="reference" href="#coverage-worker-opt-src-with">21</a>, we can see that line 65 and 67 have been executed. This is expected as we provided too few arguments to the program. However, we can also see that line 69 has been executed. This is because we have combined the coverage from the two runs.</p>
+<figure id="coverage-worker-opt-src-with">
+<p><img alt="" src="coverage-worker-opt-src-with.png"></p><figcaption>Figure 21. Source Coverage Combined</figcaption><p></p>
+</figure>
+<h2 id="uefi-code-coverage">4.3.2 <a href="#uefi-code-coverage">UEFI code coverage</a></h2>
+<p>Collecting code coverage for a UEFI system is fairly easy, given you have already configured the UEFI FW tracker. For more details about the tracker, see section <a class="reference" href="uefi-fw-trk.html">2.16</a>. This example assumes that the name of the platform is <code>viper</code>.</p>
+<p>First we enable the tracker. </p>
+<pre><code class="language-simics">simics&gt; <strong>board.software.enable-tracker</strong>
+</code></pre>
+<p>Now we need to find out how to write the context query to match the root context. We can do this by listing all debug contexts and then create a context query that matches the UEFI FW tracker's root context.</p>
+<pre><code class="language-simics">simics&gt; <strong>list-debug-contexts</strong>
+</code></pre>
+<p>We can now see that the debug context we are interested in is <code>/board/software/UEFI System/UEFI Firmware</code>. We can make a simple context query based on the name.</p>
+<p>To start collecting coverage we use the <code>collect-coverage</code> command.</p>
+<pre><code class="language-simics">simics&gt; <strong>$cc = (collect-coverage context-query = "'UEFI Firmware'")</strong>
+</code></pre>
+<p>After the code coverage collection has started it is time to start the simulation and run the UEFI system up to the point we are interested in gathering code coverage for. </p>
+<p>If the UEFI FW build is unavailable at the path it was built, then code coverage will require adding a path-map to its present location. This can be set by using the per code coverage object command, <code>add-path-map</code>. It is also possible to use the global <code>add-pathmap-entry</code> command as long as the context on which code coverage is collected has not yet been destroyed (which will never happen in the UEFI case).</p>
+<pre><code class="language-simics">simics&gt; <strong>$cc.add-path-map "c:\\uefi\\uefi-testfiles-build.git\\uefi-edk2-simics.git" /path/to/uefi/build</strong>
+</code></pre>
+<p>We can now create the HTML report, since the UEFI FW tracker provides all mappings to UEFI modules there is no need to set up those manually. </p>
+<pre><code class="language-simics">simics&gt; <strong>$cc.html-report uefi-report</strong>
+</code></pre>
+
+<div class="chain">
+<a href="requirements.html">4.2 Requirements</a>
+<a href="code-coverage-commands.html">4.4 Commands</a>
+</div>

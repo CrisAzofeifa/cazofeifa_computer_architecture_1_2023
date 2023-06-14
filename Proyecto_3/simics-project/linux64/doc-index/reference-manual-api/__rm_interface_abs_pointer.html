@@ -1,0 +1,77 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>abs_pointer</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+<a href="__rm_interface_abs_pointer_activate.html">abs_pointer_activate</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_abs_pointer">abs_pointer</a></h1>
+<p>
+
+<a name="abs_pointer"></a><a name="abs_pointer_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Interface implemented by tablet devices. Used by consoles to send touchpad
+   events to the controller. The <b><i>set_state</i></b> function is called when
+   something changes in the console. The coordinates are given as scaled
+   absolute scaled values, where (0, 0) is the upper-left corner and (0xffff,
+   0xffff) is the lower-right corner.
+<p>
+   </p><pre class="jdocu_small">typedef enum {
+        Abs_Pointer_Button_Left   = 0x20,
+        Abs_Pointer_Button_Right  = 0x10,
+        Abs_Pointer_Button_Middle = 0x08
+} abs_pointer_buttons_t;
+
+typedef struct {
+        abs_pointer_buttons_t buttons;
+        uint16 x;
+        uint16 y;
+        uint16 z;
+} abs_pointer_state_t;
+
+SIM_INTERFACE(abs_pointer) {
+        void (*set_state)(conf_object_t *obj, abs_pointer_state_t state);
+};
+
+#define ABS_POINTER_INTERFACE "abs_pointer"
+</pre><p>
+</p><p>
+
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+<a href="__rm_interface_abs_pointer_activate.html">abs_pointer_activate</a>
+</div>

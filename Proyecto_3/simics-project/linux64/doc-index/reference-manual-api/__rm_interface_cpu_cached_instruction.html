@@ -1,0 +1,243 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>cpu_cached_instruction</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_connector.html">connector</a>
+<a href="__rm_interface_cpu_cached_instruction_once.html">cpu_cached_instruction_once</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_cpu_cached_instruction">cpu_cached_instruction</a></h1>
+<p>
+
+<a name="cpu_cached_instruction"></a><a name="cpu_cached_instruction_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This interface allows registration of callbacks for individual instructions,
+   i.e., instructions at a specific address.  This interface can only be used
+   inside a <code>cpu_cached_instruction_cb_t</code> callback where there is a
+   valid <i>ci_handle</i>. The callback is installed by calling the
+   <b><i>register_cached_instruction_cb</i></b> method in the
+   <code>cpu_instrumentation_subscribe</code> interface. The signature of the
+   callback function looks like this:
+<p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_cached_instruction_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        cached_instruction_handle_t *ci_handle,
+        instruction_handle_t *iq_handle,
+        lang_void *user_data);</pre><p>
+
+</p><p>
+   When the callback is installed Simics will call it every time an instruction
+   is put into the internal instruction cache, which might have different
+   entries for different execution modes. For example, in an unlikely case
+   where the same instruction is executed in 32-bit mode and later in 64-bit
+   mode (running an x86 processor for instance), this callback will be called
+   twice, one time for each mode. This allows the user to install specific
+   callbacks for this specific instruction and apply filtering based on
+   instruction types, etc. This approach is more efficient than doing dynamic
+   filtering in the instruction and read/write callbacks installed by the
+   <b><i>cpu_instrumentation_subscribe</i></b> interface.
+</p><p>
+   The <i>iq_handle</i> together with the
+   <code>cpu_instruction_query</code> interface let a user examine
+   instruction properties. The <i>user_data</i> is the user data for the
+   callback.
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(cpu_cached_instruction) {
+        void (*register_instruction_before_cb)(
+                conf_object_t *cpu,
+                cached_instruction_handle_t *ci_handle,
+                cpu_instruction_cb_t cb,
+                lang_void *user_data,
+                cpu_callback_free_user_data_cb_t free_cb);
+        void (*register_instruction_after_cb)(
+                conf_object_t *obj,
+                cached_instruction_handle_t *ci_handle,
+                cpu_instruction_cb_t cb,
+                lang_void *user_data,
+                cpu_callback_free_user_data_cb_t free_cb);
+        void (*register_read_before_cb)(
+                conf_object_t *obj,
+                cached_instruction_handle_t *ci_handle,
+                cpu_memory_cb_t cb,
+                lang_void *user_data,
+                cpu_callback_free_user_data_cb_t free_cb);
+        void (*register_read_after_cb)(
+                conf_object_t *obj,
+                cached_instruction_handle_t *ci_handle,
+                cpu_memory_cb_t cb,
+                lang_void *user_data,
+                cpu_callback_free_user_data_cb_t free_cb);
+        void (*register_write_before_cb)(
+                conf_object_t *obj,
+                cached_instruction_handle_t *ci_handle,
+                cpu_memory_cb_t cb,
+                lang_void *user_data,
+                cpu_callback_free_user_data_cb_t free_cb);
+        void (*register_write_after_cb)(
+                conf_object_t *obj,
+                cached_instruction_handle_t *ci_handle,
+                cpu_memory_cb_t cb,
+                lang_void *user_data,
+                cpu_callback_free_user_data_cb_t free_cb);
+#ifndef PYWRAP
+        void (*add_counter)(
+                conf_object_t *obj,
+                cached_instruction_handle_t *ci_handle,
+                uint64 *counter,
+                bool use_atomic_increment);
+#endif
+};
+
+#define CPU_CACHED_INSTRUCTION_INTERFACE "cpu_cached_instruction"
+</pre><p>
+</p><p>
+
+   The method <b><i>register_instruction_before_cb</i></b> installs a callback
+   that is called before the cached instruction is executed. The
+   <i>ci_handle</i> is used to bind the callback to the cached instruction.
+   The <i>user_data</i> is the callback's user data, and a callback for
+   freeing the data is also available. The <i>free_cb</i> looks like this:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_callback_free_user_data_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu, lang_void *user_data);</pre><p>
+
+</p><p>
+   It is called when Simics wants to free cached instructions, which can happen
+   in various situations. <i>obj</i> is the connection object that should
+   free the data. The callback may be NULL if not needed.
+</p><p>
+   The <i>cb</i> callback type is the same as used for instructions in the
+   <code>cpu_instrumentation_subscribe</code> interface:
+   </p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_instruction_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        instruction_handle_t *handle,
+        lang_void *user_data);</pre><p>
+ 
+</p><p>
+   The object <i>obj</i> is the user object that registers the callback and
+   <i>cpu</i> is the processor object executing the instruction. The
+   <i>handle</i> can be used to query more data about the instruction. See
+   the <code>cpu_instruction_query</code> interface for more information. The
+   <i>user_data</i> is the user data associated with the callback.
+</p><p>
+   The user data is a convenient location for storing information about the
+   instruction, such as user specific decode information, etc. The user data is
+   private for each installed callback.
+</p><p>
+   The cached information about the instruction is bound to its physical
+   address so the logical address cannot typically be saved since it may vary
+   between calls (if the MMU-mapping has changed).
+</p><p>
+   <b><i>register_instruction_after_cb</i></b> installs a callback that is called
+   after a cached instruction is executed. Otherwise it works in the same as
+   the before variant.
+   However, reading the program counter register for a control flow instruction
+   in this callback will reflect the new location, whereas using the
+   <code>cpu_instruction_query</code> for reading out the instruction address
+   will still return the address of the control flow instruction.
+</p><p>
+   <b><i>register_read_before_cb</i></b> installs a callback that is called before
+   each read operation in the cached instruction. The callback is the
+   same as used for read and writes in the
+   <code>cpu_instrumentation_subscribe</code> interface:
+</p><p>
+   
+</p><pre class="jdocu_small">typedef void (*cpu_memory_cb_t)(
+        conf_object_t *obj, conf_object_t *cpu,
+        memory_handle_t *handle,
+        lang_void *user_data);</pre><p>
+ 
+   </p><p>
+   As for instructions, <i>obj</i> is the object that registered the
+   callback and <i>cpu</i> is the processor doing the access.  The
+   <i>handle</i> can be used to further operate on the access by using the
+   <code>cpu_memory_query</code> interface. The
+   <i>user_data</i> and the <i>free_cb</i> arguments to
+   <b><i>register_read_before_cb</i></b> can be used to store user data for the
+   read operations in the cached instruction. The user data is private for each
+   installed callback but is shared between all read before operations in the
+   instruction. 
+</p><p>
+   <b><i>register_read_after_cb</i></b> installs a callback that is called after
+   each read operation in the cached instruction. The user data is private for
+   each installed callback but is shared between all read after operations in
+   the instruction. Otherwise it works in the same way as the before variant.
+</p><p>
+   <b><i>register_write_before_cb</i></b> and <b><i>register_write_after_cb</i></b>
+   installs callbacks that is called before and after each write operation in
+   the cached instructions. Otherwise they work in the same way as the read
+   variants.
+</p><p>
+   Note that installing a read or write callback on an instruction without any
+   memory operations will be useless.
+</p><p>
+   The <b><i>add_counter</i></b> method can be used to add simple counters for
+   this particular instruction. The <i>counter</i> argument is a pointer to
+   a 64 bit counter value that will be incremented each time the instruction is
+   executed. This is the same thing (but more efficient) as registering a
+   callback through the <b><i>register_instruction_before_cb</i></b> method and
+   increasing the counter each time it is called.
+</p><p>
+   Passing true for the argument <i>use_atomic_increment</i> makes the
+   increment of the counter atomic, which may be useful if the tool cannot have
+   an instrumentation connection per processor. This will however be slower due
+   to the nature of atomic instructions.
+</p><p>
+   The location of the counter value can only be removed/deallocated after a
+   call to either the <b><i>remove_callback</i></b> method (passing the
+   <code>cpu_cb_handle_t</code> returned by
+   <b><i>register_cached_instruction_cb</i></b>), or to the
+   <b><i>remove_connection_callbacks</i></b> method (with the connection object as
+   the argument) in the <code>cpu_instrumentation_subscribe interface</code>.
+</p><p>
+   This method is not available in Python.
+</p><p>
+   The <code>instrumentation_order</code> interface cannot be used to
+   reorder callbacks installed with the <code>cpu_cached_instruction</code>
+   interface. The cached callbacks are always called in same order as the 
+   <b><i>cpu_cached_instruction_cb_t</i></b> callback that installed them, 
+   and before any callback installed by the corresponding methods in the 
+   <code>cpu_instrumentation_subscribe</code>.
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Threaded Context for all methods, but must be called from a callback
+   registered by the <b><i>register_cached_instruction_cb</i></b> method in the
+   <code>cpu_instrumentation_subscribe</code> interface.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_connector.html">connector</a>
+<a href="__rm_interface_cpu_cached_instruction_once.html">cpu_cached_instruction_once</a>
+</div>

@@ -1,0 +1,347 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>i8254</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="rm-class-i8237x2.html">i8237x2</a>
+<a href="rm-class-i82543.html">i82543</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="rm-classes.html">5 Classes</a>
+&nbsp;/&nbsp;</div>
+<h1 id="i8254"><a href="#i8254">i8254</a></h1>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description">
+<a href="#description">Description</a>
+</h3>
+The i8254 device implements the functionality of the PIT (Programmable Interval Timer) counter device found in most PCs. In a real system it is used to generate interval signals for the TOD clock, DMA refresh, and the speaker. The simulated device is only connected to the interrupt device; it counts internally, and the value can be read and written from the processor. The Intel® 8254 device also implements <i>Port B</i> in the 8255 PPI (Programmable Peripheral Interface). This port is used to control the builtin PC speaker. Counting mode 1, and BCD counting is not implemented.
+<h3 id="interfaces-implemented">
+<a href="#interfaces-implemented">Interfaces Implemented</a>
+</h3>conf_object, log_object, io_memory
+<h3 id="port-objects">
+<a href="#port-objects">Port Objects</a>
+</h3>
+<dl>
+<dt id="dt:port-gate0">port.Gate0</dt>
+<dd>
+<a href="rm-class-i8254.html#Gate0">i8254.Gate0</a>
+ – GATE input for timer 0</dd>
+<dt id="dt:port-gate1">port.Gate1</dt>
+<dd>
+<a href="rm-class-i8254.html#Gate1">i8254.Gate1</a>
+ – GATE input for timer 1</dd>
+<dt id="dt:port-gate2">port.Gate2</dt>
+<dd>
+<a href="rm-class-i8254.html#Gate2">i8254.Gate2</a>
+ – GATE input for timer 2</dd>
+<dt id="dt:port-reset">port.RESET</dt>
+<dd>
+<a href="rm-class-i8254.html#RESET">i8254.RESET</a>
+ – Device reset. The stand-alone version of this device does not have a reset pin, but the device as IP in larger ASICs typically do act on reset.</dd>
+</dl>
+<h3 id="commands-for-this-class">
+<a href="#commands-for-this-class">Commands for this class</a>
+</h3>
+<ul>
+<li>
+<a href="rm-cmd-i8254.info.html">info</a>
+ – print information about the object</li>
+<li>
+<a href="rm-cmd-i8254.status.html">status</a>
+ – print status of the object</li>
+</ul>
+<h3 id="attributes">
+<a href="#attributes">Attributes</a>
+</h3>
+<dl>
+<dt id="dt:irq_dev">
+<i>irq_dev</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>o|n</code>
+<br>Device to send interrupts to, that implements the <tt>simple_interrupt</tt> or <tt>signal</tt> interface.</dd>
+<dt id="dt:irq_level">
+<i>irq_level</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt level for the interrupt device.</dd>
+<dt id="dt:interrupt_pin">
+<i>interrupt_pin</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Interrupt request status.</dd>
+<dt id="dt:refresh_clock">
+<i>refresh_clock</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Bit 4 when reading from port B.</dd>
+<dt id="dt:speaker">
+<i>speaker</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Enable flag for speaker, only valid if the have_speaker attribute is 1.</dd>
+<dt id="dt:have_speaker">
+<i>have_speaker</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set to 1 (default) if counter 2 is connected to a standard PC speaker.</dd>
+<dt id="dt:beep">
+<i>beep</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>i</code>
+<br>Set to 1 if a beep is currently playing in the speaker. Only valid if the have_speaker attribute is 1.</dd>
+<dt id="dt:count">
+<i>count</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>A list of count values, one for each counter.</dd>
+<dt id="dt:count_actual">
+<i>count_actual</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>The calculated current count values.</dd>
+<dt id="dt:initial_count">
+<i>initial_count</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>A list of initial count values, one for each counter.</dd>
+<dt id="dt:latched_count">
+<i>latched_count</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>A list of latched values, one for each counter.</dd>
+<dt id="dt:latched_status">
+<i>latched_status</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>A list of latched status bytes, one for each counter.</dd>
+<dt id="dt:latched">
+<i>latched</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>A list of flags, each set to 1 if the corresponding counter has a latched value.</dd>
+<dt id="dt:latched_s">
+<i>latched_s</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>A list of flags, each set to 1 if the corresponding counter has a latched status.</dd>
+<dt id="dt:next_read_high">
+<i>next_read_high</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>For each of the counters, a flag indicating if the next read access is for the high byte.</dd>
+<dt id="dt:next_write_high">
+<i>next_write_high</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>For each of the counters, a flag indicating if the next write access is for the high byte.</dd>
+<dt id="dt:counting">
+<i>counting</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>For each of the counters, a flag indicating whether it is running.</dd>
+<dt id="dt:expired_count">
+<i>expired_count</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]</code>
+<br>For each counter the number of times a counter was reloaded since it was started.</dd>
+<dt id="dt:gate">
+<i>gate</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>Gate signals (1 or 0), one for each counter.</dd>
+<dt id="dt:out">
+<i>out</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>Output values (0 or 1), one for each counter.</dd>
+<dt id="dt:cmd">
+<i>cmd</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>The RW command for each counter.</dd>
+<dt id="dt:mode">
+<i>mode</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>The PIT counting mode for each counter (0 - 5).</dd>
+<dt id="dt:bcd">
+<i>bcd</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>The counting format for each counter (0 or 1).</dd>
+<dt id="dt:null_count">
+<i>null_count</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[iii]|[iiii]</code>
+<br>The 'null count' status bit.</dd>
+<dt id="dt:clock_freq_hz">
+<i>clock_freq_hz</i>
+</dt>
+<dd>
+<b>Optional</b> attribute; 
+<b>read/write</b> access; type: 
+<code>[fff]|[ffff]</code>
+<br>Clock input frequencies for the counters, in Hz. Defaults to 1193180.0 Hz for all counters. The frequency should be set before simulation starts.</dd>
+<dt id="dt:mode_names">
+<i>mode_names</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[ssssss]</code>
+<br>List of all mode names.</dd>
+<dt id="dt:cmd_names">
+<i>cmd_names</i>
+</dt>
+<dd>
+<b>Pseudo</b> attribute; 
+<b>read-only</b> access; type: 
+<code>[ssss]</code>
+<br>List of all command names.</dd>
+</dl>
+<h3 id="provided-by">
+<a href="#provided-by">Provided By</a>
+</h3>
+<a href="mod.8254.html">8254</a>
+</section>
+<h2 id="Gate0"><a href="#Gate0">i8254.Gate0</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-2">
+<a href="#description-2">Description</a>
+</h3>
+GATE input for timer 0
+<h3 id="interfaces-implemented-2">
+<a href="#interfaces-implemented-2">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<h2 id="Gate1"><a href="#Gate1">i8254.Gate1</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-3">
+<a href="#description-3">Description</a>
+</h3>
+GATE input for timer 1
+<h3 id="interfaces-implemented-3">
+<a href="#interfaces-implemented-3">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<h2 id="Gate2"><a href="#Gate2">i8254.Gate2</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-4">
+<a href="#description-4">Description</a>
+</h3>
+GATE input for timer 2
+<h3 id="interfaces-implemented-4">
+<a href="#interfaces-implemented-4">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<h2 id="RESET"><a href="#RESET">i8254.RESET</a></h2>
+<section class="doc-item not-numbered not-in-toc">
+<h3 id="description-5">
+<a href="#description-5">Description</a>
+</h3>
+Device reset. The stand-alone version of this device does not have a reset pin, but the device as IP in larger ASICs typically do act on reset.
+<h3 id="interfaces-implemented-5">
+<a href="#interfaces-implemented-5">Interfaces Implemented</a>
+</h3>conf_object, log_object, signal
+</section>
+<div class="chain">
+<a href="rm-class-i8237x2.html">i8237x2</a>
+<a href="rm-class-i82543.html">i82543</a>
+</div>

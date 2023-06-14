@@ -1,0 +1,107 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>2.1 Running Simics</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="tutorials.html">2 Tutorials</a>
+<a href="simics-command-line-interface.html">2.2 Simics command line interface</a>
+</div>
+<div class="path">
+<a href="index.html">Getting Started</a>
+&nbsp;/&nbsp;
+<a href="tutorials.html">2 Tutorials</a>
+&nbsp;/&nbsp;</div>
+<h1 id="running-simics">2.1 <a href="#running-simics">Running Simics</a></h1>
+<p>This section describes how to:</p>
+<ul>
+<li>start Simics </li>
+<li>create a target machine using Simics command prompt </li>
+<li>run and stop a target machine via Simics command prompt </li>
+<li>exit Simics from Simics command prompt </li>
+</ul>
+<p>We assume that Simics has already been installed and a Simics project directory has already been created. The screenshots below were taken on Windows but the Linux version of Simics behaves similarly. For brevity, we may refer to Simics project directory as a project directory.</p>
+<p>First, let’s get to command prompt. On Windows, this can be done by pressing Win+R keys (i.e., pressing R key while holding Windows key pressed) and entering “cmd” in the popped-up window. For Linux, please refer to the documentation of your Linux distribution about the instructions how to get access to command prompt.</p>
+<p>Once command prompt window is available, navigate to a previously created directory containing Simics project:</p>
+<p><img alt="" src="running-simics-cli-1.png"></p>
+<p>To start Simics and to get its command prompt just run the <code>simics.bat</code> batch file (on Linux, the <code>simics</code> shell script is to be used instead by entering the <code>./simics</code> command):</p>
+<p><img alt="" src="running-simics-cli-2.png"></p>
+<p>Let’s create a target machine inside Simics. We will do it by using:</p>
+<ul>
+<li>Simics command files available is the <code>targets</code> directory inside a Simics project directory </li>
+<li>the <code>run-command-file</code> Simics command </li>
+</ul>
+<p>Simics command files, usually having the <code>.simics</code> file extension, are often used to automate and script operations in Simics. Particularly, Simics scripts are often used to automate the creation of target machines inside Simics.</p>
+<p>Simics comes with a few Simics scripts for creation of target machines. The scripts are available in the <code>targets</code> directory inside a Simics project directory.</p>
+<p>The usual way to run Simics script in Simics is to use the <code>run-command-file</code> Simics command and provide it with the path to the Simics script as an argument, like in this example: <strong>run-command-file targets/qsp-x86/firststeps.simics</strong>. In the example, the <code>targets/qsp-x86/firststeps.simics</code> part is a relative path to a Simics script located in the <code>targets</code> directory inside the Simics project directory.</p>
+<p>To create a target machine in Simics we will use the <code>targets/qsp-x86/firststeps.simics</code> Simics script from the previous example. It will create a simple x86 target machine. To create the target machine, just run the script with the <code>run-command-line</code> Simics command:</p>
+<pre><code class="language-simics">simics&gt; <strong>run-command-file targets/qsp-x86/firststeps.simics</strong>
+NAPT enabled with gateway 10.10.0.1/24 on link ethernet_switch0.link.
+NAPT enabled with gateway fe80::2220:20ff:fe20:2000/64 on link ethernet_switch0.link.
+</code></pre>
+<p><img alt="" src="running-simics-cli-3.png"></p>
+<p>On the screenshot, we can see a few informational messages regarding the target network setup.</p>
+<p>A few new windows have popped up after a target machine has been created. The most important are:</p>
+<ul>
+<li>a text terminal window connected to a serial port of the target machine </li>
+<li>a graphical display window connected to a graphical device of the target machine </li>
+</ul>
+<p>A text terminal window connected to a serial port of the target machine:</p>
+<p><img alt="" src="running-simics-cli-4.png"></p>
+<p>A graphical display window connected to a graphical device of the target machine:</p>
+<p><img alt="" src="running-simics-cli-5.png"></p>
+<p>One of the ways to start the newly created target machine is to use the <code>run</code> Simics command. Simics target machines have no power buttons. Instead, the machines are configured to start immediately once simulation is started with the <code>run</code> Simics command: </p>
+<pre><code class="language-simics">simics&gt; <strong>run</strong>
+running&gt; <strong></strong>
+</code></pre>
+<p><img alt="" src="running-simics-cli-6.png"></p>
+<p>Sometimes, there may be messages printed to Simics command line window:</p>
+<p><img alt="" src="running-simics-cli-7.png"></p>
+<p>These messages are coming from device models which, as messages report, may not simulate certain features. Simics models often use a pragmatic approach and don’t simulate features which are not relevant for simulated machines, for example, thermal control. So, the messages are usually harmless.</p>
+<p>As simulation progresses, the target machine will boot Linux operating system (this can take up to several minutes):</p>
+<p><img alt="" src="running-simics-cli-8.png"></p>
+<p>The login to the system is done automatically. After the login one can interact with the operating system running on the target machine by running commands at the text console window. Here is a sample session when <code>pwd</code> and <code>uname -a</code> Linux commands were executed on the simulated machine after the login:</p>
+<p><img alt="" src="running-simics-cli-9.png"></p>
+<p>One can stop simulation, thus pausing a target machine, by running the <code>stop</code> command on Simics command prompt: </p>
+<pre><code class="language-simics">running&gt; <strong>stop</strong>
+simics&gt;
+</code></pre>
+<p><img alt="" src="running-simics-cli-10.png"></p>
+<p>The target machine is paused now. But it can be resumed by entering the <code>run</code> Simics command again: </p>
+<pre><code class="language-simics">running&gt; <strong>stop</strong>
+simics&gt; <strong>run</strong>
+running&gt;
+</code></pre>
+<p><img alt="" src="running-simics-cli-11.png"></p>
+<p>To quit Simics just enter the <code>quit</code> command: </p>
+<pre><code class="language-simics">running&gt; <strong>quit</strong>
+</code></pre>
+<p><img alt="" src="running-simics-cli-12.png"></p>
+<p>To sum up, in this section we created a x86 target machine, started it and interacted with the operating system running on the target machine. We learned how to start and stop simulation as well as exit the simulator.</p>
+
+<div class="chain">
+<a href="tutorials.html">2 Tutorials</a>
+<a href="simics-command-line-interface.html">2.2 Simics command line interface</a>
+</div>

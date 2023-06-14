@@ -1,0 +1,112 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>6 Target consoles</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="4.8.html">5 Migrating from Simics 4.8</a>
+<a href="python-migration.html">7 Python 3</a>
+</div>
+<div class="path">
+<a href="index.html">Simics Migration Guide</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="consoles-migration">6 Target consoles</a></h1>
+<p>
+
+</p><p>
+Simics 6 introduces new target consoles, which integrates into the
+Simics GUI instead of relying on <code>xterm</code> (on Linux). They have a variety
+of new features.
+</p><p>
+</p><ul>
+  <li>
+    There are new text console and graphics console
+    classes, <b>textcon</b> and <b>graphcon</b>, part
+    of the base package. The earlier separate telnet and host-serial
+    consoles are now part of the text console class, which has telnet
+    and host-serial servers. The graphics console has a new VNC server.
+  </li>
+  <li>
+    To migrate to the new consoles, change the components created in
+    Simics start scripts from the old consoles to the new
+    consoles. The new components are <b>txt_console_comp</b>,
+    which replaces <b>text_console_comp</b>,
+    and <b>gfx_console_comp</b>, which
+    replaces <b>graphics_console_comp</b>
+    and <b>text_graphics_console_comp</b>.
+  </li>
+  <li>
+    The new components are defined in the <code>console-components</code>
+    module, part of the base package.
+  </li>
+  <li>
+    The distinction between graphics and text graphics is no longer
+    visible at the component level, but is handled within the console: when the
+    graphics device is in text mode, this is detected by the console and
+    in the console GUI it becomes possible to mark and copy text.
+  </li>
+  <li>
+    To use the telnet and host-serial servers,
+    see <b>&lt;textcon&gt;.telnet-setup</b> and <b>&lt;textcon&gt;.host-serial-setup</b>. To use the VNC server, see <b>&lt;graphcon&gt;.vnc-setup</b>.
+  </li>
+  <li>
+    The new text console no longer takes simulated input via
+    attributes. Instead it implements the <code>con_input</code>
+    interface. However, the <b>&lt;textcon&gt;.input</b> command is the
+    same. Similarly, the graphics console implements
+    the <code>con_input_code</code> interface, but still has
+    the <b>&lt;graphcon&gt;.input</b> command.
+  </li>
+  <li>
+    The new text console does not translate LF (0xA) to CR (0xD) in
+    simulated input.
+  </li>
+  <li>
+    The new graphics consoles supports text breakpoints, similar to
+    the text consoles, if the attached VGA device implements the
+    required interfaces (and only when running in VGA text
+    mode). Hence the <b>&lt;graphcon&gt;.break</b> command now creates text
+    breakpoints, and graphics breakpoints is created
+    using <b>&lt;graphcon&gt;.break-gfx</b>.
+  </li>
+  <li>
+    The graphics breakpoints no longer stores comments, so the
+    arguments to <b>&lt;graphcon&gt;.save-break-xy</b> have changed.
+  </li>
+  <li>
+    The command for creating screen shots is now
+    called <b>&lt;graphcon&gt;.screenshot</b>
+  </li>
+  <li>
+    In general, the new component parameters are not exactly the same as the old
+    ones, and neither are the attributes and CLI commands on the
+    console classes. See the reference manual for more details.
+  </li>
+</ul>
+
+<div class="chain">
+<a href="4.8.html">5 Migrating from Simics 4.8</a>
+<a href="python-migration.html">7 Python 3</a>
+</div>

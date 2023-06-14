@@ -1,0 +1,86 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>translator</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_translation_flush.html">translation_flush</a>
+<a href="__rm_interface_usb.html">usb</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_translator">translator</a></h1>
+<p>
+
+<a name="translator"></a><a name="translator_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>translator</code> interface is implemented by
+   objects which perform address translations or map
+   memory transactions to devices or address spaces.
+<p>
+   The <b><i>translate</i></b> method takes a physical address
+   <i>addr</i> and returns a value of the type
+   <code>translation_t</code> which describes the translation for
+   an address range which must include <i>addr</i>. Please
+   refer to the <code>translation_t</code> documentation for a complete
+   description of the return value and more information regarding
+   the implementation of translator objects.
+</p><p>
+   A translator can translate read transactions, write transactions
+   and instruction fetches differently. The <i>access</i> parameter
+   is set to all requested access types in the form of a bitmask.
+   The translator should return null in the <i>target</i> field
+   if a translation valid for all requested accesses cannot be performed;
+   when this happens, the requestor is expected to repeat the interface call
+   with just a single bit set in the access mask,
+   e.g. <code>Sim_Access_Read</code>.
+</p><p>
+   The <i>default_target</i> parameter is a default target,
+   which can be NULL, of the translator mapping (i.e.,
+   the <i>target</i> field of the respective <b>memory-space</b>'s
+   map entry specifying mapping).
+</p><p>
+   </p><pre class="jdocu_small">SIM_INTERFACE(translator) {
+        translation_t (*translate)(conf_object_t *NOTNULL obj,
+                                   physical_address_t addr,
+                                   access_t access,
+                                   const map_target_t *default_target);
+};
+
+#define TRANSLATOR_INTERFACE "translator"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_translation_flush.html">translation_flush</a>
+<a href="__rm_interface_usb.html">usb</a>
+</div>

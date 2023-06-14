@@ -1,0 +1,280 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>5.2 Script Branches</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="script-support-in-cli.html">5.1 Script Support in CLI</a>
+<a href="targets.html">5.3 Targets and parameters</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="script-support-in-simics.html">5 Simics Scripting Environment</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="Script-Branches">5.2 Script Branches</a></h1>
+<p>
+
+<a name="script-branch"></a>
+<a name="CLIscript-branch"></a>
+</p><h2 class="jdocu"><a name="Introduction-to-Script-Branches">5.2.1 Introduction to Script Branches</a></h2>
+<p>
+
+Script branches allow the user to write sequences of CLI commands that can be
+postponed, waiting for things to happen in the simulator, without breaking the
+sequential flow of commands.
+This is typically used to avoid breaking a script into many small sections,
+each run as a callback using Python.
+</p><p>
+A simple example of a script branch:
+</p><p>
+</p><pre class="jdocu_small">script-branch "script branch description (optional)" {
+    echo "This is a script branch test - going to sleep."
+    board.mb.cpu0.core[0][0].wait-for-step 10
+    echo "Processor registers after 10 steps:"
+    board.mb.cpu0.core[0][0].print-processor-registers
+}
+</pre><p>
+</p><p>
+The example above will execute the first <b>echo</b> command at once, and
+then go to sleep waiting until the first 10 instructions (steps) have run.
+When the step counter for the processor has reached 10, the branch will wake
+up and run the next two commands, <b>echo</b> and
+<b>print-processor-registers</b>.
+</p><p>
+A big difference between script branches and the main script is that the main
+script (also called main branch) may be interrupted by the user pressing the
+stop button or typing Ctrl-C. The script branches are unaffected by such
+actions and can exist in the background, coexisting with any interactive
+command line use.
+
+</p><h2 class="jdocu"><a name="How-Script-Branches-Work">5.2.2 How Script Branches Work</a></h2>
+<p>
+
+</p><p>
+<a name="script-branchwait-for"></a>
+When a script branch is started (using <b>script-branch</b>), it begins
+executing immediately, and runs until a <b>wait-for-</b>, command is
+issued. Execution is then resumed in the main script; i.e., there is never any
+concurrent activity. When some activity occurs that a script branch is waiting
+for, the branch continues executing once the currently simulated instruction
+is ready.
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+Since only one branch can be active at once, any callback to Python from
+Simics will execute in the currently active branch, i.e., if a branch installs
+a callback, it is most likely that it will be called when the main branch is
+active.</div>
+<h2 class="jdocu"><a name="Script-Branch-Commands">5.2.3 Script Branch Commands</a></h2>
+<p>
+
+<a name="script-branchcommands"></a>
+The following is a list of the commands related to script branches.
+</p><p>
+</p><dl><dt id="dt:script-branch"><b><b>script-branch</b></b></dt><dd>Create a new script branch and start it.</dd><dt id="dt:list-script-branches"><b><b><a name="list-script-branches">list-script-branches</a></b></b></dt><dd>List all existing, but suspended, branches.</dd><dt id="dt:interrupt-script-branch"><b><b><a name="interrupt-script-branch">interrupt-script-branch</a></b></b></dt><dd>Interrupt a script-branch, causing it to exit.</dd><dt id="dt:create-script-barrier-num_branches"><b><b><a name="create-script-barrier">create-script-barrier</a></b> <i>num_branches</i></b></dt><dd>Create a script barrier used to synchronize the execution of
+        several script branches. The argument is the number of script branches
+        that must enter the barrier before all of them are released.</dd><dt id="dt:wait-for-script-barrier-barrier"><b><b><a name="wait-for-script-barrier">wait-for-script-barrier</a></b> <i>barrier</i></b></dt><dd>Suspend branch until enough branches have reached the
+        script branch barrier.</dd><dt id="dt:create-script-pipe"><b><b><a name="create-script-pipe">create-script-pipe</a></b></b></dt><dd>Create a script pipe, used to communicate data between script
+        branches and also to synchronize them.</dd><dt id="dt:add-data-to-script-pipe-pipe-data"><b><b><a name="add-data-to-script-pipe">add-data-to-script-pipe</a></b>
+        <i>pipe</i> <i>data</i></b></dt><dd>Add data (integer, string, floating point value or a list of any
+        of those types) to the specified script pipe.</dd><dt id="dt:script-pipe-has-data-pipe"><b><b><a name="script-pipe-has-data">script-pipe-has-data</a></b> <i>pipe</i></b></dt><dd>Check if there is data to read from a script pipe.</dd><dt id="dt:wait-for-script-pipe-pipe"><b><b><a name="wait-for-script-pipe">wait-for-script-pipe</a></b> <i>pipe</i></b></dt><dd>Suspend branch until there is data to read on a script pipe. If
+        there already is data in the pipe, return immediately. The return value
+        is the first data item added to the pipe.
+        </dd><dt id="dt:wait-for-log-conf_object-wait-for-log-object-substring-type-re"><b><a name="wait-for-log">wait-for-log</a><b>&lt;conf_object&gt;.wait-for-log</b>
+        [<i>object</i>] [<i>substring</i>] [<i>type</i>] [<i>-re</i>]</b></dt><dd>Wait until a log message is generated by an <i>object</i>
+        or any object if the <i>object</i> variable is omitted. The
+        <i>substring</i> and <i>type</i> can specify certain
+        conditions.</dd><dt id="dt:wait-for-breakpoint-breakpoint-id-reverse-always"><b><b><a name="wait-for-breakpoint">wait-for-breakpoint</a></b> <i>breakpoint-id</i> 
+        [<i>-reverse</i>] [<i>-always</i>]</b></dt><dd>Suspend branch until a specified breakpoint is triggered. If <i>-reverse</i> or 
+            <i>-always</i> is specified, this command is valid when the
+            simulation is running in reverse.</dd><dt id="dt:processor-bp-wait-for-cycle-cycle-absolute-reverse-always"><b><a name="bp.cycle.wait-for"></a><b>&lt;processor&gt;.bp-wait-for-cycle</b>
+             <i>cycle</i> [<i>-absolute</i>] [<i>-reverse</i>] [<i>-always</i>]</b></dt><dd>Suspend branch until the processor has
+executed <i>cycle</i> number of cycles. If <code>-absolute</code> is
+specified, the branch will instead be suspended until the processor
+reaches the specified cycle in the simulation. If <i>-reverse</i>
+or
+            <i>-always</i> is specified, this command is valid when the
+            simulation is running in reverse.</dd><dt id="dt:processor-bp-wait-for-step-step-absolute-reverse-always"><b><a name="bp.step.wait-for"></a><b>&lt;processor&gt;.bp-wait-for-step</b>
+             <i>step</i> [<i>-absolute</i>] [<i>-reverse</i>] [<i>-always</i>]</b></dt><dd>Suspend branch until the processor has executed <i>step</i> number of steps. If <code>-absolute</code> is
+specified, the branch will instead be suspended until the processor
+reaches the specified step in the simulation. If <i>-reverse</i> or 
+            <i>-always</i> is specified, this command is valid when the
+            simulation is running in reverse.</dd><dt id="dt:processor-bp-wait-for-time-seconds-absolute-reverse-always"><b><a name="bp.time.wait-for"></a><b>&lt;processor&gt;.bp-wait-for-time</b>
+             <i>seconds</i> [<i>-absolute</i>] [<i>-reverse</i>] [<i>-always</i>]</b></dt><dd>Suspend branch until the processor has
+executed <i>seconds</i> number of seconds. If <code>-absolute</code>
+is specified, the branch will instead be suspended until the processor
+reaches the specified time in the simulation. If <i>-reverse</i>
+or
+            <i>-always</i> is specified, this command is valid when the
+            simulation is running in reverse.</dd><dt id="dt:int_register-wait-for-register-read-reg-reverse-always"><b><a name="wait-for-register-read"></a>
+             <b>&lt;int_register&gt;.wait-for-register-read</b>
+             <i>reg</i> [<i>-reverse</i>] [<i>-always</i>]</b></dt><dd>Suspend branch until the register <i>reg</i> in the object
+            implementing the <code>int_register</code> interface is read.
+            Only registers that are catchable can be waited on. If <i>-reverse</i> or 
+            <i>-always</i> is specified, this command is valid when the
+            simulation is running in reverse.</dd><dt id="dt:int_register-wait-for-register-write-reg-reverse-always"><b><a name="wait-for-register-write"></a>
+             <b>&lt;int_register&gt;.wait-for-register-write</b>
+             <i>reg</i> [<i>-reverse</i>] [<i>-always</i>]</b></dt><dd>Suspend branch until the register <i>reg</i> in the object
+            implementing the <code>int_register</code> interface is written.
+            Only registers that catchable can be waited on. If <i>-reverse</i> or 
+            <i>-always</i> is specified, this command is valid when the
+            simulation is running in reverse.</dd><dt id="dt:text-console-bp-wait-for-string-string"><b><a name="bp.string.wait-for"></a><b>&lt;text-console&gt;.bp-wait-for-string</b>
+             <i>string</i></b></dt><dd>Suspend branch until <i>string</i> is printed
+            on the text console.</dd></dl><p></p><h2 class="jdocu"><a name="Variables-in-Script-Branches">5.2.4 Variables in Script Branches</a></h2>
+<p><a name="variable"></a>
+<a name="CLIlocal-variable"></a>
+<a name="script-branchlocal-variable"></a>
+Variable references in CLI are evaluated when accessed. This is important to
+remember when writing script branches, since some commands are executed when
+the branch has been suspended, and variables may have been changed. To make
+sure that CLI variables in script branches are untouched by other scripts,
+they should be made local.
+</p><p>
+The following example
+</p><pre class="jdocu_small">script-branch "sample script branch" {
+    $foo = 20
+    board.mb.cpu0.core[0][0].wait-for-step 10
+    echo "foo is " + $foo
+}
+$foo = 15
+run
+</pre><p>
+will produce the output <code>foo is 15</code> while the following script will
+print <code>foo is 20</code>.
+</p><pre class="jdocu_small">script-branch "sample script branch" {
+    local $foo = 20
+    board.mb.cpu0.core[0][0].wait-for-step 10
+    echo "foo is " + $foo
+}
+$foo = 15
+run
+</pre><p>
+</p><p>
+
+</p><h2 class="jdocu"><a name="Script-Branches-and-Reverse-Execution">5.2.5 Script Branches and Reverse Execution</a></h2>
+<p>
+
+The script environment is used to control the simulated system and is not
+reversed itself when the simulation runs backwards. As a result, it is possible
+to write scripts that run the simulation both forward and backwards.
+</p><p>
+By default, the <b>wait-for-</b> script branch commands only wait for
+events to happen when the simulation is running forward and silently ignore
+them when reversing. The <i>-reverse</i> and <i>-always</i> flags,
+provided by most <b>wait-for-</b> commands, can be used to wait for events
+occurring in only the reverse direction or in both.
+
+</p><h2 class="jdocu"><a name="Script-Branches-and-Multi-Threaded-Simulation">5.2.6 Script Branches and Multi-Threaded Simulation</a></h2>
+<p>
+
+Large system configurations can be split up over several <em>cells</em> where
+each cell runs in its own host thread to speed up simulation. Care must be
+taken when writing scripts in such sessions. If the simulation is stopped or
+paused, for example by a breakpoint, other cells than the one where the
+breakpoint occurred may be ahead or behind in simulated time. The difference
+in time between cells is limited by the minimum latency setting. The time where
+cells are stopped may also differ between runs of the same setup. To ensure
+deterministic behavior, a script stopping a simulation as result of some event
+should only access the cell where the event occurred. If the script needs to
+access the full configuration, i.e. also objects in other cells, then all cells
+have to be synchronized in time. The <b>wait-for-global-time</b> and
+<b>wait-for-global-sync</b> commands can be used to run until a point where
+all cells have synchronized.
+
+</p><h2 class="jdocu"><a name="Canceling-Script-Branches">5.2.7 Canceling Script Branches</a></h2>
+<p>
+
+It is possible to cancel a suspended script branch by interrupting it using the
+<b>interrupt-script-branch</b> command. Each branch has an ID associated
+that can be found using <b>list-script-branches</b>, and that is returned
+by the <b>script-branch</b> command.
+</p><pre class="jdocu_small">$id = (script-branch "sample script branch" {
+    wait-for-breakpoint $bp
+})
+
+...
+
+simics&gt; <b>interrupt-script-branch $id</b>
+Command 'wait-for-breakpoint' interrupted.
+Script branch 1 interrupted.
+</pre><p>
+
+</p><h2 class="jdocu"><a name="Script-Branch-Restrictions">5.2.8 Script Branch Restrictions</a></h2>
+<p>
+
+</p><p>
+There are a few things related to script branches that are discouraged or not
+allowed:
+</p><ul>
+
+<li>
+  Starting and stopping the simulation should be avoided from script branches
+  that run in sessions with interactive use, such as target start scripts. It
+  is only in batch mode that controlling the simulation from script branches
+  is acceptable, but then care should be taken to avoid script branches that
+  conflict with each other.
+</li>
+
+<li>
+  A script branch may not define a new script branch nested inside itself.
+</li>
+
+<li>
+  The <b>wait-for-</b> command can not run in the main branch. The
+  reason is that the main branch may be interrupted by the user pressing the
+  stop button or Ctrl-C, while script branches and the <b>wait-for-</b>
+  commands are unaffected by such actions.
+</li>
+
+<li>
+  The <b>write-configuration</b> command cannot be run while Simics is
+  executing. This is a limitation that will be removed in a future Simics
+  version, but for now the execution has to be stopped first. The following is
+  an example that writes a checkpoint when the simulation reaches a login
+  prompt, and then continues running. It assumes that a text-console called
+  <code>text_console_cmp0.con</code> is used.
+<p>
+  <a name="wait-for-string"></a>
+  </p><pre class="jdocu_small">script-branch "create checkpoint" {
+    board.console.con.bp-wait-for-string login
+    stop
+    write-configuration login.conf
+    run
+}
+  </pre><p>
+  This is one of few exceptions to the rule that script branches should not
+  start or stop the simulation.
+  </p></li>
+
+</ul>
+
+
+<div class="chain">
+<a href="script-support-in-cli.html">5.1 Script Support in CLI</a>
+<a href="targets.html">5.3 Targets and parameters</a>
+</div>

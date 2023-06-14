@@ -1,0 +1,824 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>10.7 Testing</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="system-panel.html">10.6 System Panel</a>
+<a href="python-api-script-branch.html">10.8 Script branches</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="python-api.html">10 Python API</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="python-api-testing">10.7 Testing</a></h1>
+<p>
+
+  </p><h2 class="jdocu"><a name="__pymodstest">10.7.1 stest</a></h2>
+<p>
+
+
+ 
+ Utilities for testing simics.
+ 
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.fail">fail</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">fail(msg)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Signal a failure in a test.
+<p>
+ Takes a string describing the failure as its single argument.
+ If called in collect failures mode this will collect the failure for later
+ checking with <b><i>check_failures</i></b>. If called outside collect failures
+ mode it will immediately raise a <b>TestFailure</b> exception
+ instead.
+ </p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.collect_failures">collect_failures</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">collect_failures()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Change the behavior of stest to collect failures instead of terminating on
+ the first failure detected.
+<p>
+ If you use this you have to call <b><i>check_failures</i></b> at the end of
+ your test script to check if it signaled any failures.
+ </p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.check_failures">check_failures</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">check_failures()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Check if any failures have occurred and leave collect failures mode.
+<p>
+ If any failures have occurred this function will report the failures and
+ raise a <b>TestFailure</b> exception.
+ If called outside collect failures mode this function will fail.
+ </p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.trap_log">trap_log</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">trap_log(self, logtype, obj = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Configure Simics to trap a type of log messages, and cause Simics
+ to quit with a test failure on any such log message.
+<p>
+ By default the stest trap 'error' and 'spec-viol' log messages.
+</p><p>
+ Arguments:
+ </p><dl><dt id="dt:logtype"><b>logtype</b></dt><dd>the type of log messages to trap, one of 'info', 'error', 'undef',
+     'spec-viol', and 'unimpl'</dd><dt id="dt:obj"><b>obj</b></dt><dd>the configuration object whose log messages to trap, defaults to None,
+     which means that all log messages of the right type are trapped</dd></dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.untrap_log">untrap_log</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">untrap_log(self, logtype, obj = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Remove/untrap previously trapped types from Simics.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:logtype-2"><b>logtype</b></dt><dd>the type of log messages to untrap, one of 'info', 'error', 'undef',
+     'spec-viol', and 'unimpl'</dd><dt id="dt:obj-2"><b>obj</b></dt><dd>the configuration object whose log messages to untrap, defaults to None,
+     which means that all log messages of the right type are untrapped</dd></dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.expect_true">expect_true</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">expect_true(cond, msg = 'expectation failed')</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Check if a condition is true and cause a test failure if it is not.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:cond"><b>cond</b></dt><dd>the condition to test</dd><dt id="dt:msg"><b>msg</b></dt><dd>a message explaining the failure</dd></dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.expect_false">expect_false</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">expect_false(cond, msg = 'expectation failed')</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Check if a condition is false and cause a test failure if it is not.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:cond-2"><b>cond</b></dt><dd>the condition to test</dd><dt id="dt:msg-2"><b>msg</b></dt><dd>a message explaining the failure</dd></dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.expect_equal">expect_equal</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">expect_equal(got, expected, msg = 'expectation failed')</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Checks if a value is equal to an expectation and cause a test failure if it
+ is not.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:got"><b>got</b></dt><dd>the value to check</dd><dt id="dt:expected"><b>expected</b></dt><dd>what to compare the value with</dd><dt id="dt:msg-3"><b>msg</b></dt><dd>a message explaining the failure</dd></dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.expect_different">expect_different</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">expect_different(got, unexpected, msg = 'expectation failed')</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Checks if a value is different to an expectation and cause a test failure if
+ it is not.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:got-2"><b>got</b></dt><dd>the value to check</dd><dt id="dt:unexpected"><b>unexpected</b></dt><dd>what to compare the value with</dd><dt id="dt:msg-4"><b>msg</b></dt><dd>a message explaining the failure</dd></dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.expect_log">expect_log</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">expect_log(fun, args = [], obj = None, log_type = 'error', msg = None, regex = '', with_log_level = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Call a function and verify that a particular log message is emitted.
+ Returns the called function's return value.
+ Arguments:
+ <dl><dt id="dt:fun"><b>fun</b></dt><dd>the function to be called</dd><dt id="dt:args"><b>args</b></dt><dd>the arguments with which to call <i>fun</i></dd>All other arguments are identical to <b><i>expect_log_mgr</i></b>
+ </dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.expect_log_mgr">expect_log_mgr</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">expect_log_mgr(*args, **kwds)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Context manager, verifying that, on exit from the with-statement, a
+ particular log message has been emitted.
+ Arguments:
+ <dl><dt id="dt:obj-3"><b>obj</b></dt><dd>optional object from which a log is expected,
+     default is None which accepts any object</dd><dt id="dt:log_type"><b>log_type</b></dt><dd>optional log type which the emitted log must belong to,
+     one of "error" (default), "unimpl", "info", "spec-viol"
+     or "undefined"</dd><dt id="dt:msg-5"><b>msg</b></dt><dd>optional message emitted on failure</dd><dt id="dt:regex"><b>regex</b></dt><dd>optional regular expression object or a string
+     containing a regular expression suitable for use by
+     <code>re.search()</code>, which the emitted log must match
+ </dd><dt id="dt:with_log_level"><b>with_log_level</b></dt><dd>optional log level to apply inside the context</dd></dl><p>Example usage:
+ </p><pre class="jdocu_small">with stest.expect_log_mgr(log_type="spec-viol",
+                          msg="Check warning on read-only fields"):
+    reg_compute_units.write(0xffff_ffff_ffff_ffff)
+ </pre><p>
+ </p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.expect_exception">expect_exception</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">expect_exception(fun, args, exc)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Call function fun with arguments args, and verify that it raises an
+ exception of type exc. If fun does not raise exc, cause a failure.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfunstest.expect_exception_mgr">expect_exception_mgr</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">expect_exception_mgr(*args, **kwds)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Context manager verifying that the body of with-statement throws an
+ exception of the specified type.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:exc"><b>exc</b></dt><dd>exception type</dd></dl><p>Example usage:
+ </p><pre class="jdocu_small">with stest.expect_exception_mgr(simics.SimExc_AttrNotWritable):
+    dev.read_only_attribute = False
+ </pre><p>
+ </p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassstest.TestFailure">TestFailure</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">builtins.Exception</dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Exception class used to signal failures in Simics tests.
+<p>
+ Use the <b><i>fail</i></b> function instead of raising this exception yourself.
+ </p></dd>
+</dl><p>
+</p><h2 class="jdocu"><a name="__pymoddev_util">10.7.2 dev_util</a></h2>
+<p>
+
+
+ 
+</p><p>
+ A Python module for writing device model tests. Has three major
+ parts: classes for accessing device registers, classes for writing
+ device stubs, and classes for handling simulated memory and data
+ structures in it. It also contains some auxiliary utilities.
+</p><p>
+ It uses the Simics API and can only be used by Python code running
+ in Simics.
+</p><p>
+ 
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyfundev_util.bank_regs">bank_regs</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">bank_regs(bank, inquiry = False, prefix = '')</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Given a bank object, return a structure containing
+ objects to access its registers.  The returned structure can be a
+ hierarchy of objects; e.g., if a register instance is named
+ <code>"g[2][3].r[1]"</code>, and the returned structure is <code>o</code>,
+ then the corresponding register object can be obtained as
+ <code>o.g[2][3].g[1]</code>.  The set of registers is extracted using
+ the <code>register_view</code> interface, and uses offsets and
+ bitfields as returned by that interface.
+ The <code>inquiry</code> argument is deprecated and should not be used.
+ If <code>prefix</code> is
+ given, then the returned structure will only contain registers whose
+ full name matches this prefix.
+<p>
+ The returned register objects have methods <code>read()</code> and
+ <code>write()</code> that work like their <code>AbstractRegister</code>
+ counterparts, reading and writing the register with side-effects.
+ The register value can be read and written without side-effects
+ objects by getting and setting a property <code>.val</code>, or by
+ calling a method <code>set()</code>. The latter accepts keyword
+ arguments for fields just like the <code>write()</code> method; bits not
+ covered by fields are retrieved by reading <code>.val</code>.  The
+ positional argument of the <code>write()</code> method is required and
+ may be either an integer, or <code>READ</code> to denote that previous
+ values are retrieved using <code>read()</code>, or <code>VAL</code> to denote that
+ they are retrieved using <code>.val</code>.
+</p><p>
+ Objects that represent the fields of a register can be retrieved as
+ <code>reg.field.FIELDNAME</code>; e.g., if a register <code>reg</code> has a
+ field named <code>"a.b[2]"</code> then the field object is accessed as
+ <code>reg.field.a.b[2]</code>. The field object has one method
+ <code>read()</code> for performing a full-register read with
+ side-effects and returning the bits corresponding to the field, and
+ a property <code>.val</code> that allows side-effect free access to the
+ field's bits. Field objects do not have a <code>write</code> method;
+ writes must be done from the register object; this is to ensure that
+ remaining bits are explicitly specified.
+</p><p>
+ </p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfundev_util.iface">iface</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">iface(name)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Deprecated.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfundev_util.value_to_tuple_be">value_to_tuple_be</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">value_to_tuple_be(val, bytes)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Deprecated, use <code>tuple(val.to_bytes(bytes, 'big'))</code> instead.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfundev_util.value_to_tuple_le">value_to_tuple_le</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">value_to_tuple_le(val, bytes)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Deprecated, use <code>tuple(val.to_bytes(bytes, 'little'))</code> instead.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfundev_util.tuple_to_value_be">tuple_to_value_be</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">tuple_to_value_be(t)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Deprecated, use <code>int.from_bytes(t, 'big')</code> instead.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyfundev_util.tuple_to_value_le">tuple_to_value_le</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">tuple_to_value_le(t)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Deprecated, use <code>int.from_bytes(t, 'little')</code> instead.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Error">Error</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">builtins.Exception</dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Baseclass of all exceptions specified in this module.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.InvalidBitfieldException">InvalidBitfieldException</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.Error</dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Signals that a bitfield's parameters are invalid.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.RangeError">RangeError</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.Error</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">RangeError(msg, re = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Signals that a value is out of range for a bitfield.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.MemoryError">MemoryError</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.Error</dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Signals that a memory operation failed.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Bitfield">Bitfield</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">builtins.object</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Bitfield(fields = None, ones = 0, little_endian = True, bits = None, **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Utility for bitfield manipulations.
+ 
+ Constructor arguments:
+ <dl><dt id="dt:fields"><b>fields</b></dt><dd>a dict on the following format,
+ where sub-field is of type fields:
+ <pre class="jdocu_small"> {'field-name' : bit-number,
+  'field-name' : (start-bit, stop-bit),
+  'field-name' : (start-bit, sub-field)
+ }
+ </pre><p>
+ </p></dd><dt id="dt:ones"><b>ones</b></dt><dd>a bitmask that will be OR:ed in the complete bitfield value</dd><dt id="dt:little-endian"><b>little-endian</b></dt><dd>set to True for a little-endian bitorder field and False for
+     big-endian bitorder fields</dd><dt id="dt:bits"><b>bits</b></dt><dd>the total size (in bits) of the fields; required by, as well as
+     only allowed for, big-endian fields</dd><dt id="dt:kwargs"><b>**kwargs</b></dt><dd>as <i>fields</i>, but specified using keyword arguments</dd></dl><p></p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Bitfield.fields">fields</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.fields(value)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Returns a dict consisting of all fields and their values,
+ taken from the value argument.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Bitfield.mask">mask</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.mask(**dict)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Returns a mask from the fields in dict.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Bitfield.mk_bitfield_map">mk_bitfield_map</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.mk_bitfield_map(m, prefix = '', oset = 0)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Convert a nested layout type to a map suitable for construction
+ of a dev_util.Bitfield object.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Bitfield.value">value</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.value(*args, **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Returns the value of the
+ fields given by **kwargs. For example, pass <code>foo=5</code> to
+ return the value when field <code>"foo"</code> is 5. If the value is
+ a list or dict rather than an integer, then a field array is
+ assumed; e.g. <code>foo=[1,2]</code> is a shorthand for setting
+ field <code>"foo[0]"</code> to 1 and field <code>"foo[1]"</code> to 2,
+ and <code>foo={1:4}</code> is a shorthand for setting field
+ <code>"foo[1]"</code> to 4.
+<p>
+ An optional positional argument can be
+ supplied, to provide the values of bits not covered by the given
+ fields.
+ </p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Bitfield_LE">Bitfield_LE</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.Bitfield</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Bitfield_LE(fields = None, ones = 0, **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Constructor arguments:
+ <dl><dt id="dt:fields-2"><b>fields</b></dt><dd>a dict on the following format,
+ where sub-field is of type fields:
+ <pre class="jdocu_small"> {'field-name' : bit-number,
+  'field-name' : (start-bit, stop-bit),
+  'field-name' : (start-bit, sub-field)
+ }
+ </pre><p>
+ </p></dd><dt id="dt:ones-2"><b>ones</b></dt><dd>a bitmask that will be OR:ed in the complete bitfield value</dd><dt id="dt:kwargs-2"><b>**kwargs</b></dt><dd>as <i>fields</i>, but specified using keyword arguments</dd></dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Bitfield_BE">Bitfield_BE</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.Bitfield</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Bitfield_BE(fields = None, ones = 0, bits = None, **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Bit-endian bitfield.
+ 
+ Constructor arguments:
+ <dl><dt id="dt:fields-3"><b>fields</b></dt><dd>a dict on the following format,
+ where sub-field is of type fields:
+ <pre class="jdocu_small"> {'field-name' : bit-number,
+  'field-name' : (start-bit, stop-bit),
+  'field-name' : (start-bit, sub-field)
+ }
+ </pre><p>
+ </p></dd><dt id="dt:ones-3"><b>ones</b></dt><dd>a bitmask that will be OR:ed in the complete bitfield value</dd><dt id="dt:bits-2"><b>bits</b></dt><dd>the total size (in bits) of the fields; required by big-endian
+     fields</dd><dt id="dt:kwargs-3"><b>**kwargs</b></dt><dd>as <i>fields</i>, but specified using keyword arguments</dd></dl><p></p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.AbstractRegister">AbstractRegister</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">builtins.object</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">AbstractRegister(size = 4, bitfield = None, little_endian = True)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Abstract register class.
+<p>
+ This class handles generic register stuff, like bitfield mapping
+ and value construction/deconstruction. It depends on a subclass to
+ implement the backend for data storage.
+</p><p>
+ Subclasses are expected to implement two functions:
+</p><p>
+ </p><dl><dt id="dt:raw_read-self"><b>raw_read(self)</b></dt><dd>should return a byte string from storage</dd><dt id="dt:raw_write-self-bytes"><b>raw_write(self, bytes)</b></dt><dd>should write the <i>bytes</i> byte string to storage</dd></dl><p>Optionally, a bitfield can be applied to a register. For such a register,
+ a specific field can be read through <code>reg.field.FIELDNAME.read()</code>. The
+ <b><i>write()</i></b> method also has support for bitfields. Please see the
+ documentation for <b><i>write()</i></b> for more information.
+</p><p>
+ There is an alternative deprecated shorthand for accessing fields:
+ <code>reg.FIELDNAME</code> triggers a read that filters out the given
+ field, and similarly, <code>reg.FIELDNAME = value</code> reads the
+ field, adjusts the given field, and writes back the value. This
+ syntax is deprecated, because it is not consistent with the API
+ exposed by register objects that both support accesses with and
+ without side-effects.
+</p><p>
+ 
+ Constructor arguments:
+ </p><dl><dt id="dt:size"><b>size</b></dt><dd>the size in bytes of the register</dd><dt id="dt:bitfield"><b>bitfield</b></dt><dd>optional, if set should be an instance of Bitfield</dd><dt id="dt:little_endian"><b>little_endian</b></dt><dd>should be set to True for a little-endian byte-order
+     register, or False for a big-endian register</dd></dl><p></p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.AbstractRegister.fields">fields</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.fields()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Shortcut to read the bitfield representation of a device register.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.AbstractRegister.read">read</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.read()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Read value.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.AbstractRegister.write">write</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.write(*args, **fields)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Write value. The value will be truncated to the register size.
+<p>
+ You can either pass a single integer, or pass the fields as
+ arguments, i.e., <code>write(field0=1, field1=23)</code>. For field
+ arrays, the syntax <code>write(field=[1,23])</code> or
+ <code>write(field={0: 1, 1: 23})</code> can be used to set the fields named
+ <code>field[0]</code> and <code>field[1]</code>.
+</p><p>
+ If only a subset of fields is given, a positional arg should
+ also be passed for the base value, which defines what to write to
+ remaining bits. The value READ denotes that the <code>read()</code> method is
+ called to retrieve the base value.
+ </p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Register">Register</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.AbstractRegister</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Register(*args, **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This class allows you to easily access a device register.
+ 
+ The bank argument is normally the bank object. However, for
+ backward compatibility it can also be a tuple (obj, bank, ofs);
+ in this case the <i>offset</i> argument should be left
+ out. The tuple denotes:
+ <dl><dt id="dt:obj-4"><b>obj</b></dt><dd>the (simics) object implementing the register</dd><dt id="dt:bank"><b>bank</b></dt><dd>the port-name or function number of the bank containing the
+     register (function 0 if omitted).</dd><dt id="dt:offset"><b>offset</b></dt><dd>the register offset in said bank</dd></dl><p>The tuple syntax was useful in old Simics versions where
+ banks were not separate objects. It should be avoided in new versions.
+</p><p>
+ The initiator argument denotes the initiator of transactions
+ accessing the register.
+ See the AbstractRegister documentation for information about the rest
+ of the parameters.
+ </p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Register.raw_read">raw_read</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.raw_read()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Read raw data from the register.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Register.raw_write">raw_write</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.raw_write(val)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Write raw data to the register.
+ </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Register_LE">Register_LE</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.Register</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Register_LE(*args, **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Little-endian device register.
+ 
+ All arguments have the same semantics as in dev_util.Register.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Register_BE">Register_BE</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.Register</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Register_BE(*args, **kwargs)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Big-endian device register.
+ 
+ All arguments have the same semantics as in dev_util.Register.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.GRegister">GRegister</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.AbstractRegister</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">GRegister(size = 4, bitfield = None, init = 0)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This class allows provides a standalone register.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.GRegister.raw_read">raw_read</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.raw_read()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Reads the raw contents of the register.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.GRegister.raw_write">raw_write</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.raw_write(value)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Write the raw contents of the register.
+ </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.IRegister">IRegister</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.AbstractRegister</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">IRegister(data, size = None, bitfield = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This class allows you to easily access registers through the
+ <code>int_register</code> interface. If the object <b>obj</b> does
+ not implement the <code>processor_info</code> you have to specify the
+ size in <i>size</i>.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.IRegister.raw_read">raw_read</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.raw_read()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Reads the raw contents of the register.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.IRegister.raw_write">raw_write</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.raw_write(value)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Write the raw contents of the register.
+ </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util_internal.Dev">Dev</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">builtins.object</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Dev(iface_list = [], create_sim_obj = True, name = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">A Simics class with a single instance.
+ Implements zero or more interfaces based on instances of
+ <b>Iface</b>. Presents zero or
+ more ports, implementing one or more interfaces each.
+<p>
+ The <i>obj</i> attribute contains the instance of the Simics
+ class, and the <i>cls_name</i> attribute contains the name of
+ the Simics class.
+ 
+ Constructor arguments:
+ </p><dl><dt id="dt:iface_list"><b>iface_list</b></dt><dd>a list of interface classes or pairs of
+     (port, interface-class)</dd><dt id="dt:create_sim_obj"><b>create_sim_obj</b></dt><dd>if False, no Simics object will be created, but the
+ class will be registered along with all the interfaces, useful
+ e.g. when loading a checkpoint containing fake objects</dd><dt id="dt:name"><b>name</b></dt><dd>if given, specifies the name to use for the fake class and
+ the fake object; otherwise a name will be guessed based on the
+ implemented interfaces</dd></dl><p>Each interface will be instantiated and can be accessed through
+ <em>dev</em>.<em>iface-name</em>,
+ or <em>dev</em>.<em>port</em>.<em>iface-name</em>.
+ </p><p>
+ Example:
+ </p><pre class="jdocu_small"> dev = Dev([SimpleInterrupt,
+            ('sreset', Signal),
+            ('hreset', Signal)])
+
+ dev.simple_interrupt
+ dev.sreset.signal
+ dev.hreset.signal
+ </pre><p>
+ </p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Dev.configure_pre_object">configure_pre_object</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.configure_pre_object(pre_obj)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Called before <b><i>SIM_add_configuration</i></b>.
+ Override to e.g. set attributes.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Dev.finalize">finalize</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.finalize()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Called after the Simics object has been instantiated.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Dev.register_simics_class">register_simics_class</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.register_simics_class()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Register the Simics class created by this object.
+ </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util_internal.Iface">Iface</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util_internal.BasicIface</dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Base class for fake interfaces. To create an interface, inherit
+ this class, define a class variable iface to the interface name, and
+ define all methods that the interface defines.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Iface.fail">fail</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.fail(msg)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Signal a failure when running an interface method.
+<p>
+ Called by the default method stubs.
+ </p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Memory">Memory</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">builtins.object</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Memory()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Deprecated.
+ Legacy wrapper around an instance of the <code>sparse-memory</code> class.
+ Provides an interface compatible with the deprecated Memory class.
+<p>
+ The <i>obj</i> attribute contains an instance of <code>memory-space</code>,
+ mapping to the memory. The <i>real_obj</i> attribute contains
+ an instance of the 'sparse-memory' class. The <i>mem</i>
+ attribute is an alias to the <i>mem</i> attribute of
+ <i>real_obj</i>.
+ </p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Memory.clear">clear</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.clear(*args)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Clear the contents of the memory.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Memory.is_range_touched">is_range_touched</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.is_range_touched(start, length)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Return True if any of this memory's slots in the range contain data.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Memory.read">read</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.read(addr, n)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Read bytes from this memory.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:addr"><b>addr</b></dt><dd>the start address of the range to read</dd><dt id="dt:n"><b>n</b></dt><dd>length in bytes of the range to read</dd></dl><p>Throws an exception if any byte in the read range is empty.
+ </p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Memory.write">write</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.write(addr, data)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Write bytes to this memory.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:addr-2"><b>addr</b></dt><dd>the start address of the range to write</dd><dt id="dt:data"><b>data</b></dt><dd>the bytes to write</dd></dl><p>Fills in empty slots in the memory and overwrites already existing data.
+ </p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Layout">Layout</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">builtins.object</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Layout(mem, ofs, regs, little_endian)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">This class implements a memory layout.
+<p>
+ Testing devices that does DMA transfers usually requires setting up
+ DMA descriptors. These can often be seen as register sets located in
+ memory. This class allows you to define the layout of those registers,
+ including bitfields within the registers.
+</p><p>
+ Registers without bitfields can be accessed through:
+ </p><pre class="jdocu_small"><em>layout</em>.<em>reg-name</em></pre><p>
+</p><p>
+ while registers with bitfields can be accessed through:
+ </p><pre class="jdocu_small"><em>layout</em>.<em>reg-name</em>.<em>field-name</em></pre><p>
+ or
+ </p><pre class="jdocu_small"> <em>layout</em>.<em>reg-name</em>.read(),
+ <em>layout</em>.<em>reg-name</em>.write()
+ </pre><p>
+</p><p>
+ Layouts are mapped ontop of Memory, i.e. NOT ontop of normal Simics RAM.
+ 
+ Constructor arguments:
+ </p><dl><dt id="dt:mem"><b>mem</b></dt><dd>An object that is a valid "map target"</dd><dt id="dt:ofs"><b>ofs</b></dt><dd>the byte offset (i.e. the location of the layout)</dd><dt id="dt:little_endian-2"><b>little_endian</b></dt><dd>determines the byte order of the registers in the layout</dd><dt id="dt:regs"><b>regs</b></dt><dd>a dictionary on the following form:
+ <pre class="jdocu_small"> {'reg-name' : (offset, size),
+  'reg-name' : (offset, size, bitfield)}
+ </pre><p>
+ </p></dd><dt id="dt:offset-2"><b>offset</b></dt><dd>the register offset into the layout</dd><dt id="dt:size-2"><b>size</b></dt><dd>the size in bytes of the register</dd><dt id="dt:bitfield-2"><b>bitfield</b></dt><dd>optional and should be an instance of Bitfield</dd></dl><p></p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Layout.clear">clear</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.clear()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Set all of the fields in this layout to 0.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Layout.read">read</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.read(ofs, size)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Returns the value at <i>ofs</i>.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util.Layout.write">write</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.write(ofs, value, size)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Writes <i>value</i> to <i>ofs</i>.
+ </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Layout_LE">Layout_LE</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.Layout</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Layout_LE(mem, ofs, regs)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Little-endian layout.
+ </dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util.Layout_BE">Layout_BE</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util.Layout</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Layout_BE(mem, ofs, regs)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Big-endian layout.
+ </dd>
+</dl><p>
+</p><h2 class="jdocu"><a name="__pymoddev_util_internal">10.7.3 dev_util_internal</a></h2>
+<p>
+
+
+ 
+</p><p>
+ Internal and/or legacy classes removed from dev_util.py
+</p><p>
+ 
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.iface">iface</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">iface(name)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Returns an Iface subclass which implements the interface <i>name</i>.
+<p>
+ All the interface methods in the class will raise an exception when
+ called. Convenient when creating a fake device that is required to
+ implement an interface, but you know that the interface should be
+ unused in the given test.  </p></dd>
+</dl><p></p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util_internal.Dev2">Dev</a></h3>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">builtins.object</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Dev(iface_list = [], create_sim_obj = True, name = None)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">A Simics class with a single instance.
+ Implements zero or more interfaces based on instances of
+ <b>Iface</b>. Presents zero or
+ more ports, implementing one or more interfaces each.
+<p>
+ The <i>obj</i> attribute contains the instance of the Simics
+ class, and the <i>cls_name</i> attribute contains the name of
+ the Simics class.
+ 
+ Constructor arguments:
+ </p><dl><dt id="dt:iface_list-2"><b>iface_list</b></dt><dd>a list of interface classes or pairs of
+     (port, interface-class)</dd><dt id="dt:create_sim_obj-2"><b>create_sim_obj</b></dt><dd>if False, no Simics object will be created, but the
+ class will be registered along with all the interfaces, useful
+ e.g. when loading a checkpoint containing fake objects</dd><dt id="dt:name-2"><b>name</b></dt><dd>if given, specifies the name to use for the fake class and
+ the fake object; otherwise a name will be guessed based on the
+ implemented interfaces</dd></dl><p>Each interface will be instantiated and can be accessed through
+ <em>dev</em>.<em>iface-name</em>,
+ or <em>dev</em>.<em>port</em>.<em>iface-name</em>.
+ </p><p>
+ Example:
+ </p><pre class="jdocu_small"> dev = Dev([SimpleInterrupt,
+            ('sreset', Signal),
+            ('hreset', Signal)])
+
+ dev.simple_interrupt
+ dev.sreset.signal
+ dev.hreset.signal
+ </pre><p>
+ </p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Dev.configure_pre_object2">configure_pre_object</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.configure_pre_object(pre_obj)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Called before <b><i>SIM_add_configuration</i></b>.
+ Override to e.g. set attributes.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Dev.finalize2">finalize</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.finalize()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Called after the Simics object has been instantiated.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Dev.register_simics_class2">register_simics_class</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.register_simics_class()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Register the Simics class created by this object.
+ </dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util_internal.Iface2">Iface</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util_internal.BasicIface</dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Base class for fake interfaces. To create an interface, inherit
+ this class, define a class variable iface to the interface name, and
+ define all methods that the interface defines.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Iface.fail2">fail</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.fail(msg)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Signal a failure when running an interface method.
+<p>
+ Called by the default method stubs.
+ </p></dd>
+</dl><p>
+</p><h3 class="jdocu"><a class="not-numbered" name="__pyclassdev_util_internal.Memory">Memory</a></h3>
+<p>
+
+</p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Superclasses</dt><dd class="jdocu_descitem">dev_util_internal.Dev</dd>
+<dt class="jdocu_descitem">Constructor</dt><dd class="jdocu_descitem"><pre class="jdocu_small">Memory(test = False)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">A Simics memory space in which every slot can contain a byte, or be empty.
+<p>
+ Each byte sized slot in this memory can either contain a byte of data or
+ be empty. Empty slots cannot be read.
+</p><p>
+ The <i>obj</i> attribute contains the object implementing the Simics
+ interface to the memory. It implements the <code>memory_space</code>
+ interface.
+ 
+ Constructor arguments:
+ </p><dl><dt id="dt:test"><b>test</b></dt><dd>set to True to not create any Simics objects, optional,
+     defaults to False</dd></dl><p></p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Memory.clear">clear</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.clear()</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Clear the contents of the memory.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Memory.is_range_touched">is_range_touched</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.is_range_touched(start, length)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Return True if any of this memory's slots in the range contain data.
+ </dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Memory.read">read</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.read(addr, n)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Read bytes from this memory.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:addr-3"><b>addr</b></dt><dd>the start address of the range to read</dd><dt id="dt:n-2"><b>n</b></dt><dd>length in bytes of the range to read</dd></dl><p>This method throws an exception if any byte in the read range is empty.
+ </p></dd>
+</dl><p></p><h4 class="jdocu"><a class="not-numbered" name="__pyfundev_util_internal.Memory.write">write</a></h4>
+<p></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Synopsis</dt><dd class="jdocu_descitem"><pre class="jdocu_small">obj.write(addr, bytes)</pre><p></p></dd>
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">Write bytes to this memory.
+<p>
+ Arguments:
+ </p><dl><dt id="dt:addr-4"><b>addr</b></dt><dd>the start address of the range to write</dd><dt id="dt:n-3"><b>n</b></dt><dd>the bytes to write</dd></dl><p>Fills in empty slots in the memory and overwrites already existing data.
+ </p></dd>
+</dl><p>
+
+
+</p>
+<div class="chain">
+<a href="system-panel.html">10.6 System Panel</a>
+<a href="python-api-script-branch.html">10.8 Script branches</a>
+</div>

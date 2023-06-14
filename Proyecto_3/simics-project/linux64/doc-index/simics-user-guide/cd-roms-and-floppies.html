@@ -1,0 +1,232 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>7.3 CD-ROMs and Floppies</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="working-with-images.html">7.2 Working with Images</a>
+<a href="usb-disks.html">7.4 USB disks</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="feature-overview.html">II Feature Overview</a>
+&nbsp;/&nbsp;
+<a href="managedisks.html">7 Moving Data in and out of the Simulation</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="CD-ROMs-and-Floppies">7.3 CD-ROMs and Floppies</a></h1>
+<p>
+
+</p><p>
+</p><h2 class="jdocu"><a name="Accessing-Host-CDROM">7.3.1 Accessing a Host CD-ROM Drive</a></h2>
+<p>
+
+<a name="CD-ROM"></a><a name="diskshost-CD-ROM"></a><a name="cdrom-image"></a>
+This is a Linux specific chapter.
+Accessing the CD-ROM of the host machine from inside the simulation is
+supported on Linux hosts. This is done by creating a
+<b>cdrom-image</b> object using the <b>new-cdrom-image</b>
+command. First, you should insert the CD in the host machine and figure out
+which device name it uses.
+</p><p>
+On a Linux host, this is typically <code>/dev/cdrom</code>, which is a symbolic
+link to the actual CD-ROM device, e.g., <code>/dev/hdc</code>. Note that you
+need read/write access to the CD-ROM device for this to work.
+</p><p>
+When you have the correct device file name, you create a
+<b>cdrom-image</b> object and insert it into the simulated CD-ROM drive:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>new-cdrom-image /dev/cdrom file_cd0</b>
+CDROM 'file_cd0' created
+simics&gt; <b>cd0.insert file_cd0</b>
+Inserting media 'file_cd0' into CDROM drive
+</pre><p>
+</p><p>
+Note that you must replace <code>/dev/cdrom</code> with the correct host device
+name as mentioned above, and <b>cd0</b> with the correct Simics object
+name. Use the <b>list-objects</b> command to find the correct object of
+class <b>ide-cdrom</b>.
+</p><p>
+The <b>cd0.insert</b> command simulates inserting a new disk into the
+CD-ROM drive, and there is also a corresponding <b>cd0.eject</b> command
+that simulates ejecting the disk.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Accessing-CDROM-image-file">7.3.2 Accessing a CD-ROM Image File</a></h2>
+<p>
+
+<a name="CD-ROMimage-files"></a>
+<a name="disksCD-ROM-images"></a>
+</p><p>
+A file containing an ISO-9660 image can be used as medium in the simulated
+CD-ROM.  This image file can be created from real CD-ROM disks, or from
+collections of files on any disk.
+</p><p>
+On Linux, an image can be created from a set of files with the
+<code>mkisofs</code> program. For example:
+</p><p>
+</p><pre class="jdocu_small">mkisofs -l -L -o <i>image</i> -r <i>dir</i>
+</pre><p>
+</p><p>
+On Windows, you can use a third-party product to create ISO-9660 images from files or from
+CD-ROMs, and a non-exhaustive list is given in figure <a class="reference" href="#listofwindowsisoprograms">1</a>.  Note that many programs can read CD-ROMs
+in either "file" or "raw" mode ("raw" mode is often called "aspi").  If
+CD-ROMs are read using file mode, the resulting image will not be bootable.
+</p><p>
+</p><div class="figure" id="listofwindowsisoprograms">
+
+<a name="CD-ROMimage-creation-programs"></a>
+<div style="text-align: center">
+    <p>
+    </p><p>
+    </p><p>
+    </p><p>
+    </p><table>
+
+    <tbody><tr><td class="jdocu_noborder">WinImage</td>
+        <td class="jdocu_noborder"><a class="jdocu" href="http://www.winimage.com" rel="noopener noreferrer" target="_top">http://www.winimage.com</a></td>
+    </tr>
+
+    <tr><td class="jdocu_noborder"></td>
+        <td class="jdocu_noborder">Shareware, only copies images from real CD-ROM</td>
+    </tr>
+
+<tr><td class="jdocu_noborder">WinISO</td>
+        <td class="jdocu_noborder"><a class="jdocu" href="http://www.winiso.com" rel="noopener noreferrer" target="_top">http://www.winiso.com</a></td>
+    </tr>
+
+    <tr><td class="jdocu_noborder"></td>
+        <td class="jdocu_noborder">Shareware</td>
+    </tr>
+
+<tr><td class="jdocu_noborder">UltraISO</td>
+        <td class="jdocu_noborder"><a class="jdocu" href="http://www.ezbsystems.com/" rel="noopener noreferrer" target="_top">http://www.ezbsystems.com/</a></td>
+    </tr>
+
+    <tr><td class="jdocu_noborder"></td>
+        <td class="jdocu_noborder">Shareware</td>
+    </tr>
+
+<tr><td class="jdocu_noborder">MagicISO</td>
+        <td class="jdocu_noborder"><a class="jdocu" href="http://www.magiciso.com" rel="noopener noreferrer" target="_top">http://www.magiciso.com</a></td>
+    </tr>
+
+    <tr><td class="jdocu_noborder"></td>
+        <td class="jdocu_noborder">Shareware, can make images from files, CD-ROMs, and
+        DVD-ROMs, and edit ISO images. </td>
+    </tr>
+
+<tr><td class="jdocu_noborder">mkisofs</td>
+        <td class="jdocu_noborder"><a class="jdocu" href="http://wiki.osdev.org/Mkisofs" rel="noopener noreferrer" target="_top">http://wiki.osdev.org/Mkisofs</a></td>
+    </tr>
+
+    <tr><td class="jdocu_noborder"></td>
+        <td class="jdocu_noborder">Part of the cdrtools package, free, need Cygwin</td>
+    </tr>
+
+    </tbody></table>
+<div class="caption">Figure 1. Windows Programs to Create ISO-9660 Images</div>
+</div>
+</div>
+
+<p>
+Once you have an image file, a <b>cdrom-image</b> object can
+be created, and then inserted into a simulated CD-ROM device in the
+same way as above:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>new-cdrom-image myimage.iso</b>
+CDROM 'myimage' created
+simics&gt; <b>cd0.insert myimage</b>
+Inserting media 'myimage' into CDROM drive
+</pre><p>
+</p><p>
+Note that <b>cd0</b> above refers to the Simics object name of the CD-ROM
+drive. This may or may not be called <b>cd0</b>. To see which object name
+to use, try the <b>list-objects</b> command and look for an object of class
+<b>ide-cdrom</b>.
+</p><p>
+
+</p><h2 class="jdocu"><a name="Accessing-Host-Floppy">7.3.3 Accessing a Host Floppy Drive</a></h2>
+<p>
+
+<a name="disksfloppy"></a><a name="floppy"></a>
+This is a Linux specific chapter.
+It is possible to access a floppy on the host machine from within Simics if the
+host is running Linux.  For example (assuming the floppy device
+object is called <b>flp0</b>):
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>flp0.insert-floppy A /dev/fd0</b>
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+To boot directly from the floppy on a simulated x86 architecture you need
+to select the "A" drive to be the boot device (in, for example,
+<code>enterprise-common.simics</code>):
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>system_cmp0.cmos-boot-dev A</b>
+</pre><p>
+</p></div>
+<h2 class="jdocu"><a name="Accessing-Floppy-Image-File">7.3.4 Accessing a Floppy Image File</a></h2>
+<p>
+
+<a name="floppyimages"></a><a name="disksfloppy2"></a>
+</p><p>
+Sometimes it can be convenient to have copies of boot floppies as image
+files. On Windows, to create an image of a floppy you can use, for example, WinImage (see
+section <a class="reference" href="#Accessing-CDROM-image-file">7.3.2</a> above).
+</p><p>
+
+On Linux, you can use the <code>dd</code> command:
+</p><p>
+</p><pre class="jdocu_small">dd if=/dev/fd0 of=floppy.img
+</pre><p>
+</p><p>
+It is then possible to use this image file in Simics:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>flp0.insert-floppy A floppy.img</b>
+</pre><p>
+</p><p>
+</p><div class="note">
+<b>Note:</b>
+To boot directly from the floppy on a simulated x86 architecture you need
+to select the "A" drive to be the boot device (in, for example,
+<code>enterprise-common.simics</code>):
+<p>
+</p><pre class="jdocu_small">simics&gt; <b>system_cmp0.cmos-boot-dev A</b>
+</pre><p>
+</p></div>Floppies are also a convenient way to move small amounts of data out of the
+simulated machine. Write the data to the simulated floppy inside the simulated
+machine, and then extract it from the image.
+<p>
+If it is formatted as a FAT file system, a floppy image can be manipulated with, for example, Mtools (Linux only, see section <a class="reference" href="working-with-images.html#mtools">7.2.5</a> for more information).
+</p><p>
+
+</p><p>
+</p>
+<div class="chain">
+<a href="working-with-images.html">7.2 Working with Images</a>
+<a href="usb-disks.html">7.4 USB disks</a>
+</div>

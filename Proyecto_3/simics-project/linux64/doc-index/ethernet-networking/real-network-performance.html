@@ -1,0 +1,82 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>4.5 Performance</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="windows.html">4.4.2 Windows</a>
+<a href="real-network-troubleshooting.html">4.6 Troubleshooting</a>
+</div>
+<div class="path">
+<a href="index.html">Ethernet Networking Technology Guide</a>
+&nbsp;/&nbsp;
+<a href="real-network.html">4 Connecting to a Real Network</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="real-network-performance">4.5 Performance</a></h1>
+<p>
+
+</p><p>
+When using other connection types than port forwarding, Simics has to prevent
+the simulated network from being flooded with packets from the real network. In
+practice, the simulated machine is not always able to handle the amount of
+traffic it receives, and Simics cannot buffer all incoming packets. This is
+especially a problem when the simulation is stopped.
+</p><p>
+Flooding is prevented by limiting the amount of traffic that is allowed to
+enter the simulated network per simulated second. This amount is determined by
+the <i>tx_bandwidth</i> and <i>tx_packet_rate</i> attributes of the
+real network object created for the connection, typically
+named <b>real_net0</b>. The unit of the <i>tx_bandwidth</i> attribute
+is bits per simulated second, and the unit of the <i>tx_packet_rate</i>
+attribute is packets per simulated second. Either can be set to unlimited by
+setting them to 0, but this is not recommended unless a very limited amount of
+data is to be received. The default is to allow 10 megabits per simulated
+second and an unlimited number of packets.
+</p><p>
+In addition to allowing the selected rate of traffic into the simulated
+network, Simics buffers traffic for an additional 0.1 seconds of simulated
+time, to avoid dropping packets during a short peak in the traffic. If more
+packets arrive once this buffer is full, Simics will drop them.
+</p><p>
+To get better performance out of the connection to the real network, modify the
+value of the <i>tx_bandwidth</i> and <i>tx_packet_rate</i>
+attributes until satisfied. A good strategy is to set the
+<i>tx_bandwidth</i> attribute to the amount of traffic that the simulated
+machine is expected to handle per simulated second, and then try to increase
+the <i>tx_packet_rate</i> from about 5000 and see at what packet rate the
+best performance is achieved.
+</p><p>
+For example, this will set the limit to 100 megabits and 10000 packets per
+simulated second:
+</p><p>
+</p><pre class="jdocu_small">simics&gt; <b>@conf.real_net0.tx_bandwidth = 100000000</b>
+simics&gt; <b>@conf.real_net0.tx_packet_rate = 10000</b>
+</pre><p>
+</p><p>
+</p>
+<div class="chain">
+<a href="windows.html">4.4.2 Windows</a>
+<a href="real-network-troubleshooting.html">4.6 Troubleshooting</a>
+</div>

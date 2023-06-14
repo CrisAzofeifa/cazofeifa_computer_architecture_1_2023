@@ -1,0 +1,90 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>17.4 Page-Sharing</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="distributed-simulation.html">17.3 Distributed Simulation</a>
+<a href="appendix.html">V Appendix</a>
+</div>
+<div class="path">
+<a href="index.html">Simics User's Guide</a>
+&nbsp;/&nbsp;
+<a href="performance.html">IV Performance</a>
+&nbsp;/&nbsp;
+<a href="scaling-simics.html">17 Scaling Simics</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a name="accelerator-pagesharing">17.4 Page-Sharing</a></h1>
+<p>
+
+<a name="page-sharing"></a>
+</p><p>
+When running multiple instances of the same target system, in a
+virtual network or similar, it is likely that many of the RAM, ROM,
+flash, or disk pages in each system are identical to the
+others. Simics Accelerator adds a new <i>page-sharing</i> feature which takes
+advantage of this fact to reduce host memory consumption and increase
+execution performance.
+</p><p>
+When the page-sharing feature is activated, at certain trigger points
+Simics will examine the contents of a page, comparing it with other pages
+examined earlier. If an identical match is found, the page is removed
+and instead set to share data with the other page(s).
+</p><p>
+When many pages are shared the host memory that Simics uses will be
+reduced and consequently it will take longer until the memory-limit
+is reached. If the frequency of reaching Simics memory-limit is a factor
+limiting performance, execution performance will also increase.
+Simics can also take advantage of the fact that the page is shared by
+sharing the generated JIT code corresponding to a shared page.
+This can lead to improved performance since the JIT code only needs
+to be created once, but also thanks to better instruction caching when
+many target processors use the same JIT code.
+</p><p>
+Shared pages are always read-only, if a shared page is written to, it
+will automatically be un-shared and the writer will be given a
+private copy of the page. Consequently, page-sharing works best for
+pages containing only instructions or data pages which are never or
+rarely modified.
+</p><p>
+To activate page-sharing, use the command <b>enable-page-sharing</b>.
+This command also has a <i>-now</i> command argument which
+causes all pages to be analyzed and possibly shared directly.
+</p><p>
+To monitor how much memory that is saved due to the page-sharing
+feature, the <b>system-perfmeter</b> has a <i>-shared</i>
+switch which shows how much memory in total that has been saved, in
+each measurement sample. (See chapter <em>Performance</em>
+in the <em>Simics User's Guide</em>.)
+</p><p>
+Use <b>disable-page-sharing</b> to deactivate the page-sharing
+feature. This will not cause already shared pages to be un-shared but
+no more pages will be shared.
+</p><p>
+</p>
+<div class="chain">
+<a href="distributed-simulation.html">17.3 Distributed Simulation</a>
+<a href="appendix.html">V Appendix</a>
+</div>

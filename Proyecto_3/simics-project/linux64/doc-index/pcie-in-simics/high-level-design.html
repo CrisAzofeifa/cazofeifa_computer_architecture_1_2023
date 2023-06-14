@@ -1,0 +1,97 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>High level design</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="quickstart.html">Quickstart</a>
+<a href="pcie-in-dml.html">PCIe in DML</a>
+</div>
+<div class="path">
+<a href="index.html">PCIe Modeling Library</a>
+&nbsp;/&nbsp;</div>
+<h1 id="high-level-design"><a href="#high-level-design">High level design</a></h1>
+<p>This is a high-level description of how PCIe is implemented in
+Simics. If you write your device in DML, most of the details below are
+automatically handled by the DML templates.</p>
+<p>The Simics PCIe modeling framework provides the ability to model</p>
+<ul>
+<li>Endpoints</li>
+<li>Multifunction Endpoints</li>
+<li>Root Complexes</li>
+<li>Switches</li>
+<li>Bridges</li>
+</ul>
+<p>A PCIe device must implement the <code>pcie_device</code> interface. This
+interface is used to indicate when the device is connected,
+disconnected, and to signal a hot reset.</p>
+<p>An RC, Switch or other bridges, must use helper-objects of the class
+<code>pcie-downstream-port</code> to simulate the downstream port(s). Each port
+facing downstream, i.e. each Virtual PCIe-PCIe bridge in the RC or
+Switch (represented by a Type 1 Configuration Header), should have a
+<code>pcie-downstream-port</code>. Each downstream port can connect to one or
+several (external) PCIe devices. The upstream-facing port of a Switch
+should have a <code>pcie-downstream-port</code> with the (internal) Virtual
+PCIe-PCIe bridge(s) connected as devices. The below image illustrates
+a sample PCIe hierarchy in Simics, yellow boxes represent
+<code>pcie-downstream-ports</code>.</p>
+<img alt="a PCIe hierarchy" height="500px" src="pcie-hierarchy.png">
+<p>The <code>pcie-downstream-port</code> routes messages and manages the Config, IO
+and Memory address spaces for its connected downstream devices. There
+is a translator-port <code>downstream</code> which receives downstream
+transactions and redirects them to the downstream devices connected to
+it. There are also specialized translator-ports <code>cfg</code>, <code>msg</code>, <code>io</code>,
+and <code>mem</code> which can be used to send transactions of their specific type.</p>
+<img alt="a Simics pcie-downstream-port" height="500px" src="pcie-downstream-port.png">
+<p>The interface <code>pcie_port_control</code> is implemented by the
+pcie-downstream-port, it is used by whoever owns the port to configure
+it, and to signal hot reset. The <code>pcie-downstream-port</code> also implements
+the <code>pcie_map</code> interface, which the Endpoints below it use to claim
+ranges in the downstream address space (e.g. Memory and I/O BARs), and
+add (virtual) functions. An endpoint starts an upstream transaction by
+issuing it to its connected <code>pcie-downstream-port</code></p>
+<p>Endpoints issue upstream transactions through the <code>pcie-downstream-port</code>
+object of the RC/Switch to which they are connected. The
+pcie-downstream-port acts as a translator and will direct all upstream
+transactions to its <code>upstream_target</code>, typically the host memory in
+case of an RC, or the upstream target in case of a Switch.</p>
+<p>Endpoints must add their functions and map other resources such as
+Memory and I/O BARs (as configured in the relevant registers of the
+Type 0 Configuration Header). This is done through the <code>pcie_map</code>
+interface of the <code>pcie-downstream-port</code> object to which they are
+connected.</p>
+<p>Switches have an upstream port which is connected to the
+pcie-downstream-port of either a Root Complex or another Switch. As
+the downstream port(s) of the Switch are configured, they must map the
+resources of these ports in the <code>pcie-downstream-port</code> of the RC/Switch
+to which they are connected. For example, the Message and
+Configuration range bounded by secondary and subordinate bus
+registers, as well as the Memory and IO ranges bounded by base and
+limit registers.</p>
+
+<div class="chain">
+<a href="quickstart.html">Quickstart</a>
+<a href="pcie-in-dml.html">PCIe in DML</a>
+</div>

@@ -1,0 +1,154 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>connector</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_concurrency_mode.html">concurrency_mode</a>
+<a href="__rm_interface_cpu_cached_instruction.html">cpu_cached_instruction</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-simulator-interfaces.html">5 Model-to-Simulator Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_connector">connector</a></h1>
+<p>
+
+<a name="connector"></a><a name="connector_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem">The <code>connector</code> interface must be implemented by
+   connector objects. The interface describes the connector and how it
+   can be connected to other connectors. A connector is used for
+   connecting component objects. The connector is just a proxy for the
+   connection, the connector uses the <code>component_connector</code>
+   interface in the components to setup the connection.
+<p>
+   The <b><i>type</i></b> function returns the connector type as a
+   string. Two connectors can only be connected if the type is
+   identical.
+</p><p>
+   A hotpluggable connector returns <code>true</code> when calling the
+   <b><i>hotpluggable</i></b> function, otherwise <code>false</code>. A
+   hotpluggable connector can be connected before or after the
+   component is instantiated, an non hotpluggable connector must be
+   connected before the component is instantiated.
+</p><p>
+   The <b><i>required</i></b> function returns <code>true</code> if the
+   connector must be connected before instantiated, otherwise
+   <code>false</code>.
+</p><p>
+   A connector can be connected to many connectors, but it is only
+   supported if the <b><i>multi</i></b> function return <code>true</code>. It
+   is not recommended that a connector support multi connections. A
+   component can instead dynamically create connectors when needed.
+</p><p>
+   A connector has a direction; <em>up</em>, <em>down</em> or
+   <em>any</em>. The direction decides in which order the connectors
+   in a component tree are connected and the structure of the tree.
+</p><p>
+   Connections are setup in two steps. The first step is to add the
+   connection, which is done using the <b><i>add_destination</i></b>
+   function. Adding a connection can fail for several reasons and it
+   is implementation dependent how the connection can fail. A
+   connection can for instance fail because the destination object
+   requires something that the source component did not pass when
+   checking the connection. Just adding a connection does not mean
+   that the components actually connect. The components have to save
+   the data given with the <b><i>add_destination</i></b> function. The
+   actual setup of the connection is made in the second step when the
+   <b><i>update</i></b> function is called, which finalizes the
+   connection.
+</p><p>
+   The <b><i>add_destination</i></b> and <b><i>remove_destination</i></b>
+   functions sets the state of the connection. It is first when the
+   <b><i>update</i></b> function is called when the connection is
+   finalized. Both <b><i>add_destination</i></b> and
+   <b><i>remove_destination</i></b> returns <code>true</code> if the call was
+   successful otherwise they return <code>false</code>.
+</p><p>
+   Parameters to the <b><i>add_destination</i></b> function are the own
+   object <i>obj</i> and the destination object
+   <i>dst_obj</i>. The destination object must be a port
+   object and it must implement the <code>connector</code>
+   interface.
+</p><p>
+   The <b><i>update</i></b> function is called when the component should
+   update its current connection status. The status of the connection
+   has previously been set using the <b><i>add_destination</i></b>
+   or/and <b><i>remove_destination</i></b> functions.
+</p><p>
+   The <b><i>destination</i></b> function returns a list of port objects
+   that the its connected to. The <b><i>destination</i></b> function
+   returns the state of the connection not the finalized state,
+   i.e. the state of the connection before <b><i>update</i></b>
+   functional call.
+</p><p>
+   The <b><i>check</i></b>, <b><i>connect</i></b>, and <b><i>disconnect</i></b>
+   functions initiates a connection setup via the connector object. The
+   connector will forward the setup to the components affected by the
+   connection via the <code>component_connector</code> interface.
+</p><p>
+   The <b><i>deletion_requested</i></b> function is called after disconnecting
+   components. A dynamic connector might want to return True in order to be
+   deleted just after the disconnection.
+</p><p>
+   </p><pre class="jdocu_small">typedef enum {
+        Sim_Connector_Direction_Up,
+        Sim_Connector_Direction_Down,
+        Sim_Connector_Direction_Any
+} connector_direction_t;
+
+SIM_INTERFACE(connector) {
+        char *(*type)(conf_object_t *obj);
+        bool (*hotpluggable)(conf_object_t *obj);
+        bool (*required)(conf_object_t *obj);
+        bool (*multi)(conf_object_t *obj);
+        connector_direction_t (*direction)(conf_object_t *obj);
+
+        bool (*add_destination)(conf_object_t *obj, conf_object_t *connector);
+        bool (*remove_destination)(conf_object_t *obj,
+                                   conf_object_t *connector);
+        attr_value_t (*destination)(conf_object_t *obj); /* list of
+                                                            connector objects */
+        void (*update)(conf_object_t *obj);
+
+        bool (*check)(conf_object_t *obj, attr_value_t attr);
+        void (*connect)(conf_object_t *obj, attr_value_t attr);
+        void (*disconnect)(conf_object_t *obj);
+        bool (*deletion_requested)(conf_object_t *obj);
+};
+#define CONNECTOR_INTERFACE "connector"
+</pre><p>
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Global Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_concurrency_mode.html">concurrency_mode</a>
+<a href="__rm_interface_cpu_cached_instruction.html">cpu_cached_instruction</a>
+</div>

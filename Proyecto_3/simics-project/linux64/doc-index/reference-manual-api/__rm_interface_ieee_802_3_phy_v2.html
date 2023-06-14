@@ -1,0 +1,95 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>ieee_802_3_phy_v2</title>
+<link rel="stylesheet" href="simics.css">
+<script>function postUrl() {
+    window.parent.postMessage({ content_url: window.location.href }, "*");
+}
+if (window.parent != null && window.parent != window) {
+    postUrl();
+    window.addEventListener("hashchange", function () {
+        postUrl();
+    });
+} else {
+    // Check if we are part of a Simics doc site and redirect if we are
+    fetch("../simics-doc-site-marker", { method: "HEAD" }).then(response => {
+        if (response.ok) {
+            window.location = "..#" + window.location.href;
+        } else {
+            console.info("Not part of a Simics documentation site");
+        }
+    }).catch(error => {
+        console.warn("Failed to check if this is a Simics documentation site:",
+            error);
+    });
+}</script>
+</head>
+<div class="chain">
+<a href="__rm_interface_ieee_802_3_phy.html">ieee_802_3_phy</a>
+<a href="__rm_interface_ieee_802_3_phy_v3.html">ieee_802_3_phy_v3</a>
+</div>
+<div class="path">
+<a href="index.html">API Reference Manual</a>
+&nbsp;/&nbsp;
+<a href="model-to-model-interfaces.html">4 Model-to-Model Interfaces</a>
+&nbsp;/&nbsp;</div>
+<h1 class="jdocu"><a class="not-numbered" name="__rm_interface_ieee_802_3_phy_v2">ieee_802_3_phy_v2</a></h1>
+<p>
+
+<a name="ieee_802_3_phy_v2"></a><a name="ieee_802_3_phy_v2_interface_t"></a></p><dl class="jdocu_di">
+<dt class="jdocu_descitem">Description</dt><dd class="jdocu_descitem"><pre class="jdocu_small">#define IEEE_802_3_PHY_V2_INTERFACE "ieee_802_3_phy_v2"
+SIM_INTERFACE(ieee_802_3_phy_v2) {
+        int (*send_frame)(conf_object_t *obj, dbuffer_t *buf, int replace_crc);
+        int (*check_tx_bandwidth)(conf_object_t *obj);
+        void (*add_mac)(conf_object_t *obj, byte_string_t mac);
+        void (*del_mac)(conf_object_t *obj, byte_string_t mac);
+        void (*add_mac_mask)(conf_object_t *obj, byte_string_t mac,
+                             byte_string_t mask);
+        void (*del_mac_mask)(conf_object_t *obj, byte_string_t mac,
+                             byte_string_t mask);
+        void (*set_promiscous_mode)(conf_object_t *obj, int enable);
+};
+</pre><p>
+</p><p>
+
+   Deprecated; use <code>ieee_802_3_phy_v3</code> instead.
+</p><p>
+   Interface that should be implemented by 802.3 physical layers.
+</p><p>
+   The <b><i>send_frame</i></b> function is used by a device to send an
+   Ethernet frame. The frame should be a
+   <code><a name="dbuffer_t">dbuffer_t</a></code> containing a complete Ethernet frame.
+   excluding the preamble and SFD, but including the CRC.  The
+   <i>replace_crc</i> flag indicates whether the CRC is
+   not actually calculated yet. The passed <i>buf</i> should
+   not be modified by the called function.
+   If the function return 0, the frame was sent to the link; In case
+   -1 is returned, there was not enough bandwidth available right now,
+   and the frame could not be sent. The PHY should call the
+   <b><i>tx_bandwidth_available</i></b> in the <code>ieee_802_3_mac</code>
+   interface at the MAC, when the frame can be sent.
+</p><p>
+   The <b><i>check_tx_bandwidth</i></b> can also be used to check that there
+   is bandwidth available, without sending a frame. It returns 0 if there
+   is no bandwidth available, and a positive value if the frame can be
+   sent right away.
+</p><p>
+   <b><i>add_mac</i></b>, <b><i>del_mac</i></b> and <b><i>set_promiscous_mode</i></b>
+   have the same functionality as the equivalent
+   functions in <code>ethernet_link</code> interface. They do nothing
+   if the PHY is connected to the new-style links using the
+   <code>ethernet_common</code> interface.
+</p><p>
+   The word "promiscuous" is misspelled in the interface.
+</p><p>
+   
+</p></dd>
+<dt class="jdocu_descitem">Execution Context</dt><dd class="jdocu_descitem">Cell Context for all methods.
+   
+</dd>
+</dl><p></p>
+<div class="chain">
+<a href="__rm_interface_ieee_802_3_phy.html">ieee_802_3_phy</a>
+<a href="__rm_interface_ieee_802_3_phy_v3.html">ieee_802_3_phy_v3</a>
+</div>
